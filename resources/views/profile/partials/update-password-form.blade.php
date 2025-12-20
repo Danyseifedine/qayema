@@ -19,8 +19,9 @@
                    name="current_password" 
                    x-bind:type="showPassword ? 'text' : 'password'" 
                    placeholder="Enter your current password"
-                   class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" 
-                   autocomplete="current-password" />
+                   class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm px-3 py-2" 
+                   autocomplete="current-password" 
+                   required />
             <x-input-error :messages="$errors->updatePassword->get('current_password')" class="mt-2" />
         </div>
 
@@ -30,8 +31,9 @@
                    name="password" 
                    x-bind:type="showPassword ? 'text' : 'password'" 
                    placeholder="Enter your new password"
-                   class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" 
-                   autocomplete="new-password" />
+                   class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm px-3 py-2" 
+                   autocomplete="new-password" 
+                   required />
             <x-input-error :messages="$errors->updatePassword->get('password')" class="mt-2" />
         </div>
 
@@ -41,8 +43,9 @@
                    name="password_confirmation" 
                    x-bind:type="showPassword ? 'text' : 'password'" 
                    placeholder="Confirm your new password"
-                   class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" 
-                   autocomplete="new-password" />
+                   class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm px-3 py-2" 
+                   autocomplete="new-password" 
+                   required />
             <x-input-error :messages="$errors->updatePassword->get('password_confirmation')" class="mt-2" />
         </div>
 
