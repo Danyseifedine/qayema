@@ -66,4 +66,77 @@ class ImageOptimizationService
 
         return $tempPath;
     }
+
+    /**
+     * Optimize dish image to max 50KB - optimized for menu display (800x600 landscape)
+     */
+    public function optimizeDishImage(UploadedFile $file): string
+    {
+        $image = $this->manager->read($file->getRealPath());
+
+        // Resize to 800x600 (4:3 aspect ratio) using cover crop for consistent menu card display
+        // This ensures all dish images have the same dimensions and look good in menu cards
+        $image->cover(800, 600);
+
+        // Save to temporary file in storage/app/temp for better compatibility
+        $tempDir = storage_path('app/temp');
+        if (! is_dir($tempDir)) {
+            mkdir($tempDir, 0755, true);
+        }
+
+        $tempPath = $tempDir . '/dish_' . uniqid() . '.jpg';
+
+        // Try different quality levels to get under 50KB
+        $quality = 85;
+        $maxSize = 50 * 1024; // 50KB in bytes
+
+        do {
+            $image->toJpeg($quality)->save($tempPath);
+            $fileSize = filesize($tempPath);
+
+            if ($fileSize <= $maxSize || $quality <= 30) {
+                break;
+            }
+
+            $quality -= 5;
+        } while ($quality >= 30);
+
+        return $tempPath;
+    }
+
+    /**
+     * Optimize category image to max 50KB - optimized for category display (500x500 square)
+     */
+    public function optimizeCategoryImage(UploadedFile $file): string
+    {
+        $image = $this->manager->read($file->getRealPath());
+
+        // Resize to 500x500 square (good for category cards) while maintaining aspect ratio
+        $image->scaleDown(width: 500, height: 500);
+
+        // Save to temporary file in storage/app/temp for better compatibility
+        $tempDir = storage_path('app/temp');
+        if (! is_dir($tempDir)) {
+            mkdir($tempDir, 0755, true);
+        }
+
+        $tempPath = $tempDir . '/category_' . uniqid() . '.jpg';
+
+        // Try different quality levels to get under 50KB
+        $quality = 85;
+        $maxSize = 50 * 1024; // 50KB in bytes
+
+        do {
+            $image->toJpeg($quality)->save($tempPath);
+            $fileSize = filesize($tempPath);
+
+            if ($fileSize <= $maxSize || $quality <= 30) {
+                break;
+            }
+
+            $quality -= 5;
+        } while ($quality >= 30);
+
+        return $tempPath;
+    }
 }

@@ -36,8 +36,21 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureRestaurantSetu
     Route::middleware(\App\Http\Middleware\EnsureUserIsMenuOwner::class)->group(function () {
         Route::get('/menus', [MenuController::class, 'index'])->name('menu-owner.menus.index');
         Route::post('/menus', [MenuController::class, 'storeOrUpdate'])->name('menu-owner.menus.store-or-update');
+
         Route::get('/categories', [CategoryController::class, 'index'])->name('menu-owner.categories.index');
+        Route::get('/categories/create', [CategoryController::class, 'create'])->name('menu-owner.categories.create');
+        Route::post('/categories', [CategoryController::class, 'store'])->name('menu-owner.categories.store');
+        Route::get('/categories/{category}/edit', [CategoryController::class, 'edit'])->name('menu-owner.categories.edit');
+        Route::put('/categories/{category}', [CategoryController::class, 'update'])->name('menu-owner.categories.update');
+        Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('menu-owner.categories.destroy');
+
         Route::get('/dishes', [DishController::class, 'index'])->name('menu-owner.dishes.index');
+        Route::get('/dishes/create', [DishController::class, 'create'])->name('menu-owner.dishes.create');
+        Route::post('/dishes', [DishController::class, 'store'])->name('menu-owner.dishes.store');
+        Route::get('/dishes/{dish}/edit', [DishController::class, 'edit'])->name('menu-owner.dishes.edit');
+        Route::put('/dishes/{dish}', [DishController::class, 'update'])->name('menu-owner.dishes.update');
+        Route::delete('/dishes/{dish}', [DishController::class, 'destroy'])->name('menu-owner.dishes.destroy');
+
         Route::get('/settings', [MenuSettingController::class, 'index'])->name('menu-owner.settings.index');
         Route::get('/statistics', [MenuStatisticController::class, 'index'])->name('menu-owner.statistics.index');
     });
@@ -46,6 +59,7 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureRestaurantSetu
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::patch('/profile/restaurant', [ProfileController::class, 'updateRestaurantInformation'])->name('profile.restaurant.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 

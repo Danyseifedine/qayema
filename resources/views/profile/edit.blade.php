@@ -17,6 +17,14 @@
                 </div>
             </div>
 
+            @if(auth()->user()->isMenuOwner() || auth()->user()->isAdmin())
+                <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                    <div class="max-w-xl">
+                        @include('profile.partials.update-restaurant-information-form')
+                    </div>
+                </div>
+            @endif
+
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">
                     @include('profile.partials.update-password-form')
