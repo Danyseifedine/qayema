@@ -14,8 +14,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// Public menu route
-Route::get('/menu/{slug}', [PublicMenuController::class, 'show'])->name('public.menu');
+require __DIR__ . '/auth.php';
 
 // Restaurant setup routes (must be before other routes and accessible without setup check)
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -63,4 +62,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-require __DIR__.'/auth.php';
+// Public menu route (must be last to avoid conflicts with other routes)
+Route::get('/{slug}', [PublicMenuController::class, 'show'])
+    ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+    ->name('public.menu');

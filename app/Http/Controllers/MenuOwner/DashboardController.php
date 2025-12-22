@@ -16,6 +16,11 @@ class DashboardController extends Controller
             return redirect()->route('restaurant-setup.index');
         }
 
+        // Redirect to statistics as the default dashboard
+        if ($user->isMenuOwner() || $user->isAdmin()) {
+            return redirect()->route('menu-owner.statistics.index');
+        }
+
         return view('menu-owner.dashboard');
     }
 }

@@ -14,8 +14,8 @@
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                     @auth
                         @if (auth()->user()->isMenuOwner() || auth()->user()->isAdmin())
-                            <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                                {{ __('Dashboard') }}
+                            <x-nav-link :href="route('menu-owner.statistics.index')" :active="request()->routeIs('menu-owner.statistics.*')">
+                                {{ __('Statistics') }}
                             </x-nav-link>
                             <x-nav-link :href="route('menu-owner.menus.index')" :active="request()->routeIs('menu-owner.menus.*')">
                                 {{ __('Menus') }}
@@ -25,9 +25,6 @@
                             </x-nav-link>
                             <x-nav-link :href="route('menu-owner.dishes.index')" :active="request()->routeIs('menu-owner.dishes.*')">
                                 {{ __('Dishes') }}
-                            </x-nav-link>
-                            <x-nav-link :href="route('menu-owner.statistics.index')" :active="request()->routeIs('menu-owner.statistics.*')">
-                                {{ __('Statistics') }}
                             </x-nav-link>
                             <x-nav-link :href="route('menu-owner.settings.index')" :active="request()->routeIs('menu-owner.settings.*')">
                                 {{ __('Settings') }}
@@ -96,8 +93,8 @@
         <div class="pt-2 pb-3 space-y-1">
             @auth
                 @if (auth()->user()->isMenuOwner() || auth()->user()->isAdmin())
-                    <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        {{ __('Dashboard') }}
+                    <x-responsive-nav-link :href="route('menu-owner.statistics.index')" :active="request()->routeIs('menu-owner.statistics.*')">
+                        {{ __('Statistics') }}
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('menu-owner.menus.index')" :active="request()->routeIs('menu-owner.menus.*')">
                         {{ __('Menus') }}
@@ -107,9 +104,6 @@
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('menu-owner.dishes.index')" :active="request()->routeIs('menu-owner.dishes.*')">
                         {{ __('Dishes') }}
-                    </x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('menu-owner.statistics.index')" :active="request()->routeIs('menu-owner.statistics.*')">
-                        {{ __('Statistics') }}
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('menu-owner.settings.index')" :active="request()->routeIs('menu-owner.settings.*')">
                         {{ __('Settings') }}
