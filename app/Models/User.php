@@ -2,14 +2,14 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Filament\Models\Contracts\FilamentUser;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
-class User extends Authenticatable implements HasMedia
+class User extends Authenticatable implements HasMedia, FilamentUser
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, InteractsWithMedia, Notifiable;
@@ -82,8 +82,8 @@ class User extends Authenticatable implements HasMedia
     public function isStep1Complete(): bool
     {
         return ! empty($this->restaurant_name) &&
-               ! empty($this->phone) &&
-               ! empty($this->address);
+            ! empty($this->phone) &&
+            ! empty($this->address);
     }
 
     /**
@@ -122,5 +122,14 @@ class User extends Authenticatable implements HasMedia
         $this->addMediaCollection('cover_image')
             ->singleFile()
             ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp']);
+    }
+
+    /**
+     * Determine if the user can access Filament.
+     */
+    public function canAccessPanel(\Filament\Panel $panel): bool
+    {
+        // Allow admins and menu owners to access Filament by default.
+        return $this->isAdmin();
     }
 }
