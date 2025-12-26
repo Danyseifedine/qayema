@@ -124,9 +124,12 @@ class Menu extends Model
      */
     public function getAverageTimeSpent(): float
     {
-        return $this->statistics()
+        $avg = $this->statistics()
             ->whereNotNull('time_spent')
-            ->avg('time_spent') ?? 0;
+            ->where('time_spent', '>', 0)
+            ->avg('time_spent');
+
+        return $avg ? (float) $avg : 0.0;
     }
 
     /**

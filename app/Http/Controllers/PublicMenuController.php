@@ -91,6 +91,39 @@ class PublicMenuController extends Controller
     }
 
     /**
+     * Track when a visitor leaves the menu.
+     */
+    public function trackExit(Request $request, string $slug)
+    {
+        $menu = Menu::where('slug', $slug)
+            ->where('is_active', true)
+            ->firstOrFail();
+
+        $sessionId = $request->session()->getId();
+        $timeSpent = (int) $request->input('time_spent', 0); // Time in seconds from JavaScript
+
+        // Find the most recent statistic for this session
+        $statistic = MenuStatistic::where('menu_id', $menu->id)
+            ->where('session_id', $sessionId)
+            ->whereDate('viewed_at', today())
+            ->orderBy('viewed_at', 'desc')
+            ->first();
+
+        if ($statistic && $timeSpent > 0) {
+            // Update time spent (use the maximum if already set, or the new value)
+            $currentTimeSpent = $statistic->time_spent ?? 0;
+            $newTimeSpent = max($currentTimeSpent, $timeSpent);
+
+            $statistic->update([
+                'left_at' => now(),
+                'time_spent' => $newTimeSpent,
+            ]);
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
      * Get device type from user agent.
      */
     protected function getDeviceType(?string $userAgent): string

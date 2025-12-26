@@ -6,6 +6,7 @@ use App\Http\Controllers\MenuOwner\DishController;
 use App\Http\Controllers\MenuOwner\MenuController;
 use App\Http\Controllers\MenuOwner\MenuSettingController;
 use App\Http\Controllers\MenuOwner\MenuStatisticController;
+use App\Http\Controllers\MenuOwner\QrCodeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicMenuController;
 use Illuminate\Support\Facades\Route;
@@ -14,7 +15,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';
 
 // Restaurant setup routes (must be before other routes and accessible without setup check)
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -52,6 +53,8 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureRestaurantSetu
 
         Route::get('/settings', [MenuSettingController::class, 'index'])->name('menu-owner.settings.index');
         Route::get('/statistics', [MenuStatisticController::class, 'index'])->name('menu-owner.statistics.index');
+        Route::get('/qr-code', [QrCodeController::class, 'index'])->name('menu-owner.qr-code.index');
+        Route::get('/qr-code/generate', [QrCodeController::class, 'generate'])->name('menu-owner.qr-code.generate');
     });
 });
 
@@ -62,7 +65,11 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// Public menu route (must be last to avoid conflicts with other routes)
+// Public menu routes (must be last to avoid conflicts with other routes)
+Route::post('/{slug}/track-exit', [PublicMenuController::class, 'trackExit'])
+    ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+    ->name('public.menu.track-exit');
+
 Route::get('/{slug}', [PublicMenuController::class, 'show'])
     ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
     ->name('public.menu');

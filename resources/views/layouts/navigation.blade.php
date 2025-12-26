@@ -5,8 +5,8 @@
             <div class="flex">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}">
-                        <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
+                    <a href="{{ route('dashboard') }}" class="flex items-center">
+                        <img src="{{ asset('images/logo/logo.png') }}" alt="MenuX" class="h-12 w-auto">
                     </a>
                 </div>
 
@@ -26,8 +26,8 @@
                             <x-nav-link :href="route('menu-owner.dishes.index')" :active="request()->routeIs('menu-owner.dishes.*')">
                                 {{ __('Dishes') }}
                             </x-nav-link>
-                            <x-nav-link :href="route('menu-owner.settings.index')" :active="request()->routeIs('menu-owner.settings.*')">
-                                {{ __('Settings') }}
+                            <x-nav-link :href="route('menu-owner.qr-code.index')" :active="request()->routeIs('menu-owner.qr-code.*')">
+                                {{ __('QR Code') }}
                             </x-nav-link>
                         @endif
                     @endauth
@@ -105,8 +105,8 @@
                     <x-responsive-nav-link :href="route('menu-owner.dishes.index')" :active="request()->routeIs('menu-owner.dishes.*')">
                         {{ __('Dishes') }}
                     </x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('menu-owner.settings.index')" :active="request()->routeIs('menu-owner.settings.*')">
-                        {{ __('Settings') }}
+                    <x-responsive-nav-link :href="route('menu-owner.qr-code.index')" :active="request()->routeIs('menu-owner.qr-code.*')">
+                        {{ __('QR Code') }}
                     </x-responsive-nav-link>
                 @endif
             @endauth
