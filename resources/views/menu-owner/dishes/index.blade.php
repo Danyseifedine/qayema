@@ -111,20 +111,8 @@
                                         ${{ number_format($dish->price, 2) }}</p>
                                 @endif
 
-                                @if ($dish->description)
-                                    <p class="text-sm text-gray-600 mb-4 line-clamp-2">{{ $dish->description }}</p>
-                                @endif
 
                                 <div class="flex flex-wrap gap-2 mb-4 text-xs text-gray-500">
-                                    @if ($dish->prep_time)
-                                        <span>⏱ {{ $dish->prep_time }} min</span>
-                                    @endif
-                                    @if ($dish->serving_size)
-                                        <span>🍽 {{ $dish->serving_size }}</span>
-                                    @endif
-                                    @if ($dish->allergens && count($dish->allergens) > 0)
-                                        <span>⚠️ {{ implode(', ', $dish->allergens) }}</span>
-                                    @endif
                                 </div>
 
                                 <div class="flex items-center gap-2">

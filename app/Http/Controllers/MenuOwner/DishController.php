@@ -73,11 +73,11 @@ class DishController extends Controller
         $data = $request->validated();
         $data['menu_id'] = $menu->id;
 
-        // Handle allergens array
-        if ($request->has('allergens')) {
-            $allergens = array_filter(array_map('trim', explode(',', $request->input('allergens', ''))));
-            $data['allergens'] = ! empty($allergens) ? $allergens : null;
-        }
+        // Set removed fields to null
+        $data['description'] = null;
+        $data['prep_time'] = null;
+        $data['serving_size'] = null;
+        $data['allergens'] = null;
 
         $dish = Dish::create($data);
 
@@ -155,11 +155,11 @@ class DishController extends Controller
 
         $data = $request->validated();
 
-        // Handle allergens array
-        if ($request->has('allergens')) {
-            $allergens = array_filter(array_map('trim', explode(',', $request->input('allergens', ''))));
-            $data['allergens'] = ! empty($allergens) ? $allergens : null;
-        }
+        // Set removed fields to null
+        $data['description'] = null;
+        $data['prep_time'] = null;
+        $data['serving_size'] = null;
+        $data['allergens'] = null;
 
         $dish->update($data);
 

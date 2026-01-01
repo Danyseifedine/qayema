@@ -53,6 +53,7 @@ class MenuController extends Controller
         } else {
             // Create new menu
             $data['user_id'] = $user->id;
+            $data['dish_limit'] = 20; // Set default dish limit
             $menu = Menu::create($data);
             $message = 'Menu created successfully!';
         }

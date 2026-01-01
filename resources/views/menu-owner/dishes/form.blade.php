@@ -55,45 +55,19 @@
                             </div>
                         </div>
 
+
                         <div>
-                            <x-input-label for="description" :value="__('Description (Optional)')" />
-                            <textarea id="description" name="description" rows="4"
-                                class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm px-3 py-2"
-                                placeholder="Enter a description for this dish (optional)">{{ old('description', $dish?->description) }}</textarea>
-                            <p class="mt-1 text-sm text-gray-500">This field is optional</p>
-                            <x-input-error class="mt-2" :messages="$errors->get('description')" />
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div>
-                                <x-input-label for="price" :value="__('Price (Optional)')" />
-                                <div class="mt-1 relative">
-                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <span class="text-gray-500 sm:text-sm">$</span>
-                                    </div>
-                                    <x-text-input id="price" name="price" type="number" step="0.01"
-                                        min="0" class="pl-7 block w-full" :value="old('price', $dish?->price)" placeholder="0.00" />
+                            <x-input-label for="price" :value="__('Price (Optional)')" />
+                            <div class="mt-1 relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="text-gray-500 sm:text-sm">$</span>
                                 </div>
-                                <p class="mt-1 text-sm text-gray-500">This field is optional. Leave empty for home cook
-                                    menus</p>
-                                <x-input-error class="mt-2" :messages="$errors->get('price')" />
+                                <x-text-input id="price" name="price" type="number" step="0.01"
+                                    min="0" class="pl-7 block w-full" :value="old('price', $dish?->price)" placeholder="0.00" />
                             </div>
-
-                            <div>
-                                <x-input-label for="prep_time" :value="__('Prep Time (minutes) (Optional)')" />
-                                <x-text-input id="prep_time" name="prep_time" type="number" min="0"
-                                    class="mt-1 block w-full" :value="old('prep_time', $dish?->prep_time)" placeholder="e.g., 30" />
-                                <p class="mt-1 text-sm text-gray-500">This field is optional</p>
-                                <x-input-error class="mt-2" :messages="$errors->get('prep_time')" />
-                            </div>
-
-                            <div>
-                                <x-input-label for="serving_size" :value="__('Serving Size (Optional)')" />
-                                <x-text-input id="serving_size" name="serving_size" type="text"
-                                    class="mt-1 block w-full" :value="old('serving_size', $dish?->serving_size)" placeholder="e.g., 2-3 people" />
-                                <p class="mt-1 text-sm text-gray-500">This field is optional</p>
-                                <x-input-error class="mt-2" :messages="$errors->get('serving_size')" />
-                            </div>
+                            <p class="mt-1 text-sm text-gray-500">This field is optional. Leave empty for home cook
+                                menus</p>
+                            <x-input-error class="mt-2" :messages="$errors->get('price')" />
                         </div>
 
                         <div>
@@ -106,17 +80,6 @@
                             <x-input-error class="mt-2" :messages="$errors->get('ingredients')" />
                         </div>
 
-                        <div>
-                            <x-input-label for="allergens" :value="__('Allergens (Optional)')" />
-                            <x-text-input id="allergens" name="allergens" type="text" class="mt-1 block w-full"
-                                :value="old(
-                                    'allergens',
-                                    $dish && $dish->allergens ? implode(', ', $dish->allergens) : '',
-                                )" placeholder="e.g., Gluten, Dairy, Nuts (optional)" />
-                            <p class="mt-1 text-sm text-gray-500">This field is optional. Separate allergens with commas
-                                (e.g., Gluten, Dairy, Nuts)</p>
-                            <x-input-error class="mt-2" :messages="$errors->get('allergens')" />
-                        </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>

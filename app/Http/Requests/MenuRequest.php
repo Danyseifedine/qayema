@@ -36,7 +36,6 @@ class MenuRequest extends FormRequest
                 Rule::unique(Menu::class, 'slug')->ignore($menu?->id),
             ],
             'menu_style' => ['required', 'in:restaurant,home'],
-            'dish_limit' => ['required', 'integer', 'min:1', 'max:1000'],
             'is_active' => ['boolean'],
         ];
     }
