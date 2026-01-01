@@ -2,11 +2,11 @@
 
 namespace App\Filament\Admin\Resources\MenuSettings\Schemas;
 
-use App\Models\Menu;
-use Filament\Forms\Components\ColorPicker;
+use App\Models\Setting;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
 
 class MenuSettingForm
@@ -22,55 +22,88 @@ class MenuSettingForm
                     ->searchable()
                     ->preload()
                     ->required()
-                    ->unique(ignoreRecord: true)
                     ->columnSpanFull(),
-                ColorPicker::make('theme_color')
-                    ->label('Theme Color')
-                    ->default('#3b82f6')
-                    ->helperText('Primary color for the menu theme'),
-                SpatieMediaLibraryFileUpload::make('logo')
-                    ->label('Logo')
-                    ->collection('logo')
-                    ->image()
-                    ->maxSize(2048)
-                    ->imageEditor()
-                    ->imageEditorAspectRatios([
-                        '1:1',
-                        '16:9',
-                        '4:3',
-                    ])
-                    ->helperText('Upload menu logo (max 2MB)'),
-                SpatieMediaLibraryFileUpload::make('cover_image')
-                    ->label('Cover Image')
-                    ->collection('cover_image')
-                    ->image()
-                    ->maxSize(5120)
-                    ->imageEditor()
-                    ->imageEditorAspectRatios([
-                        '16:9',
-                        '21:9',
-                        null,
-                    ])
-                    ->helperText('Upload cover image for the menu (max 5MB)')
-                    ->columnSpanFull(),
-                TextInput::make('currency')
-                    ->label('Currency')
-                    ->default('USD')
-                    ->maxLength(3)
-                    ->required()
-                    ->helperText('Currency code (e.g., USD, EUR, GBP)'),
-                Select::make('language')
-                    ->label('Language')
-                    ->options([
-                        'en' => 'English',
-                        'fr' => 'French',
-                        'es' => 'Spanish',
-                        'ar' => 'Arabic',
-                        'de' => 'German',
-                    ])
+                Select::make('setting_id')
+                    ->label('Setting')
+                    ->relationship('setting', 'title')
                     ->searchable()
-                    ->default('en')
+                    ->preload()
+                    ->required()
+                    ->unique(ignoreRecord: true, modifyRuleUsing: function ($rule, $get) {
+                        return $rule->where('menu_id', $get('menu_id'));
+                    })
+                    ->helperText('Select the setting to configure for this menu')
+                    ->reactive()
+                    ->afterStateUpdated(function ($state, callable $set) {
+                        // Reset value when setting changes
+                        $set('value', null);
+                    })
+                    ->columnSpanFull(),
+                TextInput::make('value')
+                    ->label('Value')
+                    ->helperText('Enter the setting value')
+                    ->visible(function ($get, $record) {
+                        $settingId = $get('setting_id');
+                        if (! $settingId) {
+                            return false;
+                        }
+
+                        $setting = $record?->setting ?? Setting::find($settingId);
+                        if (! $setting) {
+                            return false;
+                        }
+
+                        return in_array($setting->type, ['string', 'integer', 'float']);
+                    })
+                    ->numeric(function ($get, $record) {
+                        $settingId = $get('setting_id');
+                        if (! $settingId) {
+                            return false;
+                        }
+
+                        $setting = $record?->setting ?? Setting::find($settingId);
+
+                        return $setting && in_array($setting->type, ['integer', 'float']);
+                    })
+                    ->required(function ($get, $record) {
+                        $settingId = $get('setting_id');
+                        if (! $settingId) {
+                            return false;
+                        }
+
+                        $setting = $record?->setting ?? Setting::find($settingId);
+
+                        return $setting && $setting->type !== 'boolean';
+                    }),
+                Textarea::make('value')
+                    ->label('Value')
+                    ->helperText('Enter JSON value (e.g., {"key": "value"})')
+                    ->rows(4)
+                    ->visible(function ($get, $record) {
+                        $settingId = $get('setting_id');
+                        if (! $settingId) {
+                            return false;
+                        }
+
+                        $setting = $record?->setting ?? Setting::find($settingId);
+
+                        return $setting && $setting->type === 'json';
+                    })
                     ->required(),
+                Toggle::make('value')
+                    ->label('Value')
+                    ->helperText('Toggle the setting on or off')
+                    ->visible(function ($get, $record) {
+                        $settingId = $get('setting_id');
+                        if (! $settingId) {
+                            return false;
+                        }
+
+                        $setting = $record?->setting ?? Setting::find($settingId);
+
+                        return $setting && $setting->type === 'boolean';
+                    })
+                    ->default(false),
             ]);
     }
 }

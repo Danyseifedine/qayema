@@ -4,35 +4,26 @@ use App\Models\Setting;
 
 class Utils {}
 
-if (! function_exists('setting')) {
+if (! function_exists('menu_setting')) {
     /**
-     * Get or set a setting value
+     * Get a menu setting value by key
      *
-     * @param  string|null  $key  The setting key
+     * @param  int  $menuId  The menu ID
+     * @param  string  $key  The setting key
      * @param  mixed  $default  Default value if setting doesn't exist
      */
-    function setting(?string $key = null, mixed $default = null): mixed
+    function menu_setting(int $menuId, string $key, mixed $default = null): mixed
     {
-        if ($key === null) {
-            return Setting::getAllGrouped();
+        $setting = \App\Models\Setting::where('key', $key)->first();
+
+        if (! $setting) {
+            return $default;
         }
 
-        return Setting::get($key, $default);
-    }
-}
+        $menuSetting = \App\Models\MenuSetting::where('menu_id', $menuId)
+            ->where('setting_id', $setting->id)
+            ->first();
 
-if (! function_exists('settings')) {
-    /**
-     * Get settings by group or all settings
-     *
-     * @param  string|null  $group  The settings group
-     */
-    function settings(?string $group = null): array
-    {
-        if ($group === null) {
-            return Setting::getAllGrouped();
-        }
-
-        return Setting::getByGroup($group);
+        return $menuSetting?->value ?? $default;
     }
 }

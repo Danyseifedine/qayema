@@ -4,18 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Spatie\MediaLibrary\HasMedia;
-use Spatie\MediaLibrary\InteractsWithMedia;
 
-class MenuSetting extends Model implements HasMedia
+class MenuSetting extends Model
 {
-    use InteractsWithMedia;
-
     protected $fillable = [
         'menu_id',
-        'theme_color',
-        'currency',
-        'language',
+        'setting_id',
+        'value',
     ];
 
     /**
@@ -27,16 +22,51 @@ class MenuSetting extends Model implements HasMedia
     }
 
     /**
-     * Register media collections.
+     * Get the setting definition.
      */
-    public function registerMediaCollections(): void
+    public function setting(): BelongsTo
     {
-        $this->addMediaCollection('logo')
-            ->singleFile()
-            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp']);
+        return $this->belongsTo(Setting::class);
+    }
 
-        $this->addMediaCollection('cover_image')
-            ->singleFile()
-            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp']);
+    /**
+     * Cast the value based on the setting type.
+     */
+    public function getValueAttribute($value): mixed
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $type = $this->setting?->type ?? 'string';
+
+        return match ($type) {
+            'boolean' => filter_var($value, FILTER_VALIDATE_BOOLEAN),
+            'integer' => (int) $value,
+            'float' => (float) $value,
+            'json' => json_decode($value, true),
+            default => $value,
+        };
+    }
+
+    /**
+     * Set the value attribute, converting it to string for storage.
+     */
+    public function setValueAttribute($value): void
+    {
+        if ($value === null) {
+            $this->attributes['value'] = null;
+
+            return;
+        }
+
+        // Get type from setting relationship
+        $type = $this->setting?->type ?? $this->attributes['type'] ?? 'string';
+
+        $this->attributes['value'] = match ($type) {
+            'json' => is_string($value) ? $value : json_encode($value),
+            'boolean' => $value ? '1' : '0',
+            default => (string) $value,
+        };
     }
 }

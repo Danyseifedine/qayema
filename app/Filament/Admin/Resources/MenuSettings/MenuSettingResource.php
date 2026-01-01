@@ -20,11 +20,11 @@ class MenuSettingResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCog;
 
-    protected static ?string $recordTitleAttribute = 'menu.name';
+    protected static ?string $recordTitleAttribute = 'setting.title';
 
     protected static ?string $navigationLabel = 'Menu Settings';
 
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 6;
 
     public static function form(Schema $schema): Schema
     {

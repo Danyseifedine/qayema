@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Admin\Resources\MenuSettings\Tables;
+namespace App\Filament\Admin\Resources\Settings\Tables;
 
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -9,28 +9,24 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
-class MenuSettingsTable
+class SettingsTable
 {
     public static function configure(Table $table): Table
     {
         return $table
             ->columns([
-                TextColumn::make('menu.name')
-                    ->label('Menu')
+                TextColumn::make('title')
+                    ->label('Title')
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
-                TextColumn::make('setting.title')
-                    ->label('Setting')
-                    ->searchable()
-                    ->sortable(),
-                TextColumn::make('setting.key')
+                TextColumn::make('key')
                     ->label('Key')
                     ->searchable()
                     ->sortable()
                     ->badge()
                     ->color('gray'),
-                TextColumn::make('setting.type')
+                TextColumn::make('type')
                     ->label('Type')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
@@ -41,24 +37,7 @@ class MenuSettingsTable
                         default => 'gray',
                     })
                     ->sortable(),
-                TextColumn::make('value')
-                    ->label('Value')
-                    ->searchable()
-                    ->limit(50)
-                    ->formatStateUsing(function ($state, $record) {
-                        $type = $record->setting?->type ?? 'string';
-
-                        if ($type === 'boolean') {
-                            return $state ? 'Yes' : 'No';
-                        }
-
-                        if ($type === 'json') {
-                            return json_encode($state);
-                        }
-
-                        return $state ?? '—';
-                    }),
-                TextColumn::make('setting.description')
+                TextColumn::make('description')
                     ->label('Description')
                     ->limit(30)
                     ->toggleable(),
@@ -68,9 +47,8 @@ class MenuSettingsTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('setting.type')
+                SelectFilter::make('type')
                     ->label('Type')
-                    ->relationship('setting', 'type')
                     ->options([
                         'string' => 'String',
                         'boolean' => 'Boolean',
@@ -78,16 +56,6 @@ class MenuSettingsTable
                         'float' => 'Float',
                         'json' => 'JSON',
                     ]),
-                SelectFilter::make('menu_id')
-                    ->label('Menu')
-                    ->relationship('menu', 'name')
-                    ->searchable()
-                    ->preload(),
-                SelectFilter::make('setting_id')
-                    ->label('Setting')
-                    ->relationship('setting', 'title')
-                    ->searchable()
-                    ->preload(),
             ])
             ->recordActions([
                 EditAction::make(),

@@ -66,9 +66,9 @@ class Menu extends Model
     /**
      * Get the settings for the menu.
      */
-    public function settings(): HasOne
+    public function settings(): HasMany
     {
-        return $this->hasOne(MenuSetting::class);
+        return $this->hasMany(MenuSetting::class);
     }
 
     /**
