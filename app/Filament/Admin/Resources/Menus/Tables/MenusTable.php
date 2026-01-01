@@ -27,12 +27,12 @@ class MenusTable
                     ->sortable(),
                 TextColumn::make('menu_style')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn(string $state): string => match ($state) {
                         'restaurant' => 'success',
                         'home' => 'info',
                         default => 'gray',
                     })
-                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
                         'restaurant' => 'Restaurant',
                         'home' => 'Home Cook',
                         default => $state,
