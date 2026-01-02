@@ -59,6 +59,18 @@
                     </div>
                 </div>
             @else
+                @if ($menu)
+                    <div class="mb-4 text-sm text-gray-600">
+                        <span class="font-semibold">{{ $categories->count() }}</span> / <span
+                            class="font-semibold">{{ $menu->category_limit }}</span> categories
+                        @if ($menu->hasReachedCategoryLimit())
+                            <span class="ml-2 text-red-600 font-semibold">(Limit reached)</span>
+                        @else
+                            <span class="ml-2 text-green-600">({{ $menu->getRemainingCategorySlots() }} remaining)</span>
+                        @endif
+                    </div>
+                @endif
+
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     @foreach ($categories as $category)
                         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg hover:shadow-md transition-shadow">

@@ -2,7 +2,6 @@
 
 namespace App\Filament\Admin\Resources\Menus\Schemas;
 
-use App\Models\User;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -48,9 +47,16 @@ class MenuForm
                     ->label('Dish Limit')
                     ->numeric()
                     ->required()
-                    ->default(20)
+                    ->default(40)
                     ->minValue(1)
                     ->helperText('Maximum number of dishes allowed for this menu'),
+                TextInput::make('category_limit')
+                    ->label('Category Limit')
+                    ->numeric()
+                    ->required()
+                    ->default(10)
+                    ->minValue(1)
+                    ->helperText('Maximum number of categories allowed for this menu'),
                 Toggle::make('is_active')
                     ->label('Active')
                     ->default(true)

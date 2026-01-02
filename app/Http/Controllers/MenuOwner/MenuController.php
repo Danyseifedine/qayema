@@ -41,7 +41,7 @@ class MenuController extends Controller
         $slug = $data['slug'];
         $counter = 1;
         while (Menu::where('slug', $slug)->where('id', '!=', $menu?->id)->exists()) {
-            $slug = $data['slug'].'-'.$counter;
+            $slug = $data['slug'] . '-' . $counter;
             $counter++;
         }
         $data['slug'] = $slug;
@@ -53,8 +53,10 @@ class MenuController extends Controller
         } else {
             // Create new menu
             $data['user_id'] = $user->id;
-            $data['dish_limit'] = 20; // Set default dish limit
+            $data['dish_limit'] = 40; // Set default dish limit
+            $data['category_limit'] = 10; // Set default category limit
             $menu = Menu::create($data);
+            $menu->setDefaultSettings(); // Set default menu settings
             $message = 'Menu created successfully!';
         }
 

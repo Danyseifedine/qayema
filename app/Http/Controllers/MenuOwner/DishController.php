@@ -42,6 +42,11 @@ class DishController extends Controller
                 ->with('error', 'Please create a menu first before adding dishes.');
         }
 
+        if ($menu->hasReachedDishLimit()) {
+            return redirect()->route('menu-owner.dishes.index')
+                ->with('error', 'You have reached the maximum number of dishes allowed.');
+        }
+
         $categories = Category::where('menu_id', $menu->id)
             ->orderBy('display_order')
             ->orderBy('name')

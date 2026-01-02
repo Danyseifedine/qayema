@@ -19,9 +19,9 @@ class CategoryController extends Controller
 
         $categories = $menu
             ? Category::where('menu_id', $menu->id)
-            ->orderBy('display_order')
-            ->orderBy('name')
-            ->get()
+                ->orderBy('display_order')
+                ->orderBy('name')
+                ->get()
             : collect();
 
         return view('menu-owner.categories.index', [
@@ -40,6 +40,11 @@ class CategoryController extends Controller
                 ->with('error', 'Please create a menu first before adding categories.');
         }
 
+        if ($menu->hasReachedCategoryLimit()) {
+            return redirect()->route('menu-owner.categories.index')
+                ->with('error', 'You have reached the maximum number of categories allowed.');
+        }
+
         return view('menu-owner.categories.form', [
             'category' => null,
             'menu' => $menu,
@@ -54,6 +59,11 @@ class CategoryController extends Controller
         if (! $menu) {
             return redirect()->route('menu-owner.menus.index')
                 ->with('error', 'Please create a menu first before adding categories.');
+        }
+
+        if ($menu->hasReachedCategoryLimit()) {
+            return redirect()->route('menu-owner.categories.index')
+                ->with('error', 'You have reached the maximum number of categories allowed.');
         }
 
         $data = $request->validated();
