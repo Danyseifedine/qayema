@@ -7,6 +7,7 @@ use App\Http\Controllers\MenuOwner\MenuController;
 use App\Http\Controllers\MenuOwner\MenuSettingController;
 use App\Http\Controllers\MenuOwner\MenuStatisticController;
 use App\Http\Controllers\MenuOwner\QrCodeController;
+use App\Http\Controllers\MenuOwner\SocialLinkController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicMenuController;
 use Illuminate\Support\Facades\Route;
@@ -15,7 +16,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
 
 // Restaurant setup routes (must be before other routes and accessible without setup check)
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -52,9 +53,17 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureRestaurantSetu
         Route::delete('/dishes/{dish}', [DishController::class, 'destroy'])->name('menu-owner.dishes.destroy');
 
         Route::get('/settings', [MenuSettingController::class, 'index'])->name('menu-owner.settings.index');
+        Route::put('/settings', [MenuSettingController::class, 'update'])->name('menu-owner.settings.update');
         Route::get('/statistics', [MenuStatisticController::class, 'index'])->name('menu-owner.statistics.index');
         Route::get('/qr-code', [QrCodeController::class, 'index'])->name('menu-owner.qr-code.index');
         Route::get('/qr-code/generate', [QrCodeController::class, 'generate'])->name('menu-owner.qr-code.generate');
+
+        Route::get('/social-links', [SocialLinkController::class, 'index'])->name('menu-owner.social-links.index');
+        Route::get('/social-links/create', [SocialLinkController::class, 'create'])->name('menu-owner.social-links.create');
+        Route::post('/social-links', [SocialLinkController::class, 'store'])->name('menu-owner.social-links.store');
+        Route::get('/social-links/{socialLink}/edit', [SocialLinkController::class, 'edit'])->name('menu-owner.social-links.edit');
+        Route::put('/social-links/{socialLink}', [SocialLinkController::class, 'update'])->name('menu-owner.social-links.update');
+        Route::delete('/social-links/{socialLink}', [SocialLinkController::class, 'destroy'])->name('menu-owner.social-links.destroy');
     });
 });
 

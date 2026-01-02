@@ -29,6 +29,12 @@
                             <x-nav-link :href="route('menu-owner.qr-code.index')" :active="request()->routeIs('menu-owner.qr-code.*')">
                                 {{ __('QR Code') }}
                             </x-nav-link>
+                            <x-nav-link :href="route('menu-owner.social-links.index')" :active="request()->routeIs('menu-owner.social-links.*')">
+                                {{ __('Social Links') }}
+                            </x-nav-link>
+                            <x-nav-link :href="route('menu-owner.settings.index')" :active="request()->routeIs('menu-owner.settings.*')">
+                                {{ __('Settings') }}
+                            </x-nav-link>
                         @endif
                     @endauth
                 </div>
@@ -107,6 +113,12 @@
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('menu-owner.qr-code.index')" :active="request()->routeIs('menu-owner.qr-code.*')">
                         {{ __('QR Code') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('menu-owner.social-links.index')" :active="request()->routeIs('menu-owner.social-links.*')">
+                        {{ __('Social Links') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('menu-owner.settings.index')" :active="request()->routeIs('menu-owner.settings.*')">
+                        {{ __('Settings') }}
                     </x-responsive-nav-link>
                 @endif
             @endauth

@@ -11,12 +11,6 @@ class MenuSocialLink extends Model
         'menu_id',
         'platform',
         'url',
-        'display_order',
-        'is_active',
-    ];
-
-    protected $casts = [
-        'is_active' => 'boolean',
     ];
 
     /**

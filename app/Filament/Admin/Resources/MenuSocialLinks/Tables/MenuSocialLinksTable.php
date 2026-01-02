@@ -7,7 +7,6 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
@@ -25,31 +24,17 @@ class MenuSocialLinksTable
                 TextColumn::make('platform')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'facebook' => 'blue',
                         'instagram' => 'pink',
-                        'twitter' => 'sky',
-                        'youtube' => 'red',
+                        'x' => 'sky',
+                        'facebook' => 'blue',
                         'tiktok' => 'gray',
-                        'linkedin' => 'blue',
-                        'pinterest' => 'red',
-                        'snapchat' => 'yellow',
-                        'whatsapp' => 'green',
-                        'telegram' => 'blue',
-                        'website' => 'purple',
                         default => 'gray',
                     })
                     ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'facebook' => 'Facebook',
                         'instagram' => 'Instagram',
-                        'twitter' => 'Twitter / X',
-                        'youtube' => 'YouTube',
+                        'x' => 'X (Twitter)',
+                        'facebook' => 'Facebook',
                         'tiktok' => 'TikTok',
-                        'linkedin' => 'LinkedIn',
-                        'pinterest' => 'Pinterest',
-                        'snapchat' => 'Snapchat',
-                        'whatsapp' => 'WhatsApp',
-                        'telegram' => 'Telegram',
-                        'website' => 'Website',
                         default => ucfirst($state),
                     })
                     ->searchable()
@@ -60,11 +45,6 @@ class MenuSocialLinksTable
                     ->copyable()
                     ->searchable()
                     ->toggleable(),
-                TextColumn::make('display_order')
-                    ->label('Order')
-                    ->sortable(),
-                ToggleColumn::make('is_active')
-                    ->label('Active'),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -74,24 +54,10 @@ class MenuSocialLinksTable
                 SelectFilter::make('platform')
                     ->label('Platform')
                     ->options([
-                        'facebook' => 'Facebook',
                         'instagram' => 'Instagram',
-                        'twitter' => 'Twitter / X',
-                        'youtube' => 'YouTube',
+                        'x' => 'X (Twitter)',
+                        'facebook' => 'Facebook',
                         'tiktok' => 'TikTok',
-                        'linkedin' => 'LinkedIn',
-                        'pinterest' => 'Pinterest',
-                        'snapchat' => 'Snapchat',
-                        'whatsapp' => 'WhatsApp',
-                        'telegram' => 'Telegram',
-                        'website' => 'Website',
-                        'other' => 'Other',
-                    ]),
-                SelectFilter::make('is_active')
-                    ->label('Status')
-                    ->options([
-                        1 => 'Active',
-                        0 => 'Inactive',
                     ]),
                 SelectFilter::make('menu_id')
                     ->label('Menu')
@@ -108,6 +74,6 @@ class MenuSocialLinksTable
                     DeleteBulkAction::make(),
                 ]),
             ])
-            ->defaultSort('display_order');
+            ->defaultSort('created_at');
     }
 }

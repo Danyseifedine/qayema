@@ -77,7 +77,7 @@ class Menu extends Model
      */
     public function socialLinks(): HasMany
     {
-        return $this->hasMany(MenuSocialLink::class)->where('is_active', true)->orderBy('display_order');
+        return $this->hasMany(MenuSocialLink::class);
     }
 
     /**
