@@ -46,17 +46,9 @@ class PublicMenuController extends Controller
 
         // Get menu settings
         $settings = $menu->getSettings();
-        $design = $settings['menu_design'] ?? 'default';
 
-        // Determine which design view to use
-        $viewMap = [
-            'default' => 'public.menu.designs.default',
-            'modern' => 'public.menu.designs.modern',
-            'minimal' => 'public.menu.designs.minimal',
-            'classic' => 'public.menu.designs.classic',
-        ];
-
-        $viewName = $viewMap[$design] ?? $viewMap['default'];
+        // Use default design only (other designs removed)
+        $viewName = 'public.menu.designs.default';
 
         return view($viewName, [
             'menu' => $menu,

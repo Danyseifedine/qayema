@@ -80,6 +80,7 @@ class MenuSettingController extends Controller
                     'share_button_position' => 'bottom_right',
                     'font_family' => 'sans',
                     'price_position' => 'bottom_right',
+                    'category_layout' => 'grid',
                     'category_collapsible' => true,
                     'category_default_state' => 'open',
                 ];
@@ -101,7 +102,7 @@ class MenuSettingController extends Controller
                 $groupedSettings['display']['settings'][] = $settingData;
             } elseif (in_array($setting->key, ['currency_enabled', 'exchange_currency', 'exchange_rate', 'show_prices'])) {
                 $groupedSettings['currency']['settings'][] = $settingData;
-            } elseif (in_array($setting->key, ['menu_design', 'font_family', 'price_position', 'category_collapsible', 'category_default_state'])) {
+            } elseif (in_array($setting->key, ['menu_design', 'font_family', 'price_position', 'category_layout', 'category_collapsible', 'category_default_state'])) {
                 $groupedSettings['design']['settings'][] = $settingData;
             } else {
                 $groupedSettings['general']['settings'][] = $settingData;
@@ -110,7 +111,7 @@ class MenuSettingController extends Controller
 
         // Sort design settings: menu_design first, then default-only settings, then font_family
         if (isset($groupedSettings['design']['settings'])) {
-            $designOrder = ['menu_design', 'price_position', 'category_collapsible', 'category_default_state', 'font_family'];
+            $designOrder = ['menu_design', 'category_layout', 'price_position', 'category_collapsible', 'category_default_state', 'font_family'];
             usort($groupedSettings['design']['settings'], function ($a, $b) use ($designOrder) {
                 $posA = array_search($a['key'], $designOrder);
                 $posB = array_search($b['key'], $designOrder);

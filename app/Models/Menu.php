@@ -207,6 +207,7 @@ class Menu extends Model
             'share_button_position' => 'bottom_right',
             'font_family' => 'sans',
             'price_position' => 'bottom_right',
+            'category_layout' => 'grid',
             'category_collapsible' => true,
             'category_default_state' => 'open',
         ];
@@ -254,6 +255,7 @@ class Menu extends Model
             'share_button_position' => 'bottom_right',
             'font_family' => 'sans',
             'price_position' => 'bottom_right',
+            'category_layout' => 'grid',
             'category_collapsible' => true,
             'category_default_state' => 'open',
         ];

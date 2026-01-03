@@ -62,21 +62,54 @@
         type="website" :siteName="config('app.name', 'MenuX')" />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    
+
     <!-- Google Fonts - Load all fonts for menu designs -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Open+Sans:wght@400;600;700&family=Lato:wght@400;700&family=Montserrat:wght@400;600;700&family=Poppins:wght@400;500;600;700&family=Raleway:wght@400;600;700&family=Nunito:wght@400;600;700&family=Ubuntu:wght@400;500;700&family=Source+Sans+Pro:wght@400;600;700&family=PT+Sans:wght@400;700&family=Noto+Sans:wght@400;700&family=Work+Sans:wght@400;600;700&family=Rubik:wght@400;500;700&family=Quicksand:wght@400;600;700&family=Karla:wght@400;700&family=DM+Sans:wght@400;500;700&family=Manrope:wght@400;600;700&family=Outfit:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;600;700&family=Space+Grotesk:wght@400;600;700&family=Josefin+Sans:wght@400;600;700&family=Playfair+Display:wght@400;700&family=Merriweather:wght@400;700&family=Crimson+Text:wght@400;600;700&family=Lora:wght@400;700&family=Libre+Baskerville:wght@400;700&family=PT+Serif:wght@400;700&family=EB+Garamond:wght@400;700&family=Cormorant+Garamond:wght@400;700&family=Libre+Caslon+Text:wght@400;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Open+Sans:wght@400;600;700&family=Lato:wght@400;700&family=Montserrat:wght@400;600;700&family=Poppins:wght@400;500;600;700&family=Raleway:wght@400;600;700&family=Nunito:wght@400;600;700&family=Ubuntu:wght@400;500;700&family=Source+Sans+Pro:wght@400;600;700&family=PT+Sans:wght@400;700&family=Noto+Sans:wght@400;700&family=Work+Sans:wght@400;600;700&family=Rubik:wght@400;500;700&family=Quicksand:wght@400;600;700&family=Karla:wght@400;700&family=DM+Sans:wght@400;500;700&family=Manrope:wght@400;600;700&family=Outfit:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;600;700&family=Space+Grotesk:wght@400;600;700&family=Josefin+Sans:wght@400;600;700&family=Playfair+Display:wght@400;700&family=Merriweather:wght@400;700&family=Crimson+Text:wght@400;600;700&family=Lora:wght@400;700&family=Libre+Baskerville:wght@400;700&family=PT+Serif:wght@400;700&family=EB+Garamond:wght@400;700&family=Cormorant+Garamond:wght@400;700&family=Libre+Caslon+Text:wght@400;700&display=swap"
+        rel="stylesheet">
 
     <style>
         [x-cloak] {
             display: none !important;
         }
 
-        html, body {
+        html,
+        body {
             margin: 0;
             padding: 0;
             overflow-x: hidden;
+        }
+
+        /* Hide scrollbar for tabs */
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            /* IE and Edge */
+            scrollbar-width: none;
+            /* Firefox */
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+            /* Chrome, Safari, Opera */
+        }
+
+        /* Horizontal bounce animation for scroll indicator */
+        @keyframes bounce-x {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            50% {
+                transform: translateX(4px);
+            }
+        }
+
+        .animate-bounce-x {
+            animation: bounce-x 1s ease-in-out infinite;
         }
 
         /* Dynamic Font Family */
@@ -97,4 +130,3 @@
         }
     </style>
 </head>
-

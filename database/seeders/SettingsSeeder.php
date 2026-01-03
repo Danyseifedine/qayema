@@ -128,13 +128,19 @@ class SettingsSeeder extends Seeder
                 'type' => 'string',
             ],
             [
-                'title' => 'Collapsible Categories (Default Design)',
+                'title' => 'Category Layout',
+                'key' => 'category_layout',
+                'description' => 'Layout style for displaying categories',
+                'type' => 'string',
+            ],
+            [
+                'title' => 'Collapsible Categories',
                 'key' => 'category_collapsible',
-                'description' => 'Enable collapsible category sections (only for default design)',
+                'description' => 'Enable collapsible category sections (only for grid layout)',
                 'type' => 'boolean',
             ],
             [
-                'title' => 'Category Default State (Default Design)',
+                'title' => 'Category Default State',
                 'key' => 'category_default_state',
                 'description' => 'Default state for categories when collapsible is enabled (open or closed)',
                 'type' => 'string',
