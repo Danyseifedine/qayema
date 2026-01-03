@@ -12,50 +12,59 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Check which columns exist before trying to drop them
-        $columns = DB::select('SHOW COLUMNS FROM `menu_settings`');
-        $existingColumns = array_column($columns, 'Field');
-
-        $columnsToDrop = [];
-        if (in_array('title', $existingColumns)) {
-            $columnsToDrop[] = 'title';
-        }
-        if (in_array('key', $existingColumns)) {
-            $columnsToDrop[] = 'key';
-        }
-        if (in_array('description', $existingColumns)) {
-            $columnsToDrop[] = 'description';
-        }
-        if (in_array('type', $existingColumns)) {
-            $columnsToDrop[] = 'type';
-        }
+        // Check which columns actually exist using Schema facade
+        $existingColumns = Schema::getColumnListing('menu_settings');
 
         // Drop the unique index using raw SQL if it exists
-        // MySQL might be using it for the foreign key, so we need to handle it carefully
         try {
             DB::statement('ALTER TABLE `menu_settings` DROP INDEX `menu_settings_menu_id_key_unique`');
         } catch (\Exception $e) {
             // Index might not exist or already dropped
         }
 
-        Schema::table('menu_settings', function (Blueprint $table) use ($columnsToDrop, $existingColumns) {
-            // Drop columns that are now in settings table (only if they exist)
-            if (! empty($columnsToDrop)) {
-                $table->dropColumn($columnsToDrop);
-            }
+        // Drop columns one by one if they exist
+        if (in_array('title', $existingColumns)) {
+            Schema::table('menu_settings', function (Blueprint $table) {
+                $table->dropColumn('title');
+            });
+        }
+        if (in_array('key', $existingColumns)) {
+            Schema::table('menu_settings', function (Blueprint $table) {
+                $table->dropColumn('key');
+            });
+        }
+        if (in_array('description', $existingColumns)) {
+            Schema::table('menu_settings', function (Blueprint $table) {
+                $table->dropColumn('description');
+            });
+        }
+        if (in_array('type', $existingColumns)) {
+            Schema::table('menu_settings', function (Blueprint $table) {
+                $table->dropColumn('type');
+            });
+        }
 
-            // Add foreign key to settings table (only if it doesn't exist)
-            if (! in_array('setting_id', $existingColumns)) {
+        // Re-check columns after dropping
+        $existingColumns = Schema::getColumnListing('menu_settings');
+
+        // Add foreign key to settings table (only if it doesn't exist)
+        if (! in_array('setting_id', $existingColumns)) {
+            Schema::table('menu_settings', function (Blueprint $table) {
                 $table->foreignId('setting_id')->after('menu_id')->constrained()->onDelete('cascade');
-            }
+            });
+        }
 
-            // Add unique constraint for menu_id + setting_id combination
-            // Check if it already exists first
+        // Add unique constraint for menu_id + setting_id combination
+        try {
             $indexes = DB::select("SHOW INDEXES FROM `menu_settings` WHERE Key_name = 'menu_settings_menu_id_setting_id_unique'");
             if (empty($indexes)) {
-                $table->unique(['menu_id', 'setting_id'], 'menu_settings_menu_id_setting_id_unique');
+                Schema::table('menu_settings', function (Blueprint $table) {
+                    $table->unique(['menu_id', 'setting_id'], 'menu_settings_menu_id_setting_id_unique');
+                });
             }
-        });
+        } catch (\Exception $e) {
+            // Index might already exist
+        }
     }
 
     /**
