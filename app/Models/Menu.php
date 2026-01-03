@@ -259,6 +259,7 @@ class Menu extends Model
             'category_collapsible' => true,
             'category_default_state' => 'open',
             'dish_layout' => 'default',
+            'show_loading_page' => false,
         ];
 
         $settings = $this->settings()->with('setting')->get();

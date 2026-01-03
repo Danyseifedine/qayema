@@ -151,6 +151,12 @@ class SettingsSeeder extends Seeder
                 'description' => 'Layout style for displaying individual dishes (not available for list layout)',
                 'type' => 'string',
             ],
+            [
+                'title' => 'Show Loading Page',
+                'key' => 'show_loading_page',
+                'description' => 'Display a loading page with logo before the menu loads',
+                'type' => 'boolean',
+            ],
         ];
 
         foreach ($settings as $settingData) {

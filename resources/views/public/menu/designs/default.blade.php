@@ -41,9 +41,68 @@
 
     // For tabs layout, get first category id as default active tab
     $firstCategoryId = $categories->first()?->id ?? null;
+
+    // Loading page setting
+    $showLoadingPage = $settings['show_loading_page'] ?? false;
 @endphp
 
 <body class="antialiased bg-gray-50">
+    @if ($showLoadingPage)
+        <!-- Loading Page -->
+        <div id="loading-page"
+            class="fixed inset-0 bg-white z-[9999] flex items-center justify-center transition-opacity duration-500">
+            <div class="text-center">
+                @if (($settings['show_logo'] ?? true) && $user->hasMedia('logo'))
+                    <img src="{{ $user->getFirstMediaUrl('logo') }}" alt="Logo"
+                        class="w-32 h-32 md:w-40 md:h-40 mx-auto rounded-full object-contain animate-pulse">
+                @elseif ($settings['show_logo'] ?? true)
+                    <div
+                        class="w-32 h-32 md:w-40 md:h-40 mx-auto rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center animate-pulse">
+                        <span class="text-white text-4xl md:text-5xl font-bold">
+                            {{ strtoupper(substr($user->restaurant_name ?? 'R', 0, 1)) }}
+                        </span>
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        <script>
+            (function() {
+                const loadingPage = document.getElementById('loading-page');
+                if (!loadingPage) return;
+
+                const minDisplayTime = 3000; // 3 seconds minimum
+                const startTime = Date.now();
+                let pageLoaded = false;
+                let minTimeElapsed = false;
+
+                // Check if page is already loaded
+                if (document.readyState === 'complete') {
+                    pageLoaded = true;
+                } else {
+                    window.addEventListener('load', function() {
+                        pageLoaded = true;
+                        tryHide();
+                    });
+                }
+
+                // Ensure minimum display time
+                setTimeout(function() {
+                    minTimeElapsed = true;
+                    tryHide();
+                }, minDisplayTime);
+
+                function tryHide() {
+                    if (pageLoaded && minTimeElapsed) {
+                        loadingPage.style.opacity = '0';
+                        setTimeout(function() {
+                            loadingPage.style.display = 'none';
+                        }, 500);
+                    }
+                }
+            })();
+        </script>
+    @endif
     <div x-data="{
         categoryStates: {{ json_encode($categoryStates) }},
         toggleCategory(id) { this.categoryStates[String(id)] = !this.categoryStates[String(id)]; },
