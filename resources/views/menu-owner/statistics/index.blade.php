@@ -45,7 +45,7 @@
                 </div>
 
                 <!-- Statistics Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <!-- Total Views -->
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                         <div class="p-6">
@@ -89,6 +89,27 @@
                         </div>
                     </div>
 
+                    <!-- Total Page Views -->
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                        <div class="p-6">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 bg-purple-100 rounded-md p-3">
+                                    <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                        </path>
+                                    </svg>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-500">Total Page Views</p>
+                                    <p class="text-2xl font-semibold text-gray-900">{{ number_format($totalPageViews) }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Average Time Spent -->
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                         <div class="p-6">
@@ -112,6 +133,233 @@
                                                 {{ $minutes }}m {{ $seconds }}s
                                             @else
                                                 {{ $seconds }}s
+                                            @endif
+                                        @else
+                                            N/A
+                                        @endif
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Views Today -->
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                        <div class="p-6">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 bg-blue-100 rounded-md p-3">
+                                    <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
+                                        </path>
+                                    </svg>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-500">Views Today</p>
+                                    <p class="text-2xl font-semibold text-gray-900">{{ number_format($viewsToday) }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Views This Week -->
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                        <div class="p-6">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 bg-teal-100 rounded-md p-3">
+                                    <svg class="h-6 w-6 text-teal-600" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                                        </path>
+                                    </svg>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-500">Views This Week</p>
+                                    <p class="text-2xl font-semibold text-gray-900">{{ number_format($viewsThisWeek) }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Views This Month -->
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                        <div class="p-6">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 bg-pink-100 rounded-md p-3">
+                                    <svg class="h-6 w-6 text-pink-600" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
+                                        </path>
+                                    </svg>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-500">Views This Month</p>
+                                    <p class="text-2xl font-semibold text-gray-900">{{ number_format($viewsThisMonth) }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bounce Rate -->
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                        <div class="p-6">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 bg-red-100 rounded-md p-3">
+                                    <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                                    </svg>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-500">Bounce Rate</p>
+                                    <p class="text-2xl font-semibold text-gray-900">{{ $bounceRate }}%</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Statistics -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                    <!-- Device Breakdown -->
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                        <div class="p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Device Breakdown</h3>
+                            @if (!empty($deviceBreakdown))
+                                <div class="space-y-3">
+                                    @foreach ($deviceBreakdown as $device => $count)
+                                        @php
+                                            $percentage = $totalViews > 0 ? round(($count / $totalViews) * 100, 1) : 0;
+                                            $deviceColors = [
+                                                'mobile' => 'bg-blue-500',
+                                                'tablet' => 'bg-purple-500',
+                                                'desktop' => 'bg-green-500',
+                                            ];
+                                            $color = $deviceColors[$device] ?? 'bg-gray-500';
+                                        @endphp
+                                        <div>
+                                            <div class="flex justify-between items-center mb-1">
+                                                <span class="text-sm font-medium text-gray-700 capitalize">{{ $device }}</span>
+                                                <span class="text-sm text-gray-500">{{ number_format($count) }} ({{ $percentage }}%)</span>
+                                            </div>
+                                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                                <div class="{{ $color }} h-2 rounded-full" style="width: {{ $percentage }}%"></div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <p class="text-gray-500 text-sm">No device data available</p>
+                            @endif
+                        </div>
+                    </div>
+
+                    <!-- Browser Breakdown -->
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                        <div class="p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Top Browsers</h3>
+                            @if (!empty($browserBreakdown))
+                                <div class="space-y-3">
+                                    @foreach ($browserBreakdown as $browser => $count)
+                                        @php
+                                            $percentage = $totalViews > 0 ? round(($count / $totalViews) * 100, 1) : 0;
+                                        @endphp
+                                        <div>
+                                            <div class="flex justify-between items-center mb-1">
+                                                <span class="text-sm font-medium text-gray-700">{{ $browser }}</span>
+                                                <span class="text-sm text-gray-500">{{ number_format($count) }} ({{ $percentage }}%)</span>
+                                            </div>
+                                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                                <div class="bg-indigo-500 h-2 rounded-full" style="width: {{ $percentage }}%"></div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <p class="text-gray-500 text-sm">No browser data available</p>
+                            @endif
+                        </div>
+                    </div>
+
+                    <!-- OS Breakdown -->
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                        <div class="p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Top Operating Systems</h3>
+                            @if (!empty($osBreakdown))
+                                <div class="space-y-3">
+                                    @foreach ($osBreakdown as $os => $count)
+                                        @php
+                                            $percentage = $totalViews > 0 ? round(($count / $totalViews) * 100, 1) : 0;
+                                        @endphp
+                                        <div>
+                                            <div class="flex justify-between items-center mb-1">
+                                                <span class="text-sm font-medium text-gray-700">{{ $os }}</span>
+                                                <span class="text-sm text-gray-500">{{ number_format($count) }} ({{ $percentage }}%)</span>
+                                            </div>
+                                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                                <div class="bg-teal-500 h-2 rounded-full" style="width: {{ $percentage }}%"></div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <p class="text-gray-500 text-sm">No OS data available</p>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Metrics -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                    <!-- Average Page Views per Session -->
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                        <div class="p-6">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 bg-cyan-100 rounded-md p-3">
+                                    <svg class="h-6 w-6 text-cyan-600" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                                        </path>
+                                    </svg>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-500">Avg. Page Views/Session</p>
+                                    <p class="text-2xl font-semibold text-gray-900">{{ $avgPageViewsPerSession }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Total Time Spent -->
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                        <div class="p-6">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 bg-orange-100 rounded-md p-3">
+                                    <svg class="h-6 w-6 text-orange-600" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-500">Total Time Spent</p>
+                                    <p class="text-2xl font-semibold text-gray-900">
+                                        @if ($totalTimeSpent > 0)
+                                            @php
+                                                $hours = floor($totalTimeSpent / 3600);
+                                                $minutes = floor(($totalTimeSpent % 3600) / 60);
+                                            @endphp
+                                            @if ($hours > 0)
+                                                {{ $hours }}h {{ $minutes }}m
+                                            @else
+                                                {{ $minutes }}m
                                             @endif
                                         @else
                                             N/A
