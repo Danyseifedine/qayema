@@ -159,93 +159,49 @@
                 @if ($categoryLayout === 'tabs')
                     <div class="mt-8" x-data="{
                         scrollContainer: null,
-                        showLeftArrow: false,
-                        showRightArrow: true,
+                        canScroll: false,
                         checkScroll() {
                             if (this.scrollContainer) {
-                                this.showLeftArrow = this.scrollContainer.scrollLeft > 10;
-                                this.showRightArrow = this.scrollContainer.scrollLeft < (this.scrollContainer.scrollWidth - this.scrollContainer.clientWidth - 10);
+                                this.canScroll = this.scrollContainer.scrollWidth > this.scrollContainer.clientWidth;
                             }
-                        },
-                        scrollLeft() {
-                            this.scrollContainer.scrollBy({ left: -200, behavior: 'smooth' });
-                        },
-                        scrollRight() {
-                            this.scrollContainer.scrollBy({ left: 200, behavior: 'smooth' });
                         }
                     }" x-init="scrollContainer = $refs.tabsContainer;
                     checkScroll()">
                         <!-- Sticky Category Tabs -->
                         <div
                             class="sticky top-0 z-40 bg-gray-50/95 backdrop-blur-sm py-4 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-                            <div class="relative">
-                                <!-- Left Scroll Indicator -->
-                                <div x-show="showLeftArrow" x-transition:enter="transition ease-out duration-200"
-                                    x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-                                    class="absolute left-0 top-0 bottom-0 z-10 flex items-center">
-                                    <button @click="scrollLeft()"
-                                        class="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center text-gray-600 hover:text-indigo-600 hover:bg-white transition-all duration-200 -ml-1">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M15 19l-7-7 7-7"></path>
-                                        </svg>
-                                    </button>
-                                    <div
-                                        class="w-8 h-full bg-gradient-to-r from-gray-50 to-transparent pointer-events-none">
-                                    </div>
-                                </div>
-
-                                <!-- Tabs Container -->
-                                <div class="overflow-x-auto scrollbar-hide" x-ref="tabsContainer"
-                                    @scroll="checkScroll()">
-                                    <div class="flex gap-2 min-w-max pb-1 px-1">
-                                        @foreach ($categories as $category)
-                                            <button @click="activeTab = '{{ $category->id }}'"
+                            <!-- Tabs Container -->
+                            <div class="overflow-x-auto scrollbar-hide" x-ref="tabsContainer">
+                                <div class="flex gap-2 min-w-max pb-1 px-1">
+                                    @foreach ($categories as $category)
+                                        <button @click="activeTab = '{{ $category->id }}'"
+                                            :class="activeTab === '{{ $category->id }}'
+                                                ?
+                                                'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30' :
+                                                'bg-white text-gray-700 hover:bg-gray-100 shadow'"
+                                            class="px-5 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 flex items-center gap-2">
+                                            {{ $category->name }}
+                                            <span
                                                 :class="activeTab === '{{ $category->id }}'
                                                     ?
-                                                    'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30' :
-                                                    'bg-white text-gray-700 hover:bg-gray-100 shadow'"
-                                                class="px-5 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 flex items-center gap-2">
-                                                {{ $category->name }}
-                                                <span
-                                                    :class="activeTab === '{{ $category->id }}'
-                                                        ?
-                                                        'bg-white/20 text-white' :
-                                                        'bg-gray-100 text-gray-600'"
-                                                    class="text-xs px-2 py-0.5 rounded-full font-medium">
-                                                    {{ $category->dishes->where('is_available', true)->count() }}
-                                                </span>
-                                            </button>
-                                        @endforeach
-                                    </div>
-                                </div>
-
-                                <!-- Right Scroll Indicator -->
-                                <div x-show="showRightArrow" x-transition:enter="transition ease-out duration-200"
-                                    x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-                                    class="absolute right-0 top-0 bottom-0 z-10 flex items-center">
-                                    <div
-                                        class="w-8 h-full bg-gradient-to-l from-gray-50 to-transparent pointer-events-none">
-                                    </div>
-                                    <button @click="scrollRight()"
-                                        class="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center text-gray-600 hover:text-indigo-600 hover:bg-white transition-all duration-200 -mr-1">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M9 5l7 7-7 7"></path>
-                                        </svg>
-                                    </button>
+                                                    'bg-white/20 text-white' :
+                                                    'bg-gray-100 text-gray-600'"
+                                                class="text-xs px-2 py-0.5 rounded-full font-medium">
+                                                {{ $category->dishes->where('is_available', true)->count() }}
+                                            </span>
+                                        </button>
+                                    @endforeach
                                 </div>
                             </div>
-
-                            <!-- Scroll hint text (shown only when scrollable) -->
-                            <div x-show="showRightArrow" class="text-center mt-2">
-                                <span class="text-xs text-gray-400 flex items-center justify-center gap-1">
+                            <!-- Scroll hint text below tabs (shown only when scrollable) -->
+                            <div x-show="canScroll" class="text-center mt-2">
+                                <span class="text-xs text-gray-500 flex items-center justify-center gap-1">
+                                    Swipe right to see more
                                     <svg class="w-3 h-3 animate-bounce-x" fill="none" stroke="currentColor"
                                         viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+                                            d="M9 5l7 7-7 7"></path>
                                     </svg>
-                                    Swipe to see more
                                 </span>
                             </div>
                         </div>
@@ -309,6 +265,10 @@
                                                         <p class="text-sm text-gray-600 mt-1 line-clamp-2">
                                                             {{ $dish->description }}</p>
                                                     @endif
+                                                    @if (($settings['show_ingredients'] ?? true) && $dish->ingredients)
+                                                        <p class="text-xs text-gray-500 mt-1 italic">
+                                                            {{ $dish->ingredients }}</p>
+                                                    @endif
                                                 </div>
                                                 @if (($settings['show_prices'] ?? true) && $dish->price)
                                                     @php
@@ -354,32 +314,12 @@
                         @foreach ($categories as $category)
                             <div id="category-{{ $category->id }}" class="relative">
                                 <!-- Category Header -->
-                                <div class="flex items-center justify-between mb-6">
-                                    <div>
-                                        <h2 class="text-2xl font-bold text-gray-900">{{ $category->name }}</h2>
-                                        <p class="text-sm text-gray-500 mt-1">
-                                            {{ $category->dishes->where('is_available', true)->count() }} items</p>
-                                    </div>
-                                    <div class="flex gap-2">
-                                        <button
-                                            onclick="document.getElementById('cards-{{ $category->id }}').scrollBy({left: -320, behavior: 'smooth'})"
-                                            class="w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-all">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M15 19l-7-7 7-7"></path>
-                                            </svg>
-                                        </button>
-                                        <button
-                                            onclick="document.getElementById('cards-{{ $category->id }}').scrollBy({left: 320, behavior: 'smooth'})"
-                                            class="w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-all">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M9 5l7 7-7 7"></path>
-                                            </svg>
-                                        </button>
-                                    </div>
+                                <div class="mb-4">
+                                    <h2 class="text-xl font-bold text-gray-900">{{ $category->name }}</h2>
+                                    <p class="text-sm text-gray-500">
+                                        {{ $category->dishes->where('is_available', true)->count() }} items
+                                        <span class="text-xs text-gray-400 ml-2">• Swipe to see more</span>
+                                    </p>
                                 </div>
 
                                 @php
@@ -388,42 +328,41 @@
 
                                 @if ($dishes->isNotEmpty())
                                     <!-- Horizontal Scrolling Cards -->
-                                    <div id="cards-{{ $category->id }}"
-                                        class="flex gap-6 overflow-x-auto scrollbar-hide pb-4 -mx-4 px-4 snap-x snap-mandatory">
-                                        @foreach ($dishes as $dish)
-                                            <div class="flex-shrink-0 w-72 snap-start">
+                                    <div style="margin-left: 1px !important;"
+                                        class="flex gap-4 overflow-x-auto scrollbar-hide pb-4 -mx-4 pl-0 pr-4 snap-x snap-mandatory">
+                                        @foreach ($dishes as $index => $dish)
+                                            @php
+                                                // Calculate price once for reuse
+                                                $formattedPrice = null;
+                                                $currency = 'USD';
+                                                if (($settings['show_prices'] ?? true) && $dish->price) {
+                                                    $price = $dish->price;
+                                                    if (
+                                                        ($settings['currency_enabled'] ?? false) &&
+                                                        ($settings['exchange_rate'] ?? null)
+                                                    ) {
+                                                        $exchangeRate = (float) $settings['exchange_rate'];
+                                                        $price = $price * $exchangeRate;
+                                                        $currency = $settings['exchange_currency'] ?? 'USD';
+                                                        $formattedPrice = number_format($price, 0, '.', ',');
+                                                    } else {
+                                                        $currency = 'USD';
+                                                        $formattedPrice = number_format($price, 2);
+                                                    }
+                                                }
+                                            @endphp
+                                            <div
+                                                class="flex-shrink-0 w-64 snap-start {{ $index === 0 ? 'ml-0' : '' }}">
                                                 <div
-                                                    class="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                                                    class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300">
                                                     @if (($settings['show_dish_image'] ?? true) && $dish->hasMedia('images'))
-                                                        <div class="relative h-44 overflow-hidden">
+                                                        <div class="relative h-36 overflow-hidden">
                                                             <img src="{{ $dish->getFirstMediaUrl('images') }}"
                                                                 alt="{{ $dish->name }}"
                                                                 class="w-full h-full object-cover">
-                                                            @if (($settings['show_prices'] ?? true) && $dish->price)
-                                                                @php
-                                                                    $price = $dish->price;
-                                                                    if (
-                                                                        ($settings['currency_enabled'] ?? false) &&
-                                                                        ($settings['exchange_rate'] ?? null)
-                                                                    ) {
-                                                                        $exchangeRate =
-                                                                            (float) $settings['exchange_rate'];
-                                                                        $price = $price * $exchangeRate;
-                                                                        $currency =
-                                                                            $settings['exchange_currency'] ?? 'USD';
-                                                                        $formattedPrice = number_format(
-                                                                            $price,
-                                                                            0,
-                                                                            '.',
-                                                                            ',',
-                                                                        );
-                                                                    } else {
-                                                                        $currency = 'USD';
-                                                                        $formattedPrice = number_format($price, 2);
-                                                                    }
-                                                                @endphp
+                                                            @if (($settings['show_prices'] ?? true) && $dish->price && $pricePosition !== 'next_to_title')
                                                                 <div
-                                                                    class="absolute top-3 right-3 bg-indigo-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
+                                                                    class="absolute {{ getPricePositionClasses($pricePosition) }} bg-indigo-600 text-white px-2 py-0.5 rounded-full text-xs font-bold shadow">
                                                                     @if (($settings['currency_enabled'] ?? false) && ($settings['exchange_rate'] ?? null))
                                                                         {{ $formattedPrice }} {{ $currency }}
                                                                     @else
@@ -434,132 +373,28 @@
                                                         </div>
                                                     @elseif ($settings['show_dish_image'] ?? true)
                                                         <div
-                                                            class="relative h-44 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                                                            class="relative h-36 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                                                            @if (($settings['show_prices'] ?? true) && $dish->price && $pricePosition !== 'next_to_title')
+                                                                <div
+                                                                    class="absolute {{ getPricePositionClasses($pricePosition) }} bg-indigo-600 text-white px-2 py-0.5 rounded-full text-xs font-bold shadow">
+                                                                    @if (($settings['currency_enabled'] ?? false) && ($settings['exchange_rate'] ?? null))
+                                                                        {{ $formattedPrice }} {{ $currency }}
+                                                                    @else
+                                                                        ${{ $formattedPrice }}
+                                                                    @endif
+                                                                </div>
+                                                            @endif
                                                             <span
-                                                                class="text-white text-4xl font-bold opacity-50">{{ strtoupper(substr($dish->name, 0, 1)) }}</span>
+                                                                class="text-white text-3xl font-bold opacity-50">{{ strtoupper(substr($dish->name, 0, 1)) }}</span>
                                                         </div>
                                                     @endif
-                                                    <div class="p-5">
-                                                        <h3 class="font-bold text-gray-900 text-lg mb-2 line-clamp-1">
-                                                            {{ $dish->name }}</h3>
-                                                        @if (($settings['show_dish_description'] ?? true) && $dish->description)
-                                                            <p class="text-gray-600 text-sm line-clamp-2">
-                                                                {{ $dish->description }}</p>
-                                                        @endif
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                @else
-                                    <p class="text-gray-500 text-center py-8">No dishes available in this category.</p>
-                                @endif
-                            </div>
-                        @endforeach
-                    </div>
-
-                    {{-- ============================================= --}}
-                    {{-- ACCORDION LAYOUT --}}
-                    {{-- ============================================= --}}
-                @elseif ($categoryLayout === 'accordion')
-                    <div class="mt-8 space-y-4" x-data="{ openAccordion: '{{ $firstCategoryId }}' }">
-                        @foreach ($categories as $category)
-                            <div id="category-{{ $category->id }}"
-                                class="bg-white rounded-xl shadow-md overflow-hidden">
-                                <!-- Accordion Header -->
-                                <button
-                                    @click="openAccordion = openAccordion === '{{ $category->id }}' ? null : '{{ $category->id }}'"
-                                    class="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-gray-50 transition-colors">
-                                    <div class="flex items-center gap-4">
-                                        <div
-                                            class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md">
-                                            <span
-                                                class="text-white text-lg font-bold">{{ strtoupper(substr($category->name, 0, 1)) }}</span>
-                                        </div>
-                                        <div>
-                                            <h2 class="text-lg font-bold text-gray-900">{{ $category->name }}</h2>
-                                            <p class="text-sm text-gray-500">
-                                                {{ $category->dishes->where('is_available', true)->count() }} items
-                                                available</p>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-center gap-3">
-                                        <span class="hidden sm:inline-block text-sm text-gray-400">Click to
-                                            expand</span>
-                                        <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center transition-transform duration-300"
-                                            :class="{ 'rotate-180': openAccordion === '{{ $category->id }}' }">
-                                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M19 9l-7 7-7-7"></path>
-                                            </svg>
-                                        </div>
-                                    </div>
-                                </button>
-
-                                <!-- Accordion Content -->
-                                <div x-show="openAccordion === '{{ $category->id }}'" x-cloak
-                                    x-transition:enter="transition ease-out duration-300"
-                                    x-transition:enter-start="opacity-0 max-h-0"
-                                    x-transition:enter-end="opacity-100 max-h-[2000px]"
-                                    x-transition:leave="transition ease-in duration-200"
-                                    x-transition:leave-start="opacity-100 max-h-[2000px]"
-                                    x-transition:leave-end="opacity-0 max-h-0"
-                                    class="border-t border-gray-100 overflow-hidden">
-                                    @php
-                                        $dishes = $category->dishes->filter(fn($dish) => $dish->is_available === true);
-                                    @endphp
-
-                                    @if ($dishes->isNotEmpty())
-                                        <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            @foreach ($dishes as $dish)
-                                                <div
-                                                    class="flex gap-4 p-4 rounded-xl bg-gray-50 hover:bg-indigo-50 transition-colors">
-                                                    @if (($settings['show_dish_image'] ?? true) && $dish->hasMedia('images'))
-                                                        <img src="{{ $dish->getFirstMediaUrl('images') }}"
-                                                            alt="{{ $dish->name }}"
-                                                            class="w-20 h-20 rounded-lg object-cover flex-shrink-0">
-                                                    @elseif ($settings['show_dish_image'] ?? true)
-                                                        <div
-                                                            class="w-20 h-20 rounded-lg bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center flex-shrink-0">
-                                                            <svg class="w-8 h-8 text-gray-500" fill="none"
-                                                                stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round"
-                                                                    stroke-width="2"
-                                                                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
-                                                                </path>
-                                                            </svg>
-                                                        </div>
-                                                    @endif
-                                                    <div class="flex-1 min-w-0">
-                                                        <div class="flex items-start justify-between gap-2">
-                                                            <h3 class="font-semibold text-gray-900">
+                                                    <div class="p-4">
+                                                        <div class="flex items-start justify-between gap-2 mb-1">
+                                                            <h3 class="font-semibold text-gray-900 text-sm flex-1">
                                                                 {{ $dish->name }}</h3>
-                                                            @if (($settings['show_prices'] ?? true) && $dish->price)
-                                                                @php
-                                                                    $price = $dish->price;
-                                                                    if (
-                                                                        ($settings['currency_enabled'] ?? false) &&
-                                                                        ($settings['exchange_rate'] ?? null)
-                                                                    ) {
-                                                                        $exchangeRate =
-                                                                            (float) $settings['exchange_rate'];
-                                                                        $price = $price * $exchangeRate;
-                                                                        $currency =
-                                                                            $settings['exchange_currency'] ?? 'USD';
-                                                                        $formattedPrice = number_format(
-                                                                            $price,
-                                                                            0,
-                                                                            '.',
-                                                                            ',',
-                                                                        );
-                                                                    } else {
-                                                                        $currency = 'USD';
-                                                                        $formattedPrice = number_format($price, 2);
-                                                                    }
-                                                                @endphp
+                                                            @if (($settings['show_prices'] ?? true) && $dish->price && $pricePosition === 'next_to_title')
                                                                 <span
-                                                                    class="text-indigo-600 font-bold whitespace-nowrap">
+                                                                    class="text-xs font-bold text-indigo-600 whitespace-nowrap flex-shrink-0">
                                                                     @if (($settings['currency_enabled'] ?? false) && ($settings['exchange_rate'] ?? null))
                                                                         {{ $formattedPrice }} {{ $currency }}
                                                                     @else
@@ -569,257 +404,21 @@
                                                             @endif
                                                         </div>
                                                         @if (($settings['show_dish_description'] ?? true) && $dish->description)
-                                                            <p class="text-gray-600 text-sm mt-1 line-clamp-2">
+                                                            <p class="text-gray-600 text-xs line-clamp-2 mb-2">
                                                                 {{ $dish->description }}</p>
+                                                        @endif
+                                                        @if (($settings['show_ingredients'] ?? true) && $dish->ingredients)
+                                                            <p class="text-gray-500 text-xs italic">
+                                                                {{ $dish->ingredients }}</p>
                                                         @endif
                                                     </div>
                                                 </div>
-                                            @endforeach
-                                        </div>
-                                    @else
-                                        <div class="p-6 text-center">
-                                            <p class="text-gray-500">No dishes available in this category.</p>
-                                        </div>
-                                    @endif
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-
-                    {{-- ============================================= --}}
-                    {{-- CAROUSEL LAYOUT --}}
-                    {{-- ============================================= --}}
-                @elseif ($categoryLayout === 'carousel')
-                    <div class="mt-8">
-                        @foreach ($categories as $index => $category)
-                            @php
-                                $dishes = $category->dishes->filter(fn($dish) => $dish->is_available === true);
-                                $dishCount = $dishes->count();
-                            @endphp
-                            <div id="category-{{ $category->id }}" class="mb-16" x-data="{ currentSlide: 0, totalSlides: {{ $dishCount }} }">
-                                <!-- Category Header -->
-                                <div class="text-center mb-8">
-                                    <h2 class="text-3xl font-bold text-gray-900 mb-2">{{ $category->name }}</h2>
-                                    <div
-                                        class="w-24 h-1 bg-gradient-to-r from-indigo-500 to-purple-600 mx-auto rounded-full">
-                                    </div>
-                                </div>
-
-                                @if ($dishes->isNotEmpty())
-                                    <!-- Carousel Container -->
-                                    <div class="relative max-w-4xl mx-auto">
-                                        <!-- Slides -->
-                                        <div class="overflow-hidden rounded-2xl">
-                                            <div class="flex transition-transform duration-500 ease-out"
-                                                :style="'transform: translateX(-' + (currentSlide * 100) + '%)'">
-                                                @foreach ($dishes as $dishIndex => $dish)
-                                                    <div class="w-full flex-shrink-0">
-                                                        <div
-                                                            class="bg-white rounded-2xl shadow-2xl overflow-hidden mx-4">
-                                                            <div class="md:flex">
-                                                                @if ($settings['show_dish_image'] ?? true)
-                                                                    <div class="md:w-1/2">
-                                                                        @if ($dish->hasMedia('images'))
-                                                                            <img src="{{ $dish->getFirstMediaUrl('images') }}"
-                                                                                alt="{{ $dish->name }}"
-                                                                                class="w-full h-64 md:h-full object-cover">
-                                                                        @else
-                                                                            <div
-                                                                                class="w-full h-64 md:h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                                                                                <span
-                                                                                    class="text-white text-6xl font-bold opacity-50">{{ strtoupper(substr($dish->name, 0, 1)) }}</span>
-                                                                            </div>
-                                                                        @endif
-                                                                    </div>
-                                                                @endif
-                                                                <div class="p-8 md:w-1/2 flex flex-col justify-center">
-                                                                    <h3 class="text-2xl font-bold text-gray-900 mb-4">
-                                                                        {{ $dish->name }}</h3>
-                                                                    @if (($settings['show_dish_description'] ?? true) && $dish->description)
-                                                                        <p class="text-gray-600 mb-6">
-                                                                            {{ $dish->description }}</p>
-                                                                    @endif
-                                                                    @if (($settings['show_ingredients'] ?? true) && $dish->ingredients)
-                                                                        <p class="text-sm text-gray-500 mb-6">
-                                                                            <span
-                                                                                class="font-medium">Ingredients:</span>
-                                                                            {{ $dish->ingredients }}
-                                                                        </p>
-                                                                    @endif
-                                                                    @if (($settings['show_prices'] ?? true) && $dish->price)
-                                                                        @php
-                                                                            $price = $dish->price;
-                                                                            if (
-                                                                                ($settings['currency_enabled'] ??
-                                                                                    false) &&
-                                                                                ($settings['exchange_rate'] ?? null)
-                                                                            ) {
-                                                                                $exchangeRate =
-                                                                                    (float) $settings['exchange_rate'];
-                                                                                $price = $price * $exchangeRate;
-                                                                                $currency =
-                                                                                    $settings['exchange_currency'] ??
-                                                                                    'USD';
-                                                                                $formattedPrice = number_format(
-                                                                                    $price,
-                                                                                    0,
-                                                                                    '.',
-                                                                                    ',',
-                                                                                );
-                                                                            } else {
-                                                                                $currency = 'USD';
-                                                                                $formattedPrice = number_format(
-                                                                                    $price,
-                                                                                    2,
-                                                                                );
-                                                                            }
-                                                                        @endphp
-                                                                        <div
-                                                                            class="text-3xl font-bold text-indigo-600">
-                                                                            @if (($settings['currency_enabled'] ?? false) && ($settings['exchange_rate'] ?? null))
-                                                                                {{ $formattedPrice }}
-                                                                                {{ $currency }}
-                                                                            @else
-                                                                                ${{ $formattedPrice }}
-                                                                            @endif
-                                                                        </div>
-                                                                    @endif
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                @endforeach
                                             </div>
-                                        </div>
-
-                                        <!-- Navigation Arrows -->
-                                        <button
-                                            @click="currentSlide = currentSlide > 0 ? currentSlide - 1 : totalSlides - 1"
-                                            class="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-all z-10">
-                                            <svg class="w-6 h-6" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M15 19l-7-7 7-7"></path>
-                                            </svg>
-                                        </button>
-                                        <button
-                                            @click="currentSlide = currentSlide < totalSlides - 1 ? currentSlide + 1 : 0"
-                                            class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-all z-10">
-                                            <svg class="w-6 h-6" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M9 5l7 7-7 7"></path>
-                                            </svg>
-                                        </button>
-
-                                        <!-- Dots Navigation -->
-                                        <div class="flex justify-center gap-2 mt-6">
-                                            @foreach ($dishes as $dotIndex => $dish)
-                                                <button @click="currentSlide = {{ $dotIndex }}"
-                                                    :class="currentSlide === {{ $dotIndex }} ? 'bg-indigo-600 w-8' :
-                                                        'bg-gray-300 w-2'"
-                                                    class="h-2 rounded-full transition-all duration-300"></button>
-                                            @endforeach
-                                        </div>
+                                        @endforeach
                                     </div>
                                 @else
                                     <p class="text-gray-500 text-center py-8">No dishes available in this category.</p>
                                 @endif
-                            </div>
-                        @endforeach
-                    </div>
-
-                    {{-- ============================================= --}}
-                    {{-- TIMELINE LAYOUT --}}
-                    {{-- ============================================= --}}
-                @elseif ($categoryLayout === 'timeline')
-                    <div class="mt-8 relative">
-                        <!-- Timeline Line -->
-                        <div
-                            class="absolute left-8 md:left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-indigo-500 via-purple-500 to-pink-500">
-                        </div>
-
-                        @foreach ($categories as $index => $category)
-                            @php
-                                $dishes = $category->dishes->filter(fn($dish) => $dish->is_available === true);
-                                $isEven = $index % 2 === 0;
-                            @endphp
-                            <div id="category-{{ $category->id }}" class="relative mb-16">
-                                <!-- Timeline Node -->
-                                <div
-                                    class="absolute left-8 md:left-1/2 -translate-x-1/2 w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg z-10">
-                                    <span class="text-white text-2xl font-bold">{{ $index + 1 }}</span>
-                                </div>
-
-                                <!-- Content Card -->
-                                <div
-                                    class="ml-24 md:ml-0 md:w-[calc(50%-3rem)] {{ $isEven ? 'md:mr-auto md:pr-8' : 'md:ml-auto md:pl-8' }}">
-                                    <div class="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-                                        <!-- Category Header -->
-                                        <h2 class="text-2xl font-bold text-gray-900 mb-2">{{ $category->name }}</h2>
-                                        <p class="text-gray-500 text-sm mb-6">{{ $dishes->count() }} delicious items
-                                        </p>
-
-                                        @if ($dishes->isNotEmpty())
-                                            <div class="space-y-4">
-                                                @foreach ($dishes as $dish)
-                                                    <div
-                                                        class="flex gap-4 p-3 rounded-xl bg-gray-50 hover:bg-indigo-50 transition-colors">
-                                                        @if (($settings['show_dish_image'] ?? true) && $dish->hasMedia('images'))
-                                                            <img src="{{ $dish->getFirstMediaUrl('images') }}"
-                                                                alt="{{ $dish->name }}"
-                                                                class="w-16 h-16 rounded-lg object-cover flex-shrink-0">
-                                                        @endif
-                                                        <div class="flex-1 min-w-0">
-                                                            <div class="flex items-start justify-between gap-2">
-                                                                <h3 class="font-semibold text-gray-900 text-sm">
-                                                                    {{ $dish->name }}</h3>
-                                                                @if (($settings['show_prices'] ?? true) && $dish->price)
-                                                                    @php
-                                                                        $price = $dish->price;
-                                                                        if (
-                                                                            ($settings['currency_enabled'] ?? false) &&
-                                                                            ($settings['exchange_rate'] ?? null)
-                                                                        ) {
-                                                                            $exchangeRate =
-                                                                                (float) $settings['exchange_rate'];
-                                                                            $price = $price * $exchangeRate;
-                                                                            $currency =
-                                                                                $settings['exchange_currency'] ?? 'USD';
-                                                                            $formattedPrice = number_format(
-                                                                                $price,
-                                                                                0,
-                                                                                '.',
-                                                                                ',',
-                                                                            );
-                                                                        } else {
-                                                                            $currency = 'USD';
-                                                                            $formattedPrice = number_format($price, 2);
-                                                                        }
-                                                                    @endphp
-                                                                    <span
-                                                                        class="text-indigo-600 font-bold text-sm whitespace-nowrap">
-                                                                        @if (($settings['currency_enabled'] ?? false) && ($settings['exchange_rate'] ?? null))
-                                                                            {{ $formattedPrice }} {{ $currency }}
-                                                                        @else
-                                                                            ${{ $formattedPrice }}
-                                                                        @endif
-                                                                    </span>
-                                                                @endif
-                                                            </div>
-                                                            @if (($settings['show_dish_description'] ?? true) && $dish->description)
-                                                                <p class="text-gray-600 text-xs mt-1 line-clamp-1">
-                                                                    {{ $dish->description }}</p>
-                                                            @endif
-                                                        </div>
-                                                    </div>
-                                                @endforeach
-                                            </div>
-                                        @else
-                                            <p class="text-gray-500 text-center py-4">No dishes available.</p>
-                                        @endif
-                                    </div>
-                                </div>
                             </div>
                         @endforeach
                     </div>
@@ -1195,7 +794,7 @@
     </div><!-- End Alpine x-data wrapper -->
 
     <!-- Footer -->
-    <footer class="bg-gray-900 text-white py-4"
+    <footer class="bg-gray-900 text-white py-4 mt-8"
         style="width: 100vw; margin-left: calc(-50vw + 50%); margin-right: calc(-50vw + 50%);">
         <div class="text-center">
             @if ($settings['show_social_links'] ?? true)

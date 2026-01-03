@@ -171,58 +171,23 @@
 
                                             // Settings disabled based on category layout
                                             // Grid: All enabled
-                                            // Tabs: category_image, category_description disabled
-                                            // List: category_image, category_description, dish_image, ingredients disabled
-                                            // Cards/Accordion/Carousel: category_image, category_description disabled
+                                            // Tabs: category_image disabled
+                                            // List: category_image, dish_image disabled
+                                            // Cards: category_image disabled
+                                            // Grid-only settings: category_collapsible, category_default_state
                                             $layoutDisabledSettings = [
-                                                'tabs' => [
-                                                    'show_category_image',
-                                                    'show_category_description',
-                                                    'category_collapsible',
-                                                    'category_default_state',
-                                                ],
-                                                'list' => [
-                                                    'show_category_image',
-                                                    'show_category_description',
-                                                    'show_dish_image',
-                                                    'show_ingredients',
-                                                    'category_collapsible',
-                                                    'category_default_state',
-                                                ],
-                                                'cards' => [
-                                                    'show_category_image',
-                                                    'show_category_description',
-                                                    'category_collapsible',
-                                                    'category_default_state',
-                                                ],
-                                                'accordion' => ['show_category_image', 'show_category_description'],
-                                                'carousel' => [
-                                                    'show_category_image',
-                                                    'show_category_description',
-                                                    'category_collapsible',
-                                                    'category_default_state',
-                                                ],
-                                                'timeline' => [
-                                                    'show_category_image',
-                                                    'show_category_description',
-                                                    'category_collapsible',
-                                                    'category_default_state',
-                                                ],
+                                                'tabs' => ['show_category_image'],
+                                                'list' => ['show_category_image', 'show_dish_image'],
+                                                'cards' => ['show_category_image'],
                                             ];
                                             $isLayoutDependent = in_array($setting['key'], [
                                                 'show_category_image',
-                                                'show_category_description',
                                                 'show_dish_image',
-                                                'show_ingredients',
-                                                'category_collapsible',
-                                                'category_default_state',
                                             ]);
 
-                                            $collapsibleDependentSettings = ['category_default_state'];
-                                            $isCollapsibleDependent = in_array(
-                                                $setting['key'],
-                                                $collapsibleDependentSettings,
-                                            );
+                                            // Grid-only settings (disabled for all layouts except grid)
+                                            $gridOnlySettings = ['category_collapsible', 'category_default_state'];
+                                            $isGridOnly = in_array($setting['key'], $gridOnlySettings);
                                             $shareDependentSettings = ['share_button_position'];
                                             $isShareDependent = in_array($setting['key'], $shareDependentSettings);
                                             $currencyDependentSettings = ['exchange_currency', 'exchange_rate'];
@@ -235,23 +200,45 @@
                                             @if ($isShareDependent) x-show="enableShare"
                                                 x-cloak @endif>
                                             <!-- Setting Row - Stack on mobile, row on desktop -->
+                                            @php
+                                                $layoutConditionForSetting = collect($layoutDisabledSettings)
+                                                    ->map(
+                                                        fn($settings, $layout) => in_array($setting['key'], $settings)
+                                                            ? "categoryLayout === '$layout'"
+                                                            : null,
+                                                    )
+                                                    ->filter()
+                                                    ->implode(' || ');
+
+                                                // Grid-only settings are disabled when layout is not grid
+                                                $gridOnlyCondition = $isGridOnly ? "categoryLayout !== 'grid'" : '';
+
+                                                // Combine conditions for visual indicators
+                                                $visualDisabledCondition = '';
+                                                if ($layoutConditionForSetting && $gridOnlyCondition) {
+                                                    $visualDisabledCondition = "($layoutConditionForSetting) || ($gridOnlyCondition)";
+                                                } elseif ($layoutConditionForSetting) {
+                                                    $visualDisabledCondition = $layoutConditionForSetting;
+                                                } elseif ($gridOnlyCondition) {
+                                                    $visualDisabledCondition = $gridOnlyCondition;
+                                                }
+                                            @endphp
                                             <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4"
-                                                @if ($isLayoutDependent) :class="{
-                                                        'opacity-50': {{ json_encode(collect($layoutDisabledSettings)->map(fn($settings, $layout) => in_array($setting['key'], $settings) ? "categoryLayout === '$layout'" : null)->filter()->implode(' || ')) }}
+                                                @if ($visualDisabledCondition) :class="{
+                                                        'opacity-50 pointer-events-none': {{ $visualDisabledCondition }}
                                                     }" @endif>
                                                 <!-- Label Section -->
                                                 <div class="flex-1 min-w-0">
                                                     <label
                                                         class="text-sm sm:text-base font-medium text-gray-900 flex flex-wrap items-center gap-2"
-                                                        @if ($isLayoutDependent) :class="{
-                                                                'text-gray-400': {{ json_encode(collect($layoutDisabledSettings)->map(fn($settings, $layout) => in_array($setting['key'], $settings) ? "categoryLayout === '$layout'" : null)->filter()->implode(' || ')) }}
+                                                        @if ($visualDisabledCondition) :class="{
+                                                                'text-gray-400': {{ $visualDisabledCondition }}
                                                             }" @endif>
                                                         {{ $setting['title'] }}
-                                                        @if ($isLayoutDependent)
-                                                            <span
-                                                                x-show="{{ collect($layoutDisabledSettings)->map(fn($settings, $layout) => in_array($setting['key'], $settings) ? "categoryLayout === '$layout'" : null)->filter()->implode(' || ') }}"
+                                                        @if ($visualDisabledCondition)
+                                                            <span x-show="{{ $visualDisabledCondition }}"
                                                                 class="text-[10px] sm:text-xs font-normal text-amber-600 bg-amber-50 px-1.5 sm:px-2 py-0.5 rounded-full whitespace-nowrap">
-                                                                Disabled for this layout
+                                                                {{ $isGridOnly ? 'Only available for Grid layout' : 'Disabled for this layout' }}
                                                             </span>
                                                         @endif
                                                     </label>
@@ -288,12 +275,11 @@
                                                                         : $layoutConditions;
                                                                 }
                                                             }
-                                                            if ($isCollapsibleDependent) {
-                                                                $collapsibleCondition =
-                                                                    "!categoryCollapsible || categoryLayout !== 'grid'";
+                                                            if ($isGridOnly) {
+                                                                $gridOnlyCondition = "categoryLayout !== 'grid'";
                                                                 $disabledCondition = $disabledCondition
-                                                                    ? "($disabledCondition) || ($collapsibleCondition)"
-                                                                    : $collapsibleCondition;
+                                                                    ? "($disabledCondition) || ($gridOnlyCondition)"
+                                                                    : $gridOnlyCondition;
                                                             }
                                                         @endphp
                                                         <label class="relative inline-flex items-center cursor-pointer"
@@ -335,15 +321,6 @@
                                                             <option value="cards"
                                                                 {{ ($setting['value'] ?? '') === 'cards' ? 'selected' : '' }}>
                                                                 Horizontal Cards</option>
-                                                            <option value="accordion"
-                                                                {{ ($setting['value'] ?? '') === 'accordion' ? 'selected' : '' }}>
-                                                                Accordion</option>
-                                                            <option value="carousel"
-                                                                {{ ($setting['value'] ?? '') === 'carousel' ? 'selected' : '' }}>
-                                                                Carousel</option>
-                                                            <option value="timeline"
-                                                                {{ ($setting['value'] ?? '') === 'timeline' ? 'selected' : '' }}>
-                                                                Timeline</option>
                                                         </select>
                                                     @elseif ($setting['type'] === 'string' && $setting['key'] === 'price_position')
                                                         <select name="settings[{{ $setting['id'] }}]"
@@ -371,9 +348,9 @@
                                                         </select>
                                                     @elseif ($setting['type'] === 'string' && $setting['key'] === 'category_default_state')
                                                         <select name="settings[{{ $setting['id'] }}]"
-                                                            :disabled="!categoryCollapsible"
-                                                            :class="!categoryCollapsible ?
-                                                                'bg-gray-100 cursor-not-allowed opacity-50' : ''"
+                                                            :disabled="!categoryCollapsible || categoryLayout !== 'grid'"
+                                                            :class="(!categoryCollapsible || categoryLayout !== 'grid') ?
+                                                            'bg-gray-100 cursor-not-allowed opacity-50' : ''"
                                                             class="block w-full sm:w-40 text-sm rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                                             <option value="open"
                                                                 {{ ($setting['value'] ?? 'open') === 'open' ? 'selected' : '' }}>
