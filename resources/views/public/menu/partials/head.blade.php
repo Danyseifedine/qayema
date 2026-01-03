@@ -73,6 +73,12 @@
             display: none !important;
         }
 
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
         /* Dynamic Font Family */
         body {
             @if ($fontFamily === 'sans')
