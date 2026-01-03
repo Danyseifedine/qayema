@@ -12,6 +12,24 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Check which columns exist before trying to drop them
+        $columns = DB::select('SHOW COLUMNS FROM `menu_settings`');
+        $existingColumns = array_column($columns, 'Field');
+
+        $columnsToDrop = [];
+        if (in_array('title', $existingColumns)) {
+            $columnsToDrop[] = 'title';
+        }
+        if (in_array('key', $existingColumns)) {
+            $columnsToDrop[] = 'key';
+        }
+        if (in_array('description', $existingColumns)) {
+            $columnsToDrop[] = 'description';
+        }
+        if (in_array('type', $existingColumns)) {
+            $columnsToDrop[] = 'type';
+        }
+
         // Drop the unique index using raw SQL if it exists
         // MySQL might be using it for the foreign key, so we need to handle it carefully
         try {
@@ -20,15 +38,23 @@ return new class extends Migration
             // Index might not exist or already dropped
         }
 
-        Schema::table('menu_settings', function (Blueprint $table) {
-            // Drop columns that are now in settings table
-            $table->dropColumn(['title', 'key', 'description', 'type']);
+        Schema::table('menu_settings', function (Blueprint $table) use ($columnsToDrop) {
+            // Drop columns that are now in settings table (only if they exist)
+            if (! empty($columnsToDrop)) {
+                $table->dropColumn($columnsToDrop);
+            }
 
-            // Add foreign key to settings table
-            $table->foreignId('setting_id')->after('menu_id')->constrained()->onDelete('cascade');
+            // Add foreign key to settings table (only if it doesn't exist)
+            if (! in_array('setting_id', $existingColumns)) {
+                $table->foreignId('setting_id')->after('menu_id')->constrained()->onDelete('cascade');
+            }
 
             // Add unique constraint for menu_id + setting_id combination
-            $table->unique(['menu_id', 'setting_id'], 'menu_settings_menu_id_setting_id_unique');
+            // Check if it already exists first
+            $indexes = DB::select("SHOW INDEXES FROM `menu_settings` WHERE Key_name = 'menu_settings_menu_id_setting_id_unique'");
+            if (empty($indexes)) {
+                $table->unique(['menu_id', 'setting_id'], 'menu_settings_menu_id_setting_id_unique');
+            }
         });
     }
 
