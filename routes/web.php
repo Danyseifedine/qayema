@@ -75,10 +75,13 @@ Route::middleware('auth')->group(function () {
 });
 
 // Public menu routes (must be last to avoid conflicts with other routes)
+// Exclude reserved paths to prevent route conflicts
+$reservedPaths = '(?!categories|dishes|dashboard|menus|settings|statistics|qr-code|social-links|profile|admin|login|register|logout|password|email|restaurant-setup|setup|sanctum)';
+
 Route::post('/{slug}/track-exit', [PublicMenuController::class, 'trackExit'])
-    ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+    ->where('slug', $reservedPaths . '[a-z0-9]+(?:-[a-z0-9]+)*')
     ->name('public.menu.track-exit');
 
 Route::get('/{slug}', [PublicMenuController::class, 'show'])
-    ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+    ->where('slug', $reservedPaths . '[a-z0-9]+(?:-[a-z0-9]+)*')
     ->name('public.menu');
