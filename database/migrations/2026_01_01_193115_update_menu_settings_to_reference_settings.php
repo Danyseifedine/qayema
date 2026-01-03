@@ -38,7 +38,7 @@ return new class extends Migration
             // Index might not exist or already dropped
         }
 
-        Schema::table('menu_settings', function (Blueprint $table) use ($columnsToDrop) {
+        Schema::table('menu_settings', function (Blueprint $table) use ($columnsToDrop, $existingColumns) {
             // Drop columns that are now in settings table (only if they exist)
             if (! empty($columnsToDrop)) {
                 $table->dropColumn($columnsToDrop);
