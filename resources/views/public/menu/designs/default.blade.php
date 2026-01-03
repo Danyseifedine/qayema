@@ -13,26 +13,34 @@
     }
     
     $pricePosition = $settings['price_position'] ?? 'bottom_right';
+    $categoryCollapsible = $settings['category_collapsible'] ?? true;
     $defaultState = $settings['category_default_state'] ?? 'open';
     
-    // Build category states for Alpine.js
+    // Build category states for Alpine.js (only needed if collapsible)
     $categoryStates = [];
-    foreach ($categories as $category) {
-        $categoryStates[(string)$category->id] = $defaultState === 'open';
+    if ($categoryCollapsible) {
+        foreach ($categories as $category) {
+            $categoryStates[(string)$category->id] = $defaultState === 'open';
+        }
     }
 @endphp
 
 <body class="antialiased bg-gray-50">
     <div x-data="{ categoryStates: {{ json_encode($categoryStates) }}, toggleCategory(id) { this.categoryStates[String(id)] = !this.categoryStates[String(id)]; } }">
+    
+    @php
+        $showCoverImage = ($settings['show_cover_image'] ?? true) && $user->hasMedia('cover_image');
+    @endphp
+    
     <!-- Cover Image Section -->
-    @if ($settings['show_logo'] ?? true && $user->hasMedia('cover_image'))
+    @if ($showCoverImage)
         <div class="relative h-64 md:h-96 overflow-hidden">
             <img src="{{ $user->getFirstMediaUrl('cover_image') }}" alt="Cover Image" class="w-full h-full object-cover">
             <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
         </div>
     @endif
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 {{ $user->hasMedia('cover_image') ? '-mt-16 md:-mt-24' : 'pt-8' }} relative z-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 {{ $showCoverImage ? '-mt-16 md:-mt-24' : 'pt-8' }} relative z-10">
         <!-- Logo and Restaurant Info Card -->
         <div class="bg-white rounded-lg shadow-xl overflow-hidden">
             <div class="p-6 md:p-8">
@@ -128,48 +136,66 @@
     <!-- Menu Content -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         @if ($categories->isNotEmpty())
+            <div class="space-y-16">
             @foreach ($categories as $category)
-                <div class="mb-12" id="category-{{ $category->id }}">
+                <div id="category-{{ $category->id }}">
                     <!-- Category Header -->
-                    <div class="mb-6">
-                        <button @click="toggleCategory({{ $category->id }})" type="button" class="w-full text-left">
-                            <div class="flex items-center gap-4 mb-4 cursor-pointer hover:opacity-80 transition-opacity">
+                    <div class="mb-8">
+                        @if ($categoryCollapsible)
+                            <button @click="toggleCategory({{ $category->id }})" type="button" class="w-full text-left">
+                        @endif
+                            <div class="flex items-center gap-4 {{ $categoryCollapsible ? 'cursor-pointer hover:opacity-80 transition-opacity' : '' }}">
                                 @if (($settings['show_category_image'] ?? true) && $category->hasMedia('image'))
                                     <img src="{{ $category->getFirstMediaUrl('image') }}" alt="{{ $category->name }}"
-                                        class="w-16 h-16 rounded-lg object-cover shadow-md">
+                                        class="w-16 h-16 rounded-lg object-cover shadow-md flex-shrink-0">
                                 @elseif ($settings['show_category_image'] ?? true)
                                     <div
-                                        class="w-16 h-16 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-md">
+                                        class="w-16 h-16 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-md flex-shrink-0">
                                         <span class="text-white text-xl font-bold">
                                             {{ strtoupper(substr($category->name, 0, 1)) }}
                                         </span>
                                     </div>
                                 @endif
-                                <div class="flex-1">
-                                    <div class="flex items-center gap-2">
-                                        <h2 class="text-lg font-bold text-gray-900">{{ $category->name }}</h2>
-                                        <svg class="w-5 h-5 text-gray-500 transition-transform duration-200" 
-                                            :class="{ 'rotate-180': categoryStates['{{ $category->id }}'] === true }"
-                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                        </svg>
-                                    </div>
+                                <div class="flex-1 min-w-0">
+                                    <h2 class="text-lg font-bold text-gray-900">{{ $category->name }}</h2>
                                     @if ($category->description)
                                         <p class="text-gray-600 mt-1 text-xs text-justify">{{ $category->description }}</p>
                                     @endif
                                 </div>
+                                @if ($categoryCollapsible)
+                                    <!-- Plus/Minus Icon - Far Right -->
+                                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center transition-colors duration-200 hover:bg-gray-200">
+                                        <!-- Plus Icon (shown when closed) -->
+                                        <svg x-show="categoryStates['{{ $category->id }}'] !== true"
+                                            class="w-5 h-5 text-gray-600"
+                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v12m6-6H6"></path>
+                                        </svg>
+                                        <!-- Minus Icon (shown when open) -->
+                                        <svg x-show="categoryStates['{{ $category->id }}'] === true"
+                                            x-cloak
+                                            class="w-5 h-5 text-gray-600"
+                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 12H6"></path>
+                                        </svg>
+                                    </div>
+                                @endif
                             </div>
-                        </button>
+                        @if ($categoryCollapsible)
+                            </button>
+                        @endif
                     </div>
 
                     <!-- Dishes Grid -->
-                    <div x-show="categoryStates['{{ $category->id }}'] === true" 
+                    <div @if ($categoryCollapsible)
+                         x-show="categoryStates['{{ $category->id }}'] === true" 
                          x-transition:enter="transition ease-out duration-300"
                          x-transition:enter-start="opacity-0 transform -translate-y-2"
                          x-transition:enter-end="opacity-100 transform translate-y-0"
                          x-transition:leave="transition ease-in duration-200"
                          x-transition:leave-start="opacity-100 transform translate-y-0"
-                         x-transition:leave-end="opacity-0 transform -translate-y-2">
+                         x-transition:leave-end="opacity-0 transform -translate-y-2"
+                         @endif>
                         @php
                             $dishes = $category->dishes->filter(function ($dish) {
                                 return $dish->is_available === true;
@@ -288,6 +314,7 @@
                     @endif
                 </div>
             @endforeach
+            </div>
 
             <!-- Uncategorized Dishes -->
             @if ($uncategorizedDishes->isNotEmpty())

@@ -179,6 +179,7 @@ class Menu extends Model
             'show_dish_image' => true,
             'show_category_image' => true,
             'show_logo' => true,
+            'show_cover_image' => true,
             'show_restaurant_info' => true,
             'show_address' => true,
             'show_phone_number' => true,
@@ -187,6 +188,7 @@ class Menu extends Model
             'enable_share' => true,
             'font_family' => 'sans',
             'price_position' => 'bottom_right',
+            'category_collapsible' => true,
             'category_default_state' => 'open',
         ];
 
@@ -222,6 +224,8 @@ class Menu extends Model
             'show_dish_image' => true,
             'show_category_image' => true,
             'show_logo' => true,
+            'show_cover_image' => true,
+            'show_logo' => true,
             'show_restaurant_info' => true,
             'show_address' => true,
             'show_phone_number' => true,
@@ -230,6 +234,7 @@ class Menu extends Model
             'enable_share' => true,
             'font_family' => 'sans',
             'price_position' => 'bottom_right',
+            'category_collapsible' => true,
             'category_default_state' => 'open',
         ];
 

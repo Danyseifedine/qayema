@@ -68,6 +68,12 @@ class SettingsSeeder extends Seeder
                 'type' => 'boolean',
             ],
             [
+                'title' => 'Show Cover Image',
+                'key' => 'show_cover_image',
+                'description' => 'Display cover image at the top of the menu',
+                'type' => 'boolean',
+            ],
+            [
                 'title' => 'Show Restaurant Info',
                 'key' => 'show_restaurant_info',
                 'description' => 'Display restaurant name and description',
@@ -116,9 +122,15 @@ class SettingsSeeder extends Seeder
                 'type' => 'string',
             ],
             [
-                'title' => 'Category Default State',
+                'title' => 'Collapsible Categories (Default Design)',
+                'key' => 'category_collapsible',
+                'description' => 'Enable collapsible category sections (only for default design)',
+                'type' => 'boolean',
+            ],
+            [
+                'title' => 'Category Default State (Default Design)',
                 'key' => 'category_default_state',
-                'description' => 'Default state for categories (open or closed)',
+                'description' => 'Default state for categories when collapsible is enabled (open or closed)',
                 'type' => 'string',
             ],
         ];

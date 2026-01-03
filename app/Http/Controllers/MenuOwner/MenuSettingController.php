@@ -70,6 +70,7 @@ class MenuSettingController extends Controller
                     'show_dish_image' => true,
                     'show_category_image' => true,
                     'show_logo' => true,
+                    'show_cover_image' => true,
                     'show_restaurant_info' => true,
                     'show_address' => true,
                     'show_phone_number' => true,
@@ -78,6 +79,7 @@ class MenuSettingController extends Controller
                     'enable_share' => true,
                     'font_family' => 'sans',
                     'price_position' => 'bottom_right',
+                    'category_collapsible' => true,
                     'category_default_state' => 'open',
                 ];
                 $value = $defaults[$setting->key] ?? null;
@@ -94,11 +96,11 @@ class MenuSettingController extends Controller
             ];
 
             // Categorize
-            if (in_array($setting->key, ['show_dish_image', 'show_category_image', 'show_logo', 'show_restaurant_info', 'show_address', 'show_phone_number', 'show_social_links', 'show_ingredients'])) {
+            if (in_array($setting->key, ['show_dish_image', 'show_category_image', 'show_logo', 'show_cover_image', 'show_restaurant_info', 'show_address', 'show_phone_number', 'show_social_links', 'show_ingredients'])) {
                 $groupedSettings['display']['settings'][] = $settingData;
             } elseif (in_array($setting->key, ['currency_enabled', 'exchange_currency', 'exchange_rate', 'show_prices'])) {
                 $groupedSettings['currency']['settings'][] = $settingData;
-            } elseif (in_array($setting->key, ['menu_design', 'font_family', 'price_position', 'category_default_state'])) {
+            } elseif (in_array($setting->key, ['menu_design', 'font_family', 'price_position', 'category_collapsible', 'category_default_state'])) {
                 $groupedSettings['design']['settings'][] = $settingData;
             } else {
                 $groupedSettings['general']['settings'][] = $settingData;
