@@ -55,6 +55,11 @@ class SocialLinkController extends Controller
                 ->with('error', 'Please create a menu first before adding social links.');
         }
 
+        if ($menu->hasReachedSocialLinkLimit()) {
+            return redirect()->route('menu-owner.social-links.index')
+                ->with('error', "You have reached the maximum limit of {$menu->social_link_limit} social links for this menu.");
+        }
+
         $data = $request->validated();
         $data['menu_id'] = $menu->id;
 

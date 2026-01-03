@@ -26,4 +26,25 @@ class SocialLinkRequest extends FormRequest
             'url' => ['required', 'url', 'max:255'],
         ];
     }
+
+    /**
+     * Configure the validator instance.
+     */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $user = $this->user();
+            $menu = $user->menus()->first();
+
+            if ($menu && $this->isMethod('post')) {
+                // Check if we're creating a new social link
+                if ($menu->hasReachedSocialLinkLimit()) {
+                    $validator->errors()->add(
+                        'platform',
+                        "You have reached the maximum limit of {$menu->social_link_limit} social links for this menu."
+                    );
+                }
+            }
+        });
+    }
 }

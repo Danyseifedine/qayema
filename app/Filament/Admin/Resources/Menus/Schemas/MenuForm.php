@@ -57,6 +57,13 @@ class MenuForm
                     ->default(10)
                     ->minValue(1)
                     ->helperText('Maximum number of categories allowed for this menu'),
+                TextInput::make('social_link_limit')
+                    ->label('Social Link Limit')
+                    ->numeric()
+                    ->required()
+                    ->default(4)
+                    ->minValue(1)
+                    ->helperText('Maximum number of social links allowed for this menu'),
                 Toggle::make('is_active')
                     ->label('Active')
                     ->default(true)

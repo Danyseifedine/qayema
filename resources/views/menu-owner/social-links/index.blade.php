@@ -59,6 +59,18 @@
                     </div>
                 </div>
             @else
+                @if ($menu)
+                    <div class="mb-4 text-sm text-gray-600">
+                        <span class="font-semibold">{{ $socialLinks->count() }}</span> / <span
+                            class="font-semibold">{{ $menu->social_link_limit }}</span> social links
+                        @if ($menu->hasReachedSocialLinkLimit())
+                            <span class="ml-2 text-red-600 font-semibold">(Limit reached)</span>
+                        @else
+                            <span class="ml-2 text-green-600">({{ $menu->getRemainingSocialLinkSlots() }} remaining)</span>
+                        @endif
+                    </div>
+                @endif
+
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     @foreach ($socialLinks as $socialLink)
                         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg hover:shadow-md transition-shadow">

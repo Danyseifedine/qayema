@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <x-seo title="MenuX - Create Beautiful Digital Menus"
         description="Create beautiful digital menus for your restaurant. Free up to 20 menu items. Share your menu with a simple link. Mobile optimized and easy to manage."
@@ -11,8 +11,8 @@
         :url="url('/')" :image="asset('images/logo/logo.png')" imageAlt="MenuX - Create Beautiful Digital Menus" type="website"
         :siteName="config('app.name', 'MenuX')" />
 
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
+            @vite(['resources/css/app.css', 'resources/js/app.js'])
+    </head>
 
 <body class="antialiased bg-white text-gray-900">
     <!-- Navigation -->
@@ -37,7 +37,7 @@
                 </div>
             </div>
         </div>
-    </nav>
+                </nav>
 
     <!-- Hero Section -->
     <section class="py-20 sm:py-32">
@@ -123,7 +123,7 @@
                             viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7">
                             </path>
-                        </svg>
+                                    </svg>
                         <div>
                             <p class="font-semibold text-gray-900">Mobile optimized</p>
                             <p class="text-gray-600 text-sm">Works perfectly on all devices</p>
@@ -140,7 +140,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z">
                             </path>
-                        </svg>
+                                    </svg>
                         +961 03004699
                     </a>
                 </div>
@@ -168,7 +168,7 @@
                             viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                        </svg>
+                    </svg>
                     </div>
                     <h3 class="text-xl font-semibold text-gray-900 mb-2">Fast & Easy</h3>
                     <p class="text-gray-600">Create your menu in minutes, no technical skills needed</p>
@@ -181,7 +181,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
                             </path>
-                        </svg>
+                    </svg>
                     </div>
                     <h3 class="text-xl font-semibold text-gray-900 mb-2">Beautiful Design</h3>
                     <p class="text-gray-600">Professional-looking menus that impress your customers</p>
@@ -194,7 +194,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z">
                             </path>
-                        </svg>
+                    </svg>
                     </div>
                     <h3 class="text-xl font-semibold text-gray-900 mb-2">Share Instantly</h3>
                     <p class="text-gray-600">One simple link to share with all your customers</p>
@@ -235,6 +235,6 @@
             </div>
         </div>
     </footer>
-</body>
+    </body>
 
 </html>

@@ -18,12 +18,14 @@ class Menu extends Model
         'is_active',
         'dish_limit',
         'category_limit',
+        'social_link_limit',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'dish_limit' => 'integer',
         'category_limit' => 'integer',
+        'social_link_limit' => 'integer',
     ];
 
     /**
@@ -118,6 +120,22 @@ class Menu extends Model
     public function getRemainingCategorySlots(): int
     {
         return max(0, $this->category_limit - $this->categories()->count());
+    }
+
+    /**
+     * Check if menu has reached social link limit.
+     */
+    public function hasReachedSocialLinkLimit(): bool
+    {
+        return $this->socialLinks()->count() >= $this->social_link_limit;
+    }
+
+    /**
+     * Get remaining social link slots.
+     */
+    public function getRemainingSocialLinkSlots(): int
+    {
+        return max(0, $this->social_link_limit - $this->socialLinks()->count());
     }
 
     /**
