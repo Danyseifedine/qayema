@@ -14,10 +14,12 @@ return new class extends Migration
         Schema::create('menu_settings', function (Blueprint $table) {
             $table->id();
             $table->foreignId('menu_id')->constrained()->onDelete('cascade');
-            $table->string('theme_color')->default('#3b82f6');
-            $table->string('currency')->default('USD');
-            $table->string('language')->default('en');
+            $table->foreignId('setting_id')->constrained()->onDelete('cascade');
+            $table->text('value')->nullable();
             $table->timestamps();
+
+            // Unique constraint for menu_id + setting_id combination
+            $table->unique(['menu_id', 'setting_id'], 'menu_settings_menu_id_setting_id_unique');
         });
     }
 
