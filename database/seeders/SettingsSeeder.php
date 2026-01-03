@@ -109,6 +109,18 @@ class SettingsSeeder extends Seeder
                 'description' => 'Font style for the menu (sans, serif, mono)',
                 'type' => 'string',
             ],
+            [
+                'title' => 'Price Position (Default Design)',
+                'key' => 'price_position',
+                'description' => 'Where to display the price on dishes (only for default design)',
+                'type' => 'string',
+            ],
+            [
+                'title' => 'Category Default State',
+                'key' => 'category_default_state',
+                'description' => 'Default state for categories (open or closed)',
+                'type' => 'string',
+            ],
         ];
 
         foreach ($settings as $settingData) {

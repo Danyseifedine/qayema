@@ -186,6 +186,8 @@ class Menu extends Model
             'show_ingredients' => true,
             'enable_share' => true,
             'font_family' => 'sans',
+            'price_position' => 'bottom_right',
+            'category_default_state' => 'open',
         ];
 
         foreach ($defaults as $key => $value) {
@@ -203,5 +205,53 @@ class Menu extends Model
                 );
             }
         }
+    }
+
+    /**
+     * Get all menu settings as an associative array.
+     */
+    public function getSettings(): array
+    {
+        $defaults = [
+            'menu_design' => 'default',
+            'currency_enabled' => false,
+            'exchange_currency' => null,
+            'exchange_rate' => null,
+            'show_prices' => true,
+            'language' => 'en',
+            'show_dish_image' => true,
+            'show_category_image' => true,
+            'show_logo' => true,
+            'show_restaurant_info' => true,
+            'show_address' => true,
+            'show_phone_number' => true,
+            'show_social_links' => true,
+            'show_ingredients' => true,
+            'enable_share' => true,
+            'font_family' => 'sans',
+            'price_position' => 'bottom_right',
+            'category_default_state' => 'open',
+        ];
+
+        $settings = $this->settings()->with('setting')->get();
+        $result = $defaults;
+
+        foreach ($settings as $menuSetting) {
+            if ($menuSetting->setting) {
+                $result[$menuSetting->setting->key] = $menuSetting->value;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get a specific menu setting value.
+     */
+    public function getSetting(string $key, mixed $default = null): mixed
+    {
+        $settings = $this->getSettings();
+
+        return $settings[$key] ?? $default;
     }
 }

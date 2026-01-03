@@ -77,6 +77,8 @@ class MenuSettingController extends Controller
                     'show_ingredients' => true,
                     'enable_share' => true,
                     'font_family' => 'sans',
+                    'price_position' => 'bottom_right',
+                    'category_default_state' => 'open',
                 ];
                 $value = $defaults[$setting->key] ?? null;
             }
@@ -96,7 +98,7 @@ class MenuSettingController extends Controller
                 $groupedSettings['display']['settings'][] = $settingData;
             } elseif (in_array($setting->key, ['currency_enabled', 'exchange_currency', 'exchange_rate', 'show_prices'])) {
                 $groupedSettings['currency']['settings'][] = $settingData;
-            } elseif (in_array($setting->key, ['menu_design', 'font_family'])) {
+            } elseif (in_array($setting->key, ['menu_design', 'font_family', 'price_position', 'category_default_state'])) {
                 $groupedSettings['design']['settings'][] = $settingData;
             } else {
                 $groupedSettings['general']['settings'][] = $settingData;

@@ -41,11 +41,29 @@ class PublicMenuController extends Controller
             ->orderBy('display_order')
             ->get();
 
-        return view('public.menu', [
+        // Ensure default settings exist
+        $menu->setDefaultSettings();
+
+        // Get menu settings
+        $settings = $menu->getSettings();
+        $design = $settings['menu_design'] ?? 'default';
+
+        // Determine which design view to use
+        $viewMap = [
+            'default' => 'public.menu.designs.default',
+            'modern' => 'public.menu.designs.modern',
+            'minimal' => 'public.menu.designs.minimal',
+            'classic' => 'public.menu.designs.classic',
+        ];
+
+        $viewName = $viewMap[$design] ?? $viewMap['default'];
+
+        return view($viewName, [
             'menu' => $menu,
             'user' => $user,
             'categories' => $categories,
             'uncategorizedDishes' => $uncategorizedDishes,
+            'settings' => $settings,
         ]);
     }
 

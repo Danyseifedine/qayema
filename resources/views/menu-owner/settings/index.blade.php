@@ -5,10 +5,10 @@
         </h2>
     </x-slot>
 
-    <div class="py-12" x-data="{ 
+    <div class="py-12" x-data="{
         activeTab: 'display',
         currencyEnabled: @php
-            $currencyEnabled = false;
+$currencyEnabled = false;
             if (isset($groupedSettings['currency']['settings'])) {
                 foreach ($groupedSettings['currency']['settings'] as $setting) {
                     if ($setting['key'] === 'currency_enabled') {
@@ -17,10 +17,9 @@
                     }
                 }
             }
-            echo $currencyEnabled ? 'true' : 'false';
-        @endphp,
+            echo $currencyEnabled ? 'true' : 'false'; @endphp,
         selectedFont: @php
-            $fontFamily = 'sans';
+$fontFamily = 'sans';
             if (isset($groupedSettings['design']['settings'])) {
                 foreach ($groupedSettings['design']['settings'] as $setting) {
                     if ($setting['key'] === 'font_family') {
@@ -29,8 +28,7 @@
                     }
                 }
             }
-            echo "'" . $fontFamily . "'";
-        @endphp,
+            echo "'" . $fontFamily . "'"; @endphp,
         getFontStyle(font) {
             const fontMap = {
                 'sans': 'font-family: system-ui, -apple-system, sans-serif;',
@@ -97,7 +95,8 @@
                         <nav class="flex -mb-px" aria-label="Tabs">
                             @foreach ($groupedSettings as $key => $group)
                                 <button @click="activeTab = '{{ $key }}'"
-                                    :class="activeTab === '{{ $key }}' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                                    :class="activeTab === '{{ $key }}' ? 'border-indigo-500 text-indigo-600' :
+                                        'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                                     class="flex-1 whitespace-nowrap border-b-2 py-4 px-1 text-center text-sm font-medium transition-colors">
                                     <svg class="w-5 h-5 mx-auto mb-1"
                                         :class="activeTab === '{{ $key }}' ? 'text-indigo-600' : 'text-gray-400'"
@@ -142,20 +141,20 @@
                                                         {{ $setting['title'] }}
                                                     </label>
                                                     @if ($setting['description'])
-                                                        <p class="mt-1 text-sm text-gray-500">{{ $setting['description'] }}</p>
+                                                        <p class="mt-1 text-sm text-gray-500">
+                                                            {{ $setting['description'] }}</p>
                                                     @endif
                                                 </div>
 
                                                 <div class="ml-4 flex-shrink-0">
                                                     @if ($setting['type'] === 'boolean')
                                                         <label class="relative inline-flex items-center cursor-pointer">
-                                                            <input type="hidden" name="settings[{{ $setting['id'] }}]" value="0">
-                                                            <input type="checkbox" name="settings[{{ $setting['id'] }}]"
-                                                                value="1"
-                                                                {{ ($setting['value'] ?? false) ? 'checked' : '' }}
-                                                                @if ($setting['key'] === 'currency_enabled')
-                                                                    x-model="currencyEnabled"
-                                                                @endif
+                                                            <input type="hidden" name="settings[{{ $setting['id'] }}]"
+                                                                value="0">
+                                                            <input type="checkbox"
+                                                                name="settings[{{ $setting['id'] }}]" value="1"
+                                                                {{ $setting['value'] ?? false ? 'checked' : '' }}
+                                                                @if ($setting['key'] === 'currency_enabled') x-model="currencyEnabled" @endif
                                                                 class="sr-only peer"
                                                                 onchange="this.previousElementSibling.value = this.checked ? '1' : '0'">
                                                             <div
@@ -165,17 +164,57 @@
                                                     @elseif ($setting['type'] === 'string' && $setting['key'] === 'menu_design')
                                                         <select name="settings[{{ $setting['id'] }}]"
                                                             class="mt-1 block w-48 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                                            <option value="default" {{ ($setting['value'] ?? 'default') === 'default' ? 'selected' : '' }}>
+                                                            <option value="default"
+                                                                {{ ($setting['value'] ?? 'default') === 'default' ? 'selected' : '' }}>
                                                                 Default
                                                             </option>
-                                                            <option value="modern" {{ ($setting['value'] ?? '') === 'modern' ? 'selected' : '' }}>
+                                                            <option value="modern"
+                                                                {{ ($setting['value'] ?? '') === 'modern' ? 'selected' : '' }}>
                                                                 Modern
                                                             </option>
-                                                            <option value="classic" {{ ($setting['value'] ?? '') === 'classic' ? 'selected' : '' }}>
+                                                            <option value="classic"
+                                                                {{ ($setting['value'] ?? '') === 'classic' ? 'selected' : '' }}>
                                                                 Classic
                                                             </option>
-                                                            <option value="minimal" {{ ($setting['value'] ?? '') === 'minimal' ? 'selected' : '' }}>
+                                                            <option value="minimal"
+                                                                {{ ($setting['value'] ?? '') === 'minimal' ? 'selected' : '' }}>
                                                                 Minimal
+                                                            </option>
+                                                        </select>
+                                                    @elseif ($setting['type'] === 'string' && $setting['key'] === 'price_position')
+                                                        <select name="settings[{{ $setting['id'] }}]"
+                                                            class="mt-1 block w-64 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                                            <option value="next_to_title"
+                                                                {{ ($setting['value'] ?? 'bottom_right') === 'next_to_title' ? 'selected' : '' }}>
+                                                                Next to Title
+                                                            </option>
+                                                            <option value="bottom_left"
+                                                                {{ ($setting['value'] ?? '') === 'bottom_left' ? 'selected' : '' }}>
+                                                                Bottom Left (on image)
+                                                            </option>
+                                                            <option value="bottom_right"
+                                                                {{ ($setting['value'] ?? 'bottom_right') === 'bottom_right' ? 'selected' : '' }}>
+                                                                Bottom Right (on image)
+                                                            </option>
+                                                            <option value="top_left"
+                                                                {{ ($setting['value'] ?? '') === 'top_left' ? 'selected' : '' }}>
+                                                                Top Left (on image)
+                                                            </option>
+                                                            <option value="top_right"
+                                                                {{ ($setting['value'] ?? '') === 'top_right' ? 'selected' : '' }}>
+                                                                Top Right (on image)
+                                                            </option>
+                                                        </select>
+                                                    @elseif ($setting['type'] === 'string' && $setting['key'] === 'category_default_state')
+                                                        <select name="settings[{{ $setting['id'] }}]"
+                                                            class="mt-1 block w-64 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                                            <option value="open"
+                                                                {{ ($setting['value'] ?? 'open') === 'open' ? 'selected' : '' }}>
+                                                                Open
+                                                            </option>
+                                                            <option value="closed"
+                                                                {{ ($setting['value'] ?? '') === 'closed' ? 'selected' : '' }}>
+                                                                Closed
                                                             </option>
                                                         </select>
                                                     @elseif ($setting['type'] === 'string' && $setting['key'] === 'font_family')
@@ -184,130 +223,172 @@
                                                                 x-model="selectedFont"
                                                                 class="block w-64 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                                                 <optgroup label="System Fonts">
-                                                                    <option value="sans" {{ ($setting['value'] ?? 'sans') === 'sans' ? 'selected' : '' }}>
+                                                                    <option value="sans"
+                                                                        {{ ($setting['value'] ?? 'sans') === 'sans' ? 'selected' : '' }}>
                                                                         Sans Serif (System Default)
                                                                     </option>
-                                                                    <option value="serif" {{ ($setting['value'] ?? '') === 'serif' ? 'selected' : '' }}>
+                                                                    <option value="serif"
+                                                                        {{ ($setting['value'] ?? '') === 'serif' ? 'selected' : '' }}>
                                                                         Serif (System Default)
                                                                     </option>
-                                                                    <option value="mono" {{ ($setting['value'] ?? '') === 'mono' ? 'selected' : '' }}>
+                                                                    <option value="mono"
+                                                                        {{ ($setting['value'] ?? '') === 'mono' ? 'selected' : '' }}>
                                                                         Monospace (System Default)
                                                                     </option>
-                                                                    <option value="cursive" {{ ($setting['value'] ?? '') === 'cursive' ? 'selected' : '' }}>
+                                                                    <option value="cursive"
+                                                                        {{ ($setting['value'] ?? '') === 'cursive' ? 'selected' : '' }}>
                                                                         Cursive (System Default)
                                                                     </option>
                                                                 </optgroup>
                                                                 <optgroup label="Modern Sans Serif">
-                                                                    <option value="inter" {{ ($setting['value'] ?? '') === 'inter' ? 'selected' : '' }}>
+                                                                    <option value="inter"
+                                                                        {{ ($setting['value'] ?? '') === 'inter' ? 'selected' : '' }}>
                                                                         Inter
                                                                     </option>
-                                                                    <option value="roboto" {{ ($setting['value'] ?? '') === 'roboto' ? 'selected' : '' }}>
+                                                                    <option value="roboto"
+                                                                        {{ ($setting['value'] ?? '') === 'roboto' ? 'selected' : '' }}>
                                                                         Roboto
                                                                     </option>
-                                                                    <option value="open-sans" {{ ($setting['value'] ?? '') === 'open-sans' ? 'selected' : '' }}>
+                                                                    <option value="open-sans"
+                                                                        {{ ($setting['value'] ?? '') === 'open-sans' ? 'selected' : '' }}>
                                                                         Open Sans
                                                                     </option>
-                                                                    <option value="lato" {{ ($setting['value'] ?? '') === 'lato' ? 'selected' : '' }}>
+                                                                    <option value="lato"
+                                                                        {{ ($setting['value'] ?? '') === 'lato' ? 'selected' : '' }}>
                                                                         Lato
                                                                     </option>
-                                                                    <option value="montserrat" {{ ($setting['value'] ?? '') === 'montserrat' ? 'selected' : '' }}>
+                                                                    <option value="montserrat"
+                                                                        {{ ($setting['value'] ?? '') === 'montserrat' ? 'selected' : '' }}>
                                                                         Montserrat
                                                                     </option>
-                                                                    <option value="poppins" {{ ($setting['value'] ?? '') === 'poppins' ? 'selected' : '' }}>
+                                                                    <option value="poppins"
+                                                                        {{ ($setting['value'] ?? '') === 'poppins' ? 'selected' : '' }}>
                                                                         Poppins
                                                                     </option>
-                                                                    <option value="raleway" {{ ($setting['value'] ?? '') === 'raleway' ? 'selected' : '' }}>
+                                                                    <option value="raleway"
+                                                                        {{ ($setting['value'] ?? '') === 'raleway' ? 'selected' : '' }}>
                                                                         Raleway
                                                                     </option>
-                                                                    <option value="nunito" {{ ($setting['value'] ?? '') === 'nunito' ? 'selected' : '' }}>
+                                                                    <option value="nunito"
+                                                                        {{ ($setting['value'] ?? '') === 'nunito' ? 'selected' : '' }}>
                                                                         Nunito
                                                                     </option>
-                                                                    <option value="ubuntu" {{ ($setting['value'] ?? '') === 'ubuntu' ? 'selected' : '' }}>
+                                                                    <option value="ubuntu"
+                                                                        {{ ($setting['value'] ?? '') === 'ubuntu' ? 'selected' : '' }}>
                                                                         Ubuntu
                                                                     </option>
-                                                                    <option value="source-sans-pro" {{ ($setting['value'] ?? '') === 'source-sans-pro' ? 'selected' : '' }}>
+                                                                    <option value="source-sans-pro"
+                                                                        {{ ($setting['value'] ?? '') === 'source-sans-pro' ? 'selected' : '' }}>
                                                                         Source Sans Pro
                                                                     </option>
-                                                                    <option value="pt-sans" {{ ($setting['value'] ?? '') === 'pt-sans' ? 'selected' : '' }}>
+                                                                    <option value="pt-sans"
+                                                                        {{ ($setting['value'] ?? '') === 'pt-sans' ? 'selected' : '' }}>
                                                                         PT Sans
                                                                     </option>
-                                                                    <option value="noto-sans" {{ ($setting['value'] ?? '') === 'noto-sans' ? 'selected' : '' }}>
+                                                                    <option value="noto-sans"
+                                                                        {{ ($setting['value'] ?? '') === 'noto-sans' ? 'selected' : '' }}>
                                                                         Noto Sans
                                                                     </option>
-                                                                    <option value="work-sans" {{ ($setting['value'] ?? '') === 'work-sans' ? 'selected' : '' }}>
+                                                                    <option value="work-sans"
+                                                                        {{ ($setting['value'] ?? '') === 'work-sans' ? 'selected' : '' }}>
                                                                         Work Sans
                                                                     </option>
-                                                                    <option value="rubik" {{ ($setting['value'] ?? '') === 'rubik' ? 'selected' : '' }}>
+                                                                    <option value="rubik"
+                                                                        {{ ($setting['value'] ?? '') === 'rubik' ? 'selected' : '' }}>
                                                                         Rubik
                                                                     </option>
-                                                                    <option value="quicksand" {{ ($setting['value'] ?? '') === 'quicksand' ? 'selected' : '' }}>
+                                                                    <option value="quicksand"
+                                                                        {{ ($setting['value'] ?? '') === 'quicksand' ? 'selected' : '' }}>
                                                                         Quicksand
                                                                     </option>
-                                                                    <option value="karla" {{ ($setting['value'] ?? '') === 'karla' ? 'selected' : '' }}>
+                                                                    <option value="karla"
+                                                                        {{ ($setting['value'] ?? '') === 'karla' ? 'selected' : '' }}>
                                                                         Karla
                                                                     </option>
-                                                                    <option value="dm-sans" {{ ($setting['value'] ?? '') === 'dm-sans' ? 'selected' : '' }}>
+                                                                    <option value="dm-sans"
+                                                                        {{ ($setting['value'] ?? '') === 'dm-sans' ? 'selected' : '' }}>
                                                                         DM Sans
                                                                     </option>
-                                                                    <option value="manrope" {{ ($setting['value'] ?? '') === 'manrope' ? 'selected' : '' }}>
+                                                                    <option value="manrope"
+                                                                        {{ ($setting['value'] ?? '') === 'manrope' ? 'selected' : '' }}>
                                                                         Manrope
                                                                     </option>
-                                                                    <option value="outfit" {{ ($setting['value'] ?? '') === 'outfit' ? 'selected' : '' }}>
+                                                                    <option value="outfit"
+                                                                        {{ ($setting['value'] ?? '') === 'outfit' ? 'selected' : '' }}>
                                                                         Outfit
                                                                     </option>
-                                                                    <option value="plus-jakarta-sans" {{ ($setting['value'] ?? '') === 'plus-jakarta-sans' ? 'selected' : '' }}>
+                                                                    <option value="plus-jakarta-sans"
+                                                                        {{ ($setting['value'] ?? '') === 'plus-jakarta-sans' ? 'selected' : '' }}>
                                                                         Plus Jakarta Sans
                                                                     </option>
-                                                                    <option value="space-grotesk" {{ ($setting['value'] ?? '') === 'space-grotesk' ? 'selected' : '' }}>
+                                                                    <option value="space-grotesk"
+                                                                        {{ ($setting['value'] ?? '') === 'space-grotesk' ? 'selected' : '' }}>
                                                                         Space Grotesk
                                                                     </option>
-                                                                    <option value="josefin-sans" {{ ($setting['value'] ?? '') === 'josefin-sans' ? 'selected' : '' }}>
+                                                                    <option value="josefin-sans"
+                                                                        {{ ($setting['value'] ?? '') === 'josefin-sans' ? 'selected' : '' }}>
                                                                         Josefin Sans
                                                                     </option>
                                                                 </optgroup>
                                                                 <optgroup label="Serif Fonts">
-                                                                    <option value="playfair" {{ ($setting['value'] ?? '') === 'playfair' ? 'selected' : '' }}>
+                                                                    <option value="playfair"
+                                                                        {{ ($setting['value'] ?? '') === 'playfair' ? 'selected' : '' }}>
                                                                         Playfair Display
                                                                     </option>
-                                                                    <option value="merriweather" {{ ($setting['value'] ?? '') === 'merriweather' ? 'selected' : '' }}>
+                                                                    <option value="merriweather"
+                                                                        {{ ($setting['value'] ?? '') === 'merriweather' ? 'selected' : '' }}>
                                                                         Merriweather
                                                                     </option>
-                                                                    <option value="crimson-text" {{ ($setting['value'] ?? '') === 'crimson-text' ? 'selected' : '' }}>
+                                                                    <option value="crimson-text"
+                                                                        {{ ($setting['value'] ?? '') === 'crimson-text' ? 'selected' : '' }}>
                                                                         Crimson Text
                                                                     </option>
-                                                                    <option value="lora" {{ ($setting['value'] ?? '') === 'lora' ? 'selected' : '' }}>
+                                                                    <option value="lora"
+                                                                        {{ ($setting['value'] ?? '') === 'lora' ? 'selected' : '' }}>
                                                                         Lora
                                                                     </option>
-                                                                    <option value="libre-baskerville" {{ ($setting['value'] ?? '') === 'libre-baskerville' ? 'selected' : '' }}>
+                                                                    <option value="libre-baskerville"
+                                                                        {{ ($setting['value'] ?? '') === 'libre-baskerville' ? 'selected' : '' }}>
                                                                         Libre Baskerville
                                                                     </option>
-                                                                    <option value="pt-serif" {{ ($setting['value'] ?? '') === 'pt-serif' ? 'selected' : '' }}>
+                                                                    <option value="pt-serif"
+                                                                        {{ ($setting['value'] ?? '') === 'pt-serif' ? 'selected' : '' }}>
                                                                         PT Serif
                                                                     </option>
-                                                                    <option value="eb-garamond" {{ ($setting['value'] ?? '') === 'eb-garamond' ? 'selected' : '' }}>
+                                                                    <option value="eb-garamond"
+                                                                        {{ ($setting['value'] ?? '') === 'eb-garamond' ? 'selected' : '' }}>
                                                                         EB Garamond
                                                                     </option>
-                                                                    <option value="cormorant-garamond" {{ ($setting['value'] ?? '') === 'cormorant-garamond' ? 'selected' : '' }}>
+                                                                    <option value="cormorant-garamond"
+                                                                        {{ ($setting['value'] ?? '') === 'cormorant-garamond' ? 'selected' : '' }}>
                                                                         Cormorant Garamond
                                                                     </option>
-                                                                    <option value="libre-caslon-text" {{ ($setting['value'] ?? '') === 'libre-caslon-text' ? 'selected' : '' }}>
+                                                                    <option value="libre-caslon-text"
+                                                                        {{ ($setting['value'] ?? '') === 'libre-caslon-text' ? 'selected' : '' }}>
                                                                         Libre Caslon Text
                                                                     </option>
                                                                 </optgroup>
                                                             </select>
                                                             <!-- Font Preview -->
-                                                            <div class="mt-4 p-5 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border-2 border-gray-200 shadow-sm">
-                                                                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Live Preview</p>
+                                                            <div
+                                                                class="mt-4 p-5 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border-2 border-gray-200 shadow-sm">
+                                                                <p
+                                                                    class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                                                                    Live Preview</p>
                                                                 <div class="space-y-3">
-                                                                    <p class="text-3xl font-semibold leading-tight" :style="getFontStyle(selectedFont)">
+                                                                    <p class="text-3xl font-semibold leading-tight"
+                                                                        :style="getFontStyle(selectedFont)">
                                                                         The quick brown fox jumps over the lazy dog
                                                                     </p>
-                                                                    <p class="text-lg leading-relaxed" :style="getFontStyle(selectedFont)">
+                                                                    <p class="text-lg leading-relaxed"
+                                                                        :style="getFontStyle(selectedFont)">
                                                                         Sample menu item with price
                                                                     </p>
                                                                     <div class="pt-2 border-t border-gray-300">
-                                                                        <p class="text-xs text-gray-600 mb-1">Character Set:</p>
-                                                                        <p class="text-sm leading-relaxed" :style="getFontStyle(selectedFont)">
+                                                                        <p class="text-xs text-gray-600 mb-1">Character
+                                                                            Set:</p>
+                                                                        <p class="text-sm leading-relaxed"
+                                                                            :style="getFontStyle(selectedFont)">
                                                                             ABCDEFGHIJKLMNOPQRSTUVWXYZ<br>
                                                                             abcdefghijklmnopqrstuvwxyz<br>
                                                                             0123456789 !@#$%^&*()
@@ -318,21 +399,24 @@
                                                         </div>
                                                     @elseif ($setting['type'] === 'string')
                                                         @if ($setting['key'] === 'language')
-                                                            <input type="text" name="settings[{{ $setting['id'] }}]"
+                                                            <input type="text"
+                                                                name="settings[{{ $setting['id'] }}]"
                                                                 value="{{ $setting['value'] ?? '' }}"
-                                                                placeholder="e.g., en, ar"
-                                                                disabled
+                                                                placeholder="e.g., en, ar" disabled
                                                                 class="mt-1 block w-64 rounded-md border-gray-300 shadow-sm bg-gray-100 cursor-not-allowed">
-                                                            <p class="mt-1 text-xs text-gray-500">Language setting is currently disabled</p>
+                                                            <p class="mt-1 text-xs text-gray-500">Language setting is
+                                                                currently disabled</p>
                                                         @elseif ($setting['key'] === 'exchange_currency')
-                                                            <input type="text" name="settings[{{ $setting['id'] }}]"
+                                                            <input type="text"
+                                                                name="settings[{{ $setting['id'] }}]"
                                                                 value="{{ $setting['value'] ?? '' }}"
                                                                 placeholder="e.g., LBP, EUR"
                                                                 :disabled="!currencyEnabled"
                                                                 :class="!currencyEnabled ? 'bg-gray-100 cursor-not-allowed' : ''"
                                                                 class="mt-1 block w-64 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                                         @else
-                                                            <input type="text" name="settings[{{ $setting['id'] }}]"
+                                                            <input type="text"
+                                                                name="settings[{{ $setting['id'] }}]"
                                                                 value="{{ $setting['value'] ?? '' }}"
                                                                 class="mt-1 block w-64 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                                         @endif
@@ -340,11 +424,9 @@
                                                         <input type="number" name="settings[{{ $setting['id'] }}]"
                                                             value="{{ $setting['value'] ?? '' }}"
                                                             step="{{ $setting['type'] === 'float' ? '0.01' : '1' }}"
-                                                            @if ($setting['key'] === 'exchange_rate')
-                                                                placeholder="e.g., 15000"
+                                                            @if ($setting['key'] === 'exchange_rate') placeholder="e.g., 15000"
                                                                 :disabled="!currencyEnabled"
-                                                                :class="!currencyEnabled ? 'bg-gray-100 cursor-not-allowed' : ''"
-                                                            @endif
+                                                                :class="!currencyEnabled ? 'bg-gray-100 cursor-not-allowed' : ''" @endif
                                                             class="mt-1 block w-48 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                                     @endif
                                                 </div>

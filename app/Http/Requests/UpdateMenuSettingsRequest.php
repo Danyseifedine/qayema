@@ -47,6 +47,10 @@ class UpdateMenuSettingsRequest extends FormRequest
                         $rules[$key] = ['nullable', 'string', 'in:default,modern,classic,minimal'];
                     } elseif ($setting->key === 'font_family') {
                         $rules[$key] = ['nullable', 'string', 'in:sans,serif,mono,cursive,inter,roboto,open-sans,lato,montserrat,poppins,raleway,nunito,ubuntu,source-sans-pro,pt-sans,noto-sans,work-sans,rubik,quicksand,karla,dm-sans,manrope,outfit,plus-jakarta-sans,space-grotesk,josefin-sans,playfair,merriweather,crimson-text,lora,libre-baskerville,pt-serif,eb-garamond,cormorant-garamond,libre-caslon-text'];
+                    } elseif ($setting->key === 'price_position') {
+                        $rules[$key] = ['nullable', 'string', 'in:next_to_title,bottom_left,bottom_right,top_left,top_right'];
+                    } elseif ($setting->key === 'category_default_state') {
+                        $rules[$key] = ['nullable', 'string', 'in:open,closed'];
                     } elseif ($setting->key === 'language') {
                         $rules[$key] = ['nullable', 'string', 'max:10'];
                     } elseif ($setting->key === 'exchange_currency') {
