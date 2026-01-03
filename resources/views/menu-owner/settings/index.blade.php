@@ -33,6 +33,14 @@
                 }
             }
         }
+        $enableShare = true;
+        if (isset($groupedSettings['general']['settings'])) {
+            foreach ($groupedSettings['general']['settings'] as $setting) {
+                if ($setting['key'] === 'enable_share') {
+                    $enableShare = (bool) ($setting['value'] ?? true);
+                }
+            }
+        }
     @endphp
     <div class="py-6 sm:py-12" x-data="{
         activeTab: 'display',
@@ -40,6 +48,7 @@
         selectedFont: '{{ $fontFamily }}',
         menuDesign: '{{ $menuDesign }}',
         categoryCollapsible: {{ $categoryCollapsible ? 'true' : 'false' }},
+        enableShare: {{ $enableShare ? 'true' : 'false' }},
         getFontStyle(font) {
             const fontMap = {
                 'sans': 'font-family: system-ui, -apple-system, sans-serif;',
@@ -151,6 +160,8 @@
                                             $isDefaultDesignOnly = in_array($setting['key'], $defaultDesignOnlySettings);
                                             $collapsibleDependentSettings = ['category_default_state'];
                                             $isCollapsibleDependent = in_array($setting['key'], $collapsibleDependentSettings);
+                                            $shareDependentSettings = ['share_button_position'];
+                                            $isShareDependent = in_array($setting['key'], $shareDependentSettings);
                                             $currencyDependentSettings = ['exchange_currency', 'exchange_rate'];
                                             $isCurrencyDependent = in_array($setting['key'], $currencyDependentSettings);
                                         @endphp
@@ -160,6 +171,9 @@
                                                 x-cloak
                                             @elseif ($isDefaultDesignOnly)
                                                 x-show="menuDesign === 'default'"
+                                                x-cloak
+                                            @elseif ($isShareDependent)
+                                                x-show="enableShare"
                                                 x-cloak
                                             @endif
                                         >
@@ -194,6 +208,7 @@
                                                                 {{ $setting['value'] ?? false ? 'checked' : '' }}
                                                                 @if ($setting['key'] === 'currency_enabled') x-model="currencyEnabled" @endif
                                                                 @if ($setting['key'] === 'category_collapsible') x-model="categoryCollapsible" @endif
+                                                                @if ($setting['key'] === 'enable_share') x-model="enableShare" @endif
                                                                 @if ($isCurrencyDependent) :disabled="!currencyEnabled" @endif
                                                                 class="sr-only peer"
                                                                 onchange="this.previousElementSibling.value = this.checked ? '1' : '0'">
@@ -238,6 +253,24 @@
                                                             </option>
                                                             <option value="closed" {{ ($setting['value'] ?? '') === 'closed' ? 'selected' : '' }}>
                                                                 Closed
+                                                            </option>
+                                                        </select>
+                                                    @elseif ($setting['type'] === 'string' && $setting['key'] === 'share_button_position')
+                                                        <select name="settings[{{ $setting['id'] }}]"
+                                                            :disabled="!enableShare"
+                                                            :class="!enableShare ? 'bg-gray-100 cursor-not-allowed opacity-50' : ''"
+                                                            class="block w-full sm:w-48 text-sm rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                                            <option value="bottom_right" {{ ($setting['value'] ?? 'bottom_right') === 'bottom_right' ? 'selected' : '' }}>
+                                                                Bottom Right
+                                                            </option>
+                                                            <option value="bottom_left" {{ ($setting['value'] ?? '') === 'bottom_left' ? 'selected' : '' }}>
+                                                                Bottom Left
+                                                            </option>
+                                                            <option value="top_right" {{ ($setting['value'] ?? '') === 'top_right' ? 'selected' : '' }}>
+                                                                Top Right
+                                                            </option>
+                                                            <option value="top_left" {{ ($setting['value'] ?? '') === 'top_left' ? 'selected' : '' }}>
+                                                                Top Left
                                                             </option>
                                                         </select>
                                                     @elseif ($setting['type'] === 'string' && $setting['key'] === 'font_family')

@@ -110,6 +110,12 @@ class SettingsSeeder extends Seeder
                 'type' => 'boolean',
             ],
             [
+                'title' => 'Share Button Position',
+                'key' => 'share_button_position',
+                'description' => 'Position of the share button on the menu',
+                'type' => 'string',
+            ],
+            [
                 'title' => 'Font Family',
                 'key' => 'font_family',
                 'description' => 'Font style for the menu (sans, serif, mono)',

@@ -520,7 +520,26 @@
 
     <!-- Share Button (only for default design) -->
     @if (($settings['enable_share'] ?? true) && ($settings['menu_design'] ?? 'default') === 'default')
-        <div x-data="{ open: false }" class="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+        @php
+            $sharePosition = $settings['share_button_position'] ?? 'bottom_right';
+            $sharePositionClasses = match ($sharePosition) {
+                'bottom_left' => 'bottom-6 left-6 items-start',
+                'bottom_right' => 'bottom-6 right-6 items-end',
+                'top_left' => 'top-0 left-4 items-start',
+                'top_right' => 'top-0 right-4 items-end',
+                default => 'bottom-6 right-6 items-end',
+            };
+            $menuPosition = match ($sharePosition) {
+                'bottom_left' => 'mb-3',
+                'bottom_right' => 'mb-3',
+                'top_left' => 'mt-3',
+                'top_right' => 'mt-3',
+                default => 'mb-3',
+            };
+            $isTopPosition = in_array($sharePosition, ['top_left', 'top_right']);
+        @endphp
+        <div x-data="{ open: false }"
+            class="fixed {{ $sharePositionClasses }} z-50 flex flex-col {{ $isTopPosition ? 'flex-col-reverse' : '' }}">
             <!-- Backdrop -->
             <div x-show="open" x-cloak x-transition:enter="transition-opacity ease-out duration-200"
                 x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
@@ -536,7 +555,7 @@
                 x-transition:leave-start="opacity-100 transform scale-100 translate-y-0 rotate-0"
                 x-transition:leave-end="opacity-0 transform scale-90 translate-y-4 -rotate-3"
                 @click.away="open = false"
-                class="mb-3 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden min-w-[200px] transform-gpu">
+                class="{{ $menuPosition }} bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden min-w-[200px] transform-gpu">
                 <!-- Copy Link -->
                 <button @click="copyMenuLink(); open = false"
                     class="w-full px-5 py-3.5 text-left hover:bg-indigo-50 transition-all duration-200 flex items-center gap-3 text-gray-700 group relative overflow-hidden">

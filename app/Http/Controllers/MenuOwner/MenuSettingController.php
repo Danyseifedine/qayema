@@ -77,6 +77,7 @@ class MenuSettingController extends Controller
                     'show_social_links' => true,
                     'show_ingredients' => true,
                     'enable_share' => true,
+                    'share_button_position' => 'bottom_right',
                     'font_family' => 'sans',
                     'price_position' => 'bottom_right',
                     'category_collapsible' => true,
