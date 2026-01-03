@@ -258,6 +258,7 @@ class Menu extends Model
             'category_layout' => 'grid',
             'category_collapsible' => true,
             'category_default_state' => 'open',
+            'dish_layout' => 'default',
         ];
 
         $settings = $this->settings()->with('setting')->get();

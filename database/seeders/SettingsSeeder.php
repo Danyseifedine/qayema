@@ -145,6 +145,12 @@ class SettingsSeeder extends Seeder
                 'description' => 'Default state for categories when collapsible is enabled (open or closed)',
                 'type' => 'string',
             ],
+            [
+                'title' => 'Dish Layout',
+                'key' => 'dish_layout',
+                'description' => 'Layout style for displaying individual dishes (not available for list layout)',
+                'type' => 'string',
+            ],
         ];
 
         foreach ($settings as $settingData) {

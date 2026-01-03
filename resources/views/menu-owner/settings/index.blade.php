@@ -52,6 +52,7 @@
         selectedFont: '{{ $fontFamily }}',
         menuDesign: '{{ $menuDesign }}',
         categoryLayout: '{{ $categoryLayout }}',
+        dishLayout: '{{ $groupedSettings['design']['settings'][array_search('dish_layout', array_column($groupedSettings['design']['settings'] ?? [], 'key'))]['value'] ?? 'default' }}',
         categoryCollapsible: {{ $categoryCollapsible ? 'true' : 'false' }},
         enableShare: {{ $enableShare ? 'true' : 'false' }},
         getFontStyle(font) {
@@ -188,6 +189,9 @@
                                             // Grid-only settings (disabled for all layouts except grid)
                                             $gridOnlySettings = ['category_collapsible', 'category_default_state'];
                                             $isGridOnly = in_array($setting['key'], $gridOnlySettings);
+
+                                            // Dish layout is disabled for list and cards (horizontal cards) category layouts
+                                            $isDishLayout = $setting['key'] === 'dish_layout';
                                             $shareDependentSettings = ['share_button_position'];
                                             $isShareDependent = in_array($setting['key'], $shareDependentSettings);
                                             $currencyDependentSettings = ['exchange_currency', 'exchange_rate'];
@@ -213,14 +217,23 @@
                                                 // Grid-only settings are disabled when layout is not grid
                                                 $gridOnlyCondition = $isGridOnly ? "categoryLayout !== 'grid'" : '';
 
+                                                // Dish layout is disabled for list and cards (horizontal cards) category layouts
+                                                $dishLayoutCondition = $isDishLayout
+                                                    ? "categoryLayout === 'list' || categoryLayout === 'cards'"
+                                                    : '';
+
                                                 // Combine conditions for visual indicators
                                                 $visualDisabledCondition = '';
-                                                if ($layoutConditionForSetting && $gridOnlyCondition) {
-                                                    $visualDisabledCondition = "($layoutConditionForSetting) || ($gridOnlyCondition)";
-                                                } elseif ($layoutConditionForSetting) {
-                                                    $visualDisabledCondition = $layoutConditionForSetting;
-                                                } elseif ($gridOnlyCondition) {
-                                                    $visualDisabledCondition = $gridOnlyCondition;
+                                                $conditions = array_filter([
+                                                    $layoutConditionForSetting,
+                                                    $gridOnlyCondition,
+                                                    $dishLayoutCondition,
+                                                ]);
+                                                if (count($conditions) > 1) {
+                                                    $visualDisabledCondition =
+                                                        '(' . implode(') || (', $conditions) . ')';
+                                                } elseif (count($conditions) === 1) {
+                                                    $visualDisabledCondition = reset($conditions);
                                                 }
                                             @endphp
                                             <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4"
@@ -238,7 +251,13 @@
                                                         @if ($visualDisabledCondition)
                                                             <span x-show="{{ $visualDisabledCondition }}"
                                                                 class="text-[10px] sm:text-xs font-normal text-amber-600 bg-amber-50 px-1.5 sm:px-2 py-0.5 rounded-full whitespace-nowrap">
-                                                                {{ $isGridOnly ? 'Only available for Grid layout' : 'Disabled for this layout' }}
+                                                                @if ($isGridOnly)
+                                                                    Only available for Grid layout
+                                                                @elseif ($isDishLayout)
+                                                                    Not available for List or Horizontal Cards layout
+                                                                @else
+                                                                    Disabled for this layout
+                                                                @endif
                                                             </span>
                                                         @endif
                                                     </label>
@@ -281,6 +300,13 @@
                                                                     ? "($disabledCondition) || ($gridOnlyCondition)"
                                                                     : $gridOnlyCondition;
                                                             }
+                                                            if ($isDishLayout) {
+                                                                $dishLayoutCondition =
+                                                                    "categoryLayout === 'list' || categoryLayout === 'cards'";
+                                                                $disabledCondition = $disabledCondition
+                                                                    ? "($disabledCondition) || ($dishLayoutCondition)"
+                                                                    : $dishLayoutCondition;
+                                                            }
                                                         @endphp
                                                         <label class="relative inline-flex items-center cursor-pointer"
                                                             @if ($disabledCondition) :class="({{ $disabledCondition }}) ? 'opacity-50 pointer-events-none' : ''" @endif>
@@ -321,6 +347,28 @@
                                                             <option value="cards"
                                                                 {{ ($setting['value'] ?? '') === 'cards' ? 'selected' : '' }}>
                                                                 Horizontal Cards</option>
+                                                        </select>
+                                                    @elseif ($setting['type'] === 'string' && $setting['key'] === 'dish_layout')
+                                                        <select name="settings[{{ $setting['id'] }}]"
+                                                            x-model="dishLayout"
+                                                            :disabled="categoryLayout === 'list' ||
+                                                                categoryLayout === 'cards'"
+                                                            :class="(categoryLayout === 'list' ||
+                                                                categoryLayout === 'cards') ?
+                                                            'bg-gray-100 cursor-not-allowed opacity-50' : ''"
+                                                            class="block w-full sm:w-48 text-sm rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                                            <option value="default"
+                                                                {{ ($setting['value'] ?? 'default') === 'default' ? 'selected' : '' }}>
+                                                                Default</option>
+                                                            <option value="compact"
+                                                                {{ ($setting['value'] ?? '') === 'compact' ? 'selected' : '' }}>
+                                                                Compact</option>
+                                                            <option value="minimal"
+                                                                {{ ($setting['value'] ?? '') === 'minimal' ? 'selected' : '' }}>
+                                                                Minimal</option>
+                                                            <option value="decomposed"
+                                                                {{ ($setting['value'] ?? '') === 'decomposed' ? 'selected' : '' }}>
+                                                                Decomposed</option>
                                                         </select>
                                                     @elseif ($setting['type'] === 'string' && $setting['key'] === 'price_position')
                                                         <select name="settings[{{ $setting['id'] }}]"
