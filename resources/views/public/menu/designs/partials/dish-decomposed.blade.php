@@ -1,7 +1,7 @@
 {{-- Decomposed Dish Layout - Similar to compact but each item in its own card --}}
 @php
     $pricePosition = $pricePosition ?? 'bottom_right';
-    
+
     // Calculate price
     $formattedPrice = null;
     $currency = 'USD';

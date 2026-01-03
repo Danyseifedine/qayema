@@ -1,7 +1,7 @@
 {{-- Compact Dish Layout - Circular image, vertical list style --}}
 @php
     $pricePosition = $pricePosition ?? 'bottom_right';
-    
+
     // Calculate price
     $formattedPrice = null;
     $currency = 'USD';

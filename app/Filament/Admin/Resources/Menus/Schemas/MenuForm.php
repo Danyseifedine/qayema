@@ -30,7 +30,9 @@ class MenuForm
                     ->required()
                     ->unique(ignoreRecord: true)
                     ->maxLength(255)
-                    ->helperText('URL-friendly version of the name'),
+                    ->disabled()
+                    ->dehydrated()
+                    ->helperText('URL-friendly version of the name (auto-generated)'),
                 Textarea::make('description')
                     ->rows(3)
                     ->columnSpanFull(),
