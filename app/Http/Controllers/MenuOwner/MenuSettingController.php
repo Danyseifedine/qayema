@@ -107,6 +107,19 @@ class MenuSettingController extends Controller
             }
         }
 
+        // Sort design settings: menu_design first, then default-only settings, then font_family
+        if (isset($groupedSettings['design']['settings'])) {
+            $designOrder = ['menu_design', 'price_position', 'category_collapsible', 'category_default_state', 'font_family'];
+            usort($groupedSettings['design']['settings'], function ($a, $b) use ($designOrder) {
+                $posA = array_search($a['key'], $designOrder);
+                $posB = array_search($b['key'], $designOrder);
+                $posA = $posA === false ? 999 : $posA;
+                $posB = $posB === false ? 999 : $posB;
+
+                return $posA - $posB;
+            });
+        }
+
         return view('menu-owner.settings.index', [
             'menu' => $menu,
             'groupedSettings' => $groupedSettings,
