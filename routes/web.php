@@ -74,12 +74,13 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// Public menu routes (must be last to avoid conflicts with other routes)
-// Controller will reject numeric slugs and reserved paths
-Route::post('/{slug}/track-exit', [PublicMenuController::class, 'trackExit'])
-    ->where('slug', '[a-z0-9-]+')
-    ->name('public.menu.track-exit');
+// Public menu routes - using /m/ prefix to avoid conflicts with app routes
+Route::prefix('m')->group(function () {
+    Route::post('/{slug}/track-exit', [PublicMenuController::class, 'trackExit'])
+        ->where('slug', '[a-z0-9-]+')
+        ->name('public.menu.track-exit');
 
-Route::get('/{slug}', [PublicMenuController::class, 'show'])
-    ->where('slug', '[a-z0-9-]+')
-    ->name('public.menu');
+    Route::get('/{slug}', [PublicMenuController::class, 'show'])
+        ->where('slug', '[a-z0-9-]+')
+        ->name('public.menu');
+});
