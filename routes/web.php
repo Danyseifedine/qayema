@@ -12,6 +12,15 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicMenuController;
 use Illuminate\Support\Facades\Route;
 
+
+// Public menu routes (must be last to avoid conflicts with other routes)
+Route::post('/{slug}/track-exit', [PublicMenuController::class, 'trackExit'])
+    ->name('public.menu.track-exit');
+
+Route::get('/{slug}', [PublicMenuController::class, 'show'])
+    ->name('public.menu');
+
+
 Route::get('/', function () {
     return view('welcome');
 });
@@ -73,12 +82,3 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile/restaurant', [ProfileController::class, 'updateRestaurantInformation'])->name('profile.restaurant.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
-
-// Public menu routes (must be last to avoid conflicts with other routes)
-Route::post('/{slug}/track-exit', [PublicMenuController::class, 'trackExit'])
-    ->where('slug', $reservedPaths . '[a-z0-9]+(?:-[a-z0-9]+)*')
-    ->name('public.menu.track-exit');
-
-Route::get('/{slug}', [PublicMenuController::class, 'show'])
-    ->where('slug', $reservedPaths . '[a-z0-9]+(?:-[a-z0-9]+)*')
-    ->name('public.menu');
