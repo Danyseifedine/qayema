@@ -16,7 +16,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
 
 // Restaurant setup routes (must be before other routes and accessible without setup check)
 Route::middleware(['auth', 'verified'])->group(function () {
