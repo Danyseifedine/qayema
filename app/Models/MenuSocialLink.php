@@ -13,6 +13,10 @@ class MenuSocialLink extends Model
         'url',
     ];
 
+    protected $casts = [
+        'menu_id' => 'integer',
+    ];
+
     /**
      * Get the menu that owns the social link.
      */

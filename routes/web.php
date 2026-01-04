@@ -16,24 +16,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// Debug route - REMOVE AFTER TESTING
-Route::get('/debug-category/{id}', function ($id) {
-    $category = \App\Models\Category::find($id);
-    $user = auth()->user();
-    $menu = $user ? $user->menus()->first() : null;
-
-    return response()->json([
-        'category_exists' => $category !== null,
-        'category' => $category ? $category->toArray() : null,
-        'user_logged_in' => $user !== null,
-        'user_id' => $user?->id,
-        'user_menu_id' => $menu?->id,
-        'category_menu_id' => $category?->menu_id,
-        'match' => $menu && $category && $category->menu_id === $menu->id,
-    ]);
-})->middleware('auth');
-
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';
 
 // Restaurant setup routes (must be before other routes and accessible without setup check)
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -92,10 +75,10 @@ Route::middleware('auth')->group(function () {
 });
 
 // Public menu routes - using /m/ prefix to avoid conflicts with app routes
-    Route::post('/{slug}/track-exit', [PublicMenuController::class, 'trackExit'])
-        ->where('slug', '[a-z0-9-]+')
-        ->name('public.menu.track-exit');
+Route::post('/{slug}/track-exit', [PublicMenuController::class, 'trackExit'])
+    ->where('slug', '[a-z0-9-]+')
+    ->name('public.menu.track-exit');
 
-    Route::get('/{slug}', [PublicMenuController::class, 'show'])
-        ->where('slug', '[a-z0-9-]+')
-        ->name('public.menu');
+Route::get('/{slug}', [PublicMenuController::class, 'show'])
+    ->where('slug', '[a-z0-9-]+')
+    ->name('public.menu');

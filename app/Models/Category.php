@@ -19,6 +19,11 @@ class Category extends Model implements HasMedia
         'display_order',
     ];
 
+    protected $casts = [
+        'menu_id' => 'integer',
+        'display_order' => 'integer',
+    ];
+
     /**
      * Get the menu that owns the category.
      */
