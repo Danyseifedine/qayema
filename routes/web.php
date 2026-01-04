@@ -12,13 +12,11 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicMenuController;
 use Illuminate\Support\Facades\Route;
 
-
-
 Route::get('/', function () {
     return view('welcome');
 });
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';
 
 // Restaurant setup routes (must be before other routes and accessible without setup check)
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -77,13 +75,11 @@ Route::middleware('auth')->group(function () {
 });
 
 // Public menu routes (must be last to avoid conflicts with other routes)
-// Exclude reserved paths to prevent route conflicts
-$reservedPaths = '(?!categories|dishes|dashboard|menus|settings|statistics|qr-code|social-links|profile|admin|login|register|logout|password|email|restaurant-setup|setup|sanctum)';
-
+// Controller will reject numeric slugs and reserved paths
 Route::post('/{slug}/track-exit', [PublicMenuController::class, 'trackExit'])
-    ->where('slug', $reservedPaths . '[a-z0-9]+(?:-[a-z0-9]+)*')
+    ->where('slug', '[a-z0-9-]+')
     ->name('public.menu.track-exit');
 
 Route::get('/{slug}', [PublicMenuController::class, 'show'])
-    ->where('slug', $reservedPaths . '[a-z0-9]+(?:-[a-z0-9]+)*')
+    ->where('slug', '[a-z0-9-]+')
     ->name('public.menu');

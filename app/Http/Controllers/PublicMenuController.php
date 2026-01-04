@@ -14,6 +14,12 @@ class PublicMenuController extends Controller
      */
     public function show(Request $request, string $slug): View
     {
+        // Reject reserved paths to prevent route conflicts
+        $reservedPaths = ['categories', 'dishes', 'dashboard', 'menus', 'settings', 'statistics', 'qr-code', 'social-links', 'profile', 'admin', 'login', 'register', 'logout', 'password', 'email', 'restaurant-setup', 'setup', 'sanctum'];
+        if (in_array($slug, $reservedPaths) || is_numeric($slug)) {
+            abort(404);
+        }
+
         $menu = Menu::where('slug', $slug)
             ->where('is_active', true)
             ->with(['user', 'categories' => function ($query) {
@@ -105,6 +111,12 @@ class PublicMenuController extends Controller
      */
     public function trackExit(Request $request, string $slug)
     {
+        // Reject reserved paths to prevent route conflicts
+        $reservedPaths = ['categories', 'dishes', 'dashboard', 'menus', 'settings', 'statistics', 'qr-code', 'social-links', 'profile', 'admin', 'login', 'register', 'logout', 'password', 'email', 'restaurant-setup', 'setup', 'sanctum'];
+        if (in_array($slug, $reservedPaths) || is_numeric($slug)) {
+            abort(404);
+        }
+
         $menu = Menu::where('slug', $slug)
             ->where('is_active', true)
             ->firstOrFail();
