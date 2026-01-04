@@ -16,7 +16,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';
 
 // Restaurant setup routes (must be before other routes and accessible without setup check)
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -41,14 +41,14 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureRestaurantSetu
         Route::get('/categories', [CategoryController::class, 'index'])->name('menu-owner.categories.index');
         Route::get('/categories/create', [CategoryController::class, 'create'])->name('menu-owner.categories.create');
         Route::post('/categories', [CategoryController::class, 'store'])->name('menu-owner.categories.store');
-        Route::get('/categories/{category}/modify', [CategoryController::class, 'edit'])->name('menu-owner.categories.edit');
+        Route::get('/category-edit/{category}', [CategoryController::class, 'edit'])->name('menu-owner.categories.edit');
         Route::put('/categories/{category}', [CategoryController::class, 'update'])->name('menu-owner.categories.update');
         Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('menu-owner.categories.destroy');
 
         Route::get('/dishes', [DishController::class, 'index'])->name('menu-owner.dishes.index');
         Route::get('/dishes/create', [DishController::class, 'create'])->name('menu-owner.dishes.create');
         Route::post('/dishes', [DishController::class, 'store'])->name('menu-owner.dishes.store');
-        Route::get('/dishes/{dish}/modify', [DishController::class, 'edit'])->name('menu-owner.dishes.edit');
+        Route::get('/dish-edit/{dish}', [DishController::class, 'edit'])->name('menu-owner.dishes.edit');
         Route::put('/dishes/{dish}', [DishController::class, 'update'])->name('menu-owner.dishes.update');
         Route::delete('/dishes/{dish}', [DishController::class, 'destroy'])->name('menu-owner.dishes.destroy');
 
@@ -61,7 +61,7 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureRestaurantSetu
         Route::get('/social-links', [SocialLinkController::class, 'index'])->name('menu-owner.social-links.index');
         Route::get('/social-links/create', [SocialLinkController::class, 'create'])->name('menu-owner.social-links.create');
         Route::post('/social-links', [SocialLinkController::class, 'store'])->name('menu-owner.social-links.store');
-        Route::get('/social-links/{socialLink}/modify', [SocialLinkController::class, 'edit'])->name('menu-owner.social-links.edit');
+        Route::get('/social-link-edit/{socialLink}', [SocialLinkController::class, 'edit'])->name('menu-owner.social-links.edit');
         Route::put('/social-links/{socialLink}', [SocialLinkController::class, 'update'])->name('menu-owner.social-links.update');
         Route::delete('/social-links/{socialLink}', [SocialLinkController::class, 'destroy'])->name('menu-owner.social-links.destroy');
     });
