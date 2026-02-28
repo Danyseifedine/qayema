@@ -147,7 +147,7 @@
 
                         <!-- Restaurant Info -->
                         @if ($settings['show_restaurant_info'] ?? true)
-                            <div class="flex-1 text-center md:text-start">
+                            <div class="flex-1 text-start">
                                 <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
                                     {{ $user->restaurant_name ?? 'Restaurant' }}
                                 </h1>
@@ -155,7 +155,7 @@
                                     <p class="text-gray-600 mb-4 text-sm text-justify">{{ $menu->description }}</p>
                                 @endif
 
-                                <div class="flex flex-wrap gap-4 justify-center md:justify-start text-sm text-gray-600">
+                                <div class="flex flex-wrap gap-4 justify-start text-sm text-gray-600">
                                     @if (($settings['show_phone_number'] ?? true) && $user->phone)
                                         <div class="flex items-center gap-2">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor"
