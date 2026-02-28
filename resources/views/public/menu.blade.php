@@ -72,7 +72,7 @@
                     </div>
 
                     <!-- Restaurant Info -->
-                    <div class="flex-1 text-center md:text-left">
+                    <div class="flex-1 text-center md:text-start">
                         <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
                             {{ $user->restaurant_name ?? 'Restaurant' }}
                         </h1>

@@ -191,6 +191,7 @@ return [
             'category_default_state' => 'Category Default State',
             'dish_layout' => 'Dish Layout',
             'show_loading_page' => 'Show Loading Page',
+            'menu_direction' => 'Menu Direction',
         ],
         'descriptions' => [
             'menu_design' => 'Select the design style for your menu. Currently only the default style is available.',
@@ -217,6 +218,7 @@ return [
             'category_default_state' => 'When categories are collapsible: start Open or Closed. Only for Grid layout.',
             'dish_layout' => 'How each dish is shown: Default, Compact, Minimal, or Decomposed. Not available for List or Horizontal Cards layout.',
             'show_loading_page' => 'Show a loading screen with your logo before the menu content appears.',
+            'menu_direction' => 'Set the public menu layout to left-to-right (LTR) or right-to-left (RTL). Use RTL for Arabic and other RTL languages.',
         ],
         'options' => [
             'only_grid_layout' => 'Only available for Grid layout',
@@ -237,6 +239,11 @@ return [
             'bottom_right' => 'Bottom Right (on image)',
             'top_left' => 'Top Left (on image)',
             'top_right' => 'Top Right (on image)',
+            'direction_ltr' => 'Left to right (LTR)',
+            'direction_rtl' => 'Right to left (RTL)',
+        ],
+        'fonts' => [
+            'arabic_fonts' => 'Arabic Fonts',
         ],
     ],
 

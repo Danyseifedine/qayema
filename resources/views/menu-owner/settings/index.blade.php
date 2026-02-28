@@ -91,7 +91,14 @@
                 'pt-serif': 'font-family: \'PT Serif\', serif;',
                 'eb-garamond': 'font-family: \'EB Garamond\', serif;',
                 'cormorant-garamond': 'font-family: \'Cormorant Garamond\', serif;',
-                'libre-caslon-text': 'font-family: \'Libre Caslon Text\', serif;'
+                'libre-caslon-text': 'font-family: \'Libre Caslon Text\', serif;',
+                'amiri': 'font-family: \'Amiri\', serif;',
+                'cairo': 'font-family: \'Cairo\', sans-serif;',
+                'tajawal': 'font-family: \'Tajawal\', sans-serif;',
+                'noto-kufi-arabic': 'font-family: \'Noto Kufi Arabic\', sans-serif;',
+                'almarai': 'font-family: \'Almarai\', sans-serif;',
+                'changa': 'font-family: \'Changa\', sans-serif;',
+                'readex-pro': 'font-family: \'Readex Pro\', sans-serif;'
             };
             return fontMap[font] || fontMap['sans'];
         }
@@ -337,6 +344,18 @@
                                                             class="block w-full sm:w-48 text-sm rounded-md border-gray-300 shadow-sm bg-gray-100 cursor-not-allowed opacity-50">
                                                             <option value="default">{{ __('menu_owner.settings.options.default') }}</option>
                                                         </select>
+                                                    @elseif ($setting['type'] === 'string' && $setting['key'] === 'menu_direction')
+                                                        <select name="settings[{{ $setting['id'] }}]"
+                                                            class="block w-full sm:w-48 text-sm rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                                            <option value="ltr"
+                                                                {{ ($setting['value'] ?? 'ltr') === 'ltr' ? 'selected' : '' }}>
+                                                                {{ __('menu_owner.settings.options.direction_ltr') }}
+                                                            </option>
+                                                            <option value="rtl"
+                                                                {{ ($setting['value'] ?? '') === 'rtl' ? 'selected' : '' }}>
+                                                                {{ __('menu_owner.settings.options.direction_rtl') }}
+                                                            </option>
+                                                        </select>
                                                     @elseif ($setting['type'] === 'string' && $setting['key'] === 'category_layout')
                                                         <select name="settings[{{ $setting['id'] }}]"
                                                             x-model="categoryLayout"
@@ -553,6 +572,29 @@
                                                                     <option value="libre-caslon-text"
                                                                         {{ ($setting['value'] ?? '') === 'libre-caslon-text' ? 'selected' : '' }}>
                                                                         Libre Caslon Text</option>
+                                                                </optgroup>
+                                                                <optgroup label="{{ __('menu_owner.settings.fonts.arabic_fonts') }}">
+                                                                    <option value="amiri"
+                                                                        {{ ($setting['value'] ?? '') === 'amiri' ? 'selected' : '' }}>
+                                                                        Amiri</option>
+                                                                    <option value="cairo"
+                                                                        {{ ($setting['value'] ?? '') === 'cairo' ? 'selected' : '' }}>
+                                                                        Cairo</option>
+                                                                    <option value="tajawal"
+                                                                        {{ ($setting['value'] ?? '') === 'tajawal' ? 'selected' : '' }}>
+                                                                        Tajawal</option>
+                                                                    <option value="noto-kufi-arabic"
+                                                                        {{ ($setting['value'] ?? '') === 'noto-kufi-arabic' ? 'selected' : '' }}>
+                                                                        Noto Kufi Arabic</option>
+                                                                    <option value="almarai"
+                                                                        {{ ($setting['value'] ?? '') === 'almarai' ? 'selected' : '' }}>
+                                                                        Almarai</option>
+                                                                    <option value="changa"
+                                                                        {{ ($setting['value'] ?? '') === 'changa' ? 'selected' : '' }}>
+                                                                        Changa</option>
+                                                                    <option value="readex-pro"
+                                                                        {{ ($setting['value'] ?? '') === 'readex-pro' ? 'selected' : '' }}>
+                                                                        Readex Pro (Arabic support)</option>
                                                                 </optgroup>
                                                             </select>
                                                             <!-- Font Preview -->

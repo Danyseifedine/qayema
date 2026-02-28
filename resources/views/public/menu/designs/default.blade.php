@@ -5,12 +5,12 @@
     function getPricePositionClasses($position)
     {
         $positionClasses = [
-            'bottom_left' => 'bottom-3 left-3',
-            'bottom_right' => 'bottom-3 right-3',
-            'top_left' => 'top-3 left-3',
-            'top_right' => 'top-3 right-3',
+            'bottom_left' => 'bottom-3 start-3',
+            'bottom_right' => 'bottom-3 end-3',
+            'top_left' => 'top-3 start-3',
+            'top_right' => 'top-3 end-3',
         ];
-        return $positionClasses[$position] ?? 'bottom-3 right-3';
+        return $positionClasses[$position] ?? 'bottom-3 end-3';
     }
 
     // Helper function to get dish layout partial
@@ -147,7 +147,7 @@
 
                         <!-- Restaurant Info -->
                         @if ($settings['show_restaurant_info'] ?? true)
-                            <div class="flex-1 text-center md:text-left">
+                            <div class="flex-1 text-center md:text-start">
                                 <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
                                     {{ $user->restaurant_name ?? 'Restaurant' }}
                                 </h1>
@@ -370,7 +370,7 @@
                                                             $formattedPrice = number_format($price, 2);
                                                         }
                                                     @endphp
-                                                    <div class="flex-shrink-0 text-right">
+                                                    <div class="flex-shrink-0 text-end">
                                                         <span class="text-lg font-bold text-indigo-600">
                                                             @if (($settings['currency_enabled'] ?? false) && ($settings['exchange_rate'] ?? null))
                                                                 {{ $formattedPrice }} {{ $currency }}
@@ -402,7 +402,7 @@
                                     <h2 class="text-xl font-bold text-gray-900">{{ $category->name }}</h2>
                                     <p class="text-sm text-gray-500">
                                         {{ $category->dishes->where('is_available', true)->count() }} items
-                                        <span class="text-xs text-gray-400 ml-2">• Swipe to see more</span>
+                                        <span class="text-xs text-gray-400 ms-2">• Swipe to see more</span>
                                     </p>
                                 </div>
 
@@ -412,8 +412,8 @@
 
                                 @if ($dishes->isNotEmpty())
                                     <!-- Horizontal Scrolling Cards -->
-                                    <div style="margin-left: 1px !important;"
-                                        class="flex gap-4 overflow-x-auto scrollbar-hide pb-4 -mx-4 pl-0 pr-4 snap-x snap-mandatory">
+                                    <div style="margin-inline-start: 1px !important;"
+                                        class="flex gap-4 overflow-x-auto scrollbar-hide pb-4 -mx-4 ps-0 pe-4 snap-x snap-mandatory">
                                         @foreach ($dishes as $index => $dish)
                                             @php
                                                 // Calculate price once for reuse
@@ -436,7 +436,7 @@
                                                 }
                                             @endphp
                                             <div
-                                                class="flex-shrink-0 w-64 snap-start {{ $index === 0 ? 'ml-0' : '' }}">
+                                                class="flex-shrink-0 w-64 snap-start {{ $index === 0 ? 'ms-0' : '' }}">
                                                 <div
                                                     class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300">
                                                     @if (($settings['show_dish_image'] ?? true) && $dish->hasMedia('images'))
@@ -518,7 +518,7 @@
                                 <div class="mb-8">
                                     @if ($categoryCollapsible)
                                         <button @click="toggleCategory({{ $category->id }})" type="button"
-                                            class="w-full text-left">
+                                            class="w-full text-start">
                                     @endif
                                     <div
                                         class="flex items-center mt-12 gap-4 {{ $categoryCollapsible ? 'cursor-pointer hover:opacity-80 transition-opacity' : '' }}">
@@ -658,7 +658,7 @@
 
     <!-- Footer -->
     <footer class="bg-gray-900 text-white py-4 mt-8"
-        style="width: 100vw; margin-left: calc(-50vw + 50%); margin-right: calc(-50vw + 50%);">
+        style="width: 100vw; margin-inline: calc(-50vw + 50%);">
         <div class="text-center">
             @if ($settings['show_social_links'] ?? true)
                 <p class="text-gray-400 mb-2">&copy; {{ date('Y') }}
@@ -677,11 +677,11 @@
         @php
             $sharePosition = $settings['share_button_position'] ?? 'bottom_right';
             $sharePositionClasses = match ($sharePosition) {
-                'bottom_left' => 'bottom-6 left-6 items-start',
-                'bottom_right' => 'bottom-6 right-6 items-end',
-                'top_left' => 'top-2 left-4 items-start',
-                'top_right' => 'top-2 right-4 items-end',
-                default => 'bottom-6 right-6 items-end',
+                'bottom_left' => 'bottom-6 start-6 items-start',
+                'bottom_right' => 'bottom-6 end-6 items-end',
+                'top_left' => 'top-2 start-4 items-start',
+                'top_right' => 'top-2 end-4 items-end',
+                default => 'bottom-6 end-6 items-end',
             };
             $menuPosition = match ($sharePosition) {
                 'bottom_left' => 'mb-3',
@@ -712,7 +712,7 @@
                 class="{{ $menuPosition }} bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden min-w-[200px] transform-gpu">
                 <!-- Copy Link -->
                 <button @click="copyMenuLink(); open = false"
-                    class="w-full px-5 py-3.5 text-left hover:bg-indigo-50 transition-all duration-200 flex items-center gap-3 text-gray-700 group relative overflow-hidden">
+                    class="w-full px-5 py-3.5 text-start hover:bg-indigo-50 transition-all duration-200 flex items-center gap-3 text-gray-700 group relative overflow-hidden">
                     <div class="relative z-10 flex items-center gap-3">
                         <div
                             class="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-200 shadow-md group-hover:shadow-lg">
@@ -734,7 +734,7 @@
                 <!-- WhatsApp -->
                 @if (($settings['show_phone_number'] ?? true) && $user->phone)
                     <a href="#" @click.prevent="contactOnWhatsApp(); open = false"
-                        class="w-full px-5 py-3.5 text-left hover:bg-green-50 transition-all duration-200 flex items-center gap-3 text-gray-700 border-t border-gray-200 group relative overflow-hidden">
+                        class="w-full px-5 py-3.5 text-start hover:bg-green-50 transition-all duration-200 flex items-center gap-3 text-gray-700 border-t border-gray-200 group relative overflow-hidden">
                         <div class="relative z-10 flex items-center gap-3">
                             <div
                                 class="w-9 h-9 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-200 shadow-md group-hover:shadow-lg">
@@ -784,7 +784,7 @@
                     // Show notification
                     const notification = document.createElement('div');
                     notification.className =
-                        'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2';
+                        'fixed top-4 end-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2';
                     notification.innerHTML = `
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>

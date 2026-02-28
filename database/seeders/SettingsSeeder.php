@@ -157,6 +157,12 @@ class SettingsSeeder extends Seeder
                 'description' => 'Display a loading page with logo before the menu loads',
                 'type' => 'boolean',
             ],
+            [
+                'title' => 'Menu Direction',
+                'key' => 'menu_direction',
+                'description' => 'Text direction for the public menu (LTR for left-to-right, RTL for right-to-left e.g. Arabic)',
+                'type' => 'string',
+            ],
         ];
 
         foreach ($settings as $settingData) {

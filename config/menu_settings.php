@@ -26,5 +26,6 @@ return [
         'category_default_state' => 'open',
         'dish_layout' => 'default',
         'show_loading_page' => false,
+        'menu_direction' => 'ltr',
     ],
 ];

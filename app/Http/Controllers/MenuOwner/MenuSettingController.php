@@ -73,7 +73,7 @@ class MenuSettingController extends Controller
             ];
 
             // Categorize
-            if (in_array($setting->key, ['show_dish_image', 'show_category_image', 'show_logo', 'show_cover_image', 'show_restaurant_info', 'show_address', 'show_phone_number', 'show_social_links', 'show_ingredients', 'show_loading_page'])) {
+            if (in_array($setting->key, ['show_dish_image', 'show_category_image', 'show_logo', 'show_cover_image', 'show_restaurant_info', 'show_address', 'show_phone_number', 'show_social_links', 'show_ingredients', 'show_loading_page', 'menu_direction'])) {
                 $groupedSettings['display']['settings'][] = $settingData;
             } elseif (in_array($setting->key, ['currency_enabled', 'exchange_currency', 'exchange_rate', 'show_prices'])) {
                 $groupedSettings['currency']['settings'][] = $settingData;

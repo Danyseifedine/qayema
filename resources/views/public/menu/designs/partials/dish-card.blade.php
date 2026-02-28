@@ -71,7 +71,7 @@
     <!-- Dish Info -->
     <div class="p-6">
         <div class="flex items-start justify-between mb-2 gap-4">
-            <h3 class="text-lg font-bold text-gray-900 flex-1 min-w-0 pr-4">
+            <h3 class="text-lg font-bold text-gray-900 flex-1 min-w-0 pe-4">
                 {{ $dish->name }}</h3>
             @if (($settings['show_prices'] ?? true) && $dish->price && ($pricePosition ?? 'bottom_right') === 'next_to_title')
                 @php
