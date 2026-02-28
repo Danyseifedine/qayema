@@ -2,6 +2,14 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Admin\Resources\Categories\CategoryResource;
+use App\Filament\Admin\Resources\Dishes\DishResource;
+use App\Filament\Admin\Resources\Menus\MenuResource;
+use App\Filament\Admin\Resources\MenuSettings\MenuSettingResource;
+use App\Filament\Admin\Resources\MenuSocialLinks\MenuSocialLinkResource;
+use App\Filament\Admin\Resources\MenuStatistics\MenuStatisticResource;
+use App\Filament\Admin\Resources\Settings\SettingResource;
+use App\Filament\Admin\Resources\Users\UserResource;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -11,8 +19,6 @@ use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
-use Filament\Widgets\AccountWidget;
-use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -32,7 +38,16 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Amber,
             ])
-            ->discoverResources(in: app_path('Filament/Admin/Resources'), for: 'App\Filament\Admin\Resources')
+            ->resources([
+                UserResource::class,
+                MenuResource::class,
+                CategoryResource::class,
+                DishResource::class,
+                MenuSettingResource::class,
+                MenuSocialLinkResource::class,
+                MenuStatisticResource::class,
+                SettingResource::class,
+            ])
             ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\Filament\Admin\Pages')
             ->pages([
                 Dashboard::class,
