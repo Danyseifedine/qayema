@@ -9,7 +9,7 @@ class CategoryPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->currentMenu() !== null;
+        return $user->isAdmin() || $user->currentMenu() !== null;
     }
 
     public function view(User $user, Category $category): bool
@@ -19,7 +19,7 @@ class CategoryPolicy
 
     public function create(User $user): bool
     {
-        return $user->currentMenu() !== null;
+        return $user->isAdmin() || $user->currentMenu() !== null;
     }
 
     public function update(User $user, Category $category): bool

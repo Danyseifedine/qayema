@@ -9,7 +9,7 @@ class MenuSocialLinkPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->currentMenu() !== null;
+        return $user->isAdmin() || $user->currentMenu() !== null;
     }
 
     public function view(User $user, MenuSocialLink $menuSocialLink): bool
@@ -19,7 +19,7 @@ class MenuSocialLinkPolicy
 
     public function create(User $user): bool
     {
-        return $user->currentMenu() !== null;
+        return $user->isAdmin() || $user->currentMenu() !== null;
     }
 
     public function update(User $user, MenuSocialLink $menuSocialLink): bool

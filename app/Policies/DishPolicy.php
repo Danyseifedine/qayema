@@ -9,7 +9,7 @@ class DishPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->currentMenu() !== null;
+        return $user->isAdmin() || $user->currentMenu() !== null;
     }
 
     public function view(User $user, Dish $dish): bool
@@ -19,7 +19,7 @@ class DishPolicy
 
     public function create(User $user): bool
     {
-        return $user->currentMenu() !== null;
+        return $user->isAdmin() || $user->currentMenu() !== null;
     }
 
     public function update(User $user, Dish $dish): bool
