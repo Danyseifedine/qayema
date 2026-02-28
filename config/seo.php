@@ -38,8 +38,14 @@ return [
         'contact' => [
             '@type' => 'ContactPoint',
             'telephone' => '+96103004699',
+            'email' => 'dany.a.seifeddine@gmail.com',
             'contactType' => 'Customer Service',
             'areaServed' => 'LB',
+            'address' => [
+                '@type' => 'PostalAddress',
+                'addressLocality' => 'Barja',
+                'addressCountry' => 'Lebanon',
+            ],
             'availableLanguage' => ['English', 'Arabic'],
         ],
         'social_links' => [],
