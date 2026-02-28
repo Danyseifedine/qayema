@@ -24,18 +24,18 @@ class VisitorStatsWidget extends StatsOverviewWidget
                 ->color('primary')
                 ->chart([100, 200, 300, 400, $totalViews]),
 
-            Stat::make('Unique Visitors', number_format($uniqueVisitors))
+            Stat::make('Unique Visits', number_format($uniqueVisitors))
                 ->description('Distinct sessions')
                 ->descriptionIcon('heroicon-o-users')
                 ->color('success'),
 
-            Stat::make('Today\'s Views', number_format($todayViews))
-                ->description('Page views today')
+            Stat::make('Page Views Today', number_format($todayViews))
+                ->description('Page loads today')
                 ->descriptionIcon('heroicon-o-calendar')
                 ->color('info'),
 
-            Stat::make('Avg. Time Spent', $this->formatTime($avgTimeSpent))
-                ->description('Average session duration')
+            Stat::make('Avg. Time Spent', $this->formatTime((int) round($avgTimeSpent)))
+                ->description('Sessions with recorded exit only')
                 ->descriptionIcon('heroicon-o-clock')
                 ->color('warning'),
         ];

@@ -30,6 +30,7 @@ class MenuStatisticController extends Controller
                 'osBreakdown' => [],
                 'bounceRate' => 0,
                 'avgPageViewsPerSession' => 0,
+                'sessionsWithTimeSpent' => 0,
                 'menuUrl' => null,
             ]);
         }
@@ -44,12 +45,14 @@ class MenuStatisticController extends Controller
         $averageTimeSpent = $menu->getAverageTimeSpent();
         $totalTimeSpent = $menu->getTotalTimeSpent();
 
-        // Additional statistics
+        // Additional statistics (page views = sum of loads; totalViews = session/visit count)
         $totalPageViews = $menu->statistics()->sum('page_views') ?? 0;
-        $viewsToday = $menu->statistics()->whereDate('viewed_at', today())->count();
-        $viewsThisWeek = $menu->statistics()->whereBetween('viewed_at', [now()->startOfWeek(), now()->endOfWeek()])->count();
-        $viewsThisMonth = $menu->statistics()->whereMonth('viewed_at', now()->month)
-            ->whereYear('viewed_at', now()->year)->count();
+        $viewsToday = (int) $menu->statistics()->whereDate('viewed_at', today())->sum('page_views');
+        $viewsThisWeek = (int) $menu->statistics()->whereBetween('viewed_at', [now()->startOfWeek(), now()->endOfWeek()])->sum('page_views');
+        $viewsThisMonth = (int) $menu->statistics()
+            ->whereMonth('viewed_at', now()->month)
+            ->whereYear('viewed_at', now()->year)
+            ->sum('page_views');
 
         // Device breakdown
         $deviceBreakdown = $menu->statistics()
@@ -89,7 +92,11 @@ class MenuStatisticController extends Controller
         // Average page views per session
         $avgPageViewsPerSession = $uniqueVisitors > 0 ? round($totalPageViews / $uniqueVisitors, 1) : 0;
 
-        // Generate menu URL (without /menu/ prefix)
+        $sessionsWithTimeSpent = $menu->statistics()
+            ->whereNotNull('time_spent')
+            ->where('time_spent', '>', 0)
+            ->count();
+
         $menuUrl = url('/'.$menu->slug);
 
         return view('menu-owner.statistics.index', [
@@ -108,6 +115,7 @@ class MenuStatisticController extends Controller
             'osBreakdown' => $osBreakdown,
             'bounceRate' => $bounceRate,
             'avgPageViewsPerSession' => $avgPageViewsPerSession,
+            'sessionsWithTimeSpent' => $sessionsWithTimeSpent,
             'menuUrl' => $menuUrl,
         ]);
     }

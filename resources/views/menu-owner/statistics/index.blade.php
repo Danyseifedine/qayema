@@ -46,7 +46,7 @@
 
                 <!-- Statistics Cards -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <!-- Total Views -->
+                    <!-- Total Visits (sessions) -->
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                         <div class="p-6">
                             <div class="flex items-center">
@@ -61,7 +61,7 @@
                                     </svg>
                                 </div>
                                 <div class="ml-4">
-                                    <p class="text-sm font-medium text-gray-500">Total Views</p>
+                                    <p class="text-sm font-medium text-gray-500">Total Visits</p>
                                     <p class="text-2xl font-semibold text-gray-900">{{ number_format($totalViews) }}</p>
                                 </div>
                             </div>
@@ -138,12 +138,13 @@
                                             N/A
                                         @endif
                                     </p>
+                                    <p class="text-xs text-gray-500 mt-1">From {{ number_format($sessionsWithTimeSpent) }} sessions with recorded exit</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Views Today -->
+                    <!-- Page Views Today -->
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                         <div class="p-6">
                             <div class="flex items-center">
@@ -156,7 +157,7 @@
                                     </svg>
                                 </div>
                                 <div class="ml-4">
-                                    <p class="text-sm font-medium text-gray-500">Views Today</p>
+                                    <p class="text-sm font-medium text-gray-500">Page Views Today</p>
                                     <p class="text-2xl font-semibold text-gray-900">{{ number_format($viewsToday) }}</p>
                                 </div>
                             </div>
@@ -176,7 +177,7 @@
                                     </svg>
                                 </div>
                                 <div class="ml-4">
-                                    <p class="text-sm font-medium text-gray-500">Views This Week</p>
+                                    <p class="text-sm font-medium text-gray-500">Page Views This Week</p>
                                     <p class="text-2xl font-semibold text-gray-900">{{ number_format($viewsThisWeek) }}
                                     </p>
                                 </div>
@@ -184,7 +185,7 @@
                         </div>
                     </div>
 
-                    <!-- Views This Month -->
+                    <!-- Page Views This Month -->
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                         <div class="p-6">
                             <div class="flex items-center">
@@ -197,7 +198,7 @@
                                     </svg>
                                 </div>
                                 <div class="ml-4">
-                                    <p class="text-sm font-medium text-gray-500">Views This Month</p>
+                                    <p class="text-sm font-medium text-gray-500">Page Views This Month</p>
                                     <p class="text-2xl font-semibold text-gray-900">{{ number_format($viewsThisMonth) }}
                                     </p>
                                 </div>
@@ -365,6 +366,7 @@
                                             N/A
                                         @endif
                                     </p>
+                                    <p class="text-xs text-gray-500 mt-1">From sessions with recorded exit only</p>
                                 </div>
                             </div>
                         </div>
