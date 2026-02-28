@@ -16,7 +16,7 @@ class MenuSettingController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
-        $menu = $user->menus()->first();
+        $menu = $user->currentMenu();
 
         if (! $menu) {
             return redirect()->route('menu-owner.menus.index')
@@ -58,35 +58,8 @@ class MenuSettingController extends Controller
             $menuSetting = $menuSettings->get($setting->id);
             $value = $menuSetting ? $menuSetting->value : null;
 
-            // Get default value if not set
             if ($value === null) {
-                $defaults = [
-                    'menu_design' => 'default',
-                    'currency_enabled' => false,
-                    'exchange_currency' => null,
-                    'exchange_rate' => null,
-                    'show_prices' => true,
-                    'language' => 'en',
-                    'show_dish_image' => true,
-                    'show_category_image' => true,
-                    'show_logo' => true,
-                    'show_cover_image' => true,
-                    'show_restaurant_info' => true,
-                    'show_address' => true,
-                    'show_phone_number' => true,
-                    'show_social_links' => true,
-                    'show_ingredients' => true,
-                    'enable_share' => true,
-                    'share_button_position' => 'bottom_right',
-                    'font_family' => 'sans',
-                    'price_position' => 'bottom_right',
-                    'category_layout' => 'grid',
-                    'category_collapsible' => true,
-                    'category_default_state' => 'open',
-                    'dish_layout' => 'default',
-                    'show_loading_page' => false,
-                ];
-                $value = $defaults[$setting->key] ?? null;
+                $value = config("menu_settings.defaults.{$setting->key}");
             }
 
             $settingData = [
@@ -133,7 +106,7 @@ class MenuSettingController extends Controller
     public function update(UpdateMenuSettingsRequest $request): RedirectResponse
     {
         $user = $request->user();
-        $menu = $user->menus()->first();
+        $menu = $user->currentMenu();
 
         if (! $menu) {
             return redirect()->route('menu-owner.menus.index')

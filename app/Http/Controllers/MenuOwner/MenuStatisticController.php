@@ -11,7 +11,7 @@ class MenuStatisticController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
-        $menu = $user->menus()->first();
+        $menu = $user->currentMenu();
 
         if (! $menu) {
             return view('menu-owner.statistics.index', [

@@ -15,7 +15,7 @@ class MenuController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
-        $menu = $user->menus()->first();
+        $menu = $user->currentMenu();
 
         return view('menu-owner.menus.index', [
             'menu' => $menu,
@@ -25,7 +25,7 @@ class MenuController extends Controller
     public function storeOrUpdate(MenuRequest $request): RedirectResponse
     {
         $user = $request->user();
-        $menu = $user->menus()->first();
+        $menu = $user->currentMenu();
 
         $data = $request->validated();
 
@@ -41,7 +41,7 @@ class MenuController extends Controller
         $slug = $data['slug'];
         $counter = 1;
         while (Menu::where('slug', $slug)->where('id', '!=', $menu?->id)->exists()) {
-            $slug = $data['slug'] . '-' . $counter;
+            $slug = $data['slug'].'-'.$counter;
             $counter++;
         }
         $data['slug'] = $slug;

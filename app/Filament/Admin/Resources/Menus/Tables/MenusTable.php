@@ -18,21 +18,24 @@ class MenusTable
         return $table
             ->columns([
                 TextColumn::make('name')
+                    ->placeholder('N/A')
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
                 TextColumn::make('user.name')
                     ->label('Owner')
+                    ->placeholder('N/A')
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('menu_style')
+                    ->placeholder('N/A')
                     ->badge()
-                    ->color(fn(string $state): string => match ($state) {
+                    ->color(fn (string $state): string => match ($state) {
                         'restaurant' => 'success',
                         'home' => 'info',
                         default => 'gray',
                     })
-                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
                         'restaurant' => 'Restaurant',
                         'home' => 'Home Cook',
                         default => $state,
@@ -40,18 +43,22 @@ class MenusTable
                     ->sortable(),
                 TextColumn::make('dishes_count')
                     ->label('Dishes')
+                    ->placeholder('N/A')
                     ->counts('dishes')
                     ->sortable(),
                 TextColumn::make('dish_limit')
                     ->label('Limit')
+                    ->placeholder('N/A')
                     ->sortable(),
                 TextColumn::make('categories_count')
                     ->label('Categories')
+                    ->placeholder('N/A')
                     ->counts('categories')
                     ->toggleable(),
                 ToggleColumn::make('is_active')
                     ->label('Active'),
                 TextColumn::make('created_at')
+                    ->placeholder('N/A')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

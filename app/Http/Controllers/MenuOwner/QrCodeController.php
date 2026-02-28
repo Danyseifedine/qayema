@@ -12,7 +12,7 @@ class QrCodeController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
-        $menu = $user->menus()->first();
+        $menu = $user->currentMenu();
 
         $menuUrl = null;
         if ($menu && $menu->is_active && $menu->slug) {
@@ -28,7 +28,7 @@ class QrCodeController extends Controller
     public function generate(Request $request)
     {
         $user = $request->user();
-        $menu = $user->menus()->first();
+        $menu = $user->currentMenu();
 
         if (! $menu || ! $menu->is_active || ! $menu->slug) {
             abort(404, 'Menu not found or not active');

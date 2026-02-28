@@ -31,7 +31,7 @@ return [
     'organization' => [
         'name' => 'MenuX',
         'url' => env('APP_URL', 'http://localhost'),
-        'logo' => env('APP_URL', 'http://localhost') . '/images/logo/logo.png',
+        'logo' => env('APP_URL', 'http://localhost').'/images/logo/logo.png',
         'description' => [
             'en' => 'MenuX - Create beautiful digital menus for your restaurant. Free up to 20 items, upgrade for more.',
         ],
@@ -66,54 +66,13 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Product-Specific Defaults
+    | Product-Specific Defaults (e.g. for dish/menu schema)
     |--------------------------------------------------------------------------
     */
 
     'product' => [
         'default_currency' => 'USD',
         'default_availability' => 'InStock',
-        'brand_options' => [
-            'Honda',
-            'Yamaha',
-            'Suzuki',
-            'Kawasaki',
-            'Ducati',
-            'BMW',
-            'Harley-Davidson',
-            'KTM',
-            'Triumph',
-            'Royal Enfield',
-        ],
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Common Categories (for breadcrumbs & keywords)
-    |--------------------------------------------------------------------------
-    */
-
-    'categories' => [
-        'ar' => [
-            'engine' => 'قطع المحرك',
-            'brakes' => 'الفرامل',
-            'tires' => 'الإطارات',
-            'electrical' => 'الأجزاء الكهربائية',
-            'filters' => 'الفلاتر',
-            'oils' => 'الزيوت والشحوم',
-            'chains' => 'السلاسل',
-            'accessories' => 'الإكسسوارات',
-        ],
-        'en' => [
-            'engine' => 'Engine Parts',
-            'brakes' => 'Brake Systems',
-            'tires' => 'Tires & Wheels',
-            'electrical' => 'Electrical Components',
-            'filters' => 'Filters',
-            'oils' => 'Oils & Lubricants',
-            'chains' => 'Chains & Sprockets',
-            'accessories' => 'Accessories',
-        ],
     ],
 
 ];

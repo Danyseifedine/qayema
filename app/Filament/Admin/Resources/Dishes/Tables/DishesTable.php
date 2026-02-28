@@ -23,26 +23,32 @@ class DishesTable
                     ->label('Image')
                     ->circular()
                     ->limit(3)
+                    ->placeholder('N/A')
                     ->toggleable(),
                 TextColumn::make('name')
+                    ->placeholder('N/A')
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
                 TextColumn::make('menu.name')
                     ->label('Menu')
+                    ->placeholder('N/A')
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('category.name')
                     ->label('Category')
+                    ->placeholder('N/A')
                     ->searchable()
                     ->sortable()
                     ->toggleable(),
                 TextColumn::make('price')
+                    ->placeholder('N/A')
                     ->money('USD')
                     ->sortable()
                     ->toggleable(),
                 TextColumn::make('prep_time')
                     ->label('Prep Time')
+                    ->placeholder('N/A')
                     ->suffix(' min')
                     ->sortable()
                     ->toggleable(),
@@ -50,9 +56,11 @@ class DishesTable
                     ->label('Available'),
                 TextColumn::make('display_order')
                     ->label('Order')
+                    ->placeholder('N/A')
                     ->sortable()
                     ->toggleable(),
                 TextColumn::make('created_at')
+                    ->placeholder('N/A')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

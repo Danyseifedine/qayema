@@ -22,6 +22,18 @@
         <div class="min-h-screen bg-gray-100">
             @include('layouts.navigation')
 
+            @if (is_impersonating())
+                <div class="bg-amber-500 text-white">
+                    <div class="max-w-7xl mx-auto py-2 px-4 sm:px-6 lg:px-8 flex items-center justify-between flex-wrap gap-2">
+                        <span class="font-medium">You are viewing as {{ auth()->user()->name }}.</span>
+                        <a href="{{ route('impersonate.leave') }}"
+                            class="underline font-semibold hover:text-amber-100">
+                            Leave impersonation
+                        </a>
+                    </div>
+                </div>
+            @endif
+
             <!-- Page Heading -->
             @isset($header)
                 <header class="bg-white shadow">

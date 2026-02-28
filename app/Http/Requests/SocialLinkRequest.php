@@ -34,7 +34,7 @@ class SocialLinkRequest extends FormRequest
     {
         $validator->after(function ($validator) {
             $user = $this->user();
-            $menu = $user->menus()->first();
+            $menu = $user->currentMenu();
 
             if ($menu && $this->isMethod('post')) {
                 // Check if we're creating a new social link

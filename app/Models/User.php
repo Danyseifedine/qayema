@@ -2,17 +2,30 @@
 
 namespace App\Models;
 
+use App\Enums\UserRole;
 use Filament\Models\Contracts\FilamentUser;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Lab404\Impersonate\Models\Impersonate;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
-class User extends Authenticatable implements HasMedia, FilamentUser
+class User extends Authenticatable implements FilamentUser, HasMedia
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, InteractsWithMedia, Notifiable;
+    use HasFactory, Impersonate, InteractsWithMedia, Notifiable;
+
+    public function canImpersonate(): bool
+    {
+        return $this->isAdmin();
+    }
+
+    public function canBeImpersonated(): bool
+    {
+        return $this->isMenuOwner();
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -49,31 +62,34 @@ class User extends Authenticatable implements HasMedia, FilamentUser
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'role' => UserRole::class,
         ];
     }
 
     /**
      * Get the menus for the user.
      */
-    public function menus()
+    public function menus(): HasMany
     {
         return $this->hasMany(Menu::class);
     }
 
     /**
-     * Check if user is admin.
+     * Get the user's (first) menu. App assumes one menu per owner.
      */
-    public function isAdmin(): bool
+    public function currentMenu(): ?Menu
     {
-        return $this->role === 'admin';
+        return $this->menus()->first();
     }
 
-    /**
-     * Check if user is menu owner.
-     */
+    public function isAdmin(): bool
+    {
+        return $this->role === UserRole::Admin;
+    }
+
     public function isMenuOwner(): bool
     {
-        return $this->role === 'menu_owner';
+        return $this->role === UserRole::MenuOwner;
     }
 
     /**

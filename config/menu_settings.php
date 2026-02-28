@@ -1,0 +1,30 @@
+<?php
+
+return [
+    'defaults' => [
+        'menu_design' => 'default',
+        'currency_enabled' => false,
+        'exchange_currency' => null,
+        'exchange_rate' => null,
+        'show_prices' => true,
+        'language' => 'en',
+        'show_dish_image' => true,
+        'show_category_image' => true,
+        'show_logo' => true,
+        'show_cover_image' => true,
+        'show_restaurant_info' => true,
+        'show_address' => true,
+        'show_phone_number' => true,
+        'show_social_links' => true,
+        'show_ingredients' => true,
+        'enable_share' => true,
+        'share_button_position' => 'bottom_right',
+        'font_family' => 'sans',
+        'price_position' => 'bottom_right',
+        'category_layout' => 'grid',
+        'category_collapsible' => true,
+        'category_default_state' => 'open',
+        'dish_layout' => 'default',
+        'show_loading_page' => false,
+    ],
+];

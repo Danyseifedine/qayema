@@ -21,23 +21,29 @@ class CategoriesTable
                     ->collection('image')
                     ->label('Image')
                     ->circular()
+                    ->placeholder('N/A')
                     ->toggleable(),
                 TextColumn::make('name')
+                    ->placeholder('N/A')
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
                 TextColumn::make('menu.name')
                     ->label('Menu')
+                    ->placeholder('N/A')
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('dishes_count')
                     ->label('Dishes')
+                    ->placeholder('N/A')
                     ->counts('dishes')
                     ->sortable(),
                 TextColumn::make('display_order')
                     ->label('Order')
+                    ->placeholder('N/A')
                     ->sortable(),
                 TextColumn::make('created_at')
+                    ->placeholder('N/A')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

@@ -5,7 +5,6 @@ namespace App\Http\Controllers\MenuOwner;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CategoryRequest;
 use App\Models\Category;
-use App\Models\Menu;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -14,8 +13,7 @@ class CategoryController extends Controller
 {
     public function index(Request $request): View
     {
-        $user = $request->user();
-        $menu = $user->menus()->first();
+        $menu = $request->user()->currentMenu();
 
         $categories = $menu
             ? Category::where('menu_id', $menu->id)
@@ -32,8 +30,7 @@ class CategoryController extends Controller
 
     public function create(Request $request): View|RedirectResponse
     {
-        $user = $request->user();
-        $menu = $user->menus()->first();
+        $menu = $request->user()->currentMenu();
 
         if (! $menu) {
             return redirect()->route('menu-owner.menus.index')
@@ -53,8 +50,7 @@ class CategoryController extends Controller
 
     public function store(CategoryRequest $request): RedirectResponse
     {
-        $user = $request->user();
-        $menu = $user->menus()->first();
+        $menu = $request->user()->currentMenu();
 
         if (! $menu) {
             return redirect()->route('menu-owner.menus.index')
@@ -90,29 +86,17 @@ class CategoryController extends Controller
 
     public function edit(Request $request, Category $category): View
     {
-        $user = $request->user();
-        $menu = $user->menus()->first();
-
-        // Ensure category belongs to user's menu
-        if (! $menu || $category->menu_id !== $menu->id) {
-            abort(404);
-        }
+        $this->authorize('update', $category);
 
         return view('menu-owner.categories.form', [
             'category' => $category,
-            'menu' => $menu,
+            'menu' => $category->menu,
         ]);
     }
 
     public function update(CategoryRequest $request, Category $category): RedirectResponse
     {
-        $user = $request->user();
-        $menu = $user->menus()->first();
-
-        // Ensure category belongs to user's menu
-        if (! $menu || $category->menu_id !== $menu->id) {
-            abort(404);
-        }
+        $this->authorize('update', $category);
 
         $data = $request->validated();
         $category->update($data);
@@ -137,13 +121,7 @@ class CategoryController extends Controller
 
     public function destroy(Request $request, Category $category): RedirectResponse
     {
-        $user = $request->user();
-        $menu = $user->menus()->first();
-
-        // Ensure category belongs to user's menu
-        if (! $menu || $category->menu_id !== $menu->id) {
-            abort(404);
-        }
+        $this->authorize('delete', $category);
 
         $category->delete();
 

@@ -3,12 +3,10 @@
         "claude_code",
         "cursor"
     ],
-    "editors": [
-        "claude_code",
-        "cursor",
-        "vscode"
-    ],
-    "guidelines": [
+    "packages": [
         "filament/filament"
+    ],
+    "skills": [
+        "tailwindcss-development"
     ]
 }

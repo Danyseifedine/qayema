@@ -17,17 +17,20 @@ class SettingsTable
             ->columns([
                 TextColumn::make('title')
                     ->label('Title')
+                    ->placeholder('N/A')
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
                 TextColumn::make('key')
                     ->label('Key')
+                    ->placeholder('N/A')
                     ->searchable()
                     ->sortable()
                     ->badge()
                     ->color('gray'),
                 TextColumn::make('type')
                     ->label('Type')
+                    ->placeholder('N/A')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'boolean' => 'success',
@@ -39,9 +42,11 @@ class SettingsTable
                     ->sortable(),
                 TextColumn::make('description')
                     ->label('Description')
+                    ->placeholder('N/A')
                     ->limit(30)
                     ->toggleable(),
                 TextColumn::make('created_at')
+                    ->placeholder('N/A')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

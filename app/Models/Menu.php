@@ -182,35 +182,11 @@ class Menu extends Model
      */
     public function setDefaultSettings(): void
     {
-        // Only set defaults if menu doesn't have any settings yet
         if ($this->settings()->exists()) {
             return;
         }
 
-        $defaults = [
-            'menu_design' => 'default',
-            'currency_enabled' => false,
-            'exchange_currency' => null,
-            'exchange_rate' => null,
-            'show_prices' => true,
-            'language' => 'en',
-            'show_dish_image' => true,
-            'show_category_image' => true,
-            'show_logo' => true,
-            'show_cover_image' => true,
-            'show_restaurant_info' => true,
-            'show_address' => true,
-            'show_phone_number' => true,
-            'show_social_links' => true,
-            'show_ingredients' => true,
-            'enable_share' => true,
-            'share_button_position' => 'bottom_right',
-            'font_family' => 'sans',
-            'price_position' => 'bottom_right',
-            'category_layout' => 'grid',
-            'category_collapsible' => true,
-            'category_default_state' => 'open',
-        ];
+        $defaults = config('menu_settings.defaults', []);
 
         foreach ($defaults as $key => $value) {
             $setting = Setting::where('key', $key)->first();
@@ -234,36 +210,8 @@ class Menu extends Model
      */
     public function getSettings(): array
     {
-        $defaults = [
-            'menu_design' => 'default',
-            'currency_enabled' => false,
-            'exchange_currency' => null,
-            'exchange_rate' => null,
-            'show_prices' => true,
-            'language' => 'en',
-            'show_dish_image' => true,
-            'show_category_image' => true,
-            'show_logo' => true,
-            'show_cover_image' => true,
-            'show_logo' => true,
-            'show_restaurant_info' => true,
-            'show_address' => true,
-            'show_phone_number' => true,
-            'show_social_links' => true,
-            'show_ingredients' => true,
-            'enable_share' => true,
-            'share_button_position' => 'bottom_right',
-            'font_family' => 'sans',
-            'price_position' => 'bottom_right',
-            'category_layout' => 'grid',
-            'category_collapsible' => true,
-            'category_default_state' => 'open',
-            'dish_layout' => 'default',
-            'show_loading_page' => false,
-        ];
-
+        $result = config('menu_settings.defaults', []);
         $settings = $this->settings()->with('setting')->get();
-        $result = $defaults;
 
         foreach ($settings as $menuSetting) {
             if ($menuSetting->setting) {

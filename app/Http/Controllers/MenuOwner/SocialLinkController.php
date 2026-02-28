@@ -4,7 +4,6 @@ namespace App\Http\Controllers\MenuOwner;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SocialLinkRequest;
-use App\Models\Menu;
 use App\Models\MenuSocialLink;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,8 +13,7 @@ class SocialLinkController extends Controller
 {
     public function index(Request $request): View
     {
-        $user = $request->user();
-        $menu = $user->menus()->first();
+        $menu = $request->user()->currentMenu();
 
         $socialLinks = $menu
             ? MenuSocialLink::where('menu_id', $menu->id)
@@ -31,8 +29,7 @@ class SocialLinkController extends Controller
 
     public function create(Request $request): View|RedirectResponse
     {
-        $user = $request->user();
-        $menu = $user->menus()->first();
+        $menu = $request->user()->currentMenu();
 
         if (! $menu) {
             return redirect()->route('menu-owner.menus.index')
@@ -47,8 +44,7 @@ class SocialLinkController extends Controller
 
     public function store(SocialLinkRequest $request): RedirectResponse
     {
-        $user = $request->user();
-        $menu = $user->menus()->first();
+        $menu = $request->user()->currentMenu();
 
         if (! $menu) {
             return redirect()->route('menu-owner.menus.index')
@@ -71,29 +67,17 @@ class SocialLinkController extends Controller
 
     public function edit(Request $request, MenuSocialLink $socialLink): View
     {
-        $user = $request->user();
-        $menu = $user->menus()->first();
-
-        // Ensure social link belongs to user's menu
-        if (! $menu || $socialLink->menu_id !== $menu->id) {
-            abort(404);
-        }
+        $this->authorize('update', $socialLink);
 
         return view('menu-owner.social-links.form', [
             'socialLink' => $socialLink,
-            'menu' => $menu,
+            'menu' => $socialLink->menu,
         ]);
     }
 
     public function update(SocialLinkRequest $request, MenuSocialLink $socialLink): RedirectResponse
     {
-        $user = $request->user();
-        $menu = $user->menus()->first();
-
-        // Ensure social link belongs to user's menu
-        if (! $menu || $socialLink->menu_id !== $menu->id) {
-            abort(404);
-        }
+        $this->authorize('update', $socialLink);
 
         $data = $request->validated();
         $socialLink->update($data);
@@ -104,13 +88,7 @@ class SocialLinkController extends Controller
 
     public function destroy(Request $request, MenuSocialLink $socialLink): RedirectResponse
     {
-        $user = $request->user();
-        $menu = $user->menus()->first();
-
-        // Ensure social link belongs to user's menu
-        if (! $menu || $socialLink->menu_id !== $menu->id) {
-            abort(404);
-        }
+        $this->authorize('delete', $socialLink);
 
         $socialLink->delete();
 

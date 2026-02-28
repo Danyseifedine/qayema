@@ -18,10 +18,12 @@ class MenuSocialLinksTable
             ->columns([
                 TextColumn::make('menu.name')
                     ->label('Menu')
+                    ->placeholder('N/A')
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
                 TextColumn::make('platform')
+                    ->placeholder('N/A')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'instagram' => 'pink',
@@ -41,11 +43,13 @@ class MenuSocialLinksTable
                     ->sortable(),
                 TextColumn::make('url')
                     ->label('URL')
+                    ->placeholder('N/A')
                     ->limit(50)
                     ->copyable()
                     ->searchable()
                     ->toggleable(),
                 TextColumn::make('created_at')
+                    ->placeholder('N/A')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

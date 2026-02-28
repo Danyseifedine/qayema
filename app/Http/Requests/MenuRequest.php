@@ -23,7 +23,7 @@ class MenuRequest extends FormRequest
      */
     public function rules(): array
     {
-        $menu = $this->user()->menus()->first();
+        $menu = $this->user()->currentMenu();
 
         return [
             'name' => ['required', 'string', 'max:255'],

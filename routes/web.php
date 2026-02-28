@@ -68,6 +68,8 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureRestaurantSetu
 });
 
 Route::middleware('auth')->group(function () {
+    Route::impersonate();
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::patch('/profile/restaurant', [ProfileController::class, 'updateRestaurantInformation'])->name('profile.restaurant.update');

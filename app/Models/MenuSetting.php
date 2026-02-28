@@ -38,7 +38,7 @@ class MenuSetting extends Model
             return null;
         }
 
-        $type = $this->setting?->type ?? 'string';
+        $type = $this->setting?->type ?? Setting::where('id', $this->setting_id)->value('type') ?? 'string';
 
         return match ($type) {
             'boolean' => filter_var($value, FILTER_VALIDATE_BOOLEAN),
@@ -60,8 +60,7 @@ class MenuSetting extends Model
             return;
         }
 
-        // Get type from setting relationship
-        $type = $this->setting?->type ?? $this->attributes['type'] ?? 'string';
+        $type = $this->setting?->type ?? Setting::where('id', $this->setting_id)->value('type') ?? 'string';
 
         $this->attributes['value'] = match ($type) {
             'json' => is_string($value) ? $value : json_encode($value),

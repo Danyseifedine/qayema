@@ -10,6 +10,7 @@
         "filament/filament": "^4.3",
         "filament/spatie-laravel-media-library-plugin": "^4.3",
         "intervention/image": "^3.11",
+        "lab404/laravel-impersonate": "^1.7",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "simplesoftwareio/simple-qrcode": "^4.2",
@@ -17,7 +18,7 @@
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
-        "laravel/boost": "^1.8",
+        "laravel/boost": "^2.1",
         "laravel/breeze": "^2.3",
         "laravel/pail": "^1.2.2",
         "laravel/pint": "^1.24",

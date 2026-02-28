@@ -17,21 +17,25 @@ class MenuSettingsTable
             ->columns([
                 TextColumn::make('menu.name')
                     ->label('Menu')
+                    ->placeholder('N/A')
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
                 TextColumn::make('setting.title')
                     ->label('Setting')
+                    ->placeholder('N/A')
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('setting.key')
                     ->label('Key')
+                    ->placeholder('N/A')
                     ->searchable()
                     ->sortable()
                     ->badge()
                     ->color('gray'),
                 TextColumn::make('setting.type')
                     ->label('Type')
+                    ->placeholder('N/A')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'boolean' => 'success',
@@ -43,6 +47,7 @@ class MenuSettingsTable
                     ->sortable(),
                 TextColumn::make('value')
                     ->label('Value')
+                    ->placeholder('N/A')
                     ->searchable()
                     ->limit(50)
                     ->formatStateUsing(function ($state, $record) {
@@ -56,13 +61,15 @@ class MenuSettingsTable
                             return json_encode($state);
                         }
 
-                        return $state ?? '—';
+                        return $state ?? 'N/A';
                     }),
                 TextColumn::make('setting.description')
                     ->label('Description')
+                    ->placeholder('N/A')
                     ->limit(30)
                     ->toggleable(),
                 TextColumn::make('created_at')
+                    ->placeholder('N/A')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\DishRequest;
 use App\Models\Category;
 use App\Models\Dish;
-use App\Models\Menu;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -16,7 +15,7 @@ class DishController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
-        $menu = $user->menus()->first();
+        $menu = $user->currentMenu();
 
         $dishes = $menu
             ? Dish::where('menu_id', $menu->id)
@@ -35,7 +34,7 @@ class DishController extends Controller
     public function create(Request $request): View|RedirectResponse
     {
         $user = $request->user();
-        $menu = $user->menus()->first();
+        $menu = $user->currentMenu();
 
         if (! $menu) {
             return redirect()->route('menu-owner.menus.index')
@@ -62,7 +61,7 @@ class DishController extends Controller
     public function store(DishRequest $request): RedirectResponse
     {
         $user = $request->user();
-        $menu = $user->menus()->first();
+        $menu = $user->currentMenu();
 
         if (! $menu) {
             return redirect()->route('menu-owner.menus.index')
@@ -77,12 +76,7 @@ class DishController extends Controller
 
         $data = $request->validated();
         $data['menu_id'] = $menu->id;
-
-        // Set removed fields to null
-        $data['description'] = null;
-        $data['prep_time'] = null;
-        $data['serving_size'] = null;
-        $data['allergens'] = null;
+        $data['allergens'] = $this->parseAllergens($request->input('allergens'));
 
         $dish = Dish::create($data);
 
@@ -121,14 +115,9 @@ class DishController extends Controller
 
     public function edit(Request $request, Dish $dish): View|RedirectResponse
     {
-        $user = $request->user();
-        $menu = $user->menus()->first();
+        $this->authorize('update', $dish);
 
-        // Ensure dish belongs to user's menu
-        if (! $menu || $dish->menu_id !== $menu->id) {
-            abort(404);
-        }
-
+        $menu = $dish->menu;
         $categories = Category::where('menu_id', $menu->id)
             ->orderBy('display_order')
             ->orderBy('name')
@@ -143,32 +132,13 @@ class DishController extends Controller
 
     public function update(DishRequest $request, Dish $dish): RedirectResponse
     {
-        $user = $request->user();
-        $menu = $user->menus()->first();
-
-        // Ensure dish belongs to user's menu
-        if (! $menu || $dish->menu_id !== $menu->id) {
-            abort(404);
-        }
-
-        \Log::info('Dish update called', [
-            'dish_id' => $dish->id,
-            'has_files' => $request->hasFile('images'),
-            'files_count' => $request->hasFile('images') ? count($request->file('images')) : 0,
-            'all_files' => $request->allFiles(),
-        ]);
+        $this->authorize('update', $dish);
 
         $data = $request->validated();
-
-        // Set removed fields to null
-        $data['description'] = null;
-        $data['prep_time'] = null;
-        $data['serving_size'] = null;
-        $data['allergens'] = null;
+        $data['allergens'] = $this->parseAllergens($request->input('allergens'));
 
         $dish->update($data);
 
-        // Handle image deletion first
         if ($request->has('delete_images') && is_array($request->input('delete_images'))) {
             foreach ($request->input('delete_images') as $imageId) {
                 $media = $dish->getMedia('images')->where('id', (int) $imageId)->first();
@@ -178,46 +148,27 @@ class DishController extends Controller
             }
         }
 
-        // Handle image uploads if provided
         if ($request->hasFile('images')) {
-            \Log::info('Processing image uploads', ['count' => count($request->file('images'))]);
             $imageService = app(\App\Services\ImageOptimizationService::class);
-            foreach ($request->file('images') as $index => $image) {
+            foreach ($request->file('images') as $image) {
                 try {
-                    \Log::info("Processing image {$index}", [
-                        'original_name' => $image->getClientOriginalName(),
-                        'size' => $image->getSize(),
-                        'mime' => $image->getMimeType(),
-                    ]);
-
-                    // Optimize image to max 50KB (600x600 for menu display)
                     $optimizedPath = $imageService->optimizeDishImage($image);
-                    \Log::info('Image optimized', ['path' => $optimizedPath, 'exists' => file_exists($optimizedPath)]);
 
-                    // Ensure file exists and is readable
                     if (file_exists($optimizedPath) && is_readable($optimizedPath)) {
-                        \Log::info('Adding media to collection');
-                        // Use the same approach as RestaurantSetupController
-                        $media = $dish->addMedia($optimizedPath)
+                        $dish->addMedia($optimizedPath)
                             ->usingName(pathinfo($image->getClientOriginalName(), PATHINFO_FILENAME))
                             ->toMediaCollection('images');
-                        \Log::info('Media added successfully', ['media_id' => $media->id ?? 'unknown']);
 
-                        // Clean up temporary file after Media Library copies it
                         if (file_exists($optimizedPath)) {
                             @unlink($optimizedPath);
-                            \Log::info('Temporary file cleaned up');
                         }
                     } else {
                         \Log::error('Optimized file does not exist or is not readable: '.$optimizedPath);
                     }
                 } catch (\Exception $e) {
                     \Log::error('Failed to save dish image: '.$e->getMessage().' | Trace: '.$e->getTraceAsString());
-                    // Continue with other images even if one fails
                 }
             }
-        } else {
-            \Log::info('No images in request - hasFile check returned false');
         }
 
         return redirect()->route('menu-owner.dishes.index')
@@ -226,17 +177,27 @@ class DishController extends Controller
 
     public function destroy(Request $request, Dish $dish): RedirectResponse
     {
-        $user = $request->user();
-        $menu = $user->menus()->first();
-
-        // Ensure dish belongs to user's menu
-        if (! $menu || $dish->menu_id !== $menu->id) {
-            abort(404);
-        }
+        $this->authorize('delete', $dish);
 
         $dish->delete();
 
         return redirect()->route('menu-owner.dishes.index')
             ->with('success', 'Dish deleted successfully!');
+    }
+
+    /**
+     * @return array<int, string>|null
+     */
+    protected function parseAllergens(mixed $value): ?array
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (is_array($value)) {
+            return array_values(array_filter(array_map('trim', $value)));
+        }
+
+        return array_values(array_filter(array_map('trim', explode(',', (string) $value))));
     }
 }

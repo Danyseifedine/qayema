@@ -2,10 +2,10 @@
 
 namespace App\Filament\Admin\Resources\Users\Schemas;
 
+use App\Enums\UserRole;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
 
 class UserForm
@@ -31,12 +31,12 @@ class UserForm
                     ->minLength(8),
                 Select::make('role')
                     ->options([
-                        'admin' => 'Admin',
-                        'menu_owner' => 'Menu Owner',
+                        UserRole::Admin->value => 'Admin',
+                        UserRole::MenuOwner->value => 'Menu Owner',
                     ])
                     ->searchable()
                     ->required()
-                    ->default('menu_owner'),
+                    ->default(UserRole::MenuOwner->value),
                 TextInput::make('restaurant_name')
                     ->label('Restaurant/Business Name')
                     ->maxLength(255),
