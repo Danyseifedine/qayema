@@ -1,16 +1,16 @@
 @include('public.menu.partials.head')
 
 @php
-    // Helper function to get price position classes
+    // Helper: use physical left/right so "bottom right" is always the visual right corner in both LTR and RTL
     function getPricePositionClasses($position)
     {
         $positionClasses = [
-            'bottom_left' => 'bottom-3 start-3',
-            'bottom_right' => 'bottom-3 end-3',
-            'top_left' => 'top-3 start-3',
-            'top_right' => 'top-3 end-3',
+            'bottom_left' => 'bottom-3 left-3',
+            'bottom_right' => 'bottom-3 right-3',
+            'top_left' => 'top-3 left-3',
+            'top_right' => 'top-3 right-3',
         ];
-        return $positionClasses[$position] ?? 'bottom-3 end-3';
+        return $positionClasses[$position] ?? 'bottom-3 right-3';
     }
 
     // Helper function to get dish layout partial
