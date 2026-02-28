@@ -14,6 +14,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             '*/*/track-exit',
         ]);
+        $middleware->alias([
+            'owner.locale' => \App\Http\Middleware\SetMenuOwnerLocale::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

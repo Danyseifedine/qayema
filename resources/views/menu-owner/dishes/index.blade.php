@@ -2,15 +2,15 @@
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('Dishes') }}
+                {{ __('menu_owner.dishes.title') }}
             </h2>
             @if ($menu)
                 <a href="{{ route('menu-owner.dishes.create') }}"
                     class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-4 h-4 me-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                     </svg>
-                    Create Dish
+                    {{ __('menu_owner.dishes.add_dish') }}
                 </a>
             @endif
         </div>
@@ -32,8 +32,8 @@
 
             @if (!$menu)
                 <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded mb-6">
-                    Please create a menu first before adding dishes.
-                    <a href="{{ route('menu-owner.menus.index') }}" class="underline ml-2">Go to Menu</a>
+                    {{ __('menu_owner.dishes.create_menu_first') }}
+                    <a href="{{ route('menu-owner.menus.index') }}" class="underline ms-2">{{ __('menu_owner.common.go_to_menu') }}</a>
                 </div>
             @elseif($dishes->isEmpty())
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -44,8 +44,8 @@
                                 d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253">
                             </path>
                         </svg>
-                        <h3 class="mt-2 text-sm font-semibold text-gray-900">No dishes</h3>
-                        <p class="mt-1 text-sm text-gray-500">Get started by creating a new dish.</p>
+                        <h3 class="mt-2 text-sm font-semibold text-gray-900">{{ __('menu_owner.dishes.no_dishes') }}</h3>
+                        <p class="mt-1 text-sm text-gray-500">{{ __('menu_owner.dishes.get_started') }}</p>
                         <div class="mt-6">
                             <a href="{{ route('menu-owner.dishes.create') }}"
                                 class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">

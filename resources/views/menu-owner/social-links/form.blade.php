@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ $socialLink ? __('Edit Social Link') : __('Add Social Link') }}
+                {{ $socialLink ? __('menu_owner.social_links.edit_social_link') : __('menu_owner.social_links.add_social_link') }}
             </h2>
         </div>
     </x-slot>
@@ -26,11 +26,12 @@
 
                         <!-- Platform -->
                         <div class="mb-6">
-                            <x-input-label for="platform" :value="__('Platform')" />
+                            <x-input-label for="platform" :value="__('menu_owner.social_links.platform')" />
+                            <p class="mt-0.5 text-sm text-gray-500">{{ __('menu_owner.social_links.platform_desc') }}</p>
                             <select id="platform" name="platform"
                                 class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
                                 required>
-                                <option value="">Select a platform</option>
+                                <option value="">{{ __('menu_owner.social_links.select_platform') }}</option>
                                 <option value="instagram" {{ old('platform', $socialLink?->platform) === 'instagram' ? 'selected' : '' }}>
                                     Instagram
                                 </option>
@@ -49,22 +50,22 @@
 
                         <!-- URL -->
                         <div class="mb-6">
-                            <x-input-label for="url" :value="__('URL')" />
+                            <x-input-label for="url" :value="__('menu_owner.social_links.url')" />
                             <x-text-input id="url" name="url" type="url" class="mt-1 block w-full"
-                                :value="old('url', $socialLink?->url)" placeholder="https://..." required />
+                                :value="old('url', $socialLink?->url)" :placeholder="__('menu_owner.social_links.placeholder_url')" required />
+                            <p class="mt-1 text-sm text-gray-500">{{ __('menu_owner.social_links.url_desc') }}</p>
                             <x-input-error class="mt-2" :messages="$errors->get('url')" />
-                            <p class="mt-1 text-sm text-gray-500">Enter the full URL to your social media profile or page</p>
                         </div>
 
                         <!-- Buttons -->
                         <div class="flex items-center gap-4">
                             <button type="submit"
                                 class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                {{ $socialLink ? __('Update') : __('Create') }}
+                                {{ $socialLink ? __('menu_owner.common.update') : __('menu_owner.common.create') }}
                             </button>
                             <a href="{{ route('menu-owner.social-links.index') }}"
                                 class="inline-flex items-center px-4 py-2 bg-gray-100 border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                Cancel
+                                {{ __('menu_owner.common.cancel') }}
                             </a>
                         </div>
                     </form>

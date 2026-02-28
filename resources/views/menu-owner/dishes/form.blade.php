@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ $dish ? 'Edit Dish' : 'Create Dish' }}
+            {{ $dish ? __('menu_owner.dishes.edit_dish') : __('menu_owner.dishes.create_dish') }}
         </h2>
     </x-slot>
 
@@ -31,10 +31,11 @@
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <x-input-label for="category_id" :value="__('Category (Optional)')" />
+                                <x-input-label for="category_id" :value="__('menu_owner.dishes.category_optional')" />
+                                <p class="mt-0.5 text-sm text-gray-500">{{ __('menu_owner.dishes.category_optional_desc') }}</p>
                                 <select id="category_id" name="category_id"
                                     class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm px-3 py-2">
-                                    <option value="">No Category</option>
+                                    <option value="">—</option>
                                     @foreach ($categories as $category)
                                         <option value="{{ $category->id }}"
                                             {{ old('category_id', $dish?->category_id) == $category->id ? 'selected' : '' }}>
@@ -42,51 +43,50 @@
                                         </option>
                                     @endforeach
                                 </select>
-                                <p class="mt-1 text-sm text-gray-500">This field is optional</p>
                                 <x-input-error class="mt-2" :messages="$errors->get('category_id')" />
                             </div>
 
                             <div>
-                                <x-input-label for="name" :value="__('Dish Name')" />
+                                <x-input-label for="name" :value="__('menu_owner.dishes.dish_name')" />
                                 <x-text-input id="name" name="name" type="text" class="mt-1 block w-full"
-                                    :value="old('name', $dish?->name)" placeholder="Enter dish name" minlength="2" maxlength="255"
+                                    :value="old('name', $dish?->name)" :placeholder="__('menu_owner.dishes.placeholder_name')" minlength="2" maxlength="255"
                                     required />
+                                <p class="mt-1 text-sm text-gray-500">{{ __('menu_owner.dishes.dish_name_desc') }}</p>
                                 <x-input-error class="mt-2" :messages="$errors->get('name')" />
                             </div>
                         </div>
 
 
                         <div>
-                            <x-input-label for="price" :value="__('Price (Optional)')" />
+                            <x-input-label for="price" :value="__('menu_owner.dishes.price_optional')" />
                             <div class="mt-1 relative">
-                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none rtl:left-auto rtl:right-0 rtl:pl-0 rtl:pr-3">
                                     <span class="text-gray-500 sm:text-sm">$</span>
                                 </div>
                                 <x-text-input id="price" name="price" type="number" step="0.01"
-                                    min="0" class="pl-7 block w-full" :value="old('price', $dish?->price)" placeholder="0.00" />
+                                    min="0" class="pl-7 block w-full rtl:pl-3 rtl:pr-7" :value="old('price', $dish?->price)" placeholder="0.00" />
                             </div>
-                            <p class="mt-1 text-sm text-gray-500">This field is optional. Leave empty for home cook
-                                menus</p>
+                            <p class="mt-1 text-sm text-gray-500">{{ __('menu_owner.dishes.price_optional_desc') }}</p>
                             <x-input-error class="mt-2" :messages="$errors->get('price')" />
                         </div>
 
                         <div>
-                            <x-input-label for="ingredients" :value="__('Ingredients (Optional)')" />
+                            <x-input-label for="ingredients" :value="__('menu_owner.dishes.ingredients_optional')" />
                             <textarea id="ingredients" name="ingredients" rows="4"
                                 class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm px-3 py-2"
-                                placeholder="List all ingredients, separated by commas or new lines (optional)">{{ old('ingredients', $dish?->ingredients) }}</textarea>
-                            <p class="mt-1 text-sm text-gray-500">This field is optional. Separate ingredients with
-                                commas or new lines</p>
+                                placeholder="List ingredients, comma or new line separated">{{ old('ingredients', $dish?->ingredients) }}</textarea>
+                            <p class="mt-1 text-sm text-gray-500">{{ __('menu_owner.dishes.ingredients_optional_desc') }}</p>
                             <x-input-error class="mt-2" :messages="$errors->get('ingredients')" />
                         </div>
 
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <x-input-label for="display_order" :value="__('Display Order')" />
+                                <x-input-label for="display_order" :value="__('menu_owner.dishes.display_order')" />
                                 <x-text-input id="display_order" name="display_order" type="number" min="0"
                                     class="mt-1 block w-full" :value="old('display_order', $dish?->display_order ?? 0)" required />
-                                <p class="mt-1 text-sm text-gray-500">Lower numbers appear first</p>
+                                <p class="mt-1 text-sm text-gray-500">{{ __('menu_owner.dishes.display_order_desc') }}</p>
+                                <p class="mt-0.5 text-xs text-gray-400">{{ __('menu_owner.dishes.lower_first') }}</p>
                                 <x-input-error class="mt-2" :messages="$errors->get('display_order')" />
                             </div>
 
@@ -95,8 +95,7 @@
                                     <input type="checkbox" name="is_available" value="1"
                                         class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
                                         {{ old('is_available', $dish?->is_available ?? true) ? 'checked' : '' }} />
-                                    <span class="ms-2 text-sm text-gray-600">Dish is available (visible to
-                                        public)</span>
+                                    <span class="ms-2 text-sm text-gray-600">{{ __('menu_owner.dishes.dish_available') }}</span>
                                 </label>
                                 <x-input-error class="mt-2" :messages="$errors->get('is_available')" />
                             </div>
@@ -163,7 +162,8 @@
                         }" @dragover.prevent="isDragging = true"
                             @dragleave.prevent="isDragging = false"
                             @drop.prevent="isDragging = false; handleFiles($event.dataTransfer.files)">
-                            <x-input-label for="images" :value="__('Dish Images (Optional)')" />
+                            <x-input-label for="images" :value="__('menu_owner.dishes.dish_images_optional')" />
+                            <p class="mt-1 text-sm text-gray-500">{{ __('menu_owner.dishes.dish_images_optional_desc') }}</p>
 
                             <div id="images-container" class="mt-2">
                                 <!-- Existing Images -->
@@ -229,12 +229,12 @@
                         <div class="flex items-center justify-end gap-4">
                             <a href="{{ route('menu-owner.dishes.index') }}"
                                 class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                Cancel
+                                {{ __('menu_owner.common.cancel') }}
                             </a>
                             <button type="submit"
                                 class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
                                 {{ $menu && $menu->hasReachedDishLimit() && !$dish ? 'disabled' : '' }}>
-                                {{ $dish ? 'Update Dish' : 'Create Dish' }}
+                                {{ $dish ? __('menu_owner.common.update') . ' ' . __('menu_owner.dishes.title') : __('menu_owner.common.create') . ' ' . __('menu_owner.dishes.title') }}
                             </button>
                         </div>
                     </form>

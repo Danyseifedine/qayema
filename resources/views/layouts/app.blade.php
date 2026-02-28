@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -47,6 +47,18 @@
             <main>
                 {{ $slot }}
             </main>
+
+            @auth
+                @if(auth()->user()->isMenuOwner())
+                    <div class="fixed bottom-6 right-6 rtl:right-auto rtl:left-6 z-50 flex flex-col gap-2" aria-label="{{ __('menu_owner.language_switcher.aria') }}">
+                        <a href="{{ route('owner.locale.switch', ['locale' => app()->getLocale() === 'ar' ? 'en' : 'ar']) }}"
+                            class="inline-flex items-center px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium shadow-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition"
+                            title="{{ app()->getLocale() === 'ar' ? __('menu_owner.language_switcher.switch_to_english') : __('menu_owner.language_switcher.switch_to_arabic') }}">
+                            <span>{{ app()->getLocale() === 'ar' ? __('menu_owner.language_switcher.switch_to_english') : __('menu_owner.language_switcher.switch_to_arabic') }}</span>
+                        </a>
+                    </div>
+                @endif
+            @endauth
         </div>
     </body>
 </html>

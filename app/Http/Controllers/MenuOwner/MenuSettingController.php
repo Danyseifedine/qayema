@@ -150,6 +150,6 @@ class MenuSettingController extends Controller
         }
 
         return redirect()->route('menu-owner.settings.index')
-            ->with('success', 'Settings updated successfully!');
+            ->with('success', __('menu_owner.settings.settings_updated'));
     }
 }

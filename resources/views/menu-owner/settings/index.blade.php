@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Menu Settings') }}
+            {{ __('menu_owner.settings.title') }}
         </h2>
     </x-slot>
 
@@ -112,8 +112,8 @@
             @if (!$menu)
                 <div
                     class="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded mb-4 sm:mb-6 text-sm">
-                    Please create a menu first before configuring settings.
-                    <a href="{{ route('menu-owner.menus.index') }}" class="underline ml-2">Go to Menu</a>
+                    {{ __('menu_owner.settings.create_menu_first') }}
+                    <a href="{{ route('menu-owner.menus.index') }}" class="underline ms-2">{{ __('menu_owner.common.go_to_menu') }}</a>
                 </div>
             @else
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -147,8 +147,11 @@
                                                 d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                         @endif
                                     </svg>
-                                    <span class="hidden sm:inline">{{ $group['title'] }}</span>
-                                    <span class="sm:hidden">{{ explode(' ', $group['title'])[0] }}</span>
+                                    @php
+                                        $groupTitle = __("menu_owner.settings.groups.{$key}");
+                                    @endphp
+                                    <span class="hidden sm:inline">{{ $groupTitle }}</span>
+                                    <span class="sm:hidden">{{ explode(' ', $groupTitle)[0] ?? $groupTitle }}</span>
                                 </button>
                             @endforeach
                         </nav>
@@ -247,23 +250,26 @@
                                                         @if ($visualDisabledCondition) :class="{
                                                                 'text-gray-400': {{ $visualDisabledCondition }}
                                                             }" @endif>
-                                                        {{ $setting['title'] }}
+                                                        {{ __("menu_owner.settings.titles.{$setting['key']}") }}
                                                         @if ($visualDisabledCondition)
                                                             <span x-show="{{ $visualDisabledCondition }}"
                                                                 class="text-[10px] sm:text-xs font-normal text-amber-600 bg-amber-50 px-1.5 sm:px-2 py-0.5 rounded-full whitespace-nowrap">
                                                                 @if ($isGridOnly)
-                                                                    Only available for Grid layout
+                                                                    {{ __('menu_owner.settings.options.only_grid_layout') }}
                                                                 @elseif ($isDishLayout)
-                                                                    Not available for List or Horizontal Cards layout
+                                                                    {{ __('menu_owner.settings.options.not_list_or_cards') }}
                                                                 @else
-                                                                    Disabled for this layout
+                                                                    {{ __('menu_owner.settings.options.disabled_for_layout') }}
                                                                 @endif
                                                             </span>
                                                         @endif
                                                     </label>
-                                                    @if ($setting['description'])
+                                                    @php
+                                                        $settingDesc = __("menu_owner.settings.descriptions.{$setting['key']}");
+                                                    @endphp
+                                                    @if ($settingDesc)
                                                         <p class="mt-0.5 sm:mt-1 text-xs sm:text-sm text-gray-500">
-                                                            {{ $setting['description'] }}
+                                                            {{ $settingDesc }}
                                                         </p>
                                                     @endif
                                                 </div>
@@ -329,7 +335,7 @@
                                                         <select name="settings[{{ $setting['id'] }}]"
                                                             x-model="menuDesign" disabled
                                                             class="block w-full sm:w-48 text-sm rounded-md border-gray-300 shadow-sm bg-gray-100 cursor-not-allowed opacity-50">
-                                                            <option value="default">Default</option>
+                                                            <option value="default">{{ __('menu_owner.settings.options.default') }}</option>
                                                         </select>
                                                     @elseif ($setting['type'] === 'string' && $setting['key'] === 'category_layout')
                                                         <select name="settings[{{ $setting['id'] }}]"
@@ -337,16 +343,16 @@
                                                             class="block w-full sm:w-48 text-sm rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                                             <option value="grid"
                                                                 {{ ($setting['value'] ?? 'grid') === 'grid' ? 'selected' : '' }}>
-                                                                Grid (Default)</option>
+                                                                {{ __('menu_owner.settings.options.grid') }}</option>
                                                             <option value="tabs"
                                                                 {{ ($setting['value'] ?? '') === 'tabs' ? 'selected' : '' }}>
-                                                                Tabs</option>
+                                                                {{ __('menu_owner.settings.options.tabs') }}</option>
                                                             <option value="list"
                                                                 {{ ($setting['value'] ?? '') === 'list' ? 'selected' : '' }}>
-                                                                List</option>
+                                                                {{ __('menu_owner.settings.options.list') }}</option>
                                                             <option value="cards"
                                                                 {{ ($setting['value'] ?? '') === 'cards' ? 'selected' : '' }}>
-                                                                Horizontal Cards</option>
+                                                                {{ __('menu_owner.settings.options.cards') }}</option>
                                                         </select>
                                                     @elseif ($setting['type'] === 'string' && $setting['key'] === 'dish_layout')
                                                         <select name="settings[{{ $setting['id'] }}]"
@@ -359,39 +365,39 @@
                                                             class="block w-full sm:w-48 text-sm rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                                             <option value="default"
                                                                 {{ ($setting['value'] ?? 'default') === 'default' ? 'selected' : '' }}>
-                                                                Default</option>
+                                                                {{ __('menu_owner.settings.options.default') }}</option>
                                                             <option value="compact"
                                                                 {{ ($setting['value'] ?? '') === 'compact' ? 'selected' : '' }}>
-                                                                Compact</option>
+                                                                {{ __('menu_owner.settings.options.compact') }}</option>
                                                             <option value="minimal"
                                                                 {{ ($setting['value'] ?? '') === 'minimal' ? 'selected' : '' }}>
-                                                                Minimal</option>
+                                                                {{ __('menu_owner.settings.options.minimal') }}</option>
                                                             <option value="decomposed"
                                                                 {{ ($setting['value'] ?? '') === 'decomposed' ? 'selected' : '' }}>
-                                                                Decomposed</option>
+                                                                {{ __('menu_owner.settings.options.decomposed') }}</option>
                                                         </select>
                                                     @elseif ($setting['type'] === 'string' && $setting['key'] === 'price_position')
                                                         <select name="settings[{{ $setting['id'] }}]"
                                                             class="block w-full sm:w-56 text-sm rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                                             <option value="next_to_title"
                                                                 {{ ($setting['value'] ?? 'bottom_right') === 'next_to_title' ? 'selected' : '' }}>
-                                                                Next to Title
+                                                                {{ __('menu_owner.settings.options.next_to_title') }}
                                                             </option>
                                                             <option value="bottom_left"
                                                                 {{ ($setting['value'] ?? '') === 'bottom_left' ? 'selected' : '' }}>
-                                                                Bottom Left (on image)
+                                                                {{ __('menu_owner.settings.options.bottom_left') }}
                                                             </option>
                                                             <option value="bottom_right"
                                                                 {{ ($setting['value'] ?? 'bottom_right') === 'bottom_right' ? 'selected' : '' }}>
-                                                                Bottom Right (on image)
+                                                                {{ __('menu_owner.settings.options.bottom_right') }}
                                                             </option>
                                                             <option value="top_left"
                                                                 {{ ($setting['value'] ?? '') === 'top_left' ? 'selected' : '' }}>
-                                                                Top Left (on image)
+                                                                {{ __('menu_owner.settings.options.top_left') }}
                                                             </option>
                                                             <option value="top_right"
                                                                 {{ ($setting['value'] ?? '') === 'top_right' ? 'selected' : '' }}>
-                                                                Top Right (on image)
+                                                                {{ __('menu_owner.settings.options.top_right') }}
                                                             </option>
                                                         </select>
                                                     @elseif ($setting['type'] === 'string' && $setting['key'] === 'category_default_state')
@@ -402,11 +408,11 @@
                                                             class="block w-full sm:w-40 text-sm rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                                             <option value="open"
                                                                 {{ ($setting['value'] ?? 'open') === 'open' ? 'selected' : '' }}>
-                                                                Open
+                                                                {{ __('menu_owner.settings.options.open') }}
                                                             </option>
                                                             <option value="closed"
                                                                 {{ ($setting['value'] ?? '') === 'closed' ? 'selected' : '' }}>
-                                                                Closed
+                                                                {{ __('menu_owner.settings.options.closed') }}
                                                             </option>
                                                         </select>
                                                     @elseif ($setting['type'] === 'string' && $setting['key'] === 'share_button_position')
@@ -417,19 +423,19 @@
                                                             class="block w-full sm:w-48 text-sm rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                                             <option value="bottom_right"
                                                                 {{ ($setting['value'] ?? 'bottom_right') === 'bottom_right' ? 'selected' : '' }}>
-                                                                Bottom Right
+                                                                {{ __('menu_owner.settings.options.bottom_right') }}
                                                             </option>
                                                             <option value="bottom_left"
                                                                 {{ ($setting['value'] ?? '') === 'bottom_left' ? 'selected' : '' }}>
-                                                                Bottom Left
+                                                                {{ __('menu_owner.settings.options.bottom_left') }}
                                                             </option>
                                                             <option value="top_right"
                                                                 {{ ($setting['value'] ?? '') === 'top_right' ? 'selected' : '' }}>
-                                                                Top Right
+                                                                {{ __('menu_owner.settings.options.top_right') }}
                                                             </option>
                                                             <option value="top_left"
                                                                 {{ ($setting['value'] ?? '') === 'top_left' ? 'selected' : '' }}>
-                                                                Top Left
+                                                                {{ __('menu_owner.settings.options.top_left') }}
                                                             </option>
                                                         </select>
                                                     @elseif ($setting['type'] === 'string' && $setting['key'] === 'font_family')
@@ -554,7 +560,7 @@
                                                                 class="mt-3 p-3 sm:p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-200 shadow-sm">
                                                                 <p
                                                                     class="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                                                                    Live Preview</p>
+                                                                    {{ __('menu_owner.common.live_preview') }}</p>
                                                                 <div class="space-y-2">
                                                                     <p class="text-xl sm:text-2xl font-semibold leading-tight"
                                                                         :style="getFontStyle(selectedFont)">
@@ -576,7 +582,7 @@
                                                                     placeholder="e.g., en, ar" disabled
                                                                     class="block w-full sm:w-40 text-sm rounded-md border-gray-300 shadow-sm bg-gray-100 cursor-not-allowed">
                                                                 <p class="mt-1 text-[10px] sm:text-xs text-gray-400">
-                                                                    Coming soon</p>
+                                                                    {{ __('menu_owner.common.coming_soon') }}</p>
                                                             </div>
                                                         @elseif ($setting['key'] === 'exchange_currency')
                                                             <input type="text"
@@ -615,7 +621,7 @@
                             class="mt-6 sm:mt-8 flex items-center justify-end gap-4 border-t border-gray-200 pt-4 sm:pt-6">
                             <button type="submit"
                                 class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 bg-indigo-600 border border-transparent rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                Save Settings
+                                {{ __('menu_owner.common.save_settings') }}
                             </button>
                         </div>
                     </form>

@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ $category ? 'Edit Category' : 'Create Category' }}
+            {{ $category ? __('menu_owner.categories.edit_category') : __('menu_owner.categories.create_category') }}
         </h2>
     </x-slot>
 
@@ -25,30 +25,33 @@
                         @endif
 
                         <div>
-                            <x-input-label for="name" :value="__('Category Name')" />
+                            <x-input-label for="name" :value="__('menu_owner.categories.category_name')" />
                             <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" 
-                                :value="old('name', $category?->name)" placeholder="Enter category name" 
+                                :value="old('name', $category?->name)" :placeholder="__('menu_owner.categories.placeholder_name')" 
                                 minlength="2" maxlength="255" required />
-                            <p class="mt-1 text-sm text-gray-500">Minimum 2 characters required</p>
+                            <p class="mt-1 text-sm text-gray-500">{{ __('menu_owner.categories.category_name_desc') }}</p>
+                            <p class="mt-0.5 text-xs text-gray-400">{{ __('menu_owner.categories.min_chars') }}</p>
                             <x-input-error class="mt-2" :messages="$errors->get('name')" />
                         </div>
 
                         <div>
-                            <x-input-label for="description" :value="__('Description (Optional)')" />
+                            <x-input-label for="description" :value="__('menu_owner.categories.description_optional')" />
                             <textarea id="description" name="description" rows="4"
                                 class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm px-3 py-2"
-                                placeholder="Enter a description for this category (optional)">{{ old('description', $category?->description) }}</textarea>
-                            <p class="mt-1 text-sm text-gray-500">This field is optional</p>
+                                :placeholder="__('menu_owner.categories.placeholder_description')">{{ old('description', $category?->description) }}</textarea>
+                            <p class="mt-1 text-sm text-gray-500">{{ __('menu_owner.categories.description_optional_desc') }}</p>
+                            <p class="mt-0.5 text-xs text-gray-400">{{ __('menu_owner.categories.this_field_optional') }}</p>
                             <x-input-error class="mt-2" :messages="$errors->get('description')" />
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <x-input-label for="display_order" :value="__('Display Order')" />
+                                <x-input-label for="display_order" :value="__('menu_owner.categories.display_order')" />
                                 <x-text-input id="display_order" name="display_order" type="number" class="mt-1 block w-full" 
                                     :value="old('display_order', $category?->display_order ?? 0)" 
                                     min="0" required />
-                                <p class="mt-1 text-sm text-gray-500">Lower numbers appear first</p>
+                                <p class="mt-1 text-sm text-gray-500">{{ __('menu_owner.categories.display_order_desc') }}</p>
+                                <p class="mt-0.5 text-xs text-gray-400">{{ __('menu_owner.categories.lower_first') }}</p>
                                 <x-input-error class="mt-2" :messages="$errors->get('display_order')" />
                             </div>
                         </div>
@@ -74,7 +77,7 @@
                         @dragover.prevent="isDragging = true"
                         @dragleave.prevent="isDragging = false"
                         @drop.prevent="isDragging = false; handleFile($event.dataTransfer.files[0])">
-                            <x-input-label for="image" :value="__('Category Image (Optional)')" />
+                            <x-input-label for="image" :value="__('menu_owner.categories.category_image_optional')" />
                             
                             <!-- Image Preview Area -->
                             <div class="mt-2">
@@ -87,7 +90,7 @@
                                             ×
                                         </button>
                                     </div>
-                                    <p class="text-sm text-gray-500 mt-2" x-show="existingImage">Existing image shown. Upload a new one to replace it.</p>
+                                    <p class="text-sm text-gray-500 mt-2" x-show="existingImage">{{ __('menu_owner.categories.existing_image_note') }}</p>
                                 </div>
                                 
                                 <!-- Upload Area -->
@@ -109,17 +112,17 @@
                                 </label>
                             </div>
                             
-                            <p class="mt-2 text-sm text-gray-500">Upload an image for this category (optional, max 5MB, will be optimized to max 50KB)</p>
+                            <p class="mt-2 text-sm text-gray-500">{{ __('menu_owner.categories.category_image_optional_desc') }}</p>
                             <x-input-error class="mt-2" :messages="$errors->get('image')" />
                         </div>
 
                         <div class="flex items-center justify-end gap-4">
                             <a href="{{ route('menu-owner.categories.index') }}"
                                 class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                Cancel
+                                {{ __('menu_owner.common.cancel') }}
                             </a>
                             <button type="submit" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                {{ $category ? 'Update Category' : 'Create Category' }}
+                                {{ $category ? __('menu_owner.common.update') . ' ' . __('menu_owner.categories.title') : __('menu_owner.common.create') . ' ' . __('menu_owner.categories.title') }}
                             </button>
                         </div>
                     </form>

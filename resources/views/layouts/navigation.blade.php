@@ -15,25 +15,25 @@
                     @auth
                         @if (auth()->user()->isMenuOwner() || auth()->user()->isAdmin())
                             <x-nav-link :href="route('menu-owner.statistics.index')" :active="request()->routeIs('menu-owner.statistics.*')">
-                                {{ __('Statistics') }}
+                                {{ __('menu_owner.nav.statistics') }}
                             </x-nav-link>
                             <x-nav-link :href="route('menu-owner.menus.index')" :active="request()->routeIs('menu-owner.menus.*')">
-                                {{ __('Menus') }}
+                                {{ __('menu_owner.nav.menus') }}
                             </x-nav-link>
                             <x-nav-link :href="route('menu-owner.categories.index')" :active="request()->routeIs('menu-owner.categories.*')">
-                                {{ __('Categories') }}
+                                {{ __('menu_owner.nav.categories') }}
                             </x-nav-link>
                             <x-nav-link :href="route('menu-owner.dishes.index')" :active="request()->routeIs('menu-owner.dishes.*')">
-                                {{ __('Dishes') }}
+                                {{ __('menu_owner.nav.dishes') }}
                             </x-nav-link>
                             <x-nav-link :href="route('menu-owner.qr-code.index')" :active="request()->routeIs('menu-owner.qr-code.*')">
-                                {{ __('QR Code') }}
+                                {{ __('menu_owner.nav.qr_code') }}
                             </x-nav-link>
                             <x-nav-link :href="route('menu-owner.social-links.index')" :active="request()->routeIs('menu-owner.social-links.*')">
-                                {{ __('Social Links') }}
+                                {{ __('menu_owner.nav.social_links') }}
                             </x-nav-link>
                             <x-nav-link :href="route('menu-owner.settings.index')" :active="request()->routeIs('menu-owner.settings.*')">
-                                {{ __('Settings') }}
+                                {{ __('menu_owner.nav.settings') }}
                             </x-nav-link>
                         @endif
                     @endauth
@@ -62,11 +62,11 @@
                     <x-slot name="content">
                         @if (is_impersonating())
                             <x-dropdown-link :href="route('impersonate.leave')">
-                                {{ __('Leave impersonation') }}
+                                {{ __('menu_owner.nav.leave_impersonation') }}
                             </x-dropdown-link>
                         @endif
                         <x-dropdown-link :href="route('profile.edit')">
-                            {{ __('Profile') }}
+                            {{ __('menu_owner.nav.profile') }}
                         </x-dropdown-link>
 
                         <!-- Authentication -->
@@ -76,7 +76,7 @@
                             <x-dropdown-link :href="route('logout')"
                                 onclick="event.preventDefault();
                                                 this.closest('form').submit();">
-                                {{ __('Log Out') }}
+                                {{ __('menu_owner.nav.log_out') }}
                             </x-dropdown-link>
                         </form>
                     </x-slot>
@@ -105,25 +105,25 @@
             @auth
                 @if (auth()->user()->isMenuOwner() || auth()->user()->isAdmin())
                     <x-responsive-nav-link :href="route('menu-owner.statistics.index')" :active="request()->routeIs('menu-owner.statistics.*')">
-                        {{ __('Statistics') }}
+                        {{ __('menu_owner.nav.statistics') }}
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('menu-owner.menus.index')" :active="request()->routeIs('menu-owner.menus.*')">
-                        {{ __('Menus') }}
+                        {{ __('menu_owner.nav.menus') }}
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('menu-owner.categories.index')" :active="request()->routeIs('menu-owner.categories.*')">
-                        {{ __('Categories') }}
+                        {{ __('menu_owner.nav.categories') }}
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('menu-owner.dishes.index')" :active="request()->routeIs('menu-owner.dishes.*')">
-                        {{ __('Dishes') }}
+                        {{ __('menu_owner.nav.dishes') }}
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('menu-owner.qr-code.index')" :active="request()->routeIs('menu-owner.qr-code.*')">
-                        {{ __('QR Code') }}
+                        {{ __('menu_owner.nav.qr_code') }}
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('menu-owner.social-links.index')" :active="request()->routeIs('menu-owner.social-links.*')">
-                        {{ __('Social Links') }}
+                        {{ __('menu_owner.nav.social_links') }}
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('menu-owner.settings.index')" :active="request()->routeIs('menu-owner.settings.*')">
-                        {{ __('Settings') }}
+                        {{ __('menu_owner.nav.settings') }}
                     </x-responsive-nav-link>
                 @endif
             @endauth
@@ -139,11 +139,11 @@
             <div class="mt-3 space-y-1">
                 @if (is_impersonating())
                     <x-responsive-nav-link :href="route('impersonate.leave')">
-                        {{ __('Leave impersonation') }}
+                        {{ __('menu_owner.nav.leave_impersonation') }}
                     </x-responsive-nav-link>
                 @endif
                 <x-responsive-nav-link :href="route('profile.edit')">
-                    {{ __('Profile') }}
+                    {{ __('menu_owner.nav.profile') }}
                 </x-responsive-nav-link>
 
                 <!-- Authentication -->
@@ -153,7 +153,7 @@
                     <x-responsive-nav-link :href="route('logout')"
                         onclick="event.preventDefault();
                                         this.closest('form').submit();">
-                        {{ __('Log Out') }}
+                        {{ __('menu_owner.nav.log_out') }}
                     </x-responsive-nav-link>
                 </form>
             </div>

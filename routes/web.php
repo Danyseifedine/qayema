@@ -30,8 +30,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('setup');
 });
 
-// Menu owner routes
-Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureRestaurantSetupComplete::class])->group(function () {
+// Menu owner routes (locale applies to dashboard and all owner pages)
+Route::middleware(['auth', 'owner.locale'])->group(function () {
+    Route::get('/owner/locale/{locale}', function (string $locale) {
+        if (in_array($locale, ['en', 'ar'], true)) {
+            session()->put('owner_locale', $locale);
+        }
+
+        return redirect()->back();
+    })->name('owner.locale.switch');
+});
+
+Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureRestaurantSetupComplete::class, 'owner.locale'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::middleware(\App\Http\Middleware\EnsureUserIsMenuOwner::class)->group(function () {
@@ -67,7 +77,7 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureRestaurantSetu
     });
 });
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'owner.locale'])->group(function () {
     Route::impersonate();
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Statistics') }}
+            {{ __('menu_owner.statistics.title') }}
         </h2>
     </x-slot>
 
@@ -10,10 +10,10 @@
             @if (!$menu)
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 text-gray-900">
-                        <p class="text-gray-600">Please create a menu first to view statistics.</p>
+                        <p class="text-gray-600">{{ __('menu_owner.statistics.create_menu_first') }}</p>
                         <a href="{{ route('menu-owner.menus.index') }}"
                             class="mt-4 inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                            Create Menu
+                            {{ __('menu_owner.common.create') }} {{ __('menu_owner.menus.title') }}
                         </a>
                     </div>
                 </div>
@@ -23,7 +23,7 @@
                     <div class="p-6">
                         <div class="flex items-center justify-between">
                             <div class="flex-1">
-                                <h3 class="text-lg font-semibold text-gray-900 mb-2">Menu Link</h3>
+                                <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ __('menu_owner.statistics.menu_link') }}</h3>
                                 <div class="flex items-center gap-2">
                                     <input type="text" id="menuUrl" readonly
                                         value="{{ $menuUrl }}"
@@ -35,10 +35,10 @@
                                                 d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z">
                                             </path>
                                         </svg>
-                                        Copy Link
+                                        {{ __('menu_owner.common.copy_link') }}
                                     </button>
                                 </div>
-                                <p id="copyMessage" class="mt-2 text-sm text-green-600 hidden">Link copied to clipboard!</p>
+                                <p id="copyMessage" class="mt-2 text-sm text-green-600 hidden">{{ __('menu_owner.common.link_copied') }}</p>
                             </div>
                         </div>
                     </div>
@@ -61,8 +61,9 @@
                                     </svg>
                                 </div>
                                 <div class="ml-4">
-                                    <p class="text-sm font-medium text-gray-500">Total Visits</p>
-                                    <p class="text-2xl font-semibold text-gray-900">{{ number_format($totalViews) }}</p>
+                                    <p class="text-sm font-medium text-gray-500">{{ __('menu_owner.statistics.total_visits') }}</p>
+                                    <p class="text-xs text-gray-500 mt-0.5">{{ __('menu_owner.statistics.total_visits_desc') }}</p>
+                                    <p class="text-2xl font-semibold text-gray-900 mt-1">{{ number_format($totalViews) }}</p>
                                 </div>
                             </div>
                         </div>
@@ -81,8 +82,9 @@
                                     </svg>
                                 </div>
                                 <div class="ml-4">
-                                    <p class="text-sm font-medium text-gray-500">Unique Visitors</p>
-                                    <p class="text-2xl font-semibold text-gray-900">{{ number_format($uniqueVisitors) }}
+                                    <p class="text-sm font-medium text-gray-500">{{ __('menu_owner.statistics.unique_visitors') }}</p>
+                                    <p class="text-xs text-gray-500 mt-0.5">{{ __('menu_owner.statistics.unique_visitors_desc') }}</p>
+                                    <p class="text-2xl font-semibold text-gray-900 mt-1">{{ number_format($uniqueVisitors) }}
                                     </p>
                                 </div>
                             </div>
@@ -102,8 +104,9 @@
                                     </svg>
                                 </div>
                                 <div class="ml-4">
-                                    <p class="text-sm font-medium text-gray-500">Total Page Views</p>
-                                    <p class="text-2xl font-semibold text-gray-900">{{ number_format($totalPageViews) }}
+                                    <p class="text-sm font-medium text-gray-500">{{ __('menu_owner.statistics.total_page_views') }}</p>
+                                    <p class="text-xs text-gray-500 mt-0.5">{{ __('menu_owner.statistics.total_page_views_desc') }}</p>
+                                    <p class="text-2xl font-semibold text-gray-900 mt-1">{{ number_format($totalPageViews) }}
                                     </p>
                                 </div>
                             </div>
@@ -122,7 +125,8 @@
                                     </svg>
                                 </div>
                                 <div class="ml-4">
-                                    <p class="text-sm font-medium text-gray-500">Avg. Time Spent</p>
+                                    <p class="text-sm font-medium text-gray-500">{{ __('menu_owner.statistics.avg_time_spent') }}</p>
+                                    <p class="text-xs text-gray-500 mt-0.5">{{ __('menu_owner.statistics.avg_time_spent_desc') }}</p>
                                     <p class="text-2xl font-semibold text-gray-900">
                                         @if ($averageTimeSpent > 0)
                                             @php
@@ -138,7 +142,7 @@
                                             N/A
                                         @endif
                                     </p>
-                                    <p class="text-xs text-gray-500 mt-1">From {{ number_format($sessionsWithTimeSpent) }} sessions with recorded exit</p>
+                                    <p class="text-xs text-gray-500 mt-1">{{ __('menu_owner.statistics.sessions_with_recorded_exit', ['count' => number_format($sessionsWithTimeSpent)]) }}</p>
                                 </div>
                             </div>
                         </div>
@@ -157,7 +161,8 @@
                                     </svg>
                                 </div>
                                 <div class="ml-4">
-                                    <p class="text-sm font-medium text-gray-500">Page Views Today</p>
+                                    <p class="text-sm font-medium text-gray-500">{{ __('menu_owner.statistics.page_views_today') }}</p>
+                                    <p class="text-xs text-gray-500 mt-0.5">{{ __('menu_owner.statistics.page_views_today_desc') }}</p>
                                     <p class="text-2xl font-semibold text-gray-900">{{ number_format($viewsToday) }}</p>
                                 </div>
                             </div>
@@ -177,7 +182,7 @@
                                     </svg>
                                 </div>
                                 <div class="ml-4">
-                                    <p class="text-sm font-medium text-gray-500">Page Views This Week</p>
+                                    <p class="text-sm font-medium text-gray-500">{{ __('menu_owner.statistics.page_views_this_week') }}</p>
                                     <p class="text-2xl font-semibold text-gray-900">{{ number_format($viewsThisWeek) }}
                                     </p>
                                 </div>
@@ -198,7 +203,7 @@
                                     </svg>
                                 </div>
                                 <div class="ml-4">
-                                    <p class="text-sm font-medium text-gray-500">Page Views This Month</p>
+                                    <p class="text-sm font-medium text-gray-500">{{ __('menu_owner.statistics.page_views_this_month') }}</p>
                                     <p class="text-2xl font-semibold text-gray-900">{{ number_format($viewsThisMonth) }}
                                     </p>
                                 </div>
@@ -218,8 +223,9 @@
                                     </svg>
                                 </div>
                                 <div class="ml-4">
-                                    <p class="text-sm font-medium text-gray-500">Bounce Rate</p>
-                                    <p class="text-2xl font-semibold text-gray-900">{{ $bounceRate }}%</p>
+                                    <p class="text-sm font-medium text-gray-500">{{ __('menu_owner.statistics.bounce_rate') }}</p>
+                                    <p class="text-xs text-gray-500 mt-0.5">{{ __('menu_owner.statistics.bounce_rate_desc') }}</p>
+                                    <p class="text-2xl font-semibold text-gray-900 mt-1">{{ $bounceRate }}%</p>
                                 </div>
                             </div>
                         </div>
@@ -331,7 +337,7 @@
                                     </svg>
                                 </div>
                                 <div class="ml-4">
-                                    <p class="text-sm font-medium text-gray-500">Avg. Page Views/Session</p>
+                                    <p class="text-sm font-medium text-gray-500">{{ __('menu_owner.statistics.avg_page_views_per_session') }}</p>
                                     <p class="text-2xl font-semibold text-gray-900">{{ $avgPageViewsPerSession }}</p>
                                 </div>
                             </div>
@@ -350,7 +356,7 @@
                                     </svg>
                                 </div>
                                 <div class="ml-4">
-                                    <p class="text-sm font-medium text-gray-500">Total Time Spent</p>
+                                    <p class="text-sm font-medium text-gray-500">{{ __('menu_owner.statistics.total_time_spent') }}</p>
                                     <p class="text-2xl font-semibold text-gray-900">
                                         @if ($totalTimeSpent > 0)
                                             @php
@@ -366,7 +372,7 @@
                                             N/A
                                         @endif
                                     </p>
-                                    <p class="text-xs text-gray-500 mt-1">From sessions with recorded exit only</p>
+                                    <p class="text-xs text-gray-500 mt-1">{{ __('menu_owner.statistics.total_time_spent_desc') }}</p>
                                 </div>
                             </div>
                         </div>
@@ -376,7 +382,7 @@
                 <!-- Recent Visitors Table -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Visitors</h3>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">{{ __('menu_owner.statistics.recent_visitors') }}</h3>
                         @if ($statistics->count() > 0)
                             <div class="overflow-x-auto">
                                 <table class="min-w-full divide-y divide-gray-200">
@@ -384,19 +390,19 @@
                                         <tr>
                                             <th scope="col"
                                                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Viewed At
+                                                {{ __('menu_owner.statistics.viewed_at') }}
                                             </th>
                                             <th scope="col"
                                                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Device
+                                                {{ __('menu_owner.statistics.device') }}
                                             </th>
                                             <th scope="col"
                                                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Time Spent
+                                                {{ __('menu_owner.statistics.time_spent') }}
                                             </th>
                                             <th scope="col"
                                                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Page Views
+                                                {{ __('menu_owner.statistics.page_views') }}
                                             </th>
                                         </tr>
                                     </thead>
@@ -421,7 +427,7 @@
                                                             {{ $seconds }}s
                                                         @endif
                                                     @else
-                                                        N/A
+                                                        {{ __('menu_owner.common.n_a') }}
                                                     @endif
                                                 </td>
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -433,7 +439,7 @@
                                 </table>
                             </div>
                         @else
-                            <p class="text-gray-500">No visitors yet. Share your menu link to get started!</p>
+                            <p class="text-gray-500">{{ __('menu_owner.statistics.no_visitors_yet') }}</p>
                         @endif
                     </div>
                 </div>
