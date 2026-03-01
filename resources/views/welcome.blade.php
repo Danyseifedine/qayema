@@ -91,7 +91,7 @@
     {{-- Stats bar --}}
     <section class="relative -mt-4 sm:-mt-6 lg:-mt-8 z-10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="bg-white rounded-xl sm:rounded-2xl border border-orange-100 p-4 sm:p-6 lg:p-8">
+            <div class="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-4 sm:p-6 lg:p-8">
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 xl:gap-12">
                     <div>
                         <p class="text-xl sm:text-2xl lg:text-3xl font-bold text-orange-600">20</p>
