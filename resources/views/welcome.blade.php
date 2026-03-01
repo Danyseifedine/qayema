@@ -373,7 +373,7 @@
                 </div>
             </div>
             <div class="border-t border-slate-200 mt-8 sm:mt-10 lg:mt-12 pt-6 sm:pt-8 flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4 text-center sm:text-left">
-                <p class="text-slate-500 text-xs sm:text-sm">&copy; {{ date('Y') }} MenuX by <a href="https://lebify.dev" target="_blank" rel="noopener noreferrer" class="text-orange-600 hover:text-orange-700 transition-colors font-medium">Lebify Group</a>. All rights reserved.</p>
+                <p class="text-slate-500 text-xs sm:text-sm">&copy; {{ date('Y') }} MenuX by <a href="https://lebify.dev" target="_blank" rel="noopener noreferrer" class="text-orange-600 hover:text-orange-700 transition-colors font-medium">Lebify Team</a>. All rights reserved.</p>
                 <p class="text-slate-500 text-xs sm:text-sm">Lebify · Barja, Lebanon</p>
             </div>
         </div>
