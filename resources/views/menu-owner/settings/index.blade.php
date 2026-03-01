@@ -335,7 +335,7 @@
                                                                 class="sr-only peer"
                                                                 onchange="this.previousElementSibling.value = this.checked ? '1' : '0'">
                                                             <div
-                                                                class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
+                                                                class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500">
                                                             </div>
                                                         </label>
                                                     @elseif ($setting['type'] === 'string' && $setting['key'] === 'menu_design')
@@ -661,10 +661,9 @@
                         <!-- Save Button -->
                         <div
                             class="mt-6 sm:mt-8 flex items-center justify-end gap-4 border-t border-gray-200 pt-4 sm:pt-6">
-                            <button type="submit"
-                                class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 bg-indigo-600 border border-transparent rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                            <x-btn type="submit" variant="primary" size="md" class="w-full sm:w-auto">
                                 {{ __('menu_owner.common.save_settings') }}
-                            </button>
+                            </x-btn>
                         </div>
                     </form>
                 </div>

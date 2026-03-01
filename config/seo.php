@@ -4,14 +4,14 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | SEO Default Settings - MenuX
+    | SEO Default Settings - MenuX by Lebify
     |--------------------------------------------------------------------------
     |
-    | Default SEO settings for MenuX digital menu platform
+    | Default SEO settings for MenuX digital menu platform (by Lebify Group).
     |
     */
 
-    'default_author' => 'MenuX',
+    'default_author' => 'Lebify Group',
 
     'title_separator' => '|',
 
@@ -29,11 +29,11 @@ return [
     */
 
     'organization' => [
-        'name' => 'MenuX',
+        'name' => 'Lebify Group',
         'url' => env('APP_URL', 'http://localhost'),
         'logo' => env('APP_URL', 'http://localhost').'/images/logo/logo.png',
         'description' => [
-            'en' => 'MenuX - Create beautiful digital menus for your restaurant. Free up to 20 items, upgrade for more.',
+            'en' => 'Lebify Group builds MenuX: create beautiful digital menus for your restaurant. Free to start, easy to use. Based in Lebanon.',
         ],
         'contact' => [
             '@type' => 'ContactPoint',
@@ -59,13 +59,13 @@ return [
 
     'defaults' => [
         'title' => [
-            'en' => 'MenuX - Create Beautiful Digital Menus',
+            'en' => 'MenuX by Lebify - Create Beautiful Digital Menus',
         ],
         'description' => [
-            'en' => 'Create beautiful digital menus for your restaurant. Free up to 20 menu items. Share your menu with a simple link. Mobile optimized and easy to manage.',
+            'en' => 'MenuX by Lebify Group: create beautiful digital menus for your restaurant. Free to start, easy to use. Built by the Lebify team in Lebanon.',
         ],
         'keywords' => [
-            'en' => 'digital menu, restaurant menu, online menu, menu creator, food menu, restaurant menu online, digital menu maker, menu sharing, restaurant technology',
+            'en' => 'MenuX, Lebify, Lebify Group, Lebify team, digital menu, restaurant menu, online menu, menu creator, food menu, Lebanon, Barja',
         ],
         'image' => '/images/logo/logo.png',
     ],

@@ -13,29 +13,29 @@
                     <!-- Step 1 -->
                     <div class="flex items-center">
                         <div
-                            class="flex items-center justify-center w-12 h-12 rounded-full border-2 {{ $currentStep >= 1 ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-gray-300 text-gray-400' }}">
+                            class="flex items-center justify-center w-12 h-12 rounded-full border-2 {{ $currentStep >= 1 ? 'bg-orange-500 border-orange-500 text-white' : 'bg-white border-gray-300 text-gray-400' }}">
                             <span class="text-lg font-semibold">1</span>
                         </div>
                         <div class="ml-3">
                             <p
-                                class="text-sm font-medium {{ $currentStep >= 1 ? 'text-indigo-600' : 'text-gray-500' }}">
+                                class="text-sm font-medium {{ $currentStep >= 1 ? 'text-orange-600' : 'text-gray-500' }}">
                                 Restaurant Information</p>
                             <p class="text-xs text-gray-500">Name, Phone, Address</p>
                         </div>
                     </div>
 
                     <!-- Connector Line -->
-                    <div class="flex-1 mx-6 h-0.5 {{ $currentStep >= 2 ? 'bg-indigo-600' : 'bg-gray-300' }}"></div>
+                    <div class="flex-1 mx-6 h-0.5 {{ $currentStep >= 2 ? 'bg-orange-500' : 'bg-gray-300' }}"></div>
 
                     <!-- Step 2 -->
                     <div class="flex items-center">
                         <div
-                            class="flex items-center justify-center w-12 h-12 rounded-full border-2 {{ $currentStep >= 2 ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-gray-300 text-gray-400' }}">
+                            class="flex items-center justify-center w-12 h-12 rounded-full border-2 {{ $currentStep >= 2 ? 'bg-orange-500 border-orange-500 text-white' : 'bg-white border-gray-300 text-gray-400' }}">
                             <span class="text-lg font-semibold">2</span>
                         </div>
                         <div class="ml-3">
                             <p
-                                class="text-sm font-medium {{ $currentStep >= 2 ? 'text-indigo-600' : 'text-gray-500' }}">
+                                class="text-sm font-medium {{ $currentStep >= 2 ? 'text-orange-600' : 'text-gray-500' }}">
                                 Logo & Cover</p>
                             <p class="text-xs text-gray-500">Upload Images</p>
                         </div>
@@ -95,10 +95,7 @@
                             </div>
 
                             <div class="flex items-center justify-end">
-                                <button type="submit"
-                                    class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                    Continue to Step 2
-                                </button>
+                                <x-btn type="submit" variant="primary" size="sm">Continue to Step 2</x-btn>
                             </div>
                         </form>
                     </div>
@@ -252,14 +249,8 @@
                             </div>
 
                             <div class="flex items-center justify-end gap-4">
-                                <a href="{{ route('restaurant-setup.index') }}?step=1"
-                                    class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 no-underline">
-                                    Back to Step 1
-                                </a>
-                                <button type="submit"
-                                    class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                    Complete Setup
-                                </button>
+                                <x-btn href="{{ route('restaurant-setup.index') }}?step=1" variant="secondary" size="sm">Back to Step 1</x-btn>
+                                <x-btn type="submit" variant="primary" size="sm">Complete Setup</x-btn>
                             </div>
                         </form>
                     </div>

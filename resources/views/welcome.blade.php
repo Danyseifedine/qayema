@@ -6,12 +6,12 @@
     <meta name="theme-color" content="#ea580c">
     <meta name="format-detection" content="telephone=yes, email=yes">
 
-    <x-seo title="MenuX - Create Beautiful Digital Menus"
-        description="Create beautiful digital menus for your restaurant. Free: 20 categories, up to 80 dishes. Share your menu with a simple link. Mobile optimized and easy to manage. Based in Lebanon."
-        keywords="digital menu, restaurant menu, online menu, menu creator, food menu, restaurant menu online, digital menu maker, menu sharing, restaurant technology, Lebanon, Barja"
-        author="MenuX - dany.a.seifeddine@gmail.com"
-        :url="url('/')" :image="asset('images/logo/logo.png')" imageAlt="MenuX - Create Beautiful Digital Menus" type="website"
-        :siteName="config('app.name', 'MenuX')" />
+    <x-seo title="MenuX by Lebify - Create Beautiful Digital Menus"
+        description="MenuX by Lebify Group: create beautiful digital menus for your restaurant. Free: 20 categories, up to 80 dishes. Share your menu with a simple link. Built by the Lebify team in Lebanon."
+        keywords="MenuX, Lebify, Lebify Group, Lebify team, digital menu, restaurant menu, online menu, menu creator, food menu, Lebanon, Barja"
+        author="Lebify Group"
+        :url="url('/')" :image="asset('images/logo/logo.png')" imageAlt="MenuX by Lebify - Digital Menus" type="website"
+        :siteName="config('seo.organization.name', 'Lebify Group')" />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -25,7 +25,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16 lg:h-18">
                 <a href="{{ url('/') }}#hero" class="flex items-center gap-3">
-                    <img src="{{ asset('images/logo/logo.png') }}" alt="MenuX" class="h-12 w-auto transition-all duration-300" :class="!navScrolled && 'brightness-0 invert opacity-95'">
+                    <img src="{{ asset('images/logo/logo.png') }}" alt="MenuX by Lebify" class="h-12 w-auto transition-all duration-300" :class="!navScrolled && 'brightness-0 invert opacity-95'">
                     <span class="font-bold text-lg hidden sm:inline" :class="navScrolled ? 'text-slate-800' : 'text-white'">MenuX</span>
                 </a>
                 <div class="flex items-center gap-4 sm:gap-6">
@@ -35,10 +35,10 @@
                     <a href="#contact" class="hidden sm:inline text-sm font-medium transition-colors hover:text-orange-500" :class="navScrolled ? 'text-slate-600' : 'text-white/90 hover:text-white'">Contact</a>
                     @auth
                         <a href="{{ route('dashboard') }}" class="text-sm font-medium transition-colors" :class="navScrolled ? 'text-slate-600 hover:text-orange-600' : 'text-white/90 hover:text-white'">Dashboard</a>
-                        <a href="{{ route('dashboard') }}" class="inline-flex items-center px-4 py-2 rounded-lg bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 transition-colors shadow-sm">My Menu</a>
+                        <x-btn href="{{ route('dashboard') }}" variant="primary" size="sm">My Menu</x-btn>
                     @else
                         <a href="{{ route('login') }}" class="text-sm font-medium transition-colors" :class="navScrolled ? 'text-slate-600 hover:text-orange-600' : 'text-white/90 hover:text-white'">Sign In</a>
-                        <a href="{{ route('register') }}" class="inline-flex items-center px-4 py-2 rounded-lg bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 transition-colors shadow-sm">Get Started Free</a>
+                        <x-btn href="{{ route('register') }}" variant="primary" size="sm">Get Started Free</x-btn>
                     @endauth
                 </div>
             </div>
@@ -56,18 +56,12 @@
                 <p class="text-lg sm:text-xl text-white/90 mb-10 max-w-2xl mx-auto leading-relaxed">
                     Create, customize, and share beautiful restaurant menus in minutes. QR codes, analytics, RTL support, and more, all in one place.
                 </p>
-                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <div class="flex flex-col sm:flex-row gap-3 justify-center">
                     @auth
-                        <a href="{{ route('dashboard') }}" class="inline-flex items-center justify-center px-8 py-4 rounded-xl bg-white text-orange-600 font-semibold text-lg hover:bg-orange-50 transition-colors">
-                            Go to Dashboard
-                        </a>
+                        <x-btn href="{{ route('dashboard') }}" variant="white" size="md">Go to Dashboard</x-btn>
                     @else
-                        <a href="{{ route('register') }}" class="inline-flex items-center justify-center px-8 py-4 rounded-xl bg-white text-orange-600 font-semibold text-lg hover:bg-orange-50 transition-colors">
-                            Create Your Menu Free
-                        </a>
-                        <a href="{{ route('login') }}" class="inline-flex items-center justify-center px-8 py-4 rounded-xl bg-white/20 text-white font-semibold text-lg border border-white/40 hover:bg-white/30 transition-colors">
-                            Sign In
-                        </a>
+                        <x-btn href="{{ route('register') }}" variant="white" size="md">Create Your Menu Free</x-btn>
+                        <x-btn href="{{ route('login') }}" variant="outline-light" size="md">Sign In</x-btn>
                     @endauth
                 </div>
             </div>
@@ -225,9 +219,9 @@
                                 <p class="text-slate-600 mt-1">20 categories • Up to 80 dishes</p>
                             </div>
                             @auth
-                                <a href="{{ route('dashboard') }}" class="inline-flex items-center justify-center px-8 py-4 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/25 shrink-0">Go to Dashboard</a>
+                                <x-btn href="{{ route('dashboard') }}" variant="primary" size="md">Go to Dashboard</x-btn>
                             @else
-                                <a href="{{ route('register') }}" class="inline-flex items-center justify-center px-8 py-4 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/25 shrink-0">Get Started — It's Free</a>
+                                <x-btn href="{{ route('register') }}" variant="primary" size="md">Get Started — It's Free</x-btn>
                             @endauth
                         </div>
                         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -254,11 +248,11 @@
             <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">Ready to create your menu?</h2>
             <p class="text-xl text-orange-100 mb-10">Join restaurants already using MenuX</p>
             @auth
-                <a href="{{ route('dashboard') }}" class="inline-flex items-center justify-center px-8 py-4 rounded-xl bg-white text-orange-600 font-semibold text-lg hover:bg-amber-50 transition-colors shadow-lg">Go to Dashboard</a>
+                <x-btn href="{{ route('dashboard') }}" variant="white" size="md">Go to Dashboard</x-btn>
             @else
-                <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <a href="{{ route('register') }}" class="inline-flex items-center justify-center px-8 py-4 rounded-xl bg-white text-orange-600 font-semibold text-lg hover:bg-amber-50 transition-colors shadow-lg">Create Free Account</a>
-                    <a href="{{ route('login') }}" class="inline-flex items-center justify-center px-8 py-4 rounded-xl bg-white/20 text-white font-semibold text-lg border-2 border-white/40 hover:bg-white/30 transition-colors">Sign In</a>
+                <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                    <x-btn href="{{ route('register') }}" variant="white" size="md">Create Free Account</x-btn>
+                    <x-btn href="{{ route('login') }}" variant="outline-light" size="md">Sign In</x-btn>
                 </div>
             @endauth
         </div>
@@ -270,10 +264,10 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8">
                 <div class="lg:col-span-1">
                     <a href="{{ url('/') }}#hero" class="flex items-center gap-3 mb-4">
-                        <img src="{{ asset('images/logo/logo.png') }}" alt="MenuX" class="h-12 w-auto brightness-0 invert opacity-95">
+                        <img src="{{ asset('images/logo/logo.png') }}" alt="MenuX by Lebify" class="h-12 w-auto brightness-0 invert opacity-95">
                         <span class="font-bold text-xl text-white">MenuX</span>
                     </a>
-                    <p class="text-slate-400 text-sm leading-relaxed">Create beautiful digital menus for your restaurant. Free to start, easy to use.</p>
+                    <p class="text-slate-400 text-sm leading-relaxed">Digital menus for your restaurant by Lebify Group. Free to start, easy to use.</p>
                 </div>
                 <div>
                     <h4 class="font-semibold text-white mb-4 text-sm uppercase tracking-wider">Quick links</h4>
@@ -320,15 +314,15 @@
                     <h4 class="font-semibold text-white mb-4 text-sm uppercase tracking-wider">Get started</h4>
                     <p class="text-slate-400 text-sm mb-4">Create your free menu in minutes.</p>
                     @guest
-                    <a href="{{ route('register') }}" class="inline-flex items-center px-5 py-2.5 rounded-lg bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 transition-colors">Get Started Free</a>
+                    <x-btn href="{{ route('register') }}" variant="primary" size="sm">Get Started Free</x-btn>
                     @else
-                    <a href="{{ route('dashboard') }}" class="inline-flex items-center px-5 py-2.5 rounded-lg bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 transition-colors">Dashboard</a>
+                    <x-btn href="{{ route('dashboard') }}" variant="primary" size="sm">Dashboard</x-btn>
                     @endguest
                 </div>
             </div>
             <div class="border-t border-slate-800 mt-12 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-                <p class="text-slate-500 text-sm">&copy; {{ date('Y') }} MenuX. All rights reserved.</p>
-                <p class="text-slate-500 text-sm">Based in Lebanon</p>
+                <p class="text-slate-500 text-sm">&copy; {{ date('Y') }} MenuX by Lebify Group. All rights reserved.</p>
+                <p class="text-slate-500 text-sm">Lebify · Barja, Lebanon</p>
             </div>
         </div>
     </footer>

@@ -10,21 +10,19 @@
             @if (!$menu)
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 text-gray-900">
-                        <p class="text-gray-600">{{ __('menu_owner.qr_code.create_menu_first') }}</p>
-                        <a href="{{ route('menu-owner.menus.index') }}"
-                            class="mt-4 inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                        <p class="text-slate-600">{{ __('menu_owner.qr_code.create_menu_first') }}</p>
+                        <x-btn href="{{ route('menu-owner.menus.index') }}" variant="primary" size="sm" class="mt-4">
                             {{ __('menu_owner.menus.create_menu_button') }}
-                        </a>
+                        </x-btn>
                     </div>
                 </div>
             @elseif(!$menu->is_active)
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 text-gray-900">
-                        <p class="text-gray-600">{{ __('menu_owner.qr_code.activate_menu_first') }}</p>
-                        <a href="{{ route('menu-owner.menus.index') }}"
-                            class="mt-4 inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                        <p class="text-slate-600">{{ __('menu_owner.qr_code.activate_menu_first') }}</p>
+                        <x-btn href="{{ route('menu-owner.menus.index') }}" variant="primary" size="sm" class="mt-4">
                             {{ __('menu_owner.qr_code.activate_menu') }}
-                        </a>
+                        </x-btn>
                     </div>
                 </div>
             @else
@@ -48,13 +46,12 @@
                             </div>
 
                             <!-- Generate Button -->
-                            <button onclick="generateQRCode()" 
-                                    class="inline-flex items-center px-6 py-3 bg-indigo-600 border border-transparent rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                <svg class="w-5 h-5 me-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <x-btn type="button" variant="primary" size="md" onclick="generateQRCode()" class="gap-1.5">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
                                 </svg>
                                 {{ __('menu_owner.qr_code.generate_qr_code') }}
-                            </button>
+                            </x-btn>
 
                             <!-- Menu URL -->
                             @if($menuUrl)
@@ -66,10 +63,9 @@
                                                readonly
                                                value="{{ $menuUrl }}"
                                                class="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                        <button onclick="copyMenuUrl()" data-copy-text="{{ __('menu_owner.qr_code.copy') }}" data-copied-text="{{ __('menu_owner.qr_code.copied') }}"
-                                                class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors text-sm font-medium">
+                                        <x-btn type="button" variant="secondary" size="sm" onclick="copyMenuUrl()" data-copy-text="{{ __('menu_owner.qr_code.copy') }}" data-copied-text="{{ __('menu_owner.qr_code.copied') }}">
                                             {{ __('menu_owner.qr_code.copy') }}
-                                        </button>
+                                        </x-btn>
                                     </div>
                                 </div>
                             @endif

@@ -117,13 +117,10 @@
                         </div>
 
                         <div class="flex items-center justify-end gap-4">
-                            <a href="{{ route('menu-owner.categories.index') }}"
-                                class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                {{ __('menu_owner.common.cancel') }}
-                            </a>
-                            <button type="submit" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                            <x-btn href="{{ route('menu-owner.categories.index') }}" variant="secondary" size="sm">{{ __('menu_owner.common.cancel') }}</x-btn>
+                            <x-btn type="submit" variant="primary" size="sm">
                                 {{ $category ? __('menu_owner.common.update') . ' ' . __('menu_owner.categories.title') : __('menu_owner.common.create') . ' ' . __('menu_owner.categories.title') }}
-                            </button>
+                            </x-btn>
                         </div>
                     </form>
                 </div>

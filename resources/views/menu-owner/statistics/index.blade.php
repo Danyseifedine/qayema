@@ -10,11 +10,10 @@
             @if (!$menu)
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 text-gray-900">
-                        <p class="text-gray-600">{{ __('menu_owner.statistics.create_menu_first') }}</p>
-                        <a href="{{ route('menu-owner.menus.index') }}"
-                            class="mt-4 inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                        <p class="text-slate-600">{{ __('menu_owner.statistics.create_menu_first') }}</p>
+                        <x-btn href="{{ route('menu-owner.menus.index') }}" variant="primary" size="sm" class="mt-4">
                             {{ __('menu_owner.common.create') }} {{ __('menu_owner.menus.title') }}
-                        </a>
+                        </x-btn>
                     </div>
                 </div>
             @else
@@ -28,15 +27,14 @@
                                     <input type="text" id="menuUrl" readonly
                                         value="{{ $menuUrl }}"
                                         class="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                    <button type="button" onclick="copyMenuLink()"
-                                        class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <x-btn type="button" variant="primary" size="sm" onclick="copyMenuLink()" class="gap-1.5">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z">
                                             </path>
                                         </svg>
                                         {{ __('menu_owner.common.copy_link') }}
-                                    </button>
+                                    </x-btn>
                                 </div>
                                 <p id="copyMessage" class="mt-2 text-sm text-green-600 hidden">{{ __('menu_owner.common.link_copied') }}</p>
                             </div>

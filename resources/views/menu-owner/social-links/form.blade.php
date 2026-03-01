@@ -59,14 +59,12 @@
 
                         <!-- Buttons -->
                         <div class="flex items-center gap-4">
-                            <button type="submit"
-                                class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                            <x-btn type="submit" variant="primary" size="sm">
                                 {{ $socialLink ? __('menu_owner.common.update') : __('menu_owner.common.create') }}
-                            </button>
-                            <a href="{{ route('menu-owner.social-links.index') }}"
-                                class="inline-flex items-center px-4 py-2 bg-gray-100 border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                            </x-btn>
+                            <x-btn href="{{ route('menu-owner.social-links.index') }}" variant="secondary" size="sm">
                                 {{ __('menu_owner.common.cancel') }}
-                            </a>
+                            </x-btn>
                         </div>
                     </form>
                 </div>

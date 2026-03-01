@@ -49,10 +49,10 @@
             </main>
 
             @auth
-                @if(auth()->user()->isMenuOwner())
+                @if(auth()->user()->isMenuOwner() || auth()->user()->isAdmin())
                     <div class="fixed bottom-6 right-6 rtl:right-auto rtl:left-6 z-50 flex flex-col gap-2" aria-label="{{ __('menu_owner.language_switcher.aria') }}">
                         <a href="{{ route('owner.locale.switch', ['locale' => app()->getLocale() === 'ar' ? 'en' : 'ar']) }}"
-                            class="inline-flex items-center px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium shadow-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition"
+                            class="inline-flex items-center px-3 py-1.5 rounded-lg bg-orange-500 text-white text-sm font-medium shadow-sm hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition"
                             title="{{ app()->getLocale() === 'ar' ? __('menu_owner.language_switcher.switch_to_english') : __('menu_owner.language_switcher.switch_to_arabic') }}">
                             <span>{{ app()->getLocale() === 'ar' ? __('menu_owner.language_switcher.switch_to_english') : __('menu_owner.language_switcher.switch_to_arabic') }}</span>
                         </a>

@@ -157,27 +157,27 @@ class Seo extends Component
         $currentLocale = app()->getLocale();
 
         $defaultTitles = [
-            'en' => 'MenuX - Create Beautiful Digital Menus',
+            'en' => config('seo.defaults.title.en', 'MenuX by Lebify - Create Beautiful Digital Menus'),
         ];
 
         $defaultDescriptions = [
-            'en' => 'Create beautiful digital menus for your restaurant. Free up to 20 menu items. Share your menu with a simple link. Mobile optimized and easy to manage.',
+            'en' => config('seo.defaults.description.en', 'MenuX by Lebify Group: create beautiful digital menus. Built by the Lebify team in Lebanon.'),
         ];
 
         $defaultKeywords = [
-            'en' => 'digital menu, restaurant menu, online menu, menu creator, food menu, restaurant menu online, digital menu maker, menu sharing, restaurant technology',
+            'en' => config('seo.defaults.keywords.en', 'MenuX, Lebify, Lebify Group, digital menu, restaurant menu'),
         ];
 
         $defaultSiteName = [
-            'en' => 'MenuX',
+            'en' => config('seo.organization.name', 'Lebify Group'),
         ];
 
         $defaultAuthor = [
-            'en' => 'MenuX',
+            'en' => config('seo.default_author', 'Lebify Group'),
         ];
 
         $defaultImageAlt = [
-            'en' => 'MenuX - Create Beautiful Digital Menus',
+            'en' => 'MenuX by Lebify - Create Beautiful Digital Menus',
         ];
 
         $defaultTwitterSite = [
@@ -269,7 +269,7 @@ class Seo extends Component
     {
         $separator = config('seo.title_separator', '|');
 
-        return $this->title . ' ' . $separator . ' ' . $this->siteName;
+        return $this->title.' '.$separator.' '.$this->siteName;
     }
 
     public function robotsContent(): string
@@ -371,7 +371,7 @@ class Seo extends Component
                 '@type' => 'SearchAction',
                 'target' => [
                     '@type' => 'EntryPoint',
-                    'urlTemplate' => config('app.url') . '/search?q={search_term_string}',
+                    'urlTemplate' => config('app.url').'/search?q={search_term_string}',
                 ],
                 'query-input' => 'required name=search_term_string',
             ],

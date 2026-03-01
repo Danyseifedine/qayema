@@ -18,7 +18,7 @@
     @endphp
 
     <x-seo :title="$menu->name . ' - ' . ($user->restaurant_name ?? 'Menu')" :description="$menuDescription" :keywords="'menu, restaurant menu, digital menu, ' . ($user->restaurant_name ?? '') . ', ' . ($menu->name ?? '')" :url="route('public.menu', $menu->slug)" :image="$menuImage" :imageAlt="$menu->name . ' - ' . ($user->restaurant_name ?? 'Menu')"
-        type="website" :siteName="config('app.name', 'MenuX')" />
+        type="website" :siteName="config('seo.organization.name', 'Lebify Group')" />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
