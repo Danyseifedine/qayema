@@ -15,294 +15,337 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
-
+    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
 </head>
-<body class="antialiased bg-slate-50 text-slate-900 font-sans" x-data="{ navScrolled: false }" x-init="window.addEventListener('scroll', () => { navScrolled = window.scrollY > 50 })">
-    <!-- Navigation -->
-    <nav class="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
-        :class="navScrolled ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-slate-200/80' : 'bg-transparent'">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16 lg:h-18">
-                <a href="{{ url('/') }}#hero" class="flex items-center gap-3">
-                    <img src="{{ asset('images/logo/logo.png') }}" alt="MenuX by Lebify" class="h-12 w-auto transition-all duration-300" :class="!navScrolled && 'brightness-0 invert opacity-95'">
-                    <span class="font-bold text-lg hidden sm:inline" :class="navScrolled ? 'text-slate-800' : 'text-white'">MenuX</span>
+<body class="antialiased bg-white text-slate-900 font-sans overflow-x-hidden" x-data="{ navOpen: false, navScrolled: false }" x-init="window.addEventListener('scroll', () => { navScrolled = window.scrollY > 20 })">
+    {{-- Navigation --}}
+    <header class="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
+        :class="navScrolled ? 'bg-white/80 backdrop-blur-xl border-b border-slate-200/60 shadow-sm' : 'bg-transparent'">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center min-h-14 sm:min-h-16 lg:min-h-20 py-2 sm:py-3 lg:py-4">
+                <a href="{{ url('/') }}#hero" class="flex items-center shrink-0">
+                    <img src="{{ asset('images/logo/Light BG Lebify Logo.svg') }}" alt="MenuX by Lebify" class="h-10 sm:h-12 md:h-14 lg:h-16 w-auto">
                 </a>
-                <div class="flex items-center gap-4 sm:gap-6">
-                    <a href="#how-it-works" class="hidden sm:inline text-sm font-medium transition-colors hover:text-orange-500" :class="navScrolled ? 'text-slate-600' : 'text-white/90 hover:text-white'">How it works</a>
-                    <a href="#features" class="hidden sm:inline text-sm font-medium transition-colors hover:text-orange-500" :class="navScrolled ? 'text-slate-600' : 'text-white/90 hover:text-white'">Features</a>
-                    <a href="#pricing" class="hidden sm:inline text-sm font-medium transition-colors hover:text-orange-500" :class="navScrolled ? 'text-slate-600' : 'text-white/90 hover:text-white'">Pricing</a>
-                    <a href="#contact" class="hidden sm:inline text-sm font-medium transition-colors hover:text-orange-500" :class="navScrolled ? 'text-slate-600' : 'text-white/90 hover:text-white'">Contact</a>
+                <div class="hidden lg:flex items-center gap-8">
+                    <a href="#how-it-works" class="text-sm font-medium text-slate-600 hover:text-orange-600 transition-colors">How it works</a>
+                    <a href="#features" class="text-sm font-medium text-slate-600 hover:text-orange-600 transition-colors">Features</a>
+                    <a href="#pricing" class="text-sm font-medium text-slate-600 hover:text-orange-600 transition-colors">Pricing</a>
+                    <a href="#contact" class="text-sm font-medium text-slate-600 hover:text-orange-600 transition-colors">Contact</a>
+                </div>
+                <div class="flex items-center gap-2 sm:gap-3">
                     @auth
-                        <a href="{{ route('dashboard') }}" class="text-sm font-medium transition-colors" :class="navScrolled ? 'text-slate-600 hover:text-orange-600' : 'text-white/90 hover:text-white'">Dashboard</a>
+                        <a href="{{ route('dashboard') }}" class="hidden sm:inline text-sm font-medium text-slate-600 hover:text-orange-600 transition-colors">Dashboard</a>
                         <x-btn href="{{ route('dashboard') }}" variant="primary" size="sm">My Menu</x-btn>
                     @else
-                        <a href="{{ route('login') }}" class="text-sm font-medium transition-colors" :class="navScrolled ? 'text-slate-600 hover:text-orange-600' : 'text-white/90 hover:text-white'">Sign In</a>
-                        <x-btn href="{{ route('register') }}" variant="primary" size="sm">Get Started Free</x-btn>
+                        <a href="{{ route('login') }}" class="hidden sm:inline text-sm font-medium text-slate-600 hover:text-orange-600 transition-colors">Sign in</a>
+                        <x-btn href="{{ route('register') }}" variant="primary" size="sm">Get started</x-btn>
                     @endauth
+                    <button type="button" class="lg:hidden p-2 -mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center -my-1" @click="navOpen = !navOpen" aria-label="Toggle menu">
+                        <svg class="w-6 h-6 text-slate-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path x-show="!navOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                            <path x-show="navOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div x-show="navOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="lg:hidden border-t border-slate-200">
+                <div class="py-3 sm:py-4 flex flex-col gap-0">
+                    <a href="#how-it-works" class="text-sm font-medium py-3 px-1 text-slate-600 hover:text-orange-600 transition-colors -mx-1 rounded-lg hover:bg-orange-50/50" @click="navOpen = false">How it works</a>
+                    <a href="#features" class="text-sm font-medium py-3 px-1 text-slate-600 hover:text-orange-600 transition-colors -mx-1 rounded-lg hover:bg-orange-50/50" @click="navOpen = false">Features</a>
+                    <a href="#pricing" class="text-sm font-medium py-3 px-1 text-slate-600 hover:text-orange-600 transition-colors -mx-1 rounded-lg hover:bg-orange-50/50" @click="navOpen = false">Pricing</a>
+                    <a href="#contact" class="text-sm font-medium py-3 px-1 text-slate-600 hover:text-orange-600 transition-colors -mx-1 rounded-lg hover:bg-orange-50/50" @click="navOpen = false">Contact</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    {{-- Hero --}}
+    <section id="hero" class="relative pt-24 sm:pt-28 md:pt-32 lg:pt-36 xl:pt-40 pb-14 sm:pb-16 md:pb-20 lg:pb-24 xl:pb-28 bg-white overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-5 md:px-6 lg:px-8 w-full">
+            <div class="grid lg:grid-cols-2 gap-6 sm:gap-8 md:gap-10 lg:gap-12 xl:gap-16 items-center lg:items-center">
+                <div class="order-2 lg:order-1 min-w-0 text-center lg:text-left">
+                    <p class="text-xs sm:text-sm font-medium text-orange-600 uppercase tracking-[0.2em] mb-2 sm:mb-3">Digital menu platform</p>
+                    <h1 class="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-slate-900 tracking-tight leading-[1.2] sm:leading-[1.15] mb-3 sm:mb-4 max-w-xl mx-auto lg:mx-0">
+                        Menus that work.<br>
+                        <span class="text-orange-500">For every restaurant.</span>
+                    </h1>
+                    <p class="text-sm sm:text-base md:text-lg text-slate-600 max-w-lg mx-auto lg:mx-0 leading-relaxed mb-5 sm:mb-6 md:mb-8">
+                        Create, customize, and share professional digital menus in minutes. QR codes, analytics, RTL support—everything you need, free to start.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center lg:justify-start">
+                        @auth
+                            <x-btn href="{{ route('dashboard') }}" variant="primary" size="sm">Go to dashboard</x-btn>
+                        @else
+                            <x-btn href="{{ route('register') }}" variant="primary" size="sm">Create your menu</x-btn>
+                            <x-btn href="{{ route('login') }}" variant="outline" size="sm">Sign in</x-btn>
+                        @endauth
+                    </div>
+                </div>
+                <div class="order-1 lg:order-2 flex justify-center lg:justify-end min-w-0">
+                    <img src="{{ asset('images/menu-test.png') }}" alt="Digital menu" class="w-full max-w-[220px] sm:max-w-[260px] md:max-w-[300px] lg:max-w-[340px] xl:max-w-[380px] h-auto object-contain mx-auto lg:mx-0">
                 </div>
             </div>
         </div>
-    </nav>
+    </section>
 
-    <!-- Hero Section -->
-    <section id="hero" class="relative bg-orange-500 pt-24 pb-20 sm:pt-32 sm:pb-28">
-        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center max-w-4xl mx-auto">
-                <p class="text-orange-100 text-sm font-medium mb-6">Free to start • No credit card required</p>
-                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-white tracking-tight mb-6 leading-[1.1]">
-                    Digital menus that wow your customers
-                </h1>
-                <p class="text-lg sm:text-xl text-white/90 mb-10 max-w-2xl mx-auto leading-relaxed">
-                    Create, customize, and share beautiful restaurant menus in minutes. QR codes, analytics, RTL support, and more, all in one place.
-                </p>
-                <div class="flex flex-col sm:flex-row gap-3 justify-center">
+    {{-- Stats bar --}}
+    <section class="relative -mt-4 sm:-mt-6 lg:-mt-8 z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-white rounded-xl sm:rounded-2xl border border-orange-100 p-4 sm:p-6 lg:p-8">
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 xl:gap-12">
+                    <div>
+                        <p class="text-xl sm:text-2xl lg:text-3xl font-bold text-orange-600">20</p>
+                        <p class="text-xs sm:text-sm text-slate-500 mt-0.5 sm:mt-1">Categories included</p>
+                    </div>
+                    <div>
+                        <p class="text-xl sm:text-2xl lg:text-3xl font-bold text-orange-600">80</p>
+                        <p class="text-xs sm:text-sm text-slate-500 mt-0.5 sm:mt-1">Dishes on free plan</p>
+                    </div>
+                    <div>
+                        <p class="text-xl sm:text-2xl lg:text-3xl font-bold text-orange-600">QR</p>
+                        <p class="text-xs sm:text-sm text-slate-500 mt-0.5 sm:mt-1">Code & shareable link</p>
+                    </div>
+                    <div>
+                        <p class="text-xl sm:text-2xl lg:text-3xl font-bold text-orange-600">RTL</p>
+                        <p class="text-xs sm:text-sm text-slate-500 mt-0.5 sm:mt-1">Arabic support</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {{-- How it works --}}
+    <section id="how-it-works" class="pt-8 sm:pt-10 md:pt-12 lg:pt-14 xl:pt-16 pb-8 sm:pb-10 md:pb-12 lg:pb-14 xl:pb-16 bg-white scroll-mt-14 sm:scroll-mt-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-10 sm:mb-12 lg:mb-16">
+                <p class="text-xs sm:text-sm font-medium text-orange-600 uppercase tracking-[0.2em] mb-2 sm:mb-3">Process</p>
+                <h2 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight mb-3 sm:mb-4">How it works</h2>
+                <p class="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto px-2 sm:px-0">From setup to sharing in four steps</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 lg:gap-6 xl:gap-8">
+                @foreach([
+                    ['num' => '01', 'title' => 'Create your menu', 'desc' => 'Add categories and dishes with photos, prices, and descriptions. Organize everything your way.'],
+                    ['num' => '02', 'title' => 'Customize design', 'desc' => 'Choose layouts, fonts, RTL for Arabic, price positions. Make it yours.'],
+                    ['num' => '03', 'title' => 'Share with customers', 'desc' => 'Get a unique link and QR code. Print it, share on social, or display at your venue.'],
+                    ['num' => '04', 'title' => 'Track performance', 'desc' => 'See visits, unique visitors, time spent. Understand how customers use your menu.'],
+                ] as $step)
+                <div class="group relative bg-white rounded-xl border border-slate-200/80 p-4 sm:p-5 lg:p-6 xl:p-8 hover:border-orange-200 hover:shadow-lg hover:shadow-orange-100/50 transition-all duration-300">
+                    <span class="text-3xl sm:text-4xl font-bold text-orange-500/30 group-hover:text-orange-500/50 transition-colors">{{ $step['num'] }}</span>
+                    <h3 class="text-base sm:text-lg font-semibold text-slate-900 mt-3 sm:mt-4 mb-1.5 sm:mb-2">{{ $step['title'] }}</h3>
+                    <p class="text-slate-600 text-xs sm:text-sm leading-relaxed">{{ $step['desc'] }}</p>
+                </div>
+                @endforeach
+            </div>
+        </div>
+    </section>
+
+    {{-- Features --}}
+    <section id="features" class="pt-8 sm:pt-10 md:pt-12 lg:pt-14 xl:pt-16 pb-8 sm:pb-10 md:pb-12 lg:pb-14 xl:pb-16 bg-white scroll-mt-14 sm:scroll-mt-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-10 sm:mb-12 lg:mb-16">
+                <p class="text-xs sm:text-sm font-medium text-orange-600 uppercase tracking-[0.2em] mb-2 sm:mb-3">Features</p>
+                <h2 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight mb-3 sm:mb-4">Everything you need</h2>
+                <p class="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto px-2 sm:px-0">Professional tools to build and manage your digital menu</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+                @foreach([
+                    ['icon' => 'qr', 'title' => 'QR Code', 'desc' => 'Generate and download QR codes. Scan to open menu instantly.'],
+                    ['icon' => 'chart', 'title' => 'Analytics', 'desc' => 'Visits, unique visitors, time spent, bounce rate.'],
+                    ['icon' => 'rtl', 'title' => 'RTL & Arabic', 'desc' => 'Full RTL support. Arabic fonts. Bilingual dashboard.'],
+                    ['icon' => 'layout', 'title' => 'Flexible layouts', 'desc' => 'Grid, tabs, list, cards. Collapsible categories.'],
+                    ['icon' => 'font', 'title' => '30+ fonts', 'desc' => 'Google Fonts including Arabic. Perfect typography.'],
+                    ['icon' => 'currency', 'title' => 'Dual currency', 'desc' => 'Two currencies with exchange rate. Perfect for tourists.'],
+                    ['icon' => 'share', 'title' => 'Social links', 'desc' => 'Instagram, Facebook, WhatsApp. Let customers find you.'],
+                    ['icon' => 'mobile', 'title' => 'Mobile-first', 'desc' => 'Optimized for phones and tablets. Fast, touch-friendly.'],
+                    ['icon' => 'image', 'title' => 'Dish images', 'desc' => 'Upload photos. Auto-optimized for fast loading.'],
+                    ['icon' => 'brand', 'title' => 'Restaurant branding', 'desc' => 'Logo, cover image, name, address on menu.'],
+                    ['icon' => 'allergen', 'title' => 'Ingredients & allergens', 'desc' => 'Display ingredients. Add allergen info per dish.'],
+                    ['icon' => 'seo', 'title' => 'SEO optimized', 'desc' => 'Meta tags, Open Graph. Your menu is discoverable.'],
+                ] as $feature)
+                <div class="flex gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-slate-200/80 hover:border-orange-200 hover:bg-orange-50/50 transition-all duration-200 min-w-0">
+                    <div class="shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-orange-100 flex items-center justify-center">
+                        @if($feature['icon'] === 'qr')
+                        <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                        @elseif($feature['icon'] === 'chart')
+                        <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                        @elseif($feature['icon'] === 'rtl')
+                        <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/></svg>
+                        @elseif($feature['icon'] === 'layout')
+                        <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
+                        @elseif($feature['icon'] === 'font')
+                        <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12"/></svg>
+                        @elseif($feature['icon'] === 'currency')
+                        <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        @elseif($feature['icon'] === 'share')
+                        <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+                        @elseif($feature['icon'] === 'mobile')
+                        <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                        @elseif($feature['icon'] === 'image')
+                        <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        @elseif($feature['icon'] === 'brand')
+                        <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                        @elseif($feature['icon'] === 'allergen')
+                        <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                        @else
+                        <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        @endif
+                    </div>
+                    <div class="min-w-0">
+                        <h3 class="font-semibold text-slate-900 text-xs sm:text-sm">{{ $feature['title'] }}</h3>
+                        <p class="text-slate-500 text-xs mt-0.5 leading-relaxed">{{ $feature['desc'] }}</p>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+    </section>
+
+    {{-- Pricing --}}
+    <section id="pricing" class="pt-8 sm:pt-10 md:pt-12 lg:pt-14 xl:pt-16 pb-8 sm:pb-10 md:pb-12 lg:pb-14 xl:pb-16 bg-white scroll-mt-14 sm:scroll-mt-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-10 sm:mb-12 lg:mb-16">
+                <p class="text-xs sm:text-sm font-medium text-orange-600 uppercase tracking-[0.2em] mb-2 sm:mb-3">Pricing</p>
+                <h2 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight mb-3 sm:mb-4">Plans that scale with you</h2>
+                <p class="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto px-2 sm:px-0">Start free. Upgrade when you need more. No hidden fees.</p>
+            </div>
+            <div class="grid lg:grid-cols-2 gap-4 sm:gap-5 lg:gap-6 xl:gap-8">
+                {{-- Free Plan --}}
+                <div class="h-full flex flex-col rounded-xl border border-slate-200/80 p-4 sm:p-5 lg:p-6 xl:p-8 hover:border-orange-200 hover:shadow-lg hover:shadow-orange-100/50 transition-all duration-300">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-700 border border-orange-100">Most popular</span>
+                        <span class="text-xs font-medium text-slate-500">Free forever</span>
+                    </div>
+                    <h3 class="text-base sm:text-lg font-semibold text-slate-900 mb-0.5">Starter</h3>
+                    <p class="text-slate-600 text-xs sm:text-sm mb-4 sm:mb-6">Perfect for small restaurants and cafés</p>
+                    <div class="flex items-baseline gap-1 mb-4 sm:mb-6">
+                        <span class="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 tracking-tight">$0</span>
+                        <span class="text-slate-500 text-sm font-medium">/month</span>
+                    </div>
                     @auth
-                        <x-btn href="{{ route('dashboard') }}" variant="white" size="md">Go to Dashboard</x-btn>
+                        <x-btn href="{{ route('dashboard') }}" variant="primary" size="sm" class="w-full justify-center">Go to dashboard</x-btn>
                     @else
-                        <x-btn href="{{ route('register') }}" variant="white" size="md">Create Your Menu Free</x-btn>
-                        <x-btn href="{{ route('login') }}" variant="outline-light" size="md">Sign In</x-btn>
+                        <x-btn href="{{ route('register') }}" variant="primary" size="sm" class="w-full justify-center">Get started free</x-btn>
                     @endauth
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- How it works -->
-    <section id="how-it-works" class="py-20 sm:py-28 bg-white overflow-hidden scroll-mt-20">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-16">
-                <h2 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">How it works</h2>
-                <p class="text-lg text-slate-600 max-w-2xl mx-auto">From setup to sharing in four simple steps</p>
-            </div>
-            <div class="relative">
-                <div class="hidden lg:block absolute top-1/2 left-0 right-0 h-0.5 bg-gradient-to-r from-orange-200 via-orange-100 to-orange-200 -translate-y-1/2" style="margin-left: 12%; margin-right: 12%;"></div>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-6">
-                    <div class="relative bg-white rounded-2xl border-2 border-slate-100 p-6 lg:p-8 hover:border-orange-200 hover:shadow-lg transition-all group">
-                        <div class="absolute -top-4 left-6 w-10 h-10 rounded-xl bg-orange-500 text-white flex items-center justify-center font-bold text-lg shadow-lg group-hover:scale-110 transition-transform">1</div>
-                        <h3 class="text-xl font-bold text-slate-900 mb-3 mt-2">Create your menu</h3>
-                        <p class="text-slate-600 leading-relaxed">Add categories and dishes with photos, prices, descriptions. Organize everything your way.</p>
-                    </div>
-                    <div class="relative bg-white rounded-2xl border-2 border-slate-100 p-6 lg:p-8 hover:border-orange-200 hover:shadow-lg transition-all group">
-                        <div class="absolute -top-4 left-6 w-10 h-10 rounded-xl bg-orange-500 text-white flex items-center justify-center font-bold text-lg shadow-lg group-hover:scale-110 transition-transform">2</div>
-                        <h3 class="text-xl font-bold text-slate-900 mb-3 mt-2">Customize design</h3>
-                        <p class="text-slate-600 leading-relaxed">Choose layouts, fonts, RTL for Arabic, price positions, and more. Make it yours.</p>
-                    </div>
-                    <div class="relative bg-white rounded-2xl border-2 border-slate-100 p-6 lg:p-8 hover:border-orange-200 hover:shadow-lg transition-all group">
-                        <div class="absolute -top-4 left-6 w-10 h-10 rounded-xl bg-orange-500 text-white flex items-center justify-center font-bold text-lg shadow-lg group-hover:scale-110 transition-transform">3</div>
-                        <h3 class="text-xl font-bold text-slate-900 mb-3 mt-2">Share with customers</h3>
-                        <p class="text-slate-600 leading-relaxed">Get a unique link and QR code. Print it, share on social, or display at your venue.</p>
-                    </div>
-                    <div class="relative bg-white rounded-2xl border-2 border-slate-100 p-6 lg:p-8 hover:border-orange-200 hover:shadow-lg transition-all group">
-                        <div class="absolute -top-4 left-6 w-10 h-10 rounded-xl bg-orange-500 text-white flex items-center justify-center font-bold text-lg shadow-lg group-hover:scale-110 transition-transform">4</div>
-                        <h3 class="text-xl font-bold text-slate-900 mb-3 mt-2">Track performance</h3>
-                        <p class="text-slate-600 leading-relaxed">See visits, unique visitors, time spent, bounce rate. Understand how customers use your menu.</p>
+                    <div class="border-t border-slate-100 mt-4 sm:mt-6 pt-4 sm:pt-6">
+                        <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2 sm:mb-3">What's included</p>
+                        <ul class="flex flex-col gap-2">
+                            @foreach(['20 categories', 'Up to 80 dishes', 'QR code & shareable link', 'Analytics & statistics', 'All layouts & customization', 'RTL & Arabic support', 'Dual currency display', '30+ Google Fonts'] as $item)
+                            <li class="flex items-center gap-2 text-slate-600">
+                                <span class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-50">
+                                    <svg class="h-2.5 w-2.5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                </span>
+                                <span class="text-xs">{{ $item }}</span>
+                            </li>
+                            @endforeach
+                        </ul>
                     </div>
                 </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Features Section -->
-    <section id="features" class="py-20 sm:py-28 bg-slate-50 scroll-mt-20">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-16">
-                <h2 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">Everything you need</h2>
-                <p class="text-lg text-slate-600 max-w-2xl mx-auto">Professional tools to build and manage your digital menu</p>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-md hover:border-orange-100 transition-all">
-                    <div class="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center mb-3"><svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg></div>
-                    <h3 class="font-semibold text-slate-900 mb-1.5 text-sm">QR Code</h3>
-                    <p class="text-slate-600 text-xs">Generate and download QR codes. Scan to open menu instantly.</p>
-                </div>
-                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-md hover:border-orange-100 transition-all">
-                    <div class="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center mb-3"><svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
-                    <h3 class="font-semibold text-slate-900 mb-1.5 text-sm">Analytics & Stats</h3>
-                    <p class="text-slate-600 text-xs">Visits, unique visitors, page views, time spent, bounce rate.</p>
-                </div>
-                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-md hover:border-orange-100 transition-all">
-                    <div class="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center mb-3"><svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/></svg></div>
-                    <h3 class="font-semibold text-slate-900 mb-1.5 text-sm">RTL & Arabic</h3>
-                    <p class="text-slate-600 text-xs">Full RTL support. Arabic fonts. Bilingual owner dashboard.</p>
-                </div>
-                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-md hover:border-orange-100 transition-all">
-                    <div class="w-10 h-10 rounded-lg bg-violet-100 flex items-center justify-center mb-3"><svg class="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg></div>
-                    <h3 class="font-semibold text-slate-900 mb-1.5 text-sm">Flexible layouts</h3>
-                    <p class="text-slate-600 text-xs">Grid, tabs, list, cards. Collapsible categories. Multiple dish styles.</p>
-                </div>
-                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-md hover:border-orange-100 transition-all">
-                    <div class="w-10 h-10 rounded-lg bg-rose-100 flex items-center justify-center mb-3"><svg class="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12"/></svg></div>
-                    <h3 class="font-semibold text-slate-900 mb-1.5 text-sm">30+ Custom fonts</h3>
-                    <p class="text-slate-600 text-xs">Google Fonts including Arabic. Perfect typography.</p>
-                </div>
-                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-md hover:border-orange-100 transition-all">
-                    <div class="w-10 h-10 rounded-lg bg-cyan-100 flex items-center justify-center mb-3"><svg class="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
-                    <h3 class="font-semibold text-slate-900 mb-1.5 text-sm">Dual currency</h3>
-                    <p class="text-slate-600 text-xs">Two currencies with exchange rate. Perfect for tourists.</p>
-                </div>
-                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-md hover:border-orange-100 transition-all">
-                    <div class="w-10 h-10 rounded-lg bg-sky-100 flex items-center justify-center mb-3"><svg class="w-5 h-5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg></div>
-                    <h3 class="font-semibold text-slate-900 mb-1.5 text-sm">Social links</h3>
-                    <p class="text-slate-600 text-xs">Instagram, Facebook, WhatsApp. Let customers find you.</p>
-                </div>
-                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-md hover:border-orange-100 transition-all">
-                    <div class="w-10 h-10 rounded-lg bg-teal-100 flex items-center justify-center mb-3"><svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg></div>
-                    <h3 class="font-semibold text-slate-900 mb-1.5 text-sm">Mobile-first</h3>
-                    <p class="text-slate-600 text-xs">Optimized for phones and tablets. Fast, touch-friendly.</p>
-                </div>
-                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-md hover:border-orange-100 transition-all">
-                    <div class="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center mb-3"><svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></div>
-                    <h3 class="font-semibold text-slate-900 mb-1.5 text-sm">Dish & category images</h3>
-                    <p class="text-slate-600 text-xs">Upload photos. Auto-optimized for fast loading.</p>
-                </div>
-                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-md hover:border-orange-100 transition-all">
-                    <div class="w-10 h-10 rounded-lg bg-pink-100 flex items-center justify-center mb-3"><svg class="w-5 h-5 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg></div>
-                    <h3 class="font-semibold text-slate-900 mb-1.5 text-sm">Restaurant branding</h3>
-                    <p class="text-slate-600 text-xs">Logo, cover image, name, address, phone on menu.</p>
-                </div>
-                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-md hover:border-orange-100 transition-all">
-                    <div class="w-10 h-10 rounded-lg bg-lime-100 flex items-center justify-center mb-3"><svg class="w-5 h-5 text-lime-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg></div>
-                    <h3 class="font-semibold text-slate-900 mb-1.5 text-sm">Ingredients & allergens</h3>
-                    <p class="text-slate-600 text-xs">Display ingredients. Add allergen info per dish.</p>
-                </div>
-                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-md hover:border-orange-100 transition-all">
-                    <div class="w-10 h-10 rounded-lg bg-fuchsia-100 flex items-center justify-center mb-3"><svg class="w-5 h-5 text-fuchsia-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11"/></svg></div>
-                    <h3 class="font-semibold text-slate-900 mb-1.5 text-sm">Price display options</h3>
-                    <p class="text-slate-600 text-xs">Next to title or on image. Top/bottom, left/right.</p>
-                </div>
-                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-md hover:border-orange-100 transition-all">
-                    <div class="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center mb-3"><svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg></div>
-                    <h3 class="font-semibold text-slate-900 mb-1.5 text-sm">Share button</h3>
-                    <p class="text-slate-600 text-xs">Let visitors share your menu. Configurable position.</p>
-                </div>
-                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-md hover:border-orange-100 transition-all">
-                    <div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center mb-3"><svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></div>
-                    <h3 class="font-semibold text-slate-900 mb-1.5 text-sm">Loading page</h3>
-                    <p class="text-slate-600 text-xs">Optional splash with your logo before menu loads.</p>
-                </div>
-                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-md hover:border-orange-100 transition-all">
-                    <div class="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center mb-3"><svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg></div>
-                    <h3 class="font-semibold text-slate-900 mb-1.5 text-sm">Restaurant & Home Cook</h3>
-                    <p class="text-slate-600 text-xs">Menu styles for dine-in or casual home menus.</p>
-                </div>
-                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-md hover:border-orange-100 transition-all">
-                    <div class="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center mb-3"><svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg></div>
-                    <h3 class="font-semibold text-slate-900 mb-1.5 text-sm">SEO optimized</h3>
-                    <p class="text-slate-600 text-xs">Meta tags, Open Graph. Your menu is discoverable.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Pricing Section -->
-    <section id="pricing" class="py-20 sm:py-28 bg-white scroll-mt-20">
-        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-12">
-                <h2 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">Simple pricing</h2>
-                <p class="text-lg text-slate-600">Start free. Upgrade when you need more.</p>
-            </div>
-            <div class="relative">
-                <div class="absolute -inset-1 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 rounded-[2rem] blur-sm opacity-20"></div>
-                <div class="relative bg-white rounded-3xl shadow-2xl shadow-slate-200/60 border-2 border-orange-100 overflow-hidden">
-                    <div class="bg-gradient-to-r from-orange-600 to-orange-500 px-8 py-6 text-center">
-                        <p class="text-orange-100 text-sm font-semibold uppercase tracking-wider mb-2">Free plan</p>
-                        <div class="inline-block">
-                            <span class="text-5xl sm:text-6xl font-black text-white tracking-tight">FREE</span>
-                        </div>
-                        <p class="text-orange-100 mt-2 text-lg">All features included. No credit card.</p>
+                {{-- Enterprise Plan --}}
+                <div class="h-full flex flex-col rounded-xl border border-slate-200/80 p-4 sm:p-5 lg:p-6 xl:p-8 hover:border-orange-200 hover:shadow-lg hover:shadow-orange-100/50 transition-all duration-300">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-700 border border-orange-100">Premium</span>
                     </div>
-                    <div class="p-8 sm:p-10">
-                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-8">
-                            <div>
-                                <h3 class="text-2xl font-bold text-slate-900">Everything you need</h3>
-                                <p class="text-slate-600 mt-1">20 categories • Up to 80 dishes</p>
-                            </div>
-                            @auth
-                                <x-btn href="{{ route('dashboard') }}" variant="primary" size="md">Go to Dashboard</x-btn>
-                            @else
-                                <x-btn href="{{ route('register') }}" variant="primary" size="md">Get Started — It's Free</x-btn>
-                            @endauth
-                        </div>
-                        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <div class="flex items-start gap-3"><svg class="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span class="text-slate-700">20 categories</span></div>
-                            <div class="flex items-start gap-3"><svg class="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span class="text-slate-700">Up to 80 dishes</span></div>
-                            <div class="flex items-start gap-3"><svg class="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span class="text-slate-700">QR code & shareable link</span></div>
-                            <div class="flex items-start gap-3"><svg class="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span class="text-slate-700">Analytics & statistics</span></div>
-                            <div class="flex items-start gap-3"><svg class="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span class="text-slate-700">All layouts & customization</span></div>
-                            <div class="flex items-start gap-3"><svg class="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span class="text-slate-700">RTL & Arabic support</span></div>
-                        </div>
-                        <div class="mt-8 pt-6 border-t border-slate-200 bg-slate-50 -mx-8 sm:-mx-10 -mb-8 sm:-mb-10 px-8 sm:px-10 py-6">
-                            <p class="text-slate-600 text-sm">Need more? <span class="font-semibold text-slate-800">Contact the admin</span> for custom plans with unlimited categories and dishes.</p>
-                            <p class="text-slate-600 text-sm mt-2"><a href="tel:+96103004699" class="text-orange-600 font-medium hover:text-orange-700">+961 03 004 699</a></p>
-                        </div>
+                    <h3 class="text-base sm:text-lg font-semibold text-slate-900 mb-0.5">Enterprise</h3>
+                    <p class="text-slate-600 text-xs sm:text-sm mb-4 sm:mb-6">For chains, hotels, and high-volume venues</p>
+                    <div class="flex items-baseline gap-1 mb-4 sm:mb-6">
+                        <span class="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 tracking-tight">Custom</span>
                     </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- CTA Section -->
-    <section class="py-20 sm:py-28 bg-gradient-to-br from-orange-600 to-orange-500">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">Ready to create your menu?</h2>
-            <p class="text-xl text-orange-100 mb-10">Join restaurants already using MenuX</p>
-            @auth
-                <x-btn href="{{ route('dashboard') }}" variant="white" size="md">Go to Dashboard</x-btn>
-            @else
-                <div class="flex flex-col sm:flex-row gap-3 justify-center">
-                    <x-btn href="{{ route('register') }}" variant="white" size="md">Create Free Account</x-btn>
-                    <x-btn href="{{ route('login') }}" variant="outline-light" size="md">Sign In</x-btn>
-                </div>
-            @endauth
-        </div>
-    </section>
-
-    <!-- Footer / Contact -->
-    <footer id="contact" class="bg-slate-900 text-white scroll-mt-20">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8">
-                <div class="lg:col-span-1">
-                    <a href="{{ url('/') }}#hero" class="flex items-center gap-3 mb-4">
-                        <img src="{{ asset('images/logo/logo.png') }}" alt="MenuX by Lebify" class="h-12 w-auto brightness-0 invert opacity-95">
-                        <span class="font-bold text-xl text-white">MenuX</span>
+                    <a href="tel:+96103004699" class="inline-flex w-full items-center justify-center rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition duration-150 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
+                        Contact sales
                     </a>
-                    <p class="text-slate-400 text-sm leading-relaxed">Digital menus for your restaurant by Lebify Group. Free to start, easy to use.</p>
+                    <div class="border-t border-slate-100 mt-4 sm:mt-6 pt-4 sm:pt-6">
+                        <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2 sm:mb-3">Everything in Starter, plus</p>
+                        <ul class="flex flex-col gap-2">
+                            @foreach(['Unlimited categories', 'Unlimited dishes', 'Priority support', 'Custom branding', 'API access', 'Dedicated account manager'] as $item)
+                            <li class="flex items-center gap-2 text-slate-600">
+                                <span class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-orange-50">
+                                    <svg class="h-2.5 w-2.5 text-orange-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                </span>
+                                <span class="text-xs">{{ $item }}</span>
+                            </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <p class="text-center text-xs sm:text-sm text-slate-500 mt-6 sm:mt-8 px-2">No credit card required · Get started in minutes</p>
+        </div>
+    </section>
+
+    {{-- Also From Lebify --}}
+    <section class="pt-8 sm:pt-10 md:pt-12 lg:pt-14 xl:pt-16 pb-8 sm:pb-10 md:pb-12 lg:pb-14 xl:pb-16 bg-white scroll-mt-14 sm:scroll-mt-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-10 sm:mb-12 lg:mb-16">
+                <p class="text-xs sm:text-sm font-medium text-orange-600 uppercase tracking-[0.2em] mb-2 sm:mb-3">Also from Lebify</p>
+                <h2 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight mb-3 sm:mb-4">More tools to help you succeed</h2>
+                <p class="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto px-2 sm:px-0">Professional tools from the Lebify team</p>
+            </div>
+            <a href="#" class="group block">
+                <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 p-4 sm:p-5 lg:p-6 rounded-xl border border-slate-200/80 hover:border-orange-200 hover:bg-orange-50/50 transition-all duration-200">
+                    <div class="min-w-0 flex-1">
+                        <h3 class="font-semibold text-slate-900 text-sm sm:text-base">CV Maker</h3>
+                        <p class="text-slate-600 text-xs sm:text-sm mt-1 leading-relaxed">Build a standout resume in minutes. Modern templates, ATS-friendly formatting, and one-click PDF export.</p>
+                        <div class="mt-3 sm:mt-4 flex flex-wrap gap-2">
+                            <span class="inline-flex items-center rounded-full bg-orange-50 px-3 py-1 text-xs font-medium text-orange-700">Modern templates</span>
+                            <span class="inline-flex items-center rounded-full bg-orange-50 px-3 py-1 text-xs font-medium text-orange-700">PDF export</span>
+                            <span class="inline-flex items-center rounded-full bg-orange-50 px-3 py-1 text-xs font-medium text-orange-700">ATS-friendly</span>
+                        </div>
+                    </div>
+                    <div class="shrink-0 flex items-center sm:justify-end">
+                        <span class="inline-flex items-center gap-2 text-xs sm:text-sm font-medium text-orange-600 group-hover:text-orange-700 transition-colors">
+                            Visit
+                            <svg class="h-5 w-5 transition group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                        </span>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </section>
+
+    {{-- Footer --}}
+    <footer id="contact" class="bg-white border-t border-slate-200 scroll-mt-14 sm:scroll-mt-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-14 lg:py-16">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10 lg:gap-8">
+                <div class="sm:col-span-2 lg:col-span-1">
+                    <a href="{{ url('/') }}#hero" class="flex items-center mb-3 sm:mb-4">
+                        <img src="{{ asset('images/logo/Light BG Lebify Logo.svg') }}" alt="MenuX by Lebify" class="h-20 sm:h-24 lg:h-28 w-auto">
+                    </a>
+                    <p class="text-slate-600 text-xs sm:text-sm leading-relaxed">Digital menus for your restaurant by Lebify Group. Free to start, easy to use.</p>
                 </div>
                 <div>
-                    <h4 class="font-semibold text-white mb-4 text-sm uppercase tracking-wider">Quick links</h4>
-                    <ul class="space-y-3">
-                        <li><a href="#how-it-works" class="text-slate-400 hover:text-orange-400 transition-colors text-sm">How it works</a></li>
-                        <li><a href="#features" class="text-slate-400 hover:text-orange-400 transition-colors text-sm">Features</a></li>
-                        <li><a href="#pricing" class="text-slate-400 hover:text-orange-400 transition-colors text-sm">Pricing</a></li>
+                    <h4 class="font-semibold text-slate-900 mb-3 sm:mb-4 text-xs sm:text-sm uppercase tracking-wider">Quick links</h4>
+                    <ul class="flex flex-col gap-2 sm:gap-3">
+                        <li><a href="#how-it-works" class="text-slate-600 hover:text-orange-600 transition-colors text-sm">How it works</a></li>
+                        <li><a href="#features" class="text-slate-600 hover:text-orange-600 transition-colors text-sm">Features</a></li>
+                        <li><a href="#pricing" class="text-slate-600 hover:text-orange-600 transition-colors text-sm">Pricing</a></li>
                         @guest
-                        <li><a href="{{ route('login') }}" class="text-slate-400 hover:text-orange-400 transition-colors text-sm">Sign In</a></li>
-                        <li><a href="{{ route('register') }}" class="text-slate-400 hover:text-orange-400 transition-colors text-sm">Register</a></li>
+                        <li><a href="{{ route('login') }}" class="text-slate-600 hover:text-orange-600 transition-colors text-sm">Sign in</a></li>
+                        <li><a href="{{ route('register') }}" class="text-slate-600 hover:text-orange-600 transition-colors text-sm">Register</a></li>
                         @endguest
                     </ul>
                 </div>
                 <div>
-                    <h4 class="font-semibold text-white mb-4 text-sm uppercase tracking-wider">Contact</h4>
-                    <ul class="space-y-4">
+                    <h4 class="font-semibold text-slate-900 mb-3 sm:mb-4 text-xs sm:text-sm uppercase tracking-wider">Contact</h4>
+                    <ul class="flex flex-col gap-3 sm:gap-4">
                         <li>
-                            <a href="tel:+96103004699" class="flex items-center gap-3 text-slate-400 hover:text-orange-400 transition-colors group">
-                                <span class="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center group-hover:bg-orange-500/20 transition-colors">
+                            <a href="tel:+96103004699" class="flex items-center gap-3 text-slate-600 hover:text-orange-600 transition-colors group">
+                                <span class="w-9 h-9 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center group-hover:bg-orange-100 group-hover:border-orange-200 transition-colors">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
                                 </span>
                                 <span>+961 03 004 699</span>
                             </a>
                         </li>
                         <li>
-                            <a href="mailto:dany.a.seifeddine@gmail.com" class="flex items-center gap-3 text-slate-400 hover:text-orange-400 transition-colors group">
-                                <span class="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center group-hover:bg-orange-500/20 transition-colors">
+                            <a href="mailto:dany.a.seifeddine@gmail.com" class="flex items-center gap-3 text-slate-600 hover:text-orange-600 transition-colors group">
+                                <span class="w-9 h-9 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center group-hover:bg-orange-100 group-hover:border-orange-200 transition-colors">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                                 </span>
                                 <span class="break-all">dany.a.seifeddine@gmail.com</span>
                             </a>
                         </li>
                         <li>
-                            <div class="flex items-start gap-3 text-slate-400">
-                                <span class="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center flex-shrink-0">
+                            <div class="flex items-start gap-3 text-slate-600">
+                                <span class="w-9 h-9 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center shrink-0">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                                 </span>
                                 <span>Barja, Lebanon</span>
@@ -311,18 +354,18 @@
                     </ul>
                 </div>
                 <div>
-                    <h4 class="font-semibold text-white mb-4 text-sm uppercase tracking-wider">Get started</h4>
-                    <p class="text-slate-400 text-sm mb-4">Create your free menu in minutes.</p>
+                    <h4 class="font-semibold text-slate-900 mb-3 sm:mb-4 text-xs sm:text-sm uppercase tracking-wider">Get started</h4>
+                    <p class="text-slate-600 text-xs sm:text-sm mb-3 sm:mb-4">Create your free menu in minutes.</p>
                     @guest
-                    <x-btn href="{{ route('register') }}" variant="primary" size="sm">Get Started Free</x-btn>
+                    <x-btn href="{{ route('register') }}" variant="primary" size="sm">Get started free</x-btn>
                     @else
                     <x-btn href="{{ route('dashboard') }}" variant="primary" size="sm">Dashboard</x-btn>
                     @endguest
                 </div>
             </div>
-            <div class="border-t border-slate-800 mt-12 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-                <p class="text-slate-500 text-sm">&copy; {{ date('Y') }} MenuX by Lebify Group. All rights reserved.</p>
-                <p class="text-slate-500 text-sm">Lebify · Barja, Lebanon</p>
+            <div class="border-t border-slate-200 mt-8 sm:mt-10 lg:mt-12 pt-6 sm:pt-8 flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4 text-center sm:text-left">
+                <p class="text-slate-500 text-xs sm:text-sm">&copy; {{ date('Y') }} MenuX by Lebify Group. All rights reserved.</p>
+                <p class="text-slate-500 text-xs sm:text-sm">Lebify · Barja, Lebanon</p>
             </div>
         </div>
     </footer>
