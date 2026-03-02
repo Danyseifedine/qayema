@@ -256,7 +256,7 @@
                     <div class="border-t border-slate-100 mt-4 sm:mt-6 pt-4 sm:pt-6">
                         <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2 sm:mb-3">Everything in Starter, plus</p>
                         <ul class="flex flex-col gap-2">
-                            @foreach(['Unlimited categories', 'Unlimited dishes', 'Priority support', 'Custom branding', 'API access', 'Dedicated account manager'] as $item)
+                            @foreach(['Unlimited categories', 'Unlimited dishes', 'Priority support'] as $item)
                             <li class="flex items-center gap-2 text-slate-600">
                                 <span class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-orange-50">
                                     <svg class="h-2.5 w-2.5 text-orange-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
