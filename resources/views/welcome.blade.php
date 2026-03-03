@@ -280,7 +280,7 @@
                 <h2 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight mb-3 sm:mb-4">More tools to help you succeed</h2>
                 <p class="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto px-2 sm:px-0">Professional tools from the Lebify team</p>
             </div>
-            <a href="#" class="group block">
+            <a href="https://cv.lebify.dev" target="_blank" rel="noopener noreferrer" class="group block">
                 <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 p-4 sm:p-5 lg:p-6 rounded-xl border border-slate-200/80 hover:border-orange-200 hover:bg-orange-50/50 transition-all duration-200">
                     <div class="min-w-0 flex-1">
                         <h3 class="font-semibold text-slate-900 text-sm sm:text-base">CV Maker</h3>
