@@ -239,28 +239,29 @@
     </div>
 
     @if ($dish)
+        @php $dishId = $dish->id; @endphp
         <script>
-            function deleteImage(imageId) {
+            window.deleteImage = function(imageId) {
                 if (confirm('Are you sure you want to delete this image?')) {
-                    fetch(`/menu-owner/dishes/{{ $dish->id }}/images/${imageId}`, {
-                            method: 'DELETE',
-                            headers: {
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                                'Accept': 'application/json',
-                            }
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                location.reload();
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-                            alert('Failed to delete image');
-                        });
+                    fetch('/menu-owner/dishes/{{ $dishId }}/images/' + imageId, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json',
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            location.reload();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Failed to delete image');
+                    });
                 }
-            }
+            };
         </script>
     @endif
 </x-app-layout>
