@@ -38,7 +38,7 @@ class Btn extends Component
         return match ($this->variant) {
             'primary' => 'bg-orange-500 text-white shadow-sm hover:bg-orange-600 focus:ring-orange-500 active:bg-orange-700',
             'secondary' => 'bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 focus:ring-slate-400 active:bg-slate-300',
-            'danger' => 'bg-red-600 text-white shadow-sm hover:bg-red-500 focus:ring-red-500 active:bg-red-700',
+            'danger' => '!bg-red-600 !text-white shadow-sm hover:!bg-red-500 focus:ring-red-500 active:!bg-red-700 border border-transparent',
             'outline' => 'border-2 border-orange-500 text-orange-600 bg-transparent hover:bg-orange-50 focus:ring-orange-500',
             'ghost' => 'text-slate-600 hover:bg-slate-100 focus:ring-slate-400',
             'white' => 'bg-white text-orange-600 border border-white/20 hover:bg-orange-50 focus:ring-orange-400 shadow-sm',

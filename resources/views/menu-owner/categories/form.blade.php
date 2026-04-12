@@ -86,7 +86,7 @@
                                         <img :src="imagePreview" alt="Category Image Preview"
                                             class="h-48 w-full object-cover rounded-lg border-2 border-gray-200 shadow-sm">
                                         <button type="button" @click="imagePreview = null; imageFile = null; document.getElementById('image').value = ''"
-                                            class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500">
+                                            class="absolute top-2 right-2 !bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-lg shadow-md ring-2 ring-white/90 hover:!bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
                                             ×
                                         </button>
                                     </div>

@@ -32,6 +32,7 @@ class DishRequest extends FormRequest
             'display_order' => ['required', 'integer', 'min:0'],
             'prep_time' => ['nullable', 'integer', 'min:0'],
             'serving_size' => ['nullable', 'string', 'max:255'],
+            'images' => ['nullable', 'array', 'max:20'],
             'images.*' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
         ];
     }

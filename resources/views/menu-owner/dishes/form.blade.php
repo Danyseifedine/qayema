@@ -28,11 +28,11 @@
                 <div class="p-6">
 
                     @if ($dish)
-                        <form method="POST" action="{{ route('menu-owner.dishes.update', $dish) }}" enctype="multipart/form-data" class="space-y-6">
+                        <form id="dish-form" method="POST" action="{{ route('menu-owner.dishes.update', $dish) }}" enctype="multipart/form-data" class="space-y-6">
                             @csrf
                             @method('PUT')
                     @else
-                        <form method="POST" action="{{ route('menu-owner.dishes.store') }}" enctype="multipart/form-data" class="space-y-6">
+                        <form id="dish-form" method="POST" action="{{ route('menu-owner.dishes.store') }}" enctype="multipart/form-data" class="space-y-6">
                             @csrf
                     @endif
 
@@ -111,14 +111,16 @@
                                 </div>
                             </div>
 
+                            <script type="application/json" id="dish-existing-images-json">
+                                @json($dish && $dish->hasMedia('images') ? $dish->getMedia('images')->map(fn ($img) => ['id' => $img->id, 'url' => $img->getUrl()])->values()->all() : [])
+                            </script>
+
                             {{-- Images --}}
                             <div>
                                 <x-input-label for="images-input" :value="__('menu_owner.dishes.dish_images_optional')" />
                                 <p class="mt-1 text-sm text-gray-500">{{ __('menu_owner.dishes.dish_images_optional_desc') }}</p>
 
-                                <div id="images-container" class="mt-2"
-                                    data-dish-id="{{ $dish?->id ?? '' }}"
-                                    data-existing="{{ $dish && $dish->hasMedia('images') ? e(json_encode($dish->getMedia('images')->map(fn($img) => ['id' => $img->id, 'url' => $img->getUrl()])->toArray())) : '[]' }}">
+                                <div id="images-container" class="mt-2" data-dish-id="{{ $dish?->id ?? '' }}">
                                 </div>
 
                                 <p class="mt-2 text-sm text-gray-500">Upload images for this dish (optional, max 5MB each, will be optimized to max 50KB)</p>
@@ -154,8 +156,19 @@
     <script>
     (function () {
         var container = document.getElementById('images-container');
-        var form = document.querySelector('form');
-        var existingImages = JSON.parse(container.getAttribute('data-existing') || '[]');
+        var form = document.getElementById('dish-form');
+        var jsonEl = document.getElementById('dish-existing-images-json');
+        var existingImages = [];
+        if (jsonEl && jsonEl.textContent.trim() !== '') {
+            try {
+                existingImages = JSON.parse(jsonEl.textContent);
+            } catch (e) {
+                existingImages = [];
+            }
+        }
+        if (!container || !form) {
+            return;
+        }
         var newFiles = [];
         var deletedIds = [];
 
@@ -175,8 +188,9 @@
 
                 var btn = document.createElement('button');
                 btn.type = 'button';
-                btn.className = 'absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-lg hover:bg-red-600';
+                btn.className = 'absolute top-2 right-2 !bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-lg shadow-md ring-2 ring-white/90 hover:!bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500';
                 btn.innerHTML = '&times;';
+                btn.setAttribute('aria-label', 'Remove image');
                 btn.addEventListener('click', function () {
                     existingImages = existingImages.filter(function (i) { return i.id != image.id; });
                     deletedIds.push(image.id);
@@ -208,8 +222,9 @@
 
                 var btn = document.createElement('button');
                 btn.type = 'button';
-                btn.className = 'absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-lg hover:bg-red-600';
+                btn.className = 'absolute top-2 right-2 !bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-lg shadow-md ring-2 ring-white/90 hover:!bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500';
                 btn.innerHTML = '&times;';
+                btn.setAttribute('aria-label', 'Remove new image');
                 btn.addEventListener('click', function () {
                     newFiles = newFiles.filter(function (f) { return f.key !== item.key; });
                     syncFileInput();
@@ -279,11 +294,22 @@
         }
 
         function syncFileInput() {
-            var hidden = document.getElementById('images-real');
-            if (!hidden) return;
-            var dt = new DataTransfer();
-            newFiles.forEach(function (item) { dt.items.add(item.file); });
-            hidden.files = dt.files;
+            form.querySelectorAll('input.js-dish-new-image').forEach(function (el) {
+                el.remove();
+            });
+            newFiles.forEach(function (item) {
+                var dt = new DataTransfer();
+                dt.items.add(item.file);
+                var inp = document.createElement('input');
+                inp.type = 'file';
+                inp.name = 'images[]';
+                inp.className = 'js-dish-new-image hidden';
+                inp.setAttribute('aria-hidden', 'true');
+                inp.tabIndex = -1;
+                inp.style.display = 'none';
+                inp.files = dt.files;
+                form.appendChild(inp);
+            });
         }
 
         function syncDeletedInputs() {
@@ -296,16 +322,6 @@
                 form.appendChild(inp);
             });
         }
-
-        // Hidden real file input attached to form
-        var hiddenFile = document.createElement('input');
-        hiddenFile.type = 'file';
-        hiddenFile.id = 'images-real';
-        hiddenFile.name = 'images[]';
-        hiddenFile.multiple = true;
-        hiddenFile.accept = 'image/jpeg,image/png,image/jpg,image/webp';
-        hiddenFile.style.display = 'none';
-        form.appendChild(hiddenFile);
 
         render();
     })();

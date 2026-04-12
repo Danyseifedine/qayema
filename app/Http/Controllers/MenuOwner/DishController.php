@@ -8,6 +8,8 @@ use App\Models\Category;
 use App\Models\Dish;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Arr;
 use Illuminate\View\View;
 
 class DishController extends Controller
@@ -83,7 +85,10 @@ class DishController extends Controller
         // Handle image uploads if provided
         if ($request->hasFile('images')) {
             $imageService = app(\App\Services\ImageOptimizationService::class);
-            foreach ($request->file('images') as $image) {
+            foreach (Arr::wrap($request->file('images')) as $image) {
+                if (! $image instanceof UploadedFile || ! $image->isValid()) {
+                    continue;
+                }
                 try {
                     // Optimize image to max 50KB (600x600 for menu display)
                     $optimizedPath = $imageService->optimizeDishImage($image);
@@ -150,7 +155,10 @@ class DishController extends Controller
 
         if ($request->hasFile('images')) {
             $imageService = app(\App\Services\ImageOptimizationService::class);
-            foreach ($request->file('images') as $image) {
+            foreach (Arr::wrap($request->file('images')) as $image) {
+                if (! $image instanceof UploadedFile || ! $image->isValid()) {
+                    continue;
+                }
                 try {
                     $optimizedPath = $imageService->optimizeDishImage($image);
 

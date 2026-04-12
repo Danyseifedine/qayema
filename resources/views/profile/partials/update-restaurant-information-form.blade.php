@@ -72,7 +72,7 @@
                                 class="h-32 w-32 object-contain rounded-lg border-2 border-gray-200 shadow-sm">
                             <button type="button"
                                 @click="logoPreview = null; logoFile = null; document.getElementById('logo').value = ''"
-                                class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500">
+                                class="absolute -top-2 -right-2 !bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs shadow-md ring-2 ring-white/90 hover:!bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
                                 ×
                             </button>
                         </div>
@@ -137,7 +137,7 @@
                                 class="h-32 w-full object-cover rounded-lg border-2 border-gray-200 shadow-sm">
                             <button type="button"
                                 @click="coverPreview = null; coverFile = null; document.getElementById('cover_image').value = ''"
-                                class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500">
+                                class="absolute top-2 right-2 !bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs shadow-md ring-2 ring-white/90 hover:!bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
                                 ×
                             </button>
                         </div>
