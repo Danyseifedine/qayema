@@ -4,8 +4,10 @@ namespace App\Filament\Admin\Resources\Users\Tables;
 
 use App\Enums\UserRole;
 use App\Models\User;
+use App\Services\UserCascadeDeletionService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -80,10 +82,29 @@ class UsersTable
                     ->visible(fn (User $record): bool => auth()->id() !== $record->getKey() && $record->canBeImpersonated()),
                 ViewAction::make(),
                 EditAction::make(),
+                DeleteAction::make()
+                    ->requiresConfirmation()
+                    ->modalHeading('Delete user')
+                    ->modalDescription('This permanently deletes the user, every menu they own, all categories and dishes (including images), social links, statistics, settings, profile media, and their sessions.')
+                    ->action(function (User $record): void {
+                        app(UserCascadeDeletionService::class)->delete($record);
+                    }),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->requiresConfirmation()
+                        ->modalHeading('Delete selected users')
+                        ->modalDescription('Each selected user will be fully removed along with all menus, dishes, categories, images, and related data. Users you are not allowed to delete will be skipped.')
+                        ->action(function ($records): void {
+                            $deletion = app(UserCascadeDeletionService::class);
+                            foreach ($records as $record) {
+                                if (! $record instanceof User || ! auth()->user()?->can('delete', $record)) {
+                                    continue;
+                                }
+                                $deletion->delete($record);
+                            }
+                        }),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
