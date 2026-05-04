@@ -1,11 +1,20 @@
 {
   "resources/css/app.css": {
-    "file": "assets/app-xrHzSBjz.css",
+    "file": "assets/app-CkS_HgHF.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
     "names": [
       "app.css"
+    ]
+  },
+  "resources/css/welcome.css": {
+    "file": "assets/welcome-uBY2dmjl.css",
+    "src": "resources/css/welcome.css",
+    "isEntry": true,
+    "name": "welcome",
+    "names": [
+      "welcome.css"
     ]
   },
   "resources/js/app.js": {

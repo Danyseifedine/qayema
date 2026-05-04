@@ -1,392 +1,1164 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="en" dir="ltr">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#ea580c">
-    <meta name="format-detection" content="telephone=yes, email=yes">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <x-seo title="MenuX by Lebify - Create Beautiful Digital Menus"
-        description="MenuX by Lebify Group: create beautiful digital menus for your restaurant. Free: 20 categories, up to 80 dishes. Share your menu with a simple link. Built by the Lebify team in Lebanon."
-        keywords="MenuX, Lebify, Lebify Group, Lebify team, digital menu, restaurant menu, online menu, menu creator, food menu, Lebanon, Barja"
+    <title>Qayema — قايمة | Digital menus for restaurants</title>
+
+    <x-seo
+        title="Qayema — The digital menu your restaurant deserves"
+        description="Qayema turns every table into a frictionless dining experience. One QR code, a beautifully designed digital menu, 10 languages with Arabic RTL, and a dashboard your staff will love. Free to start."
+        keywords="digital menu, restaurant menu, QR menu, online menu, Arabic menu, RTL menu, Qayema, قايمة, Lebify"
         author="Lebify Group"
-        :url="url('/')" :image="asset('images/logo/logo.png')" imageAlt="MenuX by Lebify - Digital Menus" type="website"
-        :siteName="config('seo.organization.name', 'Lebify Group')" />
+        :url="url('/')"
+        :image="asset('images/logo/logo.png')"
+        imageAlt="Qayema — Digital menus"
+        type="website"
+        :siteName="config('seo.organization.name', 'Lebify Group')"
+    />
 
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
+    {{-- Fonts --}}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=Noto+Kufi+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    {{-- Welcome page CSS + Alpine.js --}}
+    @vite(['resources/css/welcome.css', 'resources/js/app.js'])
 </head>
-<body class="antialiased bg-white text-slate-900 font-sans overflow-x-hidden" x-data="{ navOpen: false, navScrolled: false }" x-init="window.addEventListener('scroll', () => { navScrolled = window.scrollY > 20 })">
-    {{-- Navigation --}}
-    <header class="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
-        :class="navScrolled ? 'bg-white/80 backdrop-blur-xl border-b border-slate-200/60 shadow-sm' : 'bg-transparent'">
-        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center min-h-14 sm:min-h-16 lg:min-h-20 py-2 sm:py-3 lg:py-4">
-                <a href="{{ url('/') }}#hero" class="flex items-center shrink-0">
-                    <img src="{{ asset('images/logo/Light BG Lebify Logo.svg') }}" alt="MenuX by Lebify" class="h-10 sm:h-12 md:h-14 lg:h-16 w-auto">
-                </a>
-                <div class="hidden lg:flex items-center gap-8">
-                    <a href="#how-it-works" class="text-sm font-medium text-slate-600 hover:text-orange-600 transition-colors">How it works</a>
-                    <a href="#features" class="text-sm font-medium text-slate-600 hover:text-orange-600 transition-colors">Features</a>
-                    <a href="#pricing" class="text-sm font-medium text-slate-600 hover:text-orange-600 transition-colors">Pricing</a>
-                    <a href="#contact" class="text-sm font-medium text-slate-600 hover:text-orange-600 transition-colors">Contact</a>
-                </div>
-                <div class="flex items-center gap-2 sm:gap-3">
-                    @auth
-                        <a href="{{ route('dashboard') }}" class="hidden sm:inline text-sm font-medium text-slate-600 hover:text-orange-600 transition-colors">Dashboard</a>
-                        <x-btn href="{{ route('dashboard') }}" variant="primary" size="sm">My Menu</x-btn>
-                    @else
-                        <a href="{{ route('login') }}" class="hidden sm:inline text-sm font-medium text-slate-600 hover:text-orange-600 transition-colors">Sign in</a>
-                        <x-btn href="{{ route('register') }}" variant="primary" size="sm">Get started</x-btn>
-                    @endauth
-                    <button type="button" class="lg:hidden p-2 -mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center -my-1" @click="navOpen = !navOpen" aria-label="Toggle menu">
-                        <svg class="w-6 h-6 text-slate-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path x-show="!navOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                            <path x-show="navOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-            <div x-show="navOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="lg:hidden border-t border-slate-200">
-                <div class="py-3 sm:py-4 flex flex-col gap-0">
-                    <a href="#how-it-works" class="text-sm font-medium py-3 px-1 text-slate-600 hover:text-orange-600 transition-colors -mx-1 rounded-lg hover:bg-orange-50/50" @click="navOpen = false">How it works</a>
-                    <a href="#features" class="text-sm font-medium py-3 px-1 text-slate-600 hover:text-orange-600 transition-colors -mx-1 rounded-lg hover:bg-orange-50/50" @click="navOpen = false">Features</a>
-                    <a href="#pricing" class="text-sm font-medium py-3 px-1 text-slate-600 hover:text-orange-600 transition-colors -mx-1 rounded-lg hover:bg-orange-50/50" @click="navOpen = false">Pricing</a>
-                    <a href="#contact" class="text-sm font-medium py-3 px-1 text-slate-600 hover:text-orange-600 transition-colors -mx-1 rounded-lg hover:bg-orange-50/50" @click="navOpen = false">Contact</a>
-                </div>
-            </div>
-        </nav>
-    </header>
+<body>
 
-    {{-- Hero --}}
-    <section id="hero" class="relative pt-24 sm:pt-28 md:pt-32 lg:pt-36 xl:pt-40 pb-14 sm:pb-16 md:pb-20 lg:pb-24 xl:pb-28 bg-white overflow-hidden">
-        <div class="max-w-7xl mx-auto px-4 sm:px-5 md:px-6 lg:px-8 w-full">
-            <div class="grid lg:grid-cols-2 gap-6 sm:gap-8 md:gap-10 lg:gap-12 xl:gap-16 items-center lg:items-center">
-                <div class="order-2 lg:order-1 min-w-0 text-center lg:text-left">
-                    <p class="text-xs sm:text-sm font-medium text-orange-600 uppercase tracking-[0.2em] mb-2 sm:mb-3">Digital menu platform</p>
-                    <h1 class="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-slate-900 tracking-tight leading-[1.2] sm:leading-[1.15] mb-3 sm:mb-4 max-w-xl mx-auto lg:mx-0">
-                        Menus that work.<br>
-                        <span class="text-orange-500">For every restaurant.</span>
-                    </h1>
-                    <p class="text-sm sm:text-base md:text-lg text-slate-600 max-w-lg mx-auto lg:mx-0 leading-relaxed mb-5 sm:mb-6 md:mb-8">
-                        Create, customize, and share professional digital menus in minutes. QR codes, analytics, RTL support—everything you need, free to start.
-                    </p>
-                    <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center lg:justify-start">
-                        @auth
-                            <x-btn href="{{ route('dashboard') }}" variant="primary" size="sm">Go to dashboard</x-btn>
-                        @else
-                            <x-btn href="{{ route('register') }}" variant="primary" size="sm">Create your menu</x-btn>
-                            <x-btn href="{{ route('login') }}" variant="outline" size="sm">Sign in</x-btn>
-                        @endauth
-                    </div>
-                </div>
-                <div class="order-1 lg:order-2 flex justify-center lg:justify-end min-w-0">
-                    <img src="{{ asset('images/menu-test.png') }}" alt="Digital menu" class="w-full max-w-[220px] sm:max-w-[260px] md:max-w-[300px] lg:max-w-[340px] xl:max-w-[380px] h-auto object-contain mx-auto lg:mx-0">
-                </div>
-            </div>
-        </div>
-    </section>
+<div id="page" x-data="menuXApp()" x-init="
+    document.documentElement.lang = lang;
+    document.documentElement.dir  = isAr ? 'rtl' : 'ltr';
+">
 
-    {{-- Stats bar --}}
-    <section class="relative -mt-4 sm:-mt-6 lg:-mt-8 z-10">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-4 sm:p-6 lg:p-8">
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 xl:gap-12">
-                    <div>
-                        <p class="text-xl sm:text-2xl lg:text-3xl font-bold text-orange-600">20</p>
-                        <p class="text-xs sm:text-sm text-slate-500 mt-0.5 sm:mt-1">Categories included</p>
-                    </div>
-                    <div>
-                        <p class="text-xl sm:text-2xl lg:text-3xl font-bold text-orange-600">80</p>
-                        <p class="text-xs sm:text-sm text-slate-500 mt-0.5 sm:mt-1">Dishes on free plan</p>
-                    </div>
-                    <div>
-                        <p class="text-xl sm:text-2xl lg:text-3xl font-bold text-orange-600">QR</p>
-                        <p class="text-xs sm:text-sm text-slate-500 mt-0.5 sm:mt-1">Code & shareable link</p>
-                    </div>
-                    <div>
-                        <p class="text-xl sm:text-2xl lg:text-3xl font-bold text-orange-600">RTL</p>
-                        <p class="text-xs sm:text-sm text-slate-500 mt-0.5 sm:mt-1">Arabic support</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+    {{-- ─────────────────────────────────────────────────────
+         NAV
+         ───────────────────────────────────────────────────── --}}
+    <nav class="nav">
+        <div class="nav-inner wrap">
 
-    {{-- How it works --}}
-    <section id="how-it-works" class="pt-8 sm:pt-10 md:pt-12 lg:pt-14 xl:pt-16 pb-8 sm:pb-10 md:pb-12 lg:pb-14 xl:pb-16 bg-white scroll-mt-14 sm:scroll-mt-20">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-10 sm:mb-12 lg:mb-16">
-                <p class="text-xs sm:text-sm font-medium text-orange-600 uppercase tracking-[0.2em] mb-2 sm:mb-3">Process</p>
-                <h2 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight mb-3 sm:mb-4">How it works</h2>
-                <p class="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto px-2 sm:px-0">From setup to sharing in four steps</p>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 lg:gap-6 xl:gap-8">
-                @foreach([
-                    ['num' => '01', 'title' => 'Create your menu', 'desc' => 'Add categories and dishes with photos, prices, and descriptions. Organize everything your way.'],
-                    ['num' => '02', 'title' => 'Customize design', 'desc' => 'Choose layouts, fonts, RTL for Arabic, price positions. Make it yours.'],
-                    ['num' => '03', 'title' => 'Share with customers', 'desc' => 'Get a unique link and QR code. Print it, share on social, or display at your venue.'],
-                    ['num' => '04', 'title' => 'Track performance', 'desc' => 'See visits, unique visitors, time spent. Understand how customers use your menu.'],
-                ] as $step)
-                <div class="group relative bg-white rounded-xl border border-slate-200/80 p-4 sm:p-5 lg:p-6 xl:p-8 hover:border-orange-200 hover:shadow-lg hover:shadow-orange-100/50 transition-all duration-300">
-                    <span class="text-3xl sm:text-4xl font-bold text-orange-500/30 group-hover:text-orange-500/50 transition-colors">{{ $step['num'] }}</span>
-                    <h3 class="text-base sm:text-lg font-semibold text-slate-900 mt-3 sm:mt-4 mb-1.5 sm:mb-2">{{ $step['title'] }}</h3>
-                    <p class="text-slate-600 text-xs sm:text-sm leading-relaxed">{{ $step['desc'] }}</p>
-                </div>
-                @endforeach
-            </div>
-        </div>
-    </section>
+            {{-- Brand --}}
+            <a class="brand" href="/">
+                <img src="{{ asset('images/logo/logo.png') }}" alt="Qayema" class="brand-logo">
+            </a>
 
-    {{-- Features --}}
-    <section id="features" class="pt-8 sm:pt-10 md:pt-12 lg:pt-14 xl:pt-16 pb-8 sm:pb-10 md:pb-12 lg:pb-14 xl:pb-16 bg-white scroll-mt-14 sm:scroll-mt-20">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-10 sm:mb-12 lg:mb-16">
-                <p class="text-xs sm:text-sm font-medium text-orange-600 uppercase tracking-[0.2em] mb-2 sm:mb-3">Features</p>
-                <h2 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight mb-3 sm:mb-4">Everything you need</h2>
-                <p class="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto px-2 sm:px-0">Professional tools to build and manage your digital menu</p>
+            {{-- Desktop links --}}
+            <div class="nav-links">
+                <a href="#features" @click="mobileOpen = false" x-text="t.nav.features">Features</a>
+                <a href="#how"      @click="mobileOpen = false" x-text="t.nav.how">How it works</a>
+                <a href="#stories"  @click="mobileOpen = false" x-text="t.nav.stories">Stories</a>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-                @foreach([
-                    ['icon' => 'qr', 'title' => 'QR Code', 'desc' => 'Generate and download QR codes. Scan to open menu instantly.'],
-                    ['icon' => 'chart', 'title' => 'Analytics', 'desc' => 'Visits, unique visitors, time spent, bounce rate.'],
-                    ['icon' => 'rtl', 'title' => 'RTL & Arabic', 'desc' => 'Full RTL support. Arabic fonts. Bilingual dashboard.'],
-                    ['icon' => 'layout', 'title' => 'Flexible layouts', 'desc' => 'Grid, tabs, list, cards. Collapsible categories.'],
-                    ['icon' => 'font', 'title' => '30+ fonts', 'desc' => 'Google Fonts including Arabic. Perfect typography.'],
-                    ['icon' => 'currency', 'title' => 'Dual currency', 'desc' => 'Two currencies with exchange rate. Perfect for tourists.'],
-                    ['icon' => 'share', 'title' => 'Social links', 'desc' => 'Instagram, Facebook, WhatsApp. Let customers find you.'],
-                    ['icon' => 'mobile', 'title' => 'Mobile-first', 'desc' => 'Optimized for phones and tablets. Fast, touch-friendly.'],
-                    ['icon' => 'image', 'title' => 'Dish images', 'desc' => 'Upload photos. Auto-optimized for fast loading.'],
-                    ['icon' => 'brand', 'title' => 'Restaurant branding', 'desc' => 'Logo, cover image, name, address on menu.'],
-                    ['icon' => 'allergen', 'title' => 'Ingredients & allergens', 'desc' => 'Display ingredients. Add allergen info per dish.'],
-                    ['icon' => 'seo', 'title' => 'SEO optimized', 'desc' => 'Meta tags, Open Graph. Your menu is discoverable.'],
-                ] as $feature)
-                <div class="flex gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-slate-200/80 hover:border-orange-200 hover:bg-orange-50/50 transition-all duration-200 min-w-0">
-                    <div class="shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-orange-100 flex items-center justify-center">
-                        @if($feature['icon'] === 'qr')
-                        <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
-                        @elseif($feature['icon'] === 'chart')
-                        <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                        @elseif($feature['icon'] === 'rtl')
-                        <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/></svg>
-                        @elseif($feature['icon'] === 'layout')
-                        <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
-                        @elseif($feature['icon'] === 'font')
-                        <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12"/></svg>
-                        @elseif($feature['icon'] === 'currency')
-                        <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        @elseif($feature['icon'] === 'share')
-                        <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
-                        @elseif($feature['icon'] === 'mobile')
-                        <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                        @elseif($feature['icon'] === 'image')
-                        <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                        @elseif($feature['icon'] === 'brand')
-                        <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                        @elseif($feature['icon'] === 'allergen')
-                        <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-                        @else
-                        <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                        @endif
-                    </div>
-                    <div class="min-w-0">
-                        <h3 class="font-semibold text-slate-900 text-xs sm:text-sm">{{ $feature['title'] }}</h3>
-                        <p class="text-slate-500 text-xs mt-0.5 leading-relaxed">{{ $feature['desc'] }}</p>
-                    </div>
-                </div>
-                @endforeach
-            </div>
-        </div>
-    </section>
 
-    {{-- Pricing --}}
-    <section id="pricing" class="pt-8 sm:pt-10 md:pt-12 lg:pt-14 xl:pt-16 pb-8 sm:pb-10 md:pb-12 lg:pb-14 xl:pb-16 bg-white scroll-mt-14 sm:scroll-mt-20">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-10 sm:mb-12 lg:mb-16">
-                <p class="text-xs sm:text-sm font-medium text-orange-600 uppercase tracking-[0.2em] mb-2 sm:mb-3">Pricing</p>
-                <h2 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight mb-3 sm:mb-4">Plans that scale with you</h2>
-                <p class="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto px-2 sm:px-0">Start free. Upgrade when you need more. No hidden fees.</p>
-            </div>
-            <div class="grid lg:grid-cols-2 gap-4 sm:gap-5 lg:gap-6 xl:gap-8">
-                {{-- Free Plan --}}
-                <div class="h-full flex flex-col rounded-xl border border-slate-200/80 p-4 sm:p-5 lg:p-6 xl:p-8 hover:border-orange-200 hover:shadow-lg hover:shadow-orange-100/50 transition-all duration-300">
-                    <div class="flex items-center justify-between mb-4">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-700 border border-orange-100">Most popular</span>
-                        <span class="text-xs font-medium text-slate-500">Free forever</span>
-                    </div>
-                    <h3 class="text-base sm:text-lg font-semibold text-slate-900 mb-0.5">Starter</h3>
-                    <p class="text-slate-600 text-xs sm:text-sm mb-4 sm:mb-6">Perfect for small restaurants and cafés</p>
-                    <div class="flex items-baseline gap-1 mb-4 sm:mb-6">
-                        <span class="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 tracking-tight">$0</span>
-                        <span class="text-slate-500 text-sm font-medium">/month</span>
-                    </div>
-                    @auth
-                        <x-btn href="{{ route('dashboard') }}" variant="primary" size="sm" class="w-full justify-center">Go to dashboard</x-btn>
-                    @else
-                        <x-btn href="{{ route('register') }}" variant="primary" size="sm" class="w-full justify-center">Get started free</x-btn>
-                    @endauth
-                    <div class="border-t border-slate-100 mt-4 sm:mt-6 pt-4 sm:pt-6">
-                        <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2 sm:mb-3">What's included</p>
-                        <ul class="flex flex-col gap-2">
-                            @foreach(['20 categories', 'Up to 80 dishes', 'QR code & shareable link', 'Analytics & statistics', 'All layouts & customization', 'RTL & Arabic support', 'Dual currency display', '30+ Google Fonts'] as $item)
-                            <li class="flex items-center gap-2 text-slate-600">
-                                <span class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-50">
-                                    <svg class="h-2.5 w-2.5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                </span>
-                                <span class="text-xs">{{ $item }}</span>
-                            </li>
-                            @endforeach
-                        </ul>
-                    </div>
+            {{-- Right side --}}
+            <div class="nav-end">
+                {{-- Language toggle (desktop only) --}}
+                <div class="lang-switch nav-lang">
+                    <button :class="lang === 'en' ? 'on' : ''" @click="setLang('en')">EN</button>
+                    <button :class="lang === 'ar' ? 'on' : ''" @click="setLang('ar')">عربي</button>
                 </div>
-                {{-- Enterprise Plan --}}
-                <div class="h-full flex flex-col rounded-xl border border-slate-200/80 p-4 sm:p-5 lg:p-6 xl:p-8 hover:border-orange-200 hover:shadow-lg hover:shadow-orange-100/50 transition-all duration-300">
-                    <div class="flex items-center justify-between mb-4">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-700 border border-orange-100">Premium</span>
-                    </div>
-                    <h3 class="text-base sm:text-lg font-semibold text-slate-900 mb-0.5">Enterprise</h3>
-                    <p class="text-slate-600 text-xs sm:text-sm mb-4 sm:mb-6">For chains, hotels, and high-volume venues</p>
-                    <div class="flex items-baseline gap-1 mb-4 sm:mb-6">
-                        <span class="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 tracking-tight">Custom</span>
-                    </div>
-                    <a href="tel:+96103004699" class="inline-flex w-full items-center justify-center rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition duration-150 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
-                        Contact sales
+
+                {{-- CTA (desktop only) --}}
+                @auth
+                    <a class="btn btn-ink btn-sm nav-cta" href="{{ route('dashboard') }}">
+                        <span x-text="t.nav.dashboard">Dashboard</span>
+                        <svg class="arr" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </a>
-                    <div class="border-t border-slate-100 mt-4 sm:mt-6 pt-4 sm:pt-6">
-                        <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2 sm:mb-3">Everything in Starter, plus</p>
-                        <ul class="flex flex-col gap-2">
-                            @foreach(['Unlimited categories', 'Unlimited dishes', 'Priority support'] as $item)
-                            <li class="flex items-center gap-2 text-slate-600">
-                                <span class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-orange-50">
-                                    <svg class="h-2.5 w-2.5 text-orange-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                </span>
-                                <span class="text-xs">{{ $item }}</span>
-                            </li>
-                            @endforeach
-                        </ul>
+                @else
+                    <a class="btn btn-ink btn-sm nav-cta" href="{{ route('register') }}">
+                        <span x-text="t.nav.cta">Get started free</span>
+                        <svg class="arr" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </a>
+                @endauth
+
+                {{-- Hamburger --}}
+                <button class="nav-burger" @click="mobileOpen = !mobileOpen" :aria-expanded="mobileOpen.toString()" aria-label="Menu">
+                    <svg x-show="!mobileOpen" width="18" height="18" viewBox="0 0 18 18" fill="none">
+                        <path d="M2 4.5h14M2 9h14M2 13.5h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <svg x-show="mobileOpen" width="18" height="18" viewBox="0 0 18 18" fill="none">
+                        <path d="M4 4l10 10M14 4L4 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+
+        </div>
+
+        {{-- Mobile panel --}}
+        <div class="nav-mobile" :class="mobileOpen ? 'nav-mobile--open' : ''">
+            <div class="wrap nav-mobile-inner">
+
+                <div class="nav-mobile-links">
+                    <a href="#features" @click="mobileOpen = false" x-text="t.nav.features">Features</a>
+                    <a href="#how"      @click="mobileOpen = false" x-text="t.nav.how">How it works</a>
+                    <a href="#stories"  @click="mobileOpen = false" x-text="t.nav.stories">Stories</a>
+                </div>
+
+                <div class="nav-mobile-foot">
+                    <div class="lang-switch">
+                        <button :class="lang === 'en' ? 'on' : ''" @click="setLang('en')">EN</button>
+                        <button :class="lang === 'ar' ? 'on' : ''" @click="setLang('ar')">عربي</button>
                     </div>
+                    @auth
+                        <a class="btn btn-ink btn-sm nav-mobile-cta" href="{{ route('dashboard') }}" @click="mobileOpen = false">
+                            <span x-text="t.nav.dashboard">Dashboard</span>
+                            <svg class="arr" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </a>
+                    @else
+                        <a class="btn btn-ink btn-sm nav-mobile-cta" href="{{ route('register') }}" @click="mobileOpen = false">
+                            <span x-text="t.nav.cta">Get started free</span>
+                            <svg class="arr" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </a>
+                    @endauth
+                </div>
+
+            </div>
+        </div>
+    </nav>
+
+    {{-- ─────────────────────────────────────────────────────
+         HERO
+         ───────────────────────────────────────────────────── --}}
+    <section class="hero">
+        <div class="wrap">
+
+            {{-- Headline --}}
+            <h1 class="hero-headline" x-html="t.hero.headline">
+                Menus, <em class="it">reimagined</em> <span class="soft">for your restaurant.</span>
+            </h1>
+
+            {{-- Subhead + CTA row --}}
+            <div class="hero-foot">
+                <div>
+                    <div class="meta">
+                        <span class="dash"></span>
+                        <span x-text="t.hero.meta">The digital menu, refined</span>
+                    </div>
+                    <p class="hero-sub" x-text="t.hero.sub">
+                        MenuX turns every table into a frictionless dining experience — a single QR code, a beautifully designed digital menu, and a dashboard your staff will love.
+                    </p>
+                </div>
+                <div class="hero-actions">
+                    @auth
+                        <a class="btn btn-ink" href="{{ route('dashboard') }}">
+                            <span x-text="t.hero.ctaAuth">Go to dashboard</span>
+                            <svg class="arr" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </a>
+                    @else
+                        <a class="btn btn-ink" href="{{ route('register') }}">
+                            <span x-text="t.hero.cta1">Start for free</span>
+                            <svg class="arr" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </a>
+                        <a class="btn btn-outline" href="#features">
+                            <svg width="11" height="11" viewBox="0 0 11 11" fill="currentColor"><path d="M2 1.5v8L9 5.5z"/></svg>
+                            <span x-text="t.hero.cta2">See how it works</span>
+                        </a>
+                    @endauth
                 </div>
             </div>
-            <p class="text-center text-xs sm:text-sm text-slate-500 mt-6 sm:mt-8 px-2">No credit card required · Get started in minutes</p>
-        </div>
-    </section>
 
-    {{-- Also From Lebify --}}
-    <section class="pt-8 sm:pt-10 md:pt-12 lg:pt-14 xl:pt-16 pb-8 sm:pb-10 md:pb-12 lg:pb-14 xl:pb-16 bg-white scroll-mt-14 sm:scroll-mt-20">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-10 sm:mb-12 lg:mb-16">
-                <p class="text-xs sm:text-sm font-medium text-orange-600 uppercase tracking-[0.2em] mb-2 sm:mb-3">Also from Lebify</p>
-                <h2 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight mb-3 sm:mb-4">More tools to help you succeed</h2>
-                <p class="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto px-2 sm:px-0">Professional tools from the Lebify team</p>
+            {{-- Stats strip --}}
+            <div class="hero-strip">
+                <div>
+                    <div class="k" x-text="t.hero.stats[0].k">No credit card</div>
+                    <div class="v" x-text="t.hero.stats[0].v">Free</div>
+                </div>
+                <div>
+                    <div class="k" x-text="t.hero.stats[1].k">Languages + RTL</div>
+                    <div class="v">10</div>
+                </div>
+                <div>
+                    <div class="k" x-text="t.hero.stats[2].k">Menu load time</div>
+                    <div class="v"><span class="it">‹</span>800<span class="u">ms</span></div>
+                </div>
+                <div>
+                    <div class="k" x-text="t.hero.stats[3].k">Menu updates</div>
+                    <div class="v"><span class="it" style="font-size:.75em;vertical-align:baseline" x-text="t.hero.stats[3].v">Live</span></div>
+                </div>
             </div>
-            <a href="https://cv.lebify.dev" target="_blank" rel="noopener noreferrer" class="group block">
-                <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 p-4 sm:p-5 lg:p-6 rounded-xl border border-slate-200/80 hover:border-orange-200 hover:bg-orange-50/50 transition-all duration-200">
-                    <div class="min-w-0 flex-1">
-                        <h3 class="font-semibold text-slate-900 text-sm sm:text-base">CV Maker</h3>
-                        <p class="text-slate-600 text-xs sm:text-sm mt-1 leading-relaxed">Build a standout resume in minutes. Modern templates, ATS-friendly formatting, and one-click PDF export.</p>
-                        <div class="mt-3 sm:mt-4 flex flex-wrap gap-2">
-                            <span class="inline-flex items-center rounded-full bg-orange-50 px-3 py-1 text-xs font-medium text-orange-700">Modern templates</span>
-                            <span class="inline-flex items-center rounded-full bg-orange-50 px-3 py-1 text-xs font-medium text-orange-700">PDF export</span>
-                            <span class="inline-flex items-center rounded-full bg-orange-50 px-3 py-1 text-xs font-medium text-orange-700">ATS-friendly</span>
+        </div>
+
+        {{-- Showcase: phone + QR card + annotations --}}
+        <div class="hero-showcase">
+            <div class="wrap">
+                <div class="hero-stage">
+
+                    {{-- Left annotation --}}
+                    <div class="annot">
+                        <span class="annot-pill">
+                            <span class="pulse"></span>
+                            <span x-text="t.hero.ann1">Synced with the kitchen</span>
+                        </span>
+                        <div class="annot-card">
+                            <div class="lbl">
+                                <span style="color:var(--accent)">●</span>
+                                <span x-text="t.hero.ann1card.lbl">Live update</span>
+                            </div>
+                            <div class="body" x-text="t.hero.ann1card.body">
+                                Mark a dish unavailable and it disappears across every table in 200ms.
+                            </div>
                         </div>
                     </div>
-                    <div class="shrink-0 flex items-center sm:justify-end">
-                        <span class="inline-flex items-center gap-2 text-xs sm:text-sm font-medium text-orange-600 group-hover:text-orange-700 transition-colors">
-                            Visit
-                            <svg class="h-5 w-5 transition group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
-                        </span>
+
+                    {{-- Center: phone + QR card --}}
+                    <div style="position:relative;display:flex;justify-content:center;align-items:flex-end">
+
+                        {{-- QR table card --}}
+                        <div class="table-card">
+                            <div class="tc-top">
+                                <div class="tc-logo" x-text="isAr ? 'ميزون' : 'Maison'">Maison</div>
+                                <div class="tc-table" x-text="isAr ? 'طاولة ١٤' : '14'">14</div>
+                            </div>
+                            <div class="qr-wrap">
+                                <svg viewBox="0 0 21 21" shape-rendering="crispEdges">
+                                    <g>
+                                        <rect x="0" y="0" width="7" height="7" fill="#E8DCCB"/>
+                                        <rect x="1" y="1" width="5" height="5" fill="#0F0F10"/>
+                                        <rect x="2" y="2" width="3" height="3" fill="#E8DCCB"/>
+                                    </g>
+                                    <g>
+                                        <rect x="14" y="0" width="7" height="7" fill="#E8DCCB"/>
+                                        <rect x="15" y="1" width="5" height="5" fill="#0F0F10"/>
+                                        <rect x="16" y="2" width="3" height="3" fill="#E8DCCB"/>
+                                    </g>
+                                    <g>
+                                        <rect x="0" y="14" width="7" height="7" fill="#E8DCCB"/>
+                                        <rect x="1" y="15" width="5" height="5" fill="#0F0F10"/>
+                                        <rect x="2" y="16" width="3" height="3" fill="#E8DCCB"/>
+                                    </g>
+                                    <rect x="9"  y="0"  width="2" height="4" fill="#E8DCCB"/>
+                                    <rect x="9"  y="6"  width="2" height="2" fill="#E8DCCB"/>
+                                    <rect x="8"  y="9"  width="4" height="2" fill="#E8DCCB"/>
+                                    <rect x="14" y="9"  width="2" height="2" fill="#E8DCCB"/>
+                                    <rect x="18" y="9"  width="3" height="2" fill="#E8DCCB"/>
+                                    <rect x="9"  y="14" width="2" height="4" fill="#E8DCCB"/>
+                                    <rect x="14" y="14" width="3" height="3" fill="#E8DCCB"/>
+                                    <rect x="18" y="14" width="3" height="3" fill="#E8DCCB"/>
+                                    <rect x="14" y="18" width="3" height="3" fill="#E8DCCB"/>
+                                    <rect x="18" y="18" width="3" height="3" fill="#E8DCCB"/>
+                                    <rect x="16" y="16" width="2" height="2" fill="#E8DCCB"/>
+                                </svg>
+                            </div>
+                            <div class="tc-foot">
+                                <b x-text="isAr ? 'امسح للقائمة' : 'SCAN TO ORDER'">SCAN TO ORDER</b>
+                                <span>menux.lebify.dev</span>
+                            </div>
+                        </div>
+
+                        {{-- Phone mockup --}}
+                        <div class="phone">
+                            <div class="phone-notch"></div>
+                            <div class="phone-screen">
+
+                                <div class="ps-status">
+                                    <span x-text="isAr ? '٩:٤١' : '9:41'">9:41</span>
+                                    <span class="ps-icons">
+                                        <svg viewBox="0 0 16 12" fill="currentColor"><path d="M2 8L4 8L4 11L2 11ZM5 6L7 6L7 11L5 11ZM8 4L10 4L10 11L8 11ZM11 1L13 1L13 11L11 11Z"/></svg>
+                                        <svg viewBox="0 0 16 16" fill="none"><path d="M2 7a8 8 0 0112 0M5 10a5 5 0 016 0M8 13a2 2 0 012 0" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+                                        <svg viewBox="0 0 24 12" fill="none"><rect x="1" y="2" width="20" height="8" rx="2" stroke="currentColor" stroke-width="1"/><rect x="3" y="4" width="13" height="4" fill="currentColor"/><path d="M22 4V8" stroke="currentColor" stroke-linecap="round"/></svg>
+                                    </span>
+                                </div>
+
+                                <div class="ps-header">
+                                    <div>
+                                        <div class="ps-rest" x-text="isAr ? 'ميزون أران' : 'Maison Aran'">Maison Aran</div>
+                                        <div style="font-size:9px;color:var(--muted);margin-top:2px" x-text="isAr ? 'قائمة المساء' : 'Evening menu'">Evening menu</div>
+                                    </div>
+                                    <div class="ps-tbl" x-text="isAr ? 'طاولة ١٤' : 'Table 14'">Table 14</div>
+                                </div>
+
+                                <div class="ps-tabs">
+                                    <span x-text="isAr ? 'المقبلات' : 'Mezze'">Mezze</span>
+                                    <span class="on" x-text="isAr ? 'الرئيسية' : 'Mains'">Mains</span>
+                                    <span x-text="isAr ? 'الحلويات' : 'Desserts'">Desserts</span>
+                                    <span x-text="isAr ? 'مشروبات' : 'Drinks'">Drinks</span>
+                                </div>
+
+                                <div class="ps-list">
+                                    <div class="ps-item">
+                                        <div>
+                                            <div class="name" x-text="isAr ? 'كباب الضأن المشوي' : 'Slow-Roast Lamb Shank'">Slow-Roast Lamb Shank</div>
+                                            <div class="desc" x-text="isAr ? 'بهارات شامية، أرز بسمتي، طحينة' : 'Levantine spice, basmati, tahini jus'">Levantine spice, basmati, tahini jus</div>
+                                        </div>
+                                        <div class="price" x-text="isAr ? '٧٨ ر.س' : '78 SAR'">78 SAR</div>
+                                    </div>
+                                    <div class="ps-item with-img">
+                                        <div class="thumb"></div>
+                                        <div>
+                                            <div class="name" x-text="isAr ? 'تبولة بقدونس بلدي' : 'Heritage Tabbouleh'">Heritage Tabbouleh</div>
+                                            <div class="desc" x-text="isAr ? 'بقدونس مفروم، بلغار، سماق' : 'Hand-cut parsley, bulgur, sumac'">Hand-cut parsley, bulgur, sumac</div>
+                                        </div>
+                                        <div class="price" x-text="isAr ? '٣٢ ر.س' : '32 SAR'">32 SAR</div>
+                                    </div>
+                                    <div class="ps-item">
+                                        <div>
+                                            <div class="name" x-text="isAr ? 'حمص بيت قائمة' : 'House Hummus'">House Hummus</div>
+                                            <div class="desc" x-text="isAr ? 'حمص مهروس، زيت زيتون، صنوبر' : 'Beit blend, smoked oil, pine'">Beit blend, smoked oil, pine</div>
+                                        </div>
+                                        <div class="price" x-text="isAr ? '٢٦ ر.س' : '26 SAR'">26 SAR</div>
+                                    </div>
+                                    <div class="ps-item with-img">
+                                        <div class="thumb"></div>
+                                        <div>
+                                            <div class="name" x-text="isAr ? 'سمك سيد محشي' : 'Stuffed Sea Bass'">Stuffed Sea Bass</div>
+                                            <div class="desc" x-text="isAr ? 'سمك متوسطي، أرز جوهري' : 'Mediterranean catch, jeweled rice'">Mediterranean catch, jeweled rice</div>
+                                        </div>
+                                        <div class="price" x-text="isAr ? '٩٤ ر.س' : '94 SAR'">94 SAR</div>
+                                    </div>
+                                </div>
+
+                                <div class="ps-footbar">
+                                    <div style="font-size:10px;color:var(--muted)" x-text="isAr ? '٤ أصناف' : '4 items'">4 items</div>
+                                    <div class="ps-cart">
+                                        <span class="cart-count">2</span>
+                                        <span x-text="isAr ? 'عرض الطلب · ١١٠ ر.س' : 'View order · 110 SAR'">View order · 110 SAR</span>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
                     </div>
+
+                    {{-- Right annotation --}}
+                    <div class="annot annot-right">
+                        <span class="annot-pill">
+                            <span x-text="t.hero.ann2">No app · zero friction</span>
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </span>
+                        <div class="annot-card">
+                            <div class="lbl">
+                                <span x-text="t.hero.ann2card.lbl">Guest experience</span>
+                                &nbsp;·&nbsp;
+                                <span style="color:var(--accent)">4.9</span>
+                            </div>
+                            <div class="body" x-text="t.hero.ann2card.body">
+                                "It felt like the restaurant cared about us before we ordered."
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
-            </a>
+            </div>
         </div>
     </section>
 
-    {{-- Footer --}}
-    <footer id="contact" class="bg-white border-t border-slate-200 scroll-mt-14 sm:scroll-mt-20">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-14 lg:py-16">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10 lg:gap-8">
-                <div class="sm:col-span-2 lg:col-span-1">
-                    <a href="{{ url('/') }}#hero" class="flex items-center mb-3 sm:mb-4">
-                        <img src="{{ asset('images/logo/Light BG Lebify Logo.svg') }}" alt="MenuX by Lebify" class="h-20 sm:h-24 lg:h-28 w-auto">
-                    </a>
-                    <p class="text-slate-600 text-xs sm:text-sm leading-relaxed">Digital menus for your restaurant by Lebify Group. Free to start, easy to use.</p>
-                </div>
-                <div>
-                    <h4 class="font-semibold text-slate-900 mb-3 sm:mb-4 text-xs sm:text-sm uppercase tracking-wider">Quick links</h4>
-                    <ul class="flex flex-col gap-2 sm:gap-3">
-                        <li><a href="#how-it-works" class="text-slate-600 hover:text-orange-600 transition-colors text-sm">How it works</a></li>
-                        <li><a href="#features" class="text-slate-600 hover:text-orange-600 transition-colors text-sm">Features</a></li>
-                        <li><a href="#pricing" class="text-slate-600 hover:text-orange-600 transition-colors text-sm">Pricing</a></li>
-                        @guest
-                        <li><a href="{{ route('login') }}" class="text-slate-600 hover:text-orange-600 transition-colors text-sm">Sign in</a></li>
-                        <li><a href="{{ route('register') }}" class="text-slate-600 hover:text-orange-600 transition-colors text-sm">Register</a></li>
-                        @endguest
-                        <li><a href="https://lebify.dev" target="_blank" rel="noopener noreferrer" class="text-slate-600 hover:text-orange-600 transition-colors text-sm">Lebify</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="font-semibold text-slate-900 mb-3 sm:mb-4 text-xs sm:text-sm uppercase tracking-wider">Contact</h4>
-                    <ul class="flex flex-col gap-3 sm:gap-4">
-                        <li>
-                            <a href="tel:+96103004699" class="flex items-center gap-3 text-slate-600 hover:text-orange-600 transition-colors group">
-                                <span class="w-9 h-9 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center group-hover:bg-orange-100 group-hover:border-orange-200 transition-colors">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
-                                </span>
-                                <span>+961 03 004 699</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="mailto:dany.a.seifeddine@gmail.com" class="flex items-center gap-3 text-slate-600 hover:text-orange-600 transition-colors group">
-                                <span class="w-9 h-9 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center group-hover:bg-orange-100 group-hover:border-orange-200 transition-colors">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                                </span>
-                                <span class="break-all">dany.a.seifeddine@gmail.com</span>
-                            </a>
-                        </li>
-                        <li>
-                            <div class="flex items-start gap-3 text-slate-600">
-                                <span class="w-9 h-9 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center shrink-0">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                                </span>
-                                <span>Barja, Lebanon</span>
-                            </div>
-                        </li>
-                        <li>
-                            <a href="https://www.instagram.com/lebify_team/" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 text-slate-600 hover:text-orange-600 transition-colors group">
-                                <span class="w-9 h-9 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center group-hover:bg-orange-100 group-hover:border-orange-200 transition-colors">
-                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-                                </span>
-                                <span>@lebify_team</span>
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="font-semibold text-slate-900 mb-3 sm:mb-4 text-xs sm:text-sm uppercase tracking-wider">Get started</h4>
-                    <p class="text-slate-600 text-xs sm:text-sm mb-3 sm:mb-4">Create your free menu in minutes.</p>
-                    @guest
-                    <x-btn href="{{ route('register') }}" variant="primary" size="sm">Get started free</x-btn>
-                    @else
-                    <x-btn href="{{ route('dashboard') }}" variant="primary" size="sm">Dashboard</x-btn>
-                    @endguest
-                </div>
+    {{-- ─────────────────────────────────────────────────────
+         LOGOS
+         ───────────────────────────────────────────────────── --}}
+    <div class="logos">
+        <div class="wrap logos-inner">
+            <p class="logos-label" x-text="t.logos.label">Used by restaurant owners across the region</p>
+            <div class="logos-row">
+                <template x-for="(item, i) in t.logos.items" :key="i">
+                    <div class="logo-mark">
+                        <span :class="i % 2 === 0 ? 'it' : ''" x-text="item"></span>
+                    </div>
+                </template>
             </div>
-            <div class="border-t border-slate-200 mt-8 sm:mt-10 lg:mt-12 pt-6 sm:pt-8 flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4 text-center sm:text-left">
-                <p class="text-slate-500 text-xs sm:text-sm">&copy; {{ date('Y') }} MenuX by <a href="https://lebify.dev" target="_blank" rel="noopener noreferrer" class="text-orange-600 hover:text-orange-700 transition-colors font-medium">Lebify Team</a>. All rights reserved.</p>
-                <p class="text-slate-500 text-xs sm:text-sm">Lebify · Barja, Lebanon</p>
+        </div>
+    </div>
+
+    {{-- ─────────────────────────────────────────────────────
+         PROBLEM
+         ───────────────────────────────────────────────────── --}}
+    <section id="problem" class="section light-2">
+        <div class="wrap">
+
+            {{-- Section head --}}
+            <div class="section-head">
+                <div>
+                    <div class="eyebrow"><span class="dot"></span> <span x-text="t.problem.eyebrow">The problem</span></div>
+                    <h2 style="margin-top:18px" x-html="t.problem.headline">
+                        Paper menus belong <em class="it">in the past.</em>
+                    </h2>
+                </div>
+                <p class="right" x-text="t.problem.sub">
+                    Every minute a guest waits for a menu, a refill, or the bill, your kitchen falls further behind and your reviews get a little colder.
+                </p>
+            </div>
+
+            {{-- Cards --}}
+            <div class="problem-grid">
+
+                {{-- Card 1: The wait --}}
+                <div class="problem-card">
+                    <div class="strike-ill">
+                        <svg viewBox="0 0 56 56" fill="none">
+                            <path d="M14 6H42M14 50H42M14 6V14C14 22 28 24 28 28C28 32 14 34 14 42V50M42 6V14C42 22 28 24 28 28C28 32 42 34 42 42V50" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                            <path d="M22 14H34M22 42H34" stroke="currentColor" stroke-width="1.5"/>
+                            <line x1="6" y1="50" x2="50" y2="6" stroke="#C8543A" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div class="problem-num" x-text="t.problem.cards[0].n">01</div>
+                    <h3 x-text="t.problem.cards[0].h">The endless wait</h3>
+                    <p style="margin-top:8px" x-text="t.problem.cards[0].p">Guests stare at a sticky laminated menu while servers run between tables. Orders arrive late, food arrives later.</p>
+                </div>
+
+                {{-- Card 2: The reprint cycle --}}
+                <div class="problem-card">
+                    <div class="strike-ill">
+                        <svg viewBox="0 0 56 56" fill="none">
+                            <rect x="14" y="6" width="28" height="44" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                            <path d="M19 16H37M19 22H37M19 28H32M19 34H37M19 40H30" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                            <line x1="6" y1="50" x2="50" y2="6" stroke="#C8543A" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div class="problem-num" x-text="t.problem.cards[1].n">02</div>
+                    <h3 x-text="t.problem.cards[1].h">The reprint cycle</h3>
+                    <p style="margin-top:8px" x-text="t.problem.cards[1].p">Change a price, update a special, swap a dish — wait three days for the printer. Your menu is always slightly out of date.</p>
+                </div>
+
+                {{-- Card 3: No insight --}}
+                <div class="problem-card">
+                    <div class="strike-ill">
+                        <svg viewBox="0 0 56 56" fill="none">
+                            <path d="M10 10H44V46L40 42L36 46L32 42L28 46L24 42L20 46L16 42L12 46L10 44Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                            <path d="M16 18H38M16 24H38M16 30H30" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                            <line x1="6" y1="50" x2="50" y2="6" stroke="#C8543A" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div class="problem-num" x-text="t.problem.cards[2].n">03</div>
+                    <h3 x-text="t.problem.cards[2].h">No insight at all</h3>
+                    <p style="margin-top:8px" x-text="t.problem.cards[2].p">Paper menus don't tell you which dishes get looked at, how long people browse, or what they skip. You're running blind.</p>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    {{-- ─────────────────────────────────────────────────────
+         SOLUTION
+         ───────────────────────────────────────────────────── --}}
+    <section id="solution" class="section light">
+        <div class="wrap">
+
+            {{-- Section head --}}
+            <div class="section-head">
+                <div>
+                    <div class="eyebrow"><span class="dot"></span> <span x-text="t.solution.eyebrow">The solution</span></div>
+                    <h2 style="margin-top:18px" x-html="t.solution.headline">
+                        One QR. One menu. <em class="it">Everything in sync.</em>
+                    </h2>
+                </div>
+                <p class="right" x-text="t.solution.sub">
+                    MenuX is the layer between your kitchen and your guest's phone. No app downloads. No clunky tablets. Just a beautiful, always-current menu.
+                </p>
+            </div>
+
+            {{-- Feature rows --}}
+            <div class="solution-stack">
+
+                {{-- Row 1: Real-time (text left, dark vis right) --}}
+                <div class="feat-row">
+                    <div class="feat-text">
+                        <div class="eyebrow"><span class="dot"></span> <span x-text="t.solution.rows[0].tag">Real-time</span></div>
+                        <h3 x-text="t.solution.rows[0].h">A menu that updates the moment your kitchen does.</h3>
+                        <p x-text="t.solution.rows[0].p">Mark a dish 86'd from the dashboard and it disappears across every table instantly. Add a special? It's live in seconds.</p>
+                        <ul class="feat-bullets">
+                            <template x-for="b in t.solution.rows[0].bullets" :key="b">
+                                <li>
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7.5l3 3 5-6.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    <span x-text="b"></span>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+                    {{-- Vis 1: Live menu panel --}}
+                    <div class="feat-vis dark-vis" style="padding:40px">
+                        <div style="background:rgba(255,255,255,.03);border:.5px solid rgba(255,255,255,.08);border-radius:12px;padding:18px;color:var(--paper);max-width:360px;margin:40px auto">
+                            <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:rgba(246,241,232,.5)">
+                                <span>● Live</span><span x-text="isAr ? 'الرئيسية' : 'Mains'">Mains</span>
+                            </div>
+                            <div style="margin-top:16px;display:flex;flex-direction:column;gap:14px">
+                                <div style="display:flex;justify-content:space-between;align-items:center;font-size:14px;opacity:.32">
+                                    <span style="text-decoration:line-through" x-text="isAr ? 'كباب الضأن المشوي' : 'Slow-Roast Lamb Shank'">Slow-Roast Lamb Shank</span>
+                                    <span style="color:var(--accent-soft)">78 SAR</span>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;align-items:center;font-size:14px">
+                                    <span x-text="isAr ? 'سمك سيد محشي' : 'Wood-Fire Sea Bass'">Wood-Fire Sea Bass</span>
+                                    <span style="color:var(--accent-soft)">94 SAR</span>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;align-items:center;font-size:14px">
+                                    <span style="display:flex;align-items:center;gap:8px">
+                                        <span style="background:var(--accent);color:var(--ink);font-size:9px;padding:2px 7px;border-radius:999px;letter-spacing:.08em;text-transform:uppercase;font-weight:600" x-text="isAr ? 'جديد' : 'New'">New</span>
+                                        <span x-text="isAr ? 'منسف الكمأة' : 'Truffle Mansaf'">Truffle Mansaf</span>
+                                    </span>
+                                    <span style="color:var(--accent-soft)">120 SAR</span>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;align-items:center;font-size:14px">
+                                    <span x-text="isAr ? 'ريبآي معتّق 280 غ' : 'Aged Ribeye, 280g'">Aged Ribeye, 280g</span>
+                                    <span style="color:var(--accent-soft)">165 SAR</span>
+                                </div>
+                            </div>
+                            <div style="margin-top:24px;padding-top:16px;border-top:.5px solid rgba(255,255,255,.08);font-size:11px;color:rgba(246,241,232,.45)" x-text="isAr ? 'مزامنة منذ ثانيتين · 18 طاولة' : 'Synced 2s ago · across 18 tables'">
+                                Synced 2s ago · across 18 tables
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Row 2: Multilingual (text right, light vis left) --}}
+                <div class="feat-row reverse">
+                    <div class="feat-text">
+                        <div class="eyebrow"><span class="dot"></span> <span x-text="t.solution.rows[1].tag">Multilingual</span></div>
+                        <h3 x-text="t.solution.rows[1].h">Designed for guests in their own language.</h3>
+                        <p x-text="t.solution.rows[1].p">10 language presets with native Arabic RTL support. Your menu looks and reads perfectly whether the guest is local or visiting from abroad.</p>
+                        <ul class="feat-bullets">
+                            <template x-for="b in t.solution.rows[1].bullets" :key="b">
+                                <li>
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7.5l3 3 5-6.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    <span x-text="b"></span>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+                    {{-- Vis 2: Two language cards --}}
+                    <div class="feat-vis" style="padding:32px;position:relative">
+                        <div style="position:absolute;inset:0;background:linear-gradient(160deg,var(--sand) 0%,var(--paper-2) 100%)"></div>
+                        <div style="position:relative;height:100%;display:flex;align-items:center;justify-content:center;gap:18px">
+                            {{-- EN card --}}
+                            <div style="width:190px;background:var(--paper);border-radius:14px;padding:18px;box-shadow:0 20px 40px -20px rgba(0,0,0,.18);transform:rotate(-4deg) translateY(-10px);border:.5px solid var(--line);direction:ltr;font-family:var(--font-sans)">
+                                <div style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:12px">EN</div>
+                                <div style="width:100%;aspect-ratio:4/3;border-radius:8px;background:linear-gradient(135deg,#6B5B3F,#3D3324);margin-bottom:14px"></div>
+                                <div style="font-size:13px;font-weight:500;line-height:1.25;margin-bottom:4px">Slow-Roast Lamb Shank</div>
+                                <div style="font-size:10px;color:var(--muted);line-height:1.4;margin-bottom:12px">Levantine spice, tahini</div>
+                                <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
+                                    <span style="color:var(--accent);font-weight:500">78 SAR</span>
+                                    <span style="width:20px;height:20px;border-radius:50%;background:var(--ink);color:var(--paper);display:grid;place-items:center;font-size:13px">+</span>
+                                </div>
+                            </div>
+                            {{-- AR card --}}
+                            <div style="width:190px;background:var(--paper);border-radius:14px;padding:18px;box-shadow:0 20px 40px -20px rgba(0,0,0,.18);transform:rotate(4deg) translateY(14px);border:.5px solid var(--line);direction:rtl;font-family:var(--font-ar)">
+                                <div style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:12px">عربي</div>
+                                <div style="width:100%;aspect-ratio:4/3;border-radius:8px;background:linear-gradient(135deg,#6B5B3F,#3D3324);margin-bottom:14px"></div>
+                                <div style="font-size:13px;font-weight:500;line-height:1.25;margin-bottom:4px">كباب الضأن المشوي</div>
+                                <div style="font-size:10px;color:var(--muted);line-height:1.4;margin-bottom:12px">بهارات شامية، طحينة</div>
+                                <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
+                                    <span style="color:var(--accent);font-weight:500">٧٨ ر.س</span>
+                                    <span style="width:20px;height:20px;border-radius:50%;background:var(--ink);color:var(--paper);display:grid;place-items:center;font-size:13px">+</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Row 3: Dashboard (text left, light vis right) --}}
+                <div class="feat-row">
+                    <div class="feat-text">
+                        <div class="eyebrow"><span class="dot"></span> <span x-text="t.solution.rows[2].tag">Dashboard</span></div>
+                        <h3 x-text="t.solution.rows[2].h">A back-of-house tool that doesn't fight you back.</h3>
+                        <p x-text="t.solution.rows[2].p">Upload dishes. Set categories. Customize layouts, fonts, and colors. Track visitor stats. No training required.</p>
+                        <ul class="feat-bullets">
+                            <template x-for="b in t.solution.rows[2].bullets" :key="b">
+                                <li>
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7.5l3 3 5-6.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    <span x-text="b"></span>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+                    {{-- Vis 3: Dashboard mockup --}}
+                    <div class="feat-vis" style="background:linear-gradient(160deg,var(--paper-2),var(--sand));padding:24px">
+                        <div style="background:var(--paper);border-radius:12px;height:100%;box-shadow:0 20px 40px -22px rgba(0,0,0,.2);border:.5px solid var(--line);overflow:hidden;display:flex;flex-direction:column">
+                            {{-- Title bar --}}
+                            <div style="padding:12px 18px;border-bottom:.5px solid var(--line);display:flex;align-items:center;justify-content:space-between">
+                                <div style="display:flex;gap:6px">
+                                    <span style="width:9px;height:9px;border-radius:50%;background:#E2796B"></span>
+                                    <span style="width:9px;height:9px;border-radius:50%;background:#E8C25C"></span>
+                                    <span style="width:9px;height:9px;border-radius:50%;background:var(--accent-soft)"></span>
+                                </div>
+                                <span style="color:var(--muted);font-size:11px;font-family:var(--font-display);font-style:italic">Qayema · dashboard</span>
+                                <span></span>
+                            </div>
+                            {{-- Body --}}
+                            <div style="display:grid;grid-template-columns:120px 1fr;flex:1">
+                                {{-- Sidebar --}}
+                                <div style="border-right:.5px solid var(--line);padding:16px;font-size:11px;color:var(--muted);display:flex;flex-direction:column;gap:12px">
+                                    <span>Overview</span>
+                                    <span style="color:var(--ink);font-weight:500"><span style="color:var(--accent);margin-right:6px">●</span>Menu</span>
+                                    <span>Dishes</span>
+                                    <span>Analytics</span>
+                                    <span>QR Code</span>
+                                    <span>Settings</span>
+                                </div>
+                                {{-- Content --}}
+                                <div style="padding:18px;display:flex;flex-direction:column;gap:10px">
+                                    <div style="font-size:13px;font-weight:500;margin-bottom:4px" x-text="isAr ? 'الرئيسية' : 'Mains'">Mains</div>
+                                    <div style="display:grid;grid-template-columns:1fr 60px 40px;align-items:center;padding:8px 12px;background:var(--paper-2);border-radius:6px;font-size:11.5px">
+                                        <span x-text="isAr ? 'كباب الضأن' : 'Slow-Roast Lamb'">Slow-Roast Lamb</span>
+                                        <span style="display:inline-flex;align-items:center;gap:4px;color:var(--accent)"><span style="width:6px;height:6px;border-radius:50%;background:var(--accent)"></span><span x-text="isAr ? 'نشط' : 'Active'">Active</span></span>
+                                        <span style="text-align:right;color:var(--ink)">78</span>
+                                    </div>
+                                    <div style="display:grid;grid-template-columns:1fr 60px 40px;align-items:center;padding:8px 12px;background:var(--paper-2);border-radius:6px;font-size:11.5px">
+                                        <span x-text="isAr ? 'سمك سيد' : 'Wood-Fire Bass'">Wood-Fire Bass</span>
+                                        <span style="display:inline-flex;align-items:center;gap:4px;color:var(--accent)"><span style="width:6px;height:6px;border-radius:50%;background:var(--accent)"></span><span x-text="isAr ? 'نشط' : 'Active'">Active</span></span>
+                                        <span style="text-align:right;color:var(--ink)">94</span>
+                                    </div>
+                                    <div style="display:grid;grid-template-columns:1fr 60px 40px;align-items:center;padding:8px 12px;background:var(--paper-2);border-radius:6px;font-size:11.5px">
+                                        <span x-text="isAr ? 'منسف الكمأة' : 'Truffle Mansaf'">Truffle Mansaf</span>
+                                        <span style="display:inline-flex;align-items:center;gap:4px;color:var(--muted)"><span style="width:6px;height:6px;border-radius:50%;background:var(--muted)"></span><span x-text="isAr ? 'مسودة' : 'Draft'">Draft</span></span>
+                                        <span style="text-align:right;color:var(--ink)">120</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    {{-- ─────────────────────────────────────────────────────
+         FEATURES GRID
+         ───────────────────────────────────────────────────── --}}
+    <section id="features" class="section light-2">
+        <div class="wrap">
+
+            <div class="section-head">
+                <div>
+                    <div class="eyebrow"><span class="dot"></span> <span x-text="t.features.eyebrow">Everything you need</span></div>
+                    <h2 style="margin-top:18px" x-html="t.features.headline">
+                        A complete restaurant <em class="it">menu platform.</em>
+                    </h2>
+                </div>
+                <p class="right" x-text="t.features.sub">
+                    Every feature your restaurant needs — from the QR code on the table to the analytics in the dashboard.
+                </p>
+            </div>
+
+            <div class="features-grid">
+                <template x-for="(f, i) in t.features.items" :key="i">
+                    <div class="feature-cell">
+                        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" x-html="f.icon"></svg>
+                        <h3 x-text="f.h"></h3>
+                        <p x-text="f.p"></p>
+                        <div class="meta" x-text="f.meta"></div>
+                    </div>
+                </template>
+            </div>
+
+        </div>
+    </section>
+
+    {{-- ─────────────────────────────────────────────────────
+         HOW IT WORKS
+         ───────────────────────────────────────────────────── --}}
+    <section id="how" class="section dark">
+        <div class="wrap">
+
+            <div class="section-head">
+                <div>
+                    <div class="eyebrow"><span class="dot"></span> <span x-text="t.how.eyebrow">How it works</span></div>
+                    <h2 style="margin-top:18px" x-html="t.how.headline">
+                        Up and running <em class="it">in under 10 minutes.</em>
+                    </h2>
+                </div>
+                <p class="right" x-text="t.how.sub">
+                    No developer needed. No onboarding call. Sign up, add your dishes, and your guests are scanning within the hour.
+                </p>
+            </div>
+
+            <div class="steps">
+                <template x-for="(step, i) in t.how.steps" :key="i">
+                    <div class="step">
+                        <div class="step-num" x-text="step.n">01</div>
+                        <h3 x-text="step.h"></h3>
+                        <p x-text="step.p"></p>
+                        <div class="step-vis" x-html="step.vis"></div>
+                    </div>
+                </template>
+            </div>
+
+        </div>
+    </section>
+
+    {{-- ─────────────────────────────────────────────────────
+         TESTIMONIALS
+         ───────────────────────────────────────────────────── --}}
+    <section id="stories" class="section light">
+        <div class="wrap">
+
+            <div class="section-head">
+                <div>
+                    <div class="eyebrow"><span class="dot"></span> <span x-text="t.testimonials.eyebrow">Stories</span></div>
+                    <h2 style="margin-top:18px" x-html="t.testimonials.headline">
+                        Restaurateurs <em class="it">speak for themselves.</em>
+                    </h2>
+                </div>
+                <p class="right" x-text="t.testimonials.sub">
+                    From fast-casual to fine dining — MenuX fits the way your restaurant actually runs.
+                </p>
+            </div>
+
+            <div class="quote-grid">
+                {{-- Feature quote --}}
+                <div class="quote-card feature">
+                    <div>
+                        <div class="quote-mark">"</div>
+                        <p class="quote-text" x-text="t.testimonials.quotes[0].q"></p>
+                    </div>
+                    <div class="quote-meta">
+                        <div class="quote-avatar"></div>
+                        <div>
+                            <div class="who" x-text="t.testimonials.quotes[0].who"></div>
+                            <div class="role" x-text="t.testimonials.quotes[0].role"></div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Regular quotes --}}
+                <template x-for="(q, i) in t.testimonials.quotes.slice(1)" :key="i">
+                    <div class="quote-card">
+                        <div>
+                            <div class="quote-mark">"</div>
+                            <p class="quote-text" x-text="q.q"></p>
+                        </div>
+                        <div class="quote-meta">
+                            <div class="quote-avatar"></div>
+                            <div>
+                                <div class="who" x-text="q.who"></div>
+                                <div class="role" x-text="q.role"></div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+        </div>
+    </section>
+
+    {{-- ─────────────────────────────────────────────────────
+         CTA
+         ───────────────────────────────────────────────────── --}}
+    <section class="cta-section">
+        <div class="wrap">
+            <div class="eyebrow" style="justify-content:center;margin-bottom:28px"><span class="dot" style="background:var(--accent-soft)"></span> <span style="color:var(--accent-soft)" x-text="t.cta.eyebrow">Free to start</span></div>
+            <h2 x-html="t.cta.headline">Ready to modernise <em class="it">your menu?</em></h2>
+            <p x-text="t.cta.sub">Join restaurant owners already using MenuX. No credit card needed.</p>
+            <div class="cta-actions">
+                @auth
+                    <a class="btn btn-primary" href="{{ route('dashboard') }}">
+                        <span x-text="t.nav.dashboard">Dashboard</span>
+                        <svg class="arr" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </a>
+                @else
+                    <a class="btn btn-primary" href="{{ route('register') }}">
+                        <span x-text="t.cta.cta1">Start for free</span>
+                        <svg class="arr" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </a>
+                    <a class="btn btn-ghost" href="#how" x-text="t.cta.cta2">See how it works</a>
+                @endauth
+            </div>
+            <p class="cta-fineprint" x-text="t.cta.fine">Free forever on the starter plan. Upgrade when you're ready.</p>
+        </div>
+    </section>
+
+    {{-- ─────────────────────────────────────────────────────
+         FOOTER
+         ───────────────────────────────────────────────────── --}}
+    <footer>
+        <div class="wrap">
+            <div class="foot-grid">
+
+                {{-- Brand column --}}
+                <div>
+                    <a href="/" style="display:inline-block;margin-bottom:16px">
+                        <img src="{{ asset('images/logo/logo.png') }}" alt="Qayema" class="brand-logo-footer">
+                    </a>
+                    <p style="font-size:13.5px;line-height:1.6;max-width:28ch;margin:0" x-text="t.footer.tagline">
+                        The digital menu your restaurant deserves.
+                    </p>
+                </div>
+
+                {{-- Link columns --}}
+                <template x-for="(col, i) in t.footer.cols" :key="i">
+                    <div>
+                        <h4 x-text="col.title"></h4>
+                        <ul>
+                            <template x-for="(link, j) in col.links" :key="j">
+                                <li><a :href="link.href" x-text="link.label"></a></li>
+                            </template>
+                        </ul>
+                    </div>
+                </template>
+
+            </div>
+
+            <div class="foot-bottom">
+                <span x-text="t.footer.copy">© 2025 Lebify Group. All rights reserved.</span>
+                <span x-text="t.footer.made">Made with care in Beirut.</span>
             </div>
         </div>
     </footer>
 
-    <script>
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            });
-        });
-    </script>
+</div>{{-- end #page --}}
+
+{{-- ─────────────────────────────────────────────────────
+     Alpine.js data
+     ───────────────────────────────────────────────────── --}}
+<script>
+function menuXApp() {
+    const copy = {
+        en: {
+            nav: {
+                features:  'Features',
+                how:       'How it works',
+                stories:   'Stories',
+                dashboard: 'Dashboard',
+                signin:    'Sign in',
+                cta:       'Get started free',
+            },
+            hero: {
+                headline:  'Menus, <em class="it">reimagined</em> <span class="soft">for your restaurant.</span>',
+                meta:      'The digital menu, refined',
+                sub:       'Qayema turns every table into a frictionless dining experience — a single QR code, a beautifully designed digital menu, and a dashboard your staff will love.',
+                cta1:      'Start for free',
+                cta2:      'See how it works',
+                ctaAuth:   'Go to dashboard',
+                stats: [
+                    { k: 'No credit card',  v: 'Free' },
+                    { k: 'Languages + RTL', v: '10'   },
+                    { k: 'Menu load time',  v: ''     },
+                    { k: 'Menu updates',    v: 'Live' },
+                ],
+                ann1:     'Synced with the kitchen',
+                ann1card: { lbl: 'Live update',      body: 'Mark a dish unavailable and it disappears across every table in 200ms.' },
+                ann2:     'No app · zero friction',
+                ann2card: { lbl: 'Guest experience', body: '"It felt like the restaurant cared about us before we ordered."' },
+            },
+            logos: {
+                label: 'Used by restaurant owners from Beirut to Dubai',
+                items: ['Maison Aran', 'Olea & Co.', 'Sabor', 'Fenwick', 'Casa Lume', 'North Quarter'],
+            },
+            problem: {
+                eyebrow:  'The problem',
+                headline: 'Paper menus belong <em class="it">in the past.</em>',
+                sub:      'Every minute a guest waits for a menu, a refill, or the bill, your kitchen falls further behind and your reviews get a little colder.',
+                cards: [
+                    { n: '01', h: 'The endless wait',    p: 'Guests stare at a sticky laminated menu while servers run between tables. Orders arrive late, food arrives later.' },
+                    { n: '02', h: 'The reprint cycle',   p: 'Change a price, update a special, swap a dish — wait three days for the printer. Your menu is always slightly out of date.' },
+                    { n: '03', h: 'No insight at all',   p: "Paper menus don't tell you which dishes get looked at, how long people browse, or what they skip. You're running blind." },
+                ],
+            },
+            solution: {
+                eyebrow: 'The solution',
+                headline: 'One QR. One menu. <em class="it">Everything in sync.</em>',
+                sub:     "Qayema is the layer between your kitchen and your guest's phone. No app downloads. No clunky tablets. Just a beautiful, always-current menu.",
+                rows: [
+                    {
+                        tag:     'Real-time',
+                        h:       'A menu that updates the moment your kitchen does.',
+                        p:       "Mark a dish 86'd from the dashboard and it disappears across every table instantly. Add a special? It's live in seconds.",
+                        bullets: ['Zero-latency updates across all devices', 'Mark dishes unavailable without reprinting', 'Add specials from your phone in 30 seconds'],
+                    },
+                    {
+                        tag:     'Multilingual',
+                        h:       'Designed for guests in their own language.',
+                        p:       '10 language presets with native Arabic RTL support. Your menu looks and reads perfectly whether the guest is local or visiting from abroad.',
+                        bullets: ['10 language presets including Arabic RTL', 'Guests switch language with one tap', 'Typography tuned for every script'],
+                    },
+                    {
+                        tag:     'Dashboard',
+                        h:       "A back-of-house tool that doesn't fight you back.",
+                        p:       'Upload dishes. Set categories. Customize layouts, fonts, and colors. Track visitor stats. No training required.',
+                        bullets: ['Drag-and-drop dish management', 'Real-time visitor analytics', 'Custom colors, fonts, and layouts'],
+                    },
+                ],
+            },
+            features: {
+                eyebrow: 'Everything you need',
+                headline: 'A complete restaurant <em class="it">menu platform.</em>',
+                sub:     'Every feature your restaurant needs — from the QR code on the table to the analytics in the dashboard.',
+                items: [
+                    { icon: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h.01M17 14h.01M14 17h.01M17 17h.01M20 14h.01M20 17h.01M14 20h.01M17 20h.01M20 20h.01"/>',  h: 'QR Code',           p: 'Your table card is ready the moment your menu goes live. Download, print, laminate.',                        meta: 'Printable PDF'     },
+                    { icon: '<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>',                                                                                                                                                                                            h: 'Real-time sync',    p: 'Mark a dish unavailable and it disappears everywhere in under 200ms. No delay, no lag.',                    meta: 'Live updates'      },
+                    { icon: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',                                                                                       h: '10 Languages',      p: 'Arabic RTL, English, French, Turkish, Spanish and more. Guests pick theirs with one tap.',                  meta: 'Incl. RTL'         },
+                    { icon: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>',                                                                                                                       h: 'Photo uploads',     p: 'Auto-optimised dish photos that look great on any screen, fast on any connection.',                          meta: 'Auto-resize'       },
+                    { icon: '<path d="M18 20V10M12 20V4M6 20v-6"/>',                                                                                                                                                                                                   h: 'Analytics',         p: 'See scan count, time on menu, peak hours, and which dishes attract the most attention.',                    meta: 'Visitor data'      },
+                    { icon: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',                                                                                                                                                                          h: 'Category control',  p: 'Create sections, reorder dishes, hide entire categories in one click. Your menu, your rules.',              meta: 'Full control'      },
+                    { icon: '<circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>',                                                                        h: 'Custom branding',   p: 'Your colors, your logo. MenuX stays in the background — your restaurant identity comes through.',           meta: 'Your identity'     },
+                    { icon: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',                                                                                                                                                                                h: 'No app required',   p: 'Guests open a browser link — no install, no account, no friction. Works on every smartphone.',              meta: 'Zero friction'     },
+                ],
+            },
+            how: {
+                eyebrow: 'How it works',
+                headline: 'Up and running <em class="it">in under 10 minutes.</em>',
+                sub:     'No developer needed. No onboarding call. Sign up, add your dishes, and your guests are scanning within the hour.',
+                steps: [
+                    {
+                        n:   '01',
+                        h:   'Create your menu',
+                        p:   'Sign up, add your dishes with names, prices, and photos. Organise them into categories. Takes about 10 minutes.',
+                        vis: '<div style="padding:28px;width:100%;text-align:center"><div style="display:inline-flex;flex-direction:column;gap:10px;text-align:left;width:220px"><div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(246,241,232,.4);margin-bottom:4px">New dish</div><div style="background:rgba(255,255,255,.04);border:.5px solid rgba(255,255,255,.08);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:8px"><div style="height:8px;background:rgba(255,255,255,.12);border-radius:4px;width:70%"></div><div style="height:8px;background:rgba(255,255,255,.07);border-radius:4px;width:45%"></div></div><div style="background:var(--accent);border-radius:6px;padding:9px 14px;font-size:12px;font-weight:500;color:var(--ink);text-align:center">Save dish</div></div></div>',
+                    },
+                    {
+                        n:   '02',
+                        h:   'Print the QR card',
+                        p:   'We generate a print-ready table card in seconds. Download the PDF, laminate it, place it on the table.',
+                        vis: '<div style="padding:28px;display:flex;justify-content:center;align-items:center"><div style="width:90px;background:rgba(255,255,255,.04);border:.5px solid rgba(255,255,255,.1);border-radius:10px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:8px"><div style="font-size:8px;font-style:italic;color:rgba(246,241,232,.5)">Maison</div><div style="width:60px;height:60px;background:rgba(255,255,255,.08);border-radius:4px;display:grid;place-items:center"><svg viewBox="0 0 20 20" width="44" height="44"><rect x="0" y="0" width="7" height="7" fill="rgba(246,241,232,.6)"/><rect x="1" y="1" width="5" height="5" fill="rgba(15,15,16,.8)"/><rect x="2" y="2" width="3" height="3" fill="rgba(246,241,232,.6)"/><rect x="13" y="0" width="7" height="7" fill="rgba(246,241,232,.6)"/><rect x="14" y="1" width="5" height="5" fill="rgba(15,15,16,.8)"/><rect x="15" y="2" width="3" height="3" fill="rgba(246,241,232,.6)"/><rect x="0" y="13" width="7" height="7" fill="rgba(246,241,232,.6)"/><rect x="1" y="14" width="5" height="5" fill="rgba(15,15,16,.8)"/><rect x="2" y="15" width="3" height="3" fill="rgba(246,241,232,.6)"/></svg></div><div style="font-size:7px;letter-spacing:.1em;text-transform:uppercase;color:rgba(246,241,232,.35)">Scan to order</div></div></div>',
+                    },
+                    {
+                        n:   '03',
+                        h:   'Guests just scan',
+                        p:   'They browse at their own pace in their own language. You manage updates from anywhere. The kitchen stays in sync.',
+                        vis: '<div style="padding:28px;display:flex;justify-content:center;align-items:center;gap:16px"><div style="width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 6px rgba(200,168,90,.18)"></div><div style="font-size:13px;color:rgba(246,241,232,.7)">Synced in real time</div></div>',
+                    },
+                ],
+            },
+            testimonials: {
+                eyebrow: 'Stories',
+                headline: 'Restaurateurs <em class="it">speak for themselves.</em>',
+                sub:     'From fast-casual to fine dining — MenuX fits the way your restaurant actually runs.',
+                quotes: [
+                    {
+                        q:    'We switched from a laminated paper menu to MenuX in one afternoon. Our guests noticed immediately — and our servers stopped getting asked "what is this dish?" every five minutes.',
+                        who:  'Khalid A.',
+                        role: 'Owner, Maison Aran · Riyadh',
+                    },
+                    {
+                        q:    'The Arabic support is genuinely perfect. My Lebanese guests and my French guests both get a menu that feels native to them.',
+                        who:  'Nadia R.',
+                        role: 'Manager, Beit Beirut',
+                    },
+                    {
+                        q:    'I update the daily specials from my phone every morning. No more calling the printer, no more crossing things out with a pen.',
+                        who:  'Tariq M.',
+                        role: 'Chef-owner, Fenwick Grill',
+                    },
+                ],
+            },
+            cta: {
+                eyebrow: 'Free to start',
+                headline: 'Ready to modernise <em class="it">your menu?</em>',
+                sub:     'Join restaurant owners already using MenuX. No credit card needed.',
+                cta1:    'Start for free',
+                cta2:    'See how it works',
+                fine:    'Free forever on the starter plan. Upgrade when you need more.',
+            },
+            footer: {
+                tagline: 'The digital menu your restaurant deserves.',
+                cols: [
+                    {
+                        title: 'Product',
+                        links: [
+                            { label: 'Features',     href: '#features' },
+                            { label: 'How it works', href: '#how'      },
+                            { label: 'Stories',      href: '#stories'  },
+                            { label: 'Dashboard',    href: '/dashboard' },
+                        ],
+                    },
+                    {
+                        title: 'Company',
+                        links: [
+                            { label: 'About Lebify', href: '#' },
+                            { label: 'Blog',         href: '#' },
+                            { label: 'Careers',      href: '#' },
+                            { label: 'Contact',      href: '#' },
+                        ],
+                    },
+                    {
+                        title: 'Legal',
+                        links: [
+                            { label: 'Privacy policy', href: '#' },
+                            { label: 'Terms of use',   href: '#' },
+                            { label: 'Cookie policy',  href: '#' },
+                        ],
+                    },
+                ],
+                copy:  '© 2025 Lebify Group. All rights reserved.',
+                made:  'Made with care in Beirut.',
+            },
+        },
+        ar: {
+            nav: {
+                features:  'المميزات',
+                how:       'كيف تعمل',
+                stories:   'قصص نجاح',
+                dashboard: 'لوحة التحكم',
+                signin:    'تسجيل الدخول',
+                cta:       'ابدأ مجاناً',
+            },
+            hero: {
+                headline:  'قوائمٌ <em class="it">أُعيد تصوّرها</em> <span class="soft">للمطعم العصري.</span>',
+                meta:      'القائمة الرقمية، بأناقة',
+                sub:       'Qayema تحوّل كل طاولة إلى تجربة طلب سلسة — رمز QR واحد، وقائمة رقمية مصمّمة بأناقة، ولوحة تحكّم سيشكرك عليها فريقك فعلاً.',
+                cta1:      'ابدأ مجاناً',
+                cta2:      'اكتشف كيف تعمل',
+                ctaAuth:   'لوحة التحكم',
+                stats: [
+                    { k: 'بدون بطاقة ائتمان', v: 'مجاني' },
+                    { k: 'لغة مع RTL',         v: '10'    },
+                    { k: 'زمن تحميل القائمة',  v: ''      },
+                    { k: 'تحديثات القائمة',    v: 'مباشر' },
+                ],
+                ann1:     'متزامن مع المطبخ',
+                ann1card: { lbl: 'تحديث مباشر',   body: 'علّم طبقاً كمنتهٍ فيختفي من جميع الطاولات خلال 200 مللي ثانية.' },
+                ann2:     'بدون تطبيق · بدون احتكاك',
+                ann2card: { lbl: 'تجربة الضيف',   body: '"شعرنا أن المطعم اعتنى بنا قبل أن نطلب."' },
+            },
+            logos: {
+                label: 'موثوق به من أصحاب مطاعم من بيروت إلى دبي',
+                items: ['ميزون أران', 'أوليا', 'سابور', 'فينويك', 'كاسا لومي', 'نورث كوارتر'],
+            },
+            problem: {
+                eyebrow:  'المشكلة',
+                headline: 'القوائم الورقية <em class="it">من الماضي.</em>',
+                sub:      'كل دقيقة ينتظرها الضيف لقائمته أو فاتورته، يتأخر فيها مطبخك أكثر، وتبرد فيها تقييماتك قليلاً.',
+                cards: [
+                    { n: '01', h: 'الانتظار الطويل',      p: 'الضيوف يحدّقون في قائمة لاصقة بينما يركض النادل بين الطاولات. الطلبات تتأخر، والطعام يتأخر أكثر.' },
+                    { n: '02', h: 'دورة إعادة الطباعة',    p: 'تغيّر سعراً، تحدّث طبقاً مميزاً، تستبدل صنفاً — انتظر ثلاثة أيام للمطبعة. قائمتك دائماً غير محدّثة.' },
+                    { n: '03', h: 'لا رؤية ولا بيانات',    p: 'القوائم الورقية لا تخبرك أي الأطباق يُنظر إليها، ولا كم يتصفّح الضيف، ولا ما يتجاهله. أنت تعمل في الظلام.' },
+                ],
+            },
+            solution: {
+                eyebrow: 'الحل',
+                headline: 'رمز QR واحد. قائمة واحدة. <em class="it">كل شيء متزامن.</em>',
+                sub:     'Qayema هو الطبقة الواصلة بين مطبخك وهاتف ضيفك. لا تنزيل تطبيقات. لا أجهزة لوحية معقّدة. فقط قائمة جميلة ومحدّثة دائماً.',
+                rows: [
+                    {
+                        tag:     'فوري',
+                        h:       'قائمة تتحدّث لحظة تحدّث مطبخك.',
+                        p:       'علّم طبقاً كمنتهٍ من لوحة التحكم ويختفي فوراً من كل الطاولات. أضف عرضاً خاصاً؟ سيظهر في ثوانٍ.',
+                        bullets: ['تحديثات فورية عبر جميع الأجهزة', 'إيقاف الأطباق دون إعادة طباعة', 'أضف العروض من هاتفك في 30 ثانية'],
+                    },
+                    {
+                        tag:     'متعدد اللغات',
+                        h:       'مصمّم للضيوف بلغتهم الأصلية.',
+                        p:       '10 إعدادات لغوية مع دعم عربي كامل للكتابة من اليمين لليسار. قائمتك تبدو وتُقرأ بشكل صحيح سواء كان الضيف محلياً أو زائراً.',
+                        bullets: ['10 إعدادات لغوية بما فيها العربية RTL', 'يغيّر الضيف اللغة بنقرة واحدة', 'خطوط مُهيّأة لكل نص'],
+                    },
+                    {
+                        tag:     'لوحة التحكم',
+                        h:       'أداة إدارية لا تقاومك.',
+                        p:       'ارفع الأطباق. حدّد الفئات. خصّص التخطيط والخطوط والألوان. تتبّع إحصائيات الزوار. بدون تدريب مسبق.',
+                        bullets: ['إدارة الأطباق بالسحب والإفلات', 'إحصائيات زوار فورية', 'ألوان وخطوط وتخطيطات مخصّصة'],
+                    },
+                ],
+            },
+            features: {
+                eyebrow: 'كل ما تحتاجه',
+                headline: 'منصة قائمة طعام <em class="it">متكاملة.</em>',
+                sub:     'كل ميزة يحتاجها مطعمك — من رمز QR على الطاولة إلى الإحصائيات في لوحة التحكم.',
+                items: [
+                    { icon: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h.01M17 14h.01M14 17h.01M17 17h.01M20 14h.01M20 17h.01M14 20h.01M17 20h.01M20 20h.01"/>',  h: 'رمز QR',              p: 'بطاقة طاولتك جاهزة فور نشر قائمتك. نزّلها، اطبعها، ضعها على الطاولة.',                              meta: 'PDF جاهز للطباعة' },
+                    { icon: '<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>',                                                                                                                                                                                            h: 'مزامنة فورية',        p: 'علّم طبقاً كمنتهٍ فيختفي في أقل من 200 مللي ثانية من كل الأجهزة.',                                  meta: 'تحديث مباشر'      },
+                    { icon: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',                                                                                       h: '10 لغات',             p: 'عربي، إنجليزي، فرنسي، تركي، إسباني والمزيد. الضيف يختار لغته بنقرة واحدة.',                          meta: 'يشمل RTL'          },
+                    { icon: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>',                                                                                                                       h: 'صور الأطباق',         p: 'صور محسّنة تلقائياً تبدو رائعة على أي شاشة وتحمّل بسرعة على أي اتصال.',                             meta: 'تحسين تلقائي'     },
+                    { icon: '<path d="M18 20V10M12 20V4M6 20v-6"/>',                                                                                                                                                                                                   h: 'إحصائيات',            p: 'عدد المسح، وقت التصفح، أوقات الذروة، والأطباق الأكثر استقطاباً للاهتمام.',                          meta: 'بيانات الزوار'    },
+                    { icon: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',                                                                                                                                                                          h: 'إدارة الفئات',        p: 'أنشئ أقساماً، رتّب الأطباق، أخفِ فئات بأكملها بنقرة. قائمتك بشروطك.',                             meta: 'تحكم كامل'        },
+                    { icon: '<circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>',                                                                        h: 'هويتك البصرية',       p: 'ألوانك وشعارك. MenuX يختفي خلف علامتك التجارية — مطعمك هو من يتألق.',                               meta: 'هويتك'            },
+                    { icon: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',                                                                                                                                                                                h: 'لا تطبيق مطلوب',      p: 'الضيوف يفتحون رابطاً في المتصفح — لا تنزيل، لا حساب، لا احتكاك.',                                  meta: 'بدون احتكاك'      },
+                ],
+            },
+            how: {
+                eyebrow: 'كيف تعمل',
+                headline: 'جاهز للعمل <em class="it">في أقل من 10 دقائق.</em>',
+                sub:     'لا حاجة لمطوّر. لا مكالمة تأهيل. سجّل، أضف أطباقك، وضيوفك سيمسحون رمز QR خلال الساعة.',
+                steps: [
+                    {
+                        n:   '٠١',
+                        h:   'أنشئ قائمتك',
+                        p:   'سجّل الدخول، أضف أطباقك بالأسماء والأسعار والصور. رتّبها في فئات. يستغرق حوالي 10 دقائق.',
+                        vis: '<div style="padding:28px;width:100%;text-align:center"><div style="display:inline-flex;flex-direction:column;gap:10px;text-align:right;width:220px"><div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(246,241,232,.4);margin-bottom:4px">طبق جديد</div><div style="background:rgba(255,255,255,.04);border:.5px solid rgba(255,255,255,.08);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:8px"><div style="height:8px;background:rgba(255,255,255,.12);border-radius:4px;width:70%"></div><div style="height:8px;background:rgba(255,255,255,.07);border-radius:4px;width:45%"></div></div><div style="background:var(--accent);border-radius:6px;padding:9px 14px;font-size:12px;font-weight:500;color:var(--ink);text-align:center">حفظ الطبق</div></div></div>',
+                    },
+                    {
+                        n:   '٠٢',
+                        h:   'اطبع بطاقة QR',
+                        p:   'نولّد بطاقة طاولة جاهزة للطباعة في ثوانٍ. نزّل PDF، يُغلف، يُوضع على الطاولة.',
+                        vis: '<div style="padding:28px;display:flex;justify-content:center;align-items:center"><div style="width:90px;background:rgba(255,255,255,.04);border:.5px solid rgba(255,255,255,.1);border-radius:10px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:8px"><div style="font-size:8px;font-style:italic;color:rgba(246,241,232,.5)">ميزون</div><div style="width:60px;height:60px;background:rgba(255,255,255,.08);border-radius:4px;display:grid;place-items:center"><svg viewBox="0 0 20 20" width="44" height="44"><rect x="0" y="0" width="7" height="7" fill="rgba(246,241,232,.6)"/><rect x="1" y="1" width="5" height="5" fill="rgba(15,15,16,.8)"/><rect x="2" y="2" width="3" height="3" fill="rgba(246,241,232,.6)"/><rect x="13" y="0" width="7" height="7" fill="rgba(246,241,232,.6)"/><rect x="14" y="1" width="5" height="5" fill="rgba(15,15,16,.8)"/><rect x="15" y="2" width="3" height="3" fill="rgba(246,241,232,.6)"/><rect x="0" y="13" width="7" height="7" fill="rgba(246,241,232,.6)"/><rect x="1" y="14" width="5" height="5" fill="rgba(15,15,16,.8)"/><rect x="2" y="15" width="3" height="3" fill="rgba(246,241,232,.6)"/></svg></div><div style="font-size:7px;letter-spacing:.1em;text-transform:uppercase;color:rgba(246,241,232,.35)">امسح للطلب</div></div></div>',
+                    },
+                    {
+                        n:   '٠٣',
+                        h:   'الضيوف فقط يمسحون',
+                        p:   'يتصفحون بتمهّل بلغتهم. أنت تحدّث القائمة من أي مكان. المطبخ يبقى متزامناً دائماً.',
+                        vis: '<div style="padding:28px;display:flex;justify-content:center;align-items:center;gap:16px"><div style="width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 6px rgba(200,168,90,.18)"></div><div style="font-size:13px;color:rgba(246,241,232,.7)">متزامن في الوقت الفعلي</div></div>',
+                    },
+                ],
+            },
+            testimonials: {
+                eyebrow: 'قصص نجاح',
+                headline: 'أصحاب المطاعم <em class="it">يتحدثون بأنفسهم.</em>',
+                sub:     'من الوجبات السريعة إلى المطاعم الراقية — MenuX يناسب طريقة عمل مطعمك فعلاً.',
+                quotes: [
+                    {
+                        q:    'انتقلنا من قائمة ورقية مُغلّفة إلى MenuX في بعد ظهر واحد. ضيوفنا لاحظوا الفرق فوراً — وتوقف نادلونا عن الإجابة على سؤال "ما هذا الطبق؟" كل خمس دقائق.',
+                        who:  'خالد أ.',
+                        role: 'مالك، ميزون أران · الرياض',
+                    },
+                    {
+                        q:    'دعم اللغة العربية مثالي فعلاً. ضيوفي اللبنانيون وضيوفي الفرنسيون يحصلون على قائمة تبدو مصمّمة لهم خصيصاً.',
+                        who:  'نادية ر.',
+                        role: 'مديرة، بيت بيروت',
+                    },
+                    {
+                        q:    'أحدّث العروض اليومية من هاتفي كل صباح. لا مزيد من الاتصال بالمطبعة، لا مزيد من الشطب بالقلم.',
+                        who:  'طارق م.',
+                        role: 'شيف مالك، فينويك غريل',
+                    },
+                ],
+            },
+            cta: {
+                eyebrow: 'مجاني للبدء',
+                headline: 'هل أنت مستعد لتحديث <em class="it">قائمتك؟</em>',
+                sub:     'انضم إلى أصحاب مطاعم يستخدمون MenuX الآن. لا بطاقة ائتمان مطلوبة.',
+                cta1:    'ابدأ مجاناً',
+                cta2:    'اكتشف كيف تعمل',
+                fine:    'مجاني للأبد على الخطة المجانية. طوّر عندما تكون مستعداً.',
+            },
+            footer: {
+                tagline: 'القائمة الرقمية التي يستحقها مطعمك.',
+                cols: [
+                    {
+                        title: 'المنتج',
+                        links: [
+                            { label: 'المميزات',     href: '#features' },
+                            { label: 'كيف تعمل',     href: '#how'      },
+                            { label: 'قصص نجاح',     href: '#stories'  },
+                            { label: 'لوحة التحكم',  href: '/dashboard' },
+                        ],
+                    },
+                    {
+                        title: 'الشركة',
+                        links: [
+                            { label: 'عن ليبيفاي', href: '#' },
+                            { label: 'المدوّنة',   href: '#' },
+                            { label: 'وظائف',      href: '#' },
+                            { label: 'تواصل معنا', href: '#' },
+                        ],
+                    },
+                    {
+                        title: 'قانوني',
+                        links: [
+                            { label: 'سياسة الخصوصية', href: '#' },
+                            { label: 'شروط الاستخدام', href: '#' },
+                            { label: 'سياسة الكوكيز',  href: '#' },
+                        ],
+                    },
+                ],
+                copy:  '© 2025 مجموعة ليبيفاي. جميع الحقوق محفوظة.',
+                made:  'صُنع باهتمام في بيروت.',
+            },
+        },
+    };
+
+    return {
+        lang:       'en',
+        mobileOpen: false,
+
+        get t()    { return copy[this.lang]; },
+        get isAr() { return this.lang === 'ar'; },
+
+        setLang(l) {
+            this.lang = l;
+            document.documentElement.lang = l;
+            document.documentElement.dir  = l === 'ar' ? 'rtl' : 'ltr';
+        },
+    };
+}
+</script>
+
 </body>
 </html>
