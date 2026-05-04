@@ -50,23 +50,6 @@
                         </div>
 
                         <div>
-                            <x-input-label for="menu_style" :value="__('menu_owner.menus.menu_style')" />
-                            <select id="menu_style" name="menu_style"
-                                class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm px-3 py-2"
-                                required>
-                                <option value="">{{ __('menu_owner.menus.select_menu_style') }}</option>
-                                <option value="restaurant"
-                                    {{ old('menu_style', $menu?->menu_style) == 'restaurant' ? 'selected' : '' }}>
-                                    {{ __('menu_owner.menus.restaurant') }}</option>
-                                <option value="home"
-                                    {{ old('menu_style', $menu?->menu_style ?? 'home') == 'home' ? 'selected' : '' }}>
-                                    {{ __('menu_owner.menus.home_cook') }}</option>
-                            </select>
-                            <p class="mt-1 text-sm text-gray-500">{{ __('menu_owner.menus.menu_style_desc') }}</p>
-                            <x-input-error class="mt-2" :messages="$errors->get('menu_style')" />
-                        </div>
-
-                        <div>
                             <label class="inline-flex items-center cursor-pointer">
                                 <input type="checkbox" name="is_active" value="1"
                                     class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"

@@ -4,7 +4,6 @@ namespace App\Http\Controllers\MenuOwner;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateMenuSettingsRequest;
-use App\Models\Menu;
 use App\Models\MenuSetting;
 use App\Models\Setting;
 use Illuminate\Http\RedirectResponse;
@@ -13,7 +12,7 @@ use Illuminate\View\View;
 
 class MenuSettingController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
         $user = $request->user();
         $menu = $user->currentMenu();
@@ -32,22 +31,22 @@ class MenuSettingController extends Controller
         // Group settings by category
         $groupedSettings = [
             'display' => [
-                'title' => 'Display Settings',
+                'title' => __('menu_owner.settings.groups.display'),
                 'icon' => 'eye',
                 'settings' => [],
             ],
             'currency' => [
-                'title' => 'Currency Settings',
+                'title' => __('menu_owner.settings.groups.currency'),
                 'icon' => 'currency-dollar',
                 'settings' => [],
             ],
             'design' => [
-                'title' => 'Design Settings',
+                'title' => __('menu_owner.settings.groups.design'),
                 'icon' => 'paint-brush',
                 'settings' => [],
             ],
             'general' => [
-                'title' => 'General Settings',
+                'title' => __('menu_owner.settings.groups.general'),
                 'icon' => 'cog',
                 'settings' => [],
             ],

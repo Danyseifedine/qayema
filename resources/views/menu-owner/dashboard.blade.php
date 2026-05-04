@@ -22,7 +22,7 @@
             <div class="rounded-xl border border-slate-200/80 bg-white shadow-sm overflow-hidden">
                 <div class="px-6 py-5 border-b border-slate-100">
                     <h1 class="text-lg font-semibold text-slate-900">{{ __('menu_owner.dashboard.title') }}</h1>
-                    <p class="mt-0.5 text-sm text-slate-500">Manage your menus, categories, and dishes in one place.</p>
+                    <p class="mt-0.5 text-sm text-slate-500">{{ __('menu_owner.dashboard.subtitle') }}</p>
                 </div>
                 <div class="p-6">
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

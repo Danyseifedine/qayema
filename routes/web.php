@@ -6,10 +6,10 @@ use App\Http\Controllers\MenuOwner\DishController;
 use App\Http\Controllers\MenuOwner\MenuController;
 use App\Http\Controllers\MenuOwner\MenuSettingController;
 use App\Http\Controllers\MenuOwner\MenuStatisticController;
+use App\Http\Controllers\MenuOwner\ProfileController;
 use App\Http\Controllers\MenuOwner\QrCodeController;
 use App\Http\Controllers\MenuOwner\SocialLinkController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\PublicMenuController;
+use App\Http\Controllers\Portal\MenuController as PortalMenuController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -20,9 +20,9 @@ require __DIR__.'/auth.php';
 
 // Restaurant setup routes (must be before other routes and accessible without setup check)
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/restaurant-setup', [\App\Http\Controllers\RestaurantSetupController::class, 'index'])->name('restaurant-setup.index');
-    Route::post('/restaurant-setup/step1', [\App\Http\Controllers\RestaurantSetupController::class, 'step1'])->name('restaurant-setup.step1');
-    Route::post('/restaurant-setup/step2', [\App\Http\Controllers\RestaurantSetupController::class, 'step2'])->name('restaurant-setup.step2');
+    Route::get('/restaurant-setup', [\App\Http\Controllers\MenuOwner\SetupController::class, 'index'])->name('restaurant-setup.index');
+    Route::post('/restaurant-setup/step1', [\App\Http\Controllers\MenuOwner\SetupController::class, 'step1'])->name('restaurant-setup.step1');
+    Route::post('/restaurant-setup/step2', [\App\Http\Controllers\MenuOwner\SetupController::class, 'step2'])->name('restaurant-setup.step2');
 
     // Force redirect to setup if incomplete
     Route::get('/setup', function () {
@@ -33,11 +33,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
 // Menu owner routes (locale applies to dashboard and all owner pages)
 Route::middleware(['auth', 'owner.locale'])->group(function () {
     Route::get('/owner/locale/{locale}', function (string $locale) {
-        if (in_array($locale, ['en', 'ar'], true)) {
+        if (in_array($locale, config('locales.supported', ['en']), true)) {
             session()->put('owner_locale', $locale);
+            session()->save();
         }
 
-        return redirect()->back();
+        $referer = request()->headers->get('referer', '');
+        $appUrl = rtrim(config('app.url'), '/');
+        $target = ($referer && str_starts_with($referer, $appUrl)) ? $referer : route('dashboard');
+
+        return redirect($target);
     })->name('owner.locale.switch');
 });
 
@@ -87,10 +92,10 @@ Route::middleware(['auth', 'owner.locale'])->group(function () {
 });
 
 // Public menu routes - using /m/ prefix to avoid conflicts with app routes
-Route::post('/{slug}/track-exit', [PublicMenuController::class, 'trackExit'])
+Route::post('/{slug}/track-exit', [PortalMenuController::class, 'trackExit'])
     ->where('slug', '[a-z0-9-]+')
     ->name('public.menu.track-exit');
 
-Route::get('/{slug}', [PublicMenuController::class, 'show'])
+Route::get('/{slug}', [PortalMenuController::class, 'show'])
     ->where('slug', '[a-z0-9-]+')
     ->name('public.menu');

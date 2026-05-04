@@ -31,10 +31,23 @@ return [
         'live_preview' => 'معاينة مباشرة',
         'coming_soon' => 'قريباً',
         'n_a' => '—',
+        'confirm_delete_category' => 'هل أنت متأكد من حذف هذا التصنيف؟',
+        'confirm_delete_dish' => 'هل أنت متأكد من حذف هذا الطبق؟',
+        'confirm_delete_social_link' => 'هل أنت متأكد من حذف هذا الرابط؟',
+        'limit_reached' => '(تم الوصول إلى الحد)',
+        'remaining' => '(:count متبقٍ)',
+        'available' => 'متاح',
+        'unavailable' => 'غير متاح',
+        'upload_click' => 'انقر للرفع',
+        'upload_or_drag' => 'أو اسحب وأفلت',
+        'upload_formats' => 'PNG, JPG, WEBP (بحد أقصى 5MB)',
+        'upload_multiple' => 'يمكنك تحديد عدة صور في آنٍ واحد',
+        'order_label' => 'الترتيب',
     ],
 
     'dashboard' => [
         'title' => 'لوحة التحكم',
+        'subtitle' => 'أدر قوائمك وتصنيفاتك وأطباقك في مكان واحد.',
     ],
 
     'statistics' => [
@@ -65,6 +78,13 @@ return [
         'page_views' => 'مشاهدات الصفحة',
         'no_visitors_yet' => 'لا زوار بعد. شارك رابط قائمتك للبدء!',
         'create_menu_first' => 'يرجى إنشاء قائمة أولاً لعرض الإحصائيات.',
+        'device_breakdown' => 'توزيع الأجهزة',
+        'no_device_data' => 'لا توجد بيانات عن الأجهزة',
+        'top_browsers' => 'أبرز المتصفحات',
+        'no_browser_data' => 'لا توجد بيانات عن المتصفحات',
+        'top_os' => 'أبرز أنظمة التشغيل',
+        'no_os_data' => 'لا توجد بيانات عن أنظمة التشغيل',
+        'unknown' => 'غير معروف',
     ],
 
     'menus' => [
@@ -114,6 +134,7 @@ return [
         'existing_image_note' => 'الصورة الحالية معروضة. ارفع صورة جديدة لاستبدالها.',
         'placeholder_name' => 'أدخل اسم التصنيف',
         'placeholder_description' => 'أدخل وصفاً لهذا التصنيف (اختياري)',
+        'limit_text' => ':count / :limit تصنيف',
     ],
 
     'dishes' => [
@@ -130,6 +151,9 @@ return [
         'category_optional_desc' => 'ضع هذا الطبق في تصنيف. التصنيفات تجمع الأطباق في القائمة العامة.',
         'price_optional' => 'السعر (اختياري)',
         'price_optional_desc' => 'اتركه فارغاً لإخفاء السعر. يظهر في القائمة العامة عند تفعيل "إظهار الأسعار" في الإعدادات.',
+        'description_optional' => 'الوصف (اختياري)',
+        'description_placeholder' => 'صِف الطبق...',
+        'description_optional_desc' => 'وصف مختصر يظهر في القائمة العامة.',
         'ingredients_optional' => 'المكوّنات (اختياري)',
         'ingredients_optional_desc' => 'قائمة المكوّنات. تظهر في القائمة العامة عند تفعيل "إظهار المكوّنات" في الإعدادات.',
         'display_order' => 'ترتيب العرض',
@@ -139,6 +163,11 @@ return [
         'placeholder_name' => 'أدخل اسم الطبق',
         'lower_first' => 'الأرقام الأصغر تظهر أولاً',
         'dish_available' => 'الطبق متاح (مرئي للجمهور)',
+        'limit_text' => ':count / :limit طبق',
+        'limit_reached_max' => 'لقد وصلت إلى الحد الأقصى من الأطباق (:limit) المسموح به في قائمتك.',
+        'ingredients_placeholder' => 'أدخل المكوّنات مفصولةً بفاصلة أو سطر جديد',
+        'images_upload_hint' => 'ارفع صوراً لهذا الطبق (اختياري، بحد أقصى 5MB لكل صورة، تُضغط إلى 50KB)',
+        'existing_image_delete' => 'صورة موجودة. انقر × للحذف.',
     ],
 
     'social_links' => [
@@ -154,6 +183,7 @@ return [
         'url_desc' => 'الرابط الكامل لصفحتك أو حسابك (مثلاً https://facebook.com/yourpage). يفتح عندما ينقر الزوار على أيقونة التواصل في قائمتك.',
         'placeholder_url' => 'https://example.com/your-page',
         'select_platform' => 'اختر منصة',
+        'limit_text' => ':count / :limit رابط',
     ],
 
     'settings' => [
@@ -244,7 +274,16 @@ return [
         ],
         'fonts' => [
             'arabic_fonts' => 'خطوط عربية',
+            'sans_serif' => 'Sans Serif (النظام)',
+            'serif' => 'Serif (النظام)',
+            'monospace' => 'Monospace (النظام)',
+            'cursive' => 'خط مائل (النظام)',
+            'preview_text' => 'نص المعاينة السريع',
+            'preview_sample' => 'مثال لعنصر في القائمة',
         ],
+        'placeholder_language' => 'مثلاً: en, ar',
+        'placeholder_currency_code' => 'مثلاً: LBP, EUR',
+        'placeholder_rate' => 'مثلاً: 15000',
     ],
 
     'qr_code' => [
@@ -267,8 +306,19 @@ return [
     ],
 
     'language_switcher' => [
-        'switch_to_arabic' => 'العربية',
-        'switch_to_english' => 'English',
+        'select_language' => 'اختر اللغة',
         'aria' => 'تغيير اللغة',
+        'languages' => [
+            'en' => 'English',
+            'ar' => 'العربية',
+            'fr' => 'Français',
+            'de' => 'Deutsch',
+            'es' => 'Español',
+            'it' => 'Italiano',
+            'hi' => 'हिन्दी',
+            'pt' => 'Português',
+            'ru' => 'Русский',
+            'tr' => 'Türkçe',
+        ],
     ],
 ];

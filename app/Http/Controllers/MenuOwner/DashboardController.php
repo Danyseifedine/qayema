@@ -3,11 +3,12 @@
 namespace App\Http\Controllers\MenuOwner;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function index(): View|\Illuminate\Http\RedirectResponse
+    public function index(): View|RedirectResponse
     {
         $user = auth()->user();
 

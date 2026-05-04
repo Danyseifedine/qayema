@@ -6,14 +6,18 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\DishRequest;
 use App\Models\Category;
 use App\Models\Dish;
+use App\Services\ImageOptimizationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class DishController extends Controller
 {
+    public function __construct(private readonly ImageOptimizationService $imageService) {}
+
     public function index(Request $request): View
     {
         $user = $request->user();
@@ -70,7 +74,6 @@ class DishController extends Controller
                 ->with('error', 'Please create a menu first before adding dishes.');
         }
 
-        // Check dish limit
         if ($menu->hasReachedDishLimit()) {
             return redirect()->route('menu-owner.dishes.index')
                 ->with('error', 'You have reached the maximum number of dishes allowed for your menu.');
@@ -78,47 +81,16 @@ class DishController extends Controller
 
         $data = $request->validated();
         $data['menu_id'] = $menu->id;
-        $data['allergens'] = $this->parseAllergens($request->input('allergens'));
 
         $dish = Dish::create($data);
 
-        // Handle image uploads if provided
-        if ($request->hasFile('images')) {
-            $imageService = app(\App\Services\ImageOptimizationService::class);
-            foreach (Arr::wrap($request->file('images')) as $image) {
-                if (! $image instanceof UploadedFile || ! $image->isValid()) {
-                    continue;
-                }
-                try {
-                    // Optimize image to max 50KB (600x600 for menu display)
-                    $optimizedPath = $imageService->optimizeDishImage($image);
-
-                    // Ensure file exists and is readable
-                    if (file_exists($optimizedPath) && is_readable($optimizedPath)) {
-                        // Use the same approach as RestaurantSetupController
-                        $dish->addMedia($optimizedPath)
-                            ->usingName(pathinfo($image->getClientOriginalName(), PATHINFO_FILENAME))
-                            ->toMediaCollection('images');
-
-                        // Clean up temporary file after Media Library copies it
-                        if (file_exists($optimizedPath)) {
-                            @unlink($optimizedPath);
-                        }
-                    } else {
-                        \Log::error('Optimized file does not exist or is not readable: '.$optimizedPath);
-                    }
-                } catch (\Exception $e) {
-                    \Log::error('Failed to save dish image: '.$e->getMessage().' | Trace: '.$e->getTraceAsString());
-                    // Continue with other images even if one fails
-                }
-            }
-        }
+        $this->handleImageUploads($request, $dish);
 
         return redirect()->route('menu-owner.dishes.index')
             ->with('success', 'Dish created successfully!');
     }
 
-    public function edit(Request $request, Dish $dish): View|RedirectResponse
+    public function edit(Dish $dish): View|RedirectResponse
     {
         $this->authorize('update', $dish);
 
@@ -140,8 +112,6 @@ class DishController extends Controller
         $this->authorize('update', $dish);
 
         $data = $request->validated();
-        $data['allergens'] = $this->parseAllergens($request->input('allergens'));
-
         $dish->update($data);
 
         if ($request->has('delete_images') && is_array($request->input('delete_images'))) {
@@ -153,37 +123,13 @@ class DishController extends Controller
             }
         }
 
-        if ($request->hasFile('images')) {
-            $imageService = app(\App\Services\ImageOptimizationService::class);
-            foreach (Arr::wrap($request->file('images')) as $image) {
-                if (! $image instanceof UploadedFile || ! $image->isValid()) {
-                    continue;
-                }
-                try {
-                    $optimizedPath = $imageService->optimizeDishImage($image);
-
-                    if (file_exists($optimizedPath) && is_readable($optimizedPath)) {
-                        $dish->addMedia($optimizedPath)
-                            ->usingName(pathinfo($image->getClientOriginalName(), PATHINFO_FILENAME))
-                            ->toMediaCollection('images');
-
-                        if (file_exists($optimizedPath)) {
-                            @unlink($optimizedPath);
-                        }
-                    } else {
-                        \Log::error('Optimized file does not exist or is not readable: '.$optimizedPath);
-                    }
-                } catch (\Exception $e) {
-                    \Log::error('Failed to save dish image: '.$e->getMessage().' | Trace: '.$e->getTraceAsString());
-                }
-            }
-        }
+        $this->handleImageUploads($request, $dish);
 
         return redirect()->route('menu-owner.dishes.index')
             ->with('success', 'Dish updated successfully!');
     }
 
-    public function destroy(Request $request, Dish $dish): RedirectResponse
+    public function destroy(Dish $dish): RedirectResponse
     {
         $this->authorize('delete', $dish);
 
@@ -193,19 +139,36 @@ class DishController extends Controller
             ->with('success', 'Dish deleted successfully!');
     }
 
-    /**
-     * @return array<int, string>|null
-     */
-    protected function parseAllergens(mixed $value): ?array
+    private function handleImageUploads(Request $request, Dish $dish): void
     {
-        if ($value === null || $value === '') {
-            return null;
+        if (! $request->hasFile('images')) {
+            return;
         }
 
-        if (is_array($value)) {
-            return array_values(array_filter(array_map('trim', $value)));
-        }
+        foreach (Arr::wrap($request->file('images')) as $image) {
+            if (! $image instanceof UploadedFile || ! $image->isValid()) {
+                continue;
+            }
 
-        return array_values(array_filter(array_map('trim', explode(',', (string) $value))));
+            try {
+                $optimizedPath = $this->imageService->optimizeDishImage($image);
+
+                if (! file_exists($optimizedPath) || ! is_readable($optimizedPath)) {
+                    Log::error('Optimized dish image not readable: '.$optimizedPath);
+
+                    continue;
+                }
+
+                $dish->addMedia($optimizedPath)
+                    ->usingName(pathinfo($image->getClientOriginalName(), PATHINFO_FILENAME))
+                    ->toMediaCollection('images');
+
+                if (file_exists($optimizedPath)) {
+                    unlink($optimizedPath);
+                }
+            } catch (\Exception $e) {
+                Log::error('Failed to save dish image: '.$e->getMessage());
+            }
+        }
     }
 }

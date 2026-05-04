@@ -5,12 +5,15 @@ namespace App\Http\Controllers\MenuOwner;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CategoryRequest;
 use App\Models\Category;
+use App\Services\ImageOptimizationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class CategoryController extends Controller
 {
+    public function __construct(private readonly ImageOptimizationService $imageService) {}
+
     public function index(Request $request): View
     {
         $menu = $request->user()->currentMenu();
@@ -67,24 +70,19 @@ class CategoryController extends Controller
 
         $category = Category::create($data);
 
-        // Handle image upload if provided
         if ($request->hasFile('image')) {
-            $imageService = app(\App\Services\ImageOptimizationService::class);
-            $optimizedPath = $imageService->optimizeCategoryImage($request->file('image'));
+            $optimizedPath = $this->imageService->optimizeCategoryImage($request->file('image'));
             $category->addMedia($optimizedPath)
                 ->usingName(pathinfo($request->file('image')->getClientOriginalName(), PATHINFO_FILENAME))
                 ->toMediaCollection('image');
-            // Clean up temporary file after Media Library copies it
-            if (file_exists($optimizedPath)) {
-                @unlink($optimizedPath);
-            }
+            $this->cleanupTemp($optimizedPath);
         }
 
         return redirect()->route('menu-owner.categories.index')
             ->with('success', 'Category created successfully!');
     }
 
-    public function edit(Request $request, Category $category): View
+    public function edit(Category $category): View
     {
         $this->authorize('update', $category);
 
@@ -98,28 +96,22 @@ class CategoryController extends Controller
     {
         $this->authorize('update', $category);
 
-        $data = $request->validated();
-        $category->update($data);
+        $category->update($request->validated());
 
-        // Handle image upload if provided
         if ($request->hasFile('image')) {
-            $imageService = app(\App\Services\ImageOptimizationService::class);
-            $optimizedPath = $imageService->optimizeCategoryImage($request->file('image'));
+            $optimizedPath = $this->imageService->optimizeCategoryImage($request->file('image'));
             $category->clearMediaCollection('image');
             $category->addMedia($optimizedPath)
                 ->usingName(pathinfo($request->file('image')->getClientOriginalName(), PATHINFO_FILENAME))
                 ->toMediaCollection('image');
-            // Clean up temporary file after Media Library copies it
-            if (file_exists($optimizedPath)) {
-                @unlink($optimizedPath);
-            }
+            $this->cleanupTemp($optimizedPath);
         }
 
         return redirect()->route('menu-owner.categories.index')
             ->with('success', 'Category updated successfully!');
     }
 
-    public function destroy(Request $request, Category $category): RedirectResponse
+    public function destroy(Category $category): RedirectResponse
     {
         $this->authorize('delete', $category);
 
@@ -127,5 +119,12 @@ class CategoryController extends Controller
 
         return redirect()->route('menu-owner.categories.index')
             ->with('success', 'Category deleted successfully!');
+    }
+
+    private function cleanupTemp(string $path): void
+    {
+        if (file_exists($path)) {
+            unlink($path);
+        }
     }
 }

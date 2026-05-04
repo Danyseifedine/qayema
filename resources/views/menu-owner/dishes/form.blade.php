@@ -20,7 +20,7 @@
 
             @if ($menu && $menu->hasReachedDishLimit() && !$dish)
                 <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded mb-6">
-                    You have reached the maximum number of dishes ({{ $menu->dish_limit }}) allowed for your menu.
+                    {{ __('menu_owner.dishes.limit_reached_max', ['limit' => $menu->dish_limit]) }}
                 </div>
             @endif
 
@@ -80,10 +80,19 @@
                             </div>
 
                             <div>
+                                <x-input-label for="description" :value="__('menu_owner.dishes.description_optional')" />
+                                <textarea id="description" name="description" rows="3"
+                                    class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm px-3 py-2"
+                                    placeholder="{{ __('menu_owner.dishes.description_placeholder') }}">{{ old('description', $dish?->description) }}</textarea>
+                                <p class="mt-1 text-sm text-gray-500">{{ __('menu_owner.dishes.description_optional_desc') }}</p>
+                                <x-input-error class="mt-2" :messages="$errors->get('description')" />
+                            </div>
+
+                            <div>
                                 <x-input-label for="ingredients" :value="__('menu_owner.dishes.ingredients_optional')" />
                                 <textarea id="ingredients" name="ingredients" rows="4"
                                     class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm px-3 py-2"
-                                    placeholder="List ingredients, comma or new line separated">{{ old('ingredients', $dish?->ingredients) }}</textarea>
+                                    placeholder="{{ __('menu_owner.dishes.ingredients_placeholder') }}">{{ old('ingredients', $dish?->ingredients) }}</textarea>
                                 <p class="mt-1 text-sm text-gray-500">{{ __('menu_owner.dishes.ingredients_optional_desc') }}</p>
                                 <x-input-error class="mt-2" :messages="$errors->get('ingredients')" />
                             </div>
@@ -123,7 +132,7 @@
                                 <div id="images-container" class="mt-2" data-dish-id="{{ $dish?->id ?? '' }}">
                                 </div>
 
-                                <p class="mt-2 text-sm text-gray-500">Upload images for this dish (optional, max 5MB each, will be optimized to max 50KB)</p>
+                                <p class="mt-2 text-sm text-gray-500">{{ __('menu_owner.dishes.images_upload_hint') }}</p>
                                 <x-input-error class="mt-2" :messages="$errors->get('images.*')" />
                             </div>
 
@@ -154,6 +163,13 @@
     </div>
 
     <script>
+    var dishTrans = {
+        existingImage: @json(__('menu_owner.dishes.existing_image_delete')),
+        uploadClick:   @json(__('menu_owner.common.upload_click')),
+        uploadOrDrag:  @json(__('menu_owner.common.upload_or_drag')),
+        uploadFormats: @json(__('menu_owner.common.upload_formats')),
+        uploadMultiple: @json(__('menu_owner.common.upload_multiple')),
+    };
     (function () {
         var container = document.getElementById('images-container');
         var form = document.getElementById('dish-form');
@@ -204,7 +220,7 @@
 
                 var hint = document.createElement('p');
                 hint.className = 'text-sm text-gray-500 mt-2';
-                hint.textContent = 'Existing image. Click \u00d7 to delete.';
+                hint.textContent = dishTrans.existingImage;
                 wrap.appendChild(hint);
                 container.appendChild(wrap);
             });
@@ -246,9 +262,9 @@
                     '<svg class="w-12 h-12 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
                         '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>' +
                     '</svg>' +
-                    '<p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Click to upload</span> or drag and drop</p>' +
-                    '<p class="text-xs text-gray-500">PNG, JPG, WEBP (MAX. 5MB each)</p>' +
-                    '<p class="text-xs text-gray-400 mt-1">You can select multiple images at once</p>' +
+                    '<p class="mb-2 text-sm text-gray-500"><span class="font-semibold">' + dishTrans.uploadClick + '</span> ' + dishTrans.uploadOrDrag + '</p>' +
+                    '<p class="text-xs text-gray-500">' + dishTrans.uploadFormats + '</p>' +
+                    '<p class="text-xs text-gray-400 mt-1">' + dishTrans.uploadMultiple + '</p>' +
                 '</div>';
 
             var fileInput = document.createElement('input');

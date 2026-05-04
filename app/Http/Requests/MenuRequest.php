@@ -35,7 +35,6 @@ class MenuRequest extends FormRequest
                 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
                 Rule::unique(Menu::class, 'slug')->ignore($menu?->id),
             ],
-            'menu_style' => ['required', 'in:restaurant,home'],
             'is_active' => ['boolean'],
         ];
     }

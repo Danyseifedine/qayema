@@ -1,7 +1,7 @@
 {{-- Minimal Dish Layout - Clean, simple design --}}
 @php
     $pricePosition = $pricePosition ?? 'bottom_right';
-    
+
     // Calculate price
     $formattedPrice = null;
     $currency = 'USD';
@@ -51,4 +51,3 @@
         <p class="text-xs text-gray-500 italic">{{ $dish->ingredients }}</p>
     @endif
 </div>
-

@@ -13,27 +13,27 @@
 
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">
-                    @include('profile.partials.update-profile-information-form')
+                    @include('menu-owner.profile.partials.update-profile-information-form')
                 </div>
             </div>
 
             @if(auth()->user()->isMenuOwner() || auth()->user()->isAdmin())
                 <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                     <div class="max-w-xl">
-                        @include('profile.partials.update-restaurant-information-form')
+                        @include('menu-owner.profile.partials.update-restaurant-information-form')
                     </div>
                 </div>
             @endif
 
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">
-                    @include('profile.partials.update-password-form')
+                    @include('menu-owner.profile.partials.update-password-form')
                 </div>
             </div>
 
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">
-                    @include('profile.partials.delete-user-form')
+                    @include('menu-owner.profile.partials.delete-user-form')
                 </div>
             </div>
         </div>

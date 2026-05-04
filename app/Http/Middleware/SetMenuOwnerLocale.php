@@ -15,8 +15,8 @@ class SetMenuOwnerLocale
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $locale = $request->session()->get('owner_locale', 'en');
-        if (in_array($locale, ['en', 'ar'], true)) {
+        $locale = $request->session()->get('owner_locale', config('locales.default', 'en'));
+        if (in_array($locale, config('locales.supported', ['en']), true)) {
             app()->setLocale($locale);
         }
 

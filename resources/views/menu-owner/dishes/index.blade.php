@@ -51,7 +51,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M12 4v16m8-8H4"></path>
                                 </svg>
-                                Create Dish
+                                {{ __('menu_owner.dishes.create_dish') }}
                             </x-btn>
                         </div>
                     </div>
@@ -59,12 +59,11 @@
             @else
                 @if ($menu)
                     <div class="mb-4 text-sm text-gray-600">
-                        <span class="font-semibold">{{ $dishes->count() }}</span> / <span
-                            class="font-semibold">{{ $menu->dish_limit }}</span> dishes
+                        {{ __('menu_owner.dishes.limit_text', ['count' => $dishes->count(), 'limit' => $menu->dish_limit]) }}
                         @if ($menu->hasReachedDishLimit())
-                            <span class="ml-2 text-red-600 font-semibold">(Limit reached)</span>
+                            <span class="ml-2 text-red-600 font-semibold">{{ __('menu_owner.common.limit_reached') }}</span>
                         @else
-                            <span class="ml-2 text-green-600">({{ $menu->getRemainingDishSlots() }} remaining)</span>
+                            <span class="ml-2 text-green-600">{{ __('menu_owner.common.remaining', ['count' => $menu->getRemainingDishSlots()]) }}</span>
                         @endif
                     </div>
                 @endif
@@ -93,10 +92,10 @@
                                     <h3 class="text-lg font-semibold text-gray-900">{{ $dish->name }}</h3>
                                     @if ($dish->is_available)
                                         <span
-                                            class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Available</span>
+                                            class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">{{ __('menu_owner.common.available') }}</span>
                                     @else
                                         <span
-                                            class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Unavailable</span>
+                                            class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">{{ __('menu_owner.common.unavailable') }}</span>
                                     @endif
                                 </div>
 
@@ -114,13 +113,13 @@
                                 </div>
 
                                 <div class="flex items-center gap-2">
-                                    <x-btn href="{{ route('menu-owner.dishes.edit', $dish) }}" variant="secondary" size="sm" class="flex-1">Edit</x-btn>
+                                    <x-btn href="{{ route('menu-owner.dishes.edit', $dish) }}" variant="secondary" size="sm" class="flex-1">{{ __('menu_owner.common.edit') }}</x-btn>
                                     <form action="{{ route('menu-owner.dishes.destroy', $dish) }}" method="POST"
-                                        onsubmit="return confirm('Are you sure you want to delete this dish?');"
+                                        onsubmit="return confirm('{{ __('menu_owner.common.confirm_delete_dish') }}');"
                                         class="inline">
                                         @csrf
                                         @method('DELETE')
-                                        <x-btn type="submit" variant="danger" size="sm">Delete</x-btn>
+                                        <x-btn type="submit" variant="danger" size="sm">{{ __('menu_owner.common.delete') }}</x-btn>
                                     </form>
                                 </div>
                             </div>

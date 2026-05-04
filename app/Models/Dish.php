@@ -18,20 +18,15 @@ class Dish extends Model implements HasMedia
         'description',
         'price',
         'ingredients',
-        'allergens',
         'is_available',
         'display_order',
-        'prep_time',
-        'serving_size',
     ];
 
     protected $casts = [
         'menu_id' => 'integer',
         'category_id' => 'integer',
         'price' => 'decimal:2',
-        'allergens' => 'array',
         'is_available' => 'boolean',
-        'prep_time' => 'integer',
         'display_order' => 'integer',
     ];
 

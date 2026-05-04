@@ -14,7 +14,6 @@ class Menu extends Model
         'name',
         'description',
         'slug',
-        'menu_style',
         'is_active',
         'dish_limit',
         'category_limit',
@@ -31,7 +30,7 @@ class Menu extends Model
     /**
      * Boot the model.
      */
-    protected static function boot()
+    protected static function boot(): void
     {
         parent::boot();
 

@@ -31,10 +31,23 @@ return [
         'live_preview' => 'Live Preview',
         'coming_soon' => 'Coming soon',
         'n_a' => 'N/A',
+        'confirm_delete_category' => 'Are you sure you want to delete this category?',
+        'confirm_delete_dish' => 'Are you sure you want to delete this dish?',
+        'confirm_delete_social_link' => 'Are you sure you want to delete this social link?',
+        'limit_reached' => '(Limit reached)',
+        'remaining' => '(:count remaining)',
+        'available' => 'Available',
+        'unavailable' => 'Unavailable',
+        'upload_click' => 'Click to upload',
+        'upload_or_drag' => 'or drag and drop',
+        'upload_formats' => 'PNG, JPG, WEBP (MAX. 5MB)',
+        'upload_multiple' => 'You can select multiple images at once',
+        'order_label' => 'Order',
     ],
 
     'dashboard' => [
         'title' => 'Dashboard',
+        'subtitle' => 'Manage your menus, categories, and dishes in one place.',
     ],
 
     'statistics' => [
@@ -65,6 +78,13 @@ return [
         'page_views' => 'Page Views',
         'no_visitors_yet' => 'No visitors yet. Share your menu link to get started!',
         'create_menu_first' => 'Please create a menu first to view statistics.',
+        'device_breakdown' => 'Device Breakdown',
+        'no_device_data' => 'No device data available',
+        'top_browsers' => 'Top Browsers',
+        'no_browser_data' => 'No browser data available',
+        'top_os' => 'Top Operating Systems',
+        'no_os_data' => 'No OS data available',
+        'unknown' => 'Unknown',
     ],
 
     'menus' => [
@@ -114,6 +134,7 @@ return [
         'existing_image_note' => 'Existing image shown. Upload a new one to replace it.',
         'placeholder_name' => 'Enter category name',
         'placeholder_description' => 'Enter a description for this category (optional)',
+        'limit_text' => ':count / :limit categories',
     ],
 
     'dishes' => [
@@ -130,6 +151,9 @@ return [
         'category_optional_desc' => 'Put this dish in a category. Categories group dishes on the public menu.',
         'price_optional' => 'Price (Optional)',
         'price_optional_desc' => 'Leave empty to hide price. Shown on the public menu when "Show prices" is enabled in Settings.',
+        'description_optional' => 'Description (Optional)',
+        'description_placeholder' => 'Describe the dish...',
+        'description_optional_desc' => 'Short description shown on the public menu.',
         'ingredients_optional' => 'Ingredients (Optional)',
         'ingredients_optional_desc' => 'List of ingredients. Shown on the public menu when "Show ingredients" is enabled in Settings.',
         'display_order' => 'Display Order',
@@ -139,6 +163,11 @@ return [
         'placeholder_name' => 'Enter dish name',
         'lower_first' => 'Lower numbers appear first',
         'dish_available' => 'Dish is available (visible to public)',
+        'limit_text' => ':count / :limit dishes',
+        'limit_reached_max' => 'You have reached the maximum number of dishes (:limit) allowed for your menu.',
+        'ingredients_placeholder' => 'List ingredients, comma or new line separated',
+        'images_upload_hint' => 'Upload images for this dish (optional, max 5MB each, will be optimized to max 50KB)',
+        'existing_image_delete' => 'Existing image. Click × to delete.',
     ],
 
     'social_links' => [
@@ -154,6 +183,7 @@ return [
         'url_desc' => 'Full link to your profile or page (e.g. https://facebook.com/yourpage). Opens when visitors tap the social icon on your menu.',
         'placeholder_url' => 'https://example.com/your-page',
         'select_platform' => 'Select a platform',
+        'limit_text' => ':count / :limit social links',
     ],
 
     'settings' => [
@@ -244,7 +274,16 @@ return [
         ],
         'fonts' => [
             'arabic_fonts' => 'Arabic Fonts',
+            'sans_serif' => 'Sans Serif (System)',
+            'serif' => 'Serif (System)',
+            'monospace' => 'Monospace (System)',
+            'cursive' => 'Cursive (System)',
+            'preview_text' => 'The quick brown fox',
+            'preview_sample' => 'Sample menu item',
         ],
+        'placeholder_language' => 'e.g., en, ar',
+        'placeholder_currency_code' => 'e.g., LBP, EUR',
+        'placeholder_rate' => 'e.g., 15000',
     ],
 
     'qr_code' => [
@@ -267,8 +306,19 @@ return [
     ],
 
     'language_switcher' => [
-        'switch_to_arabic' => 'العربية',
-        'switch_to_english' => 'English',
+        'select_language' => 'Select Language',
         'aria' => 'Switch language',
+        'languages' => [
+            'en' => 'English',
+            'ar' => 'العربية',
+            'fr' => 'Français',
+            'de' => 'Deutsch',
+            'es' => 'Español',
+            'it' => 'Italiano',
+            'hi' => 'हिन्दी',
+            'pt' => 'Português',
+            'ru' => 'Русский',
+            'tr' => 'Türkçe',
+        ],
     ],
 ];

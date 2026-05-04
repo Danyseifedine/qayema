@@ -50,12 +50,63 @@
 
             @auth
                 @if(auth()->user()->isMenuOwner() || auth()->user()->isAdmin())
-                    <div class="fixed bottom-6 right-6 rtl:right-auto rtl:left-6 z-50 flex flex-col gap-2" aria-label="{{ __('menu_owner.language_switcher.aria') }}">
-                        <a href="{{ route('owner.locale.switch', ['locale' => app()->getLocale() === 'ar' ? 'en' : 'ar']) }}"
-                            class="inline-flex items-center px-3 py-1.5 rounded-lg bg-orange-500 text-white text-sm font-medium shadow-sm hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition"
-                            title="{{ app()->getLocale() === 'ar' ? __('menu_owner.language_switcher.switch_to_english') : __('menu_owner.language_switcher.switch_to_arabic') }}">
-                            <span>{{ app()->getLocale() === 'ar' ? __('menu_owner.language_switcher.switch_to_english') : __('menu_owner.language_switcher.switch_to_arabic') }}</span>
-                        </a>
+                    @php
+                        $locales = [
+                            'en' => ['name' => 'English',   'flag' => '🇺🇸'],
+                            'ar' => ['name' => 'العربية',   'flag' => '🇸🇦'],
+                            'fr' => ['name' => 'Français',  'flag' => '🇫🇷'],
+                            'de' => ['name' => 'Deutsch',   'flag' => '🇩🇪'],
+                            'es' => ['name' => 'Español',   'flag' => '🇪🇸'],
+                            'it' => ['name' => 'Italiano',  'flag' => '🇮🇹'],
+                            'hi' => ['name' => 'हिन्दी',    'flag' => '🇮🇳'],
+                            'pt' => ['name' => 'Português', 'flag' => '🇧🇷'],
+                            'ru' => ['name' => 'Русский',   'flag' => '🇷🇺'],
+                            'tr' => ['name' => 'Türkçe',    'flag' => '🇹🇷'],
+                        ];
+                        $currentLocale = app()->getLocale();
+                        $currentLocaleData = $locales[$currentLocale] ?? $locales['en'];
+                    @endphp
+
+                    <div class="fixed bottom-6 right-6 rtl:right-auto rtl:left-6 z-50 flex flex-col items-end gap-2"
+                         x-data="{ open: false }"
+                         @click.outside="open = false">
+
+                        {{-- Dropdown list — sits above button via flex-col order --}}
+                        <div x-show="open"
+                             x-transition:enter="transition ease-out duration-150"
+                             x-transition:enter-start="opacity-0 translate-y-2"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-100"
+                             x-transition:leave-start="opacity-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 translate-y-2"
+                             class="w-48 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden"
+                             style="display: none;">
+                            <div class="py-1 max-h-72 overflow-y-auto">
+                                @foreach($locales as $locale => $info)
+                                    <a href="{{ route('owner.locale.switch', ['locale' => $locale]) }}"
+                                       class="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors {{ $currentLocale === $locale ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-gray-700 hover:bg-gray-50' }}">
+                                        <span class="text-base leading-none">{{ $info['flag'] }}</span>
+                                        <span>{{ $info['name'] }}</span>
+                                        @if($currentLocale === $locale)
+                                            <svg class="w-4 h-4 ml-auto rtl:ml-0 rtl:mr-auto shrink-0 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                            </svg>
+                                        @endif
+                                    </a>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        {{-- Toggle button --}}
+                        <button @click="open = !open"
+                                aria-label="{{ __('menu_owner.language_switcher.aria') }}"
+                                class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-500 text-white text-sm font-medium shadow-sm hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition">
+                            <span class="text-base leading-none">{{ $currentLocaleData['flag'] }}</span>
+                            <span>{{ $currentLocaleData['name'] }}</span>
+                            <svg class="w-3.5 h-3.5 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                            </svg>
+                        </button>
                     </div>
                 @endif
             @endauth

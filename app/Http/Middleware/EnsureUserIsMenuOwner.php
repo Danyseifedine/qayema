@@ -16,8 +16,8 @@ class EnsureUserIsMenuOwner
     public function handle(Request $request, Closure $next): Response
     {
         $user = auth()->user();
-        
-        if (!auth()->check() || (!$user->isMenuOwner() && !$user->isAdmin())) {
+
+        if (! $user->isMenuOwner() && ! $user->isAdmin()) {
             abort(403, 'Unauthorized access. Menu owner or admin privileges required.');
         }
 

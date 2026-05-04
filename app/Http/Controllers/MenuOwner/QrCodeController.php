@@ -4,6 +4,7 @@ namespace App\Http\Controllers\MenuOwner;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
@@ -25,7 +26,7 @@ class QrCodeController extends Controller
         ]);
     }
 
-    public function generate(Request $request)
+    public function generate(Request $request): Response
     {
         $user = $request->user();
         $menu = $user->currentMenu();

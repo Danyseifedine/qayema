@@ -235,7 +235,7 @@
                     <!-- Device Breakdown -->
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                         <div class="p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Device Breakdown</h3>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">{{ __('menu_owner.statistics.device_breakdown') }}</h3>
                             @if (!empty($deviceBreakdown))
                                 <div class="space-y-3">
                                     @foreach ($deviceBreakdown as $device => $count)
@@ -260,7 +260,7 @@
                                     @endforeach
                                 </div>
                             @else
-                                <p class="text-gray-500 text-sm">No device data available</p>
+                                <p class="text-gray-500 text-sm">{{ __('menu_owner.statistics.no_device_data') }}</p>
                             @endif
                         </div>
                     </div>
@@ -268,7 +268,7 @@
                     <!-- Browser Breakdown -->
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                         <div class="p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Top Browsers</h3>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">{{ __('menu_owner.statistics.top_browsers') }}</h3>
                             @if (!empty($browserBreakdown))
                                 <div class="space-y-3">
                                     @foreach ($browserBreakdown as $browser => $count)
@@ -287,7 +287,7 @@
                                     @endforeach
                                 </div>
                             @else
-                                <p class="text-gray-500 text-sm">No browser data available</p>
+                                <p class="text-gray-500 text-sm">{{ __('menu_owner.statistics.no_browser_data') }}</p>
                             @endif
                         </div>
                     </div>
@@ -295,7 +295,7 @@
                     <!-- OS Breakdown -->
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                         <div class="p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Top Operating Systems</h3>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">{{ __('menu_owner.statistics.top_os') }}</h3>
                             @if (!empty($osBreakdown))
                                 <div class="space-y-3">
                                     @foreach ($osBreakdown as $os => $count)
@@ -314,7 +314,7 @@
                                     @endforeach
                                 </div>
                             @else
-                                <p class="text-gray-500 text-sm">No OS data available</p>
+                                <p class="text-gray-500 text-sm">{{ __('menu_owner.statistics.no_os_data') }}</p>
                             @endif
                         </div>
                     </div>

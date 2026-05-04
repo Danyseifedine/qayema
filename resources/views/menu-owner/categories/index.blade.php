@@ -51,7 +51,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M12 4v16m8-8H4"></path>
                                 </svg>
-                                Create Category
+                                {{ __('menu_owner.categories.create_category') }}
                             </x-btn>
                         </div>
                     </div>
@@ -59,12 +59,11 @@
             @else
                 @if ($menu)
                     <div class="mb-4 text-sm text-gray-600">
-                        <span class="font-semibold">{{ $categories->count() }}</span> / <span
-                            class="font-semibold">{{ $menu->category_limit }}</span> categories
+                        {{ __('menu_owner.categories.limit_text', ['count' => $categories->count(), 'limit' => $menu->category_limit]) }}
                         @if ($menu->hasReachedCategoryLimit())
-                            <span class="ml-2 text-red-600 font-semibold">(Limit reached)</span>
+                            <span class="ml-2 text-red-600 font-semibold">{{ __('menu_owner.common.limit_reached') }}</span>
                         @else
-                            <span class="ml-2 text-green-600">({{ $menu->getRemainingCategorySlots() }} remaining)</span>
+                            <span class="ml-2 text-green-600">{{ __('menu_owner.common.remaining', ['count' => $menu->getRemainingCategorySlots()]) }}</span>
                         @endif
                     </div>
                 @endif
@@ -98,18 +97,18 @@
                                 <div class="flex items-center justify-between text-sm text-gray-500 mb-4">
                                     <span>{{ $category->dishes()->count() }}
                                         {{ Str::plural('dish', $category->dishes()->count()) }}</span>
-                                    <span>Order: {{ $category->display_order }}</span>
+                                    <span>{{ __('menu_owner.common.order_label') }}: {{ $category->display_order }}</span>
                                 </div>
 
                                 <div class="flex items-center gap-2">
-                                    <x-btn href="{{ route('menu-owner.categories.edit', $category) }}" variant="secondary" size="sm" class="flex-1">Edit</x-btn>
+                                    <x-btn href="{{ route('menu-owner.categories.edit', $category) }}" variant="secondary" size="sm" class="flex-1">{{ __('menu_owner.common.edit') }}</x-btn>
                                     <form action="{{ route('menu-owner.categories.destroy', $category) }}"
                                         method="POST"
-                                        onsubmit="return confirm('Are you sure you want to delete this category?');"
+                                        onsubmit="return confirm('{{ __('menu_owner.common.confirm_delete_category') }}');"
                                         class="inline">
                                         @csrf
                                         @method('DELETE')
-                                        <x-btn type="submit" variant="danger" size="sm">Delete</x-btn>
+                                        <x-btn type="submit" variant="danger" size="sm">{{ __('menu_owner.common.delete') }}</x-btn>
                                     </form>
                                 </div>
                             </div>

@@ -51,7 +51,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M12 4v16m8-8H4"></path>
                                 </svg>
-                                Add Social Link
+                                {{ __('menu_owner.social_links.add_social_link') }}
                             </x-btn>
                         </div>
                     </div>
@@ -59,12 +59,11 @@
             @else
                 @if ($menu)
                     <div class="mb-4 text-sm text-gray-600">
-                        <span class="font-semibold">{{ $socialLinks->count() }}</span> / <span
-                            class="font-semibold">{{ $menu->social_link_limit }}</span> social links
+                        {{ __('menu_owner.social_links.limit_text', ['count' => $socialLinks->count(), 'limit' => $menu->social_link_limit]) }}
                         @if ($menu->hasReachedSocialLinkLimit())
-                            <span class="ml-2 text-red-600 font-semibold">(Limit reached)</span>
+                            <span class="ml-2 text-red-600 font-semibold">{{ __('menu_owner.common.limit_reached') }}</span>
                         @else
-                            <span class="ml-2 text-green-600">({{ $menu->getRemainingSocialLinkSlots() }} remaining)</span>
+                            <span class="ml-2 text-green-600">{{ __('menu_owner.common.remaining', ['count' => $menu->getRemainingSocialLinkSlots()]) }}</span>
                         @endif
                     </div>
                 @endif
@@ -136,14 +135,14 @@
                                 <p class="text-sm text-gray-600 mb-4 break-all">{{ $socialLink->url }}</p>
 
                                 <div class="flex items-center gap-2">
-                                    <x-btn href="{{ route('menu-owner.social-links.edit', $socialLink) }}" variant="secondary" size="sm" class="flex-1">Edit</x-btn>
+                                    <x-btn href="{{ route('menu-owner.social-links.edit', $socialLink) }}" variant="secondary" size="sm" class="flex-1">{{ __('menu_owner.common.edit') }}</x-btn>
                                     <form action="{{ route('menu-owner.social-links.destroy', $socialLink) }}"
                                         method="POST"
-                                        onsubmit="return confirm('Are you sure you want to delete this social link?');"
+                                        onsubmit="return confirm('{{ __('menu_owner.common.confirm_delete_social_link') }}');"
                                         class="inline">
                                         @csrf
                                         @method('DELETE')
-                                        <x-btn type="submit" variant="danger" size="sm">Delete</x-btn>
+                                        <x-btn type="submit" variant="danger" size="sm">{{ __('menu_owner.common.delete') }}</x-btn>
                                     </form>
                                 </div>
                             </div>

@@ -1,4 +1,4 @@
-@include('public.menu.partials.head')
+@include('portal.menu.partials.head')
 
 @php
     // Helper: use physical left/right so "bottom right" is always the visual right corner in both LTR and RTL
@@ -17,12 +17,12 @@
     function getDishLayoutPartial($layout)
     {
         $layoutMap = [
-            'default' => 'public.menu.designs.partials.dish-card',
-            'compact' => 'public.menu.designs.partials.dish-compact',
-            'minimal' => 'public.menu.designs.partials.dish-minimal',
-            'decomposed' => 'public.menu.designs.partials.dish-decomposed',
+            'default' => 'portal.menu.designs.partials.dish-card',
+            'compact' => 'portal.menu.designs.partials.dish-compact',
+            'minimal' => 'portal.menu.designs.partials.dish-minimal',
+            'decomposed' => 'portal.menu.designs.partials.dish-decomposed',
         ];
-        return $layoutMap[$layout] ?? 'public.menu.designs.partials.dish-card';
+        return $layoutMap[$layout] ?? 'portal.menu.designs.partials.dish-card';
     }
 
     $pricePosition = $settings['price_position'] ?? 'bottom_right';
@@ -774,7 +774,7 @@
         </div>
     @endif
 
-    @include('public.menu.partials.scripts')
+    @include('portal.menu.partials.scripts')
 
     @if (($settings['enable_share'] ?? true) && ($settings['menu_design'] ?? 'default') === 'default')
         <script>
