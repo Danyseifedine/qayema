@@ -6,16 +6,16 @@ use App\Enums\UserRole;
 use Filament\Models\Contracts\FilamentUser;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Lab404\Impersonate\Models\Impersonate;
-use Spatie\MediaLibrary\HasMedia;
-use Spatie\MediaLibrary\InteractsWithMedia;
 
-class User extends Authenticatable implements FilamentUser, HasMedia
+class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Impersonate, InteractsWithMedia, Notifiable;
+    use HasFactory, Impersonate, Notifiable, SoftDeletes;
 
     public function canImpersonate(): bool
     {
@@ -27,59 +27,39 @@ class User extends Authenticatable implements FilamentUser, HasMedia
         return $this->isMenuOwner();
     }
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
         'name',
         'email',
         'password',
         'role',
-        'restaurant_name',
-        'phone',
-        'address',
+        'onboarding_step',
+        'onboarding_completed_at',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
+            'onboarding_step' => 'integer',
+            'onboarding_completed_at' => 'datetime',
         ];
     }
 
-    /**
-     * Get the menus for the user.
-     */
-    public function menus(): HasMany
+    public function restaurant(): HasOne
     {
-        return $this->hasMany(Menu::class);
+        return $this->hasOne(Restaurant::class);
     }
 
-    /**
-     * Get the user's (first) menu. App assumes one menu per owner.
-     */
-    public function currentMenu(): ?Menu
+    public function socialAccounts(): HasMany
     {
-        return $this->menus()->first();
+        return $this->hasMany(SocialAccount::class);
     }
 
     public function isAdmin(): bool
@@ -92,60 +72,28 @@ class User extends Authenticatable implements FilamentUser, HasMedia
         return $this->role === UserRole::MenuOwner;
     }
 
-    /**
-     * Check if step 1 (restaurant info) is complete.
-     */
-    public function isStep1Complete(): bool
-    {
-        return ! empty($this->restaurant_name) &&
-            ! empty($this->phone) &&
-            ! empty($this->address);
-    }
-
-    /**
-     * Check if step 2 (images) is complete.
-     */
-    public function isStep2Complete(): bool
-    {
-        return $this->hasMedia('logo') && $this->hasMedia('cover_image');
-    }
-
-    /**
-     * Check if restaurant setup is complete.
-     */
     public function isRestaurantSetupComplete(): bool
     {
-        return $this->isStep1Complete() && $this->isStep2Complete();
+        return $this->restaurant !== null;
     }
 
-    /**
-     * Check if profile is complete (for backward compatibility).
-     */
     public function isProfileComplete(): bool
     {
         return $this->isRestaurantSetupComplete();
     }
 
-    /**
-     * Register media collections.
-     */
-    public function registerMediaCollections(): void
+    public function hasCompletedOnboarding(): bool
     {
-        $this->addMediaCollection('logo')
-            ->singleFile()
-            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp']);
-
-        $this->addMediaCollection('cover_image')
-            ->singleFile()
-            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp']);
+        return $this->onboarding_completed_at !== null;
     }
 
-    /**
-     * Determine if the user can access Filament.
-     */
+    public function currentOnboardingStep(): int
+    {
+        return min(($this->onboarding_step ?? 0) + 1, 4);
+    }
+
     public function canAccessPanel(\Filament\Panel $panel): bool
     {
-        // Allow admins and menu owners to access Filament by default.
         return $this->isAdmin();
     }
 }

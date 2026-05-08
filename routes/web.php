@@ -3,12 +3,14 @@
 use App\Http\Controllers\MenuOwner\CategoryController;
 use App\Http\Controllers\MenuOwner\DashboardController;
 use App\Http\Controllers\MenuOwner\DishController;
-use App\Http\Controllers\MenuOwner\MenuController;
-use App\Http\Controllers\MenuOwner\MenuSettingController;
-use App\Http\Controllers\MenuOwner\MenuStatisticController;
+use App\Http\Controllers\MenuOwner\MenuScanController;
 use App\Http\Controllers\MenuOwner\ProfileController;
 use App\Http\Controllers\MenuOwner\QrCodeController;
+use App\Http\Controllers\MenuOwner\RestaurantController;
+use App\Http\Controllers\MenuOwner\SettingsController;
 use App\Http\Controllers\MenuOwner\SocialLinkController;
+use App\Http\Controllers\MenuOwner\StatisticController;
+use App\Http\Controllers\MenuOwner\TempUploadController;
 use App\Http\Controllers\Portal\MenuController as PortalMenuController;
 use Illuminate\Support\Facades\Route;
 
@@ -16,21 +18,24 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-require __DIR__.'/auth.php';
+// Guest-accessible locale switch (persists through login)
+Route::middleware(['owner.locale'])->group(function () {
+    Route::get('/locale/{locale}', function (string $locale) {
+        if (in_array($locale, config('locales.supported', ['en']), true)) {
+            session()->put('owner_locale', $locale);
+            session()->save();
+        }
+        $referer = request()->headers->get('referer', '');
+        $appUrl = rtrim(config('app.url'), '/');
+        $target = ($referer && str_starts_with($referer, $appUrl)) ? $referer : route('login');
 
-// Restaurant setup routes (must be before other routes and accessible without setup check)
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/restaurant-setup', [\App\Http\Controllers\MenuOwner\SetupController::class, 'index'])->name('restaurant-setup.index');
-    Route::post('/restaurant-setup/step1', [\App\Http\Controllers\MenuOwner\SetupController::class, 'step1'])->name('restaurant-setup.step1');
-    Route::post('/restaurant-setup/step2', [\App\Http\Controllers\MenuOwner\SetupController::class, 'step2'])->name('restaurant-setup.step2');
-
-    // Force redirect to setup if incomplete
-    Route::get('/setup', function () {
-        return redirect()->route('restaurant-setup.index');
-    })->name('setup');
+        return redirect($target);
+    })->name('locale.switch');
 });
 
-// Menu owner routes (locale applies to dashboard and all owner pages)
+require __DIR__.'/auth.php';
+
+// Locale switcher
 Route::middleware(['auth', 'owner.locale'])->group(function () {
     Route::get('/owner/locale/{locale}', function (string $locale) {
         if (in_array($locale, config('locales.supported', ['en']), true)) {
@@ -46,33 +51,55 @@ Route::middleware(['auth', 'owner.locale'])->group(function () {
     })->name('owner.locale.switch');
 });
 
-Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureRestaurantSetupComplete::class, 'owner.locale'])->group(function () {
+// Main owner routes (require completed setup)
+Route::middleware(['auth', \App\Http\Middleware\EnsureOnboardingComplete::class, \App\Http\Middleware\EnsureRestaurantSetupComplete::class, 'owner.locale'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::middleware(\App\Http\Middleware\EnsureUserIsMenuOwner::class)->group(function () {
-        Route::get('/menus', [MenuController::class, 'index'])->name('menu-owner.menus.index');
-        Route::post('/menus', [MenuController::class, 'storeOrUpdate'])->name('menu-owner.menus.store-or-update');
+        // Temp image upload (optimize & store for deferred form submission)
+        Route::post('/temp-upload', [TempUploadController::class, 'store'])->name('menu-owner.temp-upload');
 
+        // Restaurant
+        Route::get('/restaurant', [RestaurantController::class, 'index'])->name('menu-owner.restaurant.index');
+        Route::post('/restaurant', [RestaurantController::class, 'storeOrUpdate'])->name('menu-owner.restaurant.store-or-update');
+
+        // Categories
         Route::get('/categories', [CategoryController::class, 'index'])->name('menu-owner.categories.index');
         Route::get('/categories/create', [CategoryController::class, 'create'])->name('menu-owner.categories.create');
         Route::post('/categories', [CategoryController::class, 'store'])->name('menu-owner.categories.store');
         Route::get('/category-edit/{category}', [CategoryController::class, 'edit'])->name('menu-owner.categories.edit');
         Route::put('/categories/{category}', [CategoryController::class, 'update'])->name('menu-owner.categories.update');
         Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('menu-owner.categories.destroy');
+        Route::post('/categories/reorder', [CategoryController::class, 'reorder'])->name('menu-owner.categories.reorder');
 
+        // Dishes
         Route::get('/dishes', [DishController::class, 'index'])->name('menu-owner.dishes.index');
         Route::get('/dishes/create', [DishController::class, 'create'])->name('menu-owner.dishes.create');
         Route::post('/dishes', [DishController::class, 'store'])->name('menu-owner.dishes.store');
         Route::get('/dish-edit/{dish}', [DishController::class, 'edit'])->name('menu-owner.dishes.edit');
         Route::put('/dishes/{dish}', [DishController::class, 'update'])->name('menu-owner.dishes.update');
         Route::delete('/dishes/{dish}', [DishController::class, 'destroy'])->name('menu-owner.dishes.destroy');
+        Route::post('/dishes/reorder', [DishController::class, 'reorder'])->name('menu-owner.dishes.reorder');
 
-        Route::get('/settings', [MenuSettingController::class, 'index'])->name('menu-owner.settings.index');
-        Route::put('/settings', [MenuSettingController::class, 'update'])->name('menu-owner.settings.update');
-        Route::get('/statistics', [MenuStatisticController::class, 'index'])->name('menu-owner.statistics.index');
+        // Settings
+        Route::get('/settings', [SettingsController::class, 'index'])->name('menu-owner.settings.index');
+        Route::post('/settings', [SettingsController::class, 'update'])->name('menu-owner.settings.update');
+
+        // Statistics
+        Route::get('/statistics', [StatisticController::class, 'index'])->name('menu-owner.statistics.index');
+
+        // Menu scan (AI)
+        Route::get('/menu-scan', [MenuScanController::class, 'index'])->name('menu-owner.menu-scan.index');
+        Route::post('/menu-scan', [MenuScanController::class, 'scan'])->name('menu-owner.menu-scan.scan');
+        Route::get('/menu-scan/{id}/status', [MenuScanController::class, 'status'])->name('menu-owner.menu-scan.status');
+        Route::post('/menu-scan/{id}/import', [MenuScanController::class, 'import'])->name('menu-owner.menu-scan.import');
+
+        // QR Code
         Route::get('/qr-code', [QrCodeController::class, 'index'])->name('menu-owner.qr-code.index');
         Route::get('/qr-code/generate', [QrCodeController::class, 'generate'])->name('menu-owner.qr-code.generate');
+        Route::post('/qr-code/settings', [QrCodeController::class, 'saveSettings'])->name('menu-owner.qr-code.save-settings');
 
+        // Social Links
         Route::get('/social-links', [SocialLinkController::class, 'index'])->name('menu-owner.social-links.index');
         Route::get('/social-links/create', [SocialLinkController::class, 'create'])->name('menu-owner.social-links.create');
         Route::post('/social-links', [SocialLinkController::class, 'store'])->name('menu-owner.social-links.store');
@@ -82,19 +109,23 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureRestaurantSetu
     });
 });
 
+// Profile
 Route::middleware(['auth', 'owner.locale'])->group(function () {
     Route::impersonate();
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::patch('/profile/restaurant', [ProfileController::class, 'updateRestaurantInformation'])->name('profile.restaurant.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// Public menu routes - using /m/ prefix to avoid conflicts with app routes
+// Public restaurant/menu routes
 Route::post('/{slug}/track-exit', [PortalMenuController::class, 'trackExit'])
     ->where('slug', '[a-z0-9-]+')
     ->name('public.menu.track-exit');
+
+Route::post('/{slug}/track-whatsapp-order', [PortalMenuController::class, 'trackWhatsAppOrder'])
+    ->where('slug', '[a-z0-9-]+')
+    ->name('public.menu.track-whatsapp-order');
 
 Route::get('/{slug}', [PortalMenuController::class, 'show'])
     ->where('slug', '[a-z0-9-]+')

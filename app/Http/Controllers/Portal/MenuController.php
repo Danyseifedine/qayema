@@ -3,113 +3,123 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
-use App\Models\Menu;
-use App\Models\MenuStatistic;
+use App\Models\Restaurant;
+use App\Models\RestaurantStatistic;
 use App\Services\DeviceDetectionService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class MenuController extends Controller
 {
-    private const RESERVED_PATHS = ['categories', 'dishes', 'dashboard', 'menus', 'settings', 'statistics', 'qr-code', 'social-links', 'profile', 'admin', 'login', 'register', 'logout', 'password', 'email', 'restaurant-setup', 'setup', 'sanctum'];
+    private const RESERVED_PATHS = ['categories', 'dishes', 'dashboard', 'restaurant', 'settings', 'statistics', 'qr-code', 'social-links', 'profile', 'admin', 'login', 'register', 'logout', 'password', 'email', 'sanctum'];
 
     public function __construct(private readonly DeviceDetectionService $deviceDetection) {}
 
     public function show(Request $request, string $slug): View
     {
-        if (in_array($slug, self::RESERVED_PATHS) || is_numeric($slug)) {
-            abort(404);
-        }
+        $this->guardSlug($slug);
 
-        $menu = Menu::where('slug', $slug)
+        $restaurant = Restaurant::where('slug', $slug)
             ->where('is_active', true)
-            ->with(['user', 'categories' => function ($query) {
-                $query->orderBy('display_order');
-            }, 'categories.dishes' => function ($query) {
-                $query->where('is_available', true)->orderBy('display_order');
-            }, 'dishes' => function ($query) {
-                $query->where('is_available', true)
-                    ->whereNull('category_id')
-                    ->orderBy('display_order');
-            }])
+            ->with([
+                'template',
+                'socialLinks',
+                'categories' => fn ($q) => $q->orderBy('display_order'),
+                'categories.dishes' => fn ($q) => $q->where('is_available', true)->orderBy('display_order'),
+                'dishes' => fn ($q) => $q->where('is_available', true)->whereNull('category_id')->orderBy('display_order'),
+            ])
             ->firstOrFail();
 
-        $this->trackVisitor($request, $menu);
+        $this->trackVisitor($request, $restaurant);
 
-        $user = $menu->user;
-        $categories = $menu->categories;
-
-        $uncategorizedDishes = $menu->dishes()
-            ->where('is_available', true)
-            ->whereNull('category_id')
-            ->orderBy('display_order')
-            ->get();
-
-        $menu->setDefaultSettings();
-
-        $settings = $menu->getSettings();
+        $settings = array_merge(
+            config('menu_settings.defaults', []),
+            $restaurant->resolvedTemplateSettings()
+        );
 
         return view('portal.menu.designs.default', [
-            'menu' => $menu,
-            'user' => $user,
-            'categories' => $categories,
-            'uncategorizedDishes' => $uncategorizedDishes,
+            'restaurant' => $restaurant,
+            'categories' => $restaurant->categories,
+            'uncategorizedDishes' => $restaurant->dishes,
             'settings' => $settings,
+            'template' => $restaurant->template?->slug ?? 'default',
         ]);
     }
 
-    public function trackExit(Request $request, string $slug)
+    public function trackWhatsAppOrder(Request $request, string $slug): JsonResponse
     {
-        if (in_array($slug, self::RESERVED_PATHS) || is_numeric($slug)) {
-            abort(404);
-        }
+        $this->guardSlug($slug);
 
-        $menu = Menu::where('slug', $slug)
+        $restaurant = Restaurant::where('slug', $slug)
             ->where('is_active', true)
             ->firstOrFail();
 
-        $sessionId = $request->session()->getId();
-        $timeSpent = (int) $request->input('time_spent', 0);
+        $statistic = $this->findTodayStatistic($restaurant, $request->session()->getId());
 
-        $statistic = MenuStatistic::where('menu_id', $menu->id)
-            ->where('session_id', $sessionId)
-            ->whereDate('viewed_at', today())
-            ->orderBy('viewed_at', 'desc')
-            ->first();
-
-        if ($statistic && $timeSpent > 0) {
-            $newTimeSpent = max($statistic->time_spent ?? 0, $timeSpent);
-            $statistic->update(['time_spent' => $newTimeSpent]);
+        if ($statistic) {
+            $statistic->increment('whatsapp_orders');
         }
 
         return response()->json(['success' => true]);
     }
 
-    protected function trackVisitor(Request $request, Menu $menu): void
+    public function trackExit(Request $request, string $slug): JsonResponse
+    {
+        $this->guardSlug($slug);
+
+        $restaurant = Restaurant::where('slug', $slug)
+            ->where('is_active', true)
+            ->firstOrFail();
+
+        $timeSpent = (int) $request->input('time_spent', 0);
+        $statistic = $this->findTodayStatistic($restaurant, $request->session()->getId());
+
+        if ($statistic && $timeSpent > 0) {
+            $statistic->update(['time_spent' => max($statistic->time_spent ?? 0, $timeSpent)]);
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    protected function trackVisitor(Request $request, Restaurant $restaurant): void
     {
         $sessionId = $request->session()->getId();
+        $existing = $this->findTodayStatistic($restaurant, $sessionId);
 
-        $existingStat = MenuStatistic::where('menu_id', $menu->id)
-            ->where('session_id', $sessionId)
-            ->whereDate('viewed_at', today())
-            ->first();
-
-        if ($existingStat) {
-            $existingStat->increment('page_views');
+        if ($existing) {
+            $existing->increment('page_views');
 
             return;
         }
 
         $userAgent = $request->userAgent();
 
-        MenuStatistic::create([
-            'menu_id' => $menu->id,
+        RestaurantStatistic::create([
+            'restaurant_id' => $restaurant->id,
             'session_id' => $sessionId,
             'device_type' => $this->deviceDetection->getDeviceType($userAgent),
             'browser' => $this->deviceDetection->getBrowser($userAgent),
             'os' => $this->deviceDetection->getOS($userAgent),
             'viewed_at' => now(),
             'page_views' => 1,
+            'via_qr' => $request->query('via') === 'qr',
         ]);
+    }
+
+    private function guardSlug(string $slug): void
+    {
+        if (in_array($slug, self::RESERVED_PATHS) || is_numeric($slug)) {
+            abort(404);
+        }
+    }
+
+    private function findTodayStatistic(Restaurant $restaurant, string $sessionId): ?RestaurantStatistic
+    {
+        return RestaurantStatistic::where('restaurant_id', $restaurant->id)
+            ->where('session_id', $sessionId)
+            ->whereDate('viewed_at', today())
+            ->orderBy('viewed_at', 'desc')
+            ->first();
     }
 }

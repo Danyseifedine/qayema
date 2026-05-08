@@ -4,11 +4,10 @@ namespace App\Providers\Filament;
 
 use App\Filament\Admin\Resources\Categories\CategoryResource;
 use App\Filament\Admin\Resources\Dishes\DishResource;
-use App\Filament\Admin\Resources\Menus\MenuResource;
-use App\Filament\Admin\Resources\MenuSettings\MenuSettingResource;
-use App\Filament\Admin\Resources\MenuSocialLinks\MenuSocialLinkResource;
-use App\Filament\Admin\Resources\MenuStatistics\MenuStatisticResource;
-use App\Filament\Admin\Resources\Settings\SettingResource;
+use App\Filament\Admin\Resources\Restaurants\RestaurantResource;
+use App\Filament\Admin\Resources\RestaurantSocialLinks\RestaurantSocialLinkResource;
+use App\Filament\Admin\Resources\RestaurantStatistics\RestaurantStatisticResource;
+use App\Filament\Admin\Resources\Templates\TemplateResource;
 use App\Filament\Admin\Resources\Users\UserResource;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use Filament\Http\Middleware\Authenticate;
@@ -40,13 +39,12 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->resources([
                 UserResource::class,
-                MenuResource::class,
+                RestaurantResource::class,
+                TemplateResource::class,
                 CategoryResource::class,
                 DishResource::class,
-                MenuSettingResource::class,
-                MenuSocialLinkResource::class,
-                MenuStatisticResource::class,
-                SettingResource::class,
+                RestaurantSocialLinkResource::class,
+                RestaurantStatisticResource::class,
             ])
             ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\Filament\Admin\Pages')
             ->pages([
@@ -54,9 +52,9 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Admin/Widgets'), for: 'App\Filament\Admin\Widgets')
             ->widgets([
-                \App\Filament\Admin\Widgets\MenuStatsWidget::class,
+                \App\Filament\Admin\Widgets\RestaurantStatsWidget::class,
                 \App\Filament\Admin\Widgets\VisitorStatsWidget::class,
-                \App\Filament\Admin\Widgets\PopularMenusWidget::class,
+                \App\Filament\Admin\Widgets\PopularRestaurantsWidget::class,
                 \App\Filament\Admin\Widgets\RecentActivityWidget::class,
             ])
             ->middleware([

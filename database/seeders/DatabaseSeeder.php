@@ -18,6 +18,9 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(SettingsSeeder::class);
+        $this->call(RestaurantTypeSeeder::class);
+        $this->call(TagSeeder::class);
+        $this->call(TemplateTagSeeder::class);
         User::create([
             'name' => 'Admin',
             'email' => 'admin@admin.com',

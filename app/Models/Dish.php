@@ -12,43 +12,36 @@ class Dish extends Model implements HasMedia
     use InteractsWithMedia;
 
     protected $fillable = [
-        'menu_id',
+        'restaurant_id',
         'category_id',
         'name',
-        'description',
         'price',
         'ingredients',
         'is_available',
         'display_order',
     ];
 
-    protected $casts = [
-        'menu_id' => 'integer',
-        'category_id' => 'integer',
-        'price' => 'decimal:2',
-        'is_available' => 'boolean',
-        'display_order' => 'integer',
-    ];
-
-    /**
-     * Get the menu that owns the dish.
-     */
-    public function menu(): BelongsTo
+    protected function casts(): array
     {
-        return $this->belongsTo(Menu::class);
+        return [
+            'restaurant_id' => 'integer',
+            'category_id' => 'integer',
+            'price' => 'decimal:2',
+            'is_available' => 'boolean',
+            'display_order' => 'integer',
+        ];
     }
 
-    /**
-     * Get the category that owns the dish.
-     */
+    public function restaurant(): BelongsTo
+    {
+        return $this->belongsTo(Restaurant::class);
+    }
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
     }
 
-    /**
-     * Register media collections.
-     */
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('images')

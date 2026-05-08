@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\scorp\\\\Desktop\\\\lebify\\\\menux\\\\resources\\\\views\\\\menu-owner\" -Recurse -File)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\scorp\\\\Desktop\\\\lebify\\\\menux\\\\resources\\\\lang\" -Directory)",
+      "Bash(Select-Object -ExpandProperty Name)",
+      "Bash(powershell -Command \"\\(Get-Content resources/views/menu-owner/statistics/index.blade.php\\) -replace '<div class=\\\\\"p-6\\\\\">', '<div class=\\\\\"qp-card-body\\\\\">' | Set-Content resources/views/menu-owner/statistics/index.blade.php -Encoding utf8\")",
+      "Bash(powershell -Command \"\\(Get-Content resources/views/components/ui/combo.blade.php -Raw\\) -replace 'No matches for \\\\&quot;.*?_empty', 'no-found-placeholder' | Select-String 'no-found-placeholder'\")",
+      "Bash(find app/Http/Controllers -name \"TempUpload*\")",
+      "Bash(Get-ChildItem -Recurse app/Http/Controllers -Filter \"*Temp*\")",
+      "Bash(vendor/bin/pint app/Http/Controllers/MenuOwner/QrCodeController.php app/Models/Restaurant.php app/Models/RestaurantStatistic.php app/Http/Controllers/Portal/MenuController.php --dirty)",
+      "Bash(php -r \"app\\('translator'\\)->setLocale\\('ar'\\); echo app\\('translator'\\)->get\\('menu_owner.qr_code.customize'\\) . PHP_EOL; app\\('translator'\\)->setLocale\\('ja'\\); echo app\\('translator'\\)->get\\('menu_owner.qr_code.stats_total'\\) . PHP_EOL; app\\('translator'\\)->setLocale\\('nl'\\); echo app\\('translator'\\)->get\\('menu_owner.qr_code.ec_desc'\\) . PHP_EOL;\")",
+      "mcp__laravel-boost__database-schema",
+      "Bash(php -r 'require '\\\\''vendor/autoload.php'\\\\''; $app = require '\\\\''bootstrap/app.php'\\\\''; echo count\\(config\\('\\\\''currencies'\\\\''\\)\\) . '\\\\'' currencies loaded'\\\\'';')",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\scorp\\\\Desktop\\\\lebify\\\\menux\\\\routes\" -Filter \"*.php\")",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\scorp\\\\Desktop\\\\lebify\\\\menux\\\\database\\\\migrations\\\\\" -File | ForEach-Object { $_.Name })",
+      "Bash(Remove-Item -Force \"app/Http/Controllers/MenuOwner/SetupController.php\")",
+      "Bash(Remove-Item -Force \"app/Http/Requests/RestaurantSetupRequest.php\")",
+      "Bash(Remove-Item -Force \"app/Http/Requests/RestaurantSetupStep1Request.php\")",
+      "Bash(Remove-Item -Force \"app/Http/Requests/RestaurantInformationRequest.php\")",
+      "Bash(Remove-Item -Force \"resources/views/menu-owner/setup/index.blade.php\")",
+      "PowerShell(php -r \"echo __DIR__ . '/../lang';\" 2>&1)",
+      "PowerShell(php \"C:\\\\Users\\\\scorp\\\\Desktop\\\\lebify\\\\menux\\\\storage\\\\lang_cleanup.php\" 2>&1)",
+      "PowerShell(php \"C:\\\\Users\\\\scorp\\\\Desktop\\\\lebify\\\\menux\\\\storage\\\\lang_cleanup.php\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\scorp\\\\Desktop\\\\lebify\\\\menux\\\\database\\\\migrations\" -Filter \"*restaurant*statistic*\" -Recurse)",
+      "WebSearch",
+      "Bash(findstr /n \"GEMINI\" .env)",
+      "Bash(Select-String -Pattern \"GEMINI\" .env)",
+      "mcp__laravel-boost__get-absolute-url",
+      "Bash(powershell -Command \"\\(Get-Content app/Http/Controllers/MenuOwner/CategoryController.php\\) -replace \\\\\"route\\\\\\\\\\('dashboard\\\\\\\\.categories\\\\\\\\.index'\\\\\\\\\\)\\\\\", \\\\\"route\\('menu-owner.categories.index'\\)\\\\\" | Set-Content app/Http/Controllers/MenuOwner/CategoryController.php -Encoding utf8\")",
+      "Bash(powershell -Command \"\\(Get-Content app/Http/Controllers/MenuOwner/DishController.php\\) -replace \\\\\"route\\\\\\\\\\('dashboard\\\\\\\\.dishes\\\\\\\\.index'\\\\\\\\\\)\\\\\", \\\\\"route\\('menu-owner.dishes.index'\\)\\\\\" | Set-Content app/Http/Controllers/MenuOwner/DishController.php -Encoding utf8\")",
+      "Bash(powershell -Command ' *)",
+      "Bash(Get-Content resources/css/login.css -Tail 20)"
+    ]
+  }
+}

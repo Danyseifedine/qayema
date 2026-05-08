@@ -30,8 +30,8 @@ class DishesTable
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
-                TextColumn::make('menu.name')
-                    ->label('Menu')
+                TextColumn::make('restaurant.name')
+                    ->label('Restaurant')
                     ->placeholder('N/A')
                     ->searchable()
                     ->sortable(),
@@ -44,12 +44,6 @@ class DishesTable
                 TextColumn::make('price')
                     ->placeholder('N/A')
                     ->money('USD')
-                    ->sortable()
-                    ->toggleable(),
-                TextColumn::make('prep_time')
-                    ->label('Prep Time')
-                    ->placeholder('N/A')
-                    ->suffix(' min')
                     ->sortable()
                     ->toggleable(),
                 ToggleColumn::make('is_available')
@@ -66,9 +60,9 @@ class DishesTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('menu_id')
-                    ->label('Menu')
-                    ->relationship('menu', 'name')
+                SelectFilter::make('restaurant_id')
+                    ->label('Restaurant')
+                    ->relationship('restaurant', 'name')
                     ->searchable()
                     ->preload(),
                 SelectFilter::make('category_id')
@@ -78,10 +72,7 @@ class DishesTable
                     ->preload(),
                 SelectFilter::make('is_available')
                     ->label('Status')
-                    ->options([
-                        1 => 'Available',
-                        0 => 'Unavailable',
-                    ]),
+                    ->options([1 => 'Available', 0 => 'Unavailable']),
             ])
             ->recordActions([
                 ViewAction::make(),

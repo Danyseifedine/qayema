@@ -28,8 +28,8 @@ class CategoriesTable
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
-                TextColumn::make('menu.name')
-                    ->label('Menu')
+                TextColumn::make('restaurant.name')
+                    ->label('Restaurant')
                     ->placeholder('N/A')
                     ->searchable()
                     ->sortable(),
@@ -49,9 +49,9 @@ class CategoriesTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('menu_id')
-                    ->label('Menu')
-                    ->relationship('menu', 'name')
+                SelectFilter::make('restaurant_id')
+                    ->label('Restaurant')
+                    ->relationship('restaurant', 'name')
                     ->searchable()
                     ->preload(),
             ])

@@ -2,13 +2,15 @@
 
 namespace App\Filament\Admin\Widgets;
 
-use App\Models\MenuStatistic;
+use App\Models\RestaurantStatistic;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
 
 class RecentActivityWidget extends TableWidget
 {
+    protected static ?int $sort = 4;
+
     protected int|string|array $columnSpan = 'full';
 
     public function getHeading(): string
@@ -20,20 +22,20 @@ class RecentActivityWidget extends TableWidget
     {
         return $table
             ->query(
-                MenuStatistic::query()
-                    ->with('menu')
+                RestaurantStatistic::query()
+                    ->with('restaurant')
                     ->latest('viewed_at')
-                    ->limit(10)
+                    ->limit(15)
             )
             ->columns([
-                TextColumn::make('menu.name')
-                    ->label('Menu')
+                TextColumn::make('restaurant.name')
+                    ->label('Restaurant')
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
                 TextColumn::make('viewed_at')
                     ->label('Visited At')
-                    ->dateTime()
+                    ->dateTime('M j, Y H:i')
                     ->sortable(),
                 TextColumn::make('page_views')
                     ->label('Page Views')
@@ -41,16 +43,26 @@ class RecentActivityWidget extends TableWidget
                     ->sortable(),
                 TextColumn::make('time_spent')
                     ->label('Time Spent')
-                    ->formatStateUsing(fn ($state) => $state ? $this->formatTime($state) : 'N/A')
+                    ->formatStateUsing(fn ($state) => $state ? $this->formatTime((int) $state) : '—')
                     ->sortable(),
                 TextColumn::make('device_type')
                     ->label('Device')
                     ->badge()
+                    ->color(fn ($state) => match ($state) {
+                        'mobile' => 'info',
+                        'tablet' => 'warning',
+                        'desktop' => 'success',
+                        default => 'gray',
+                    })
                     ->sortable(),
                 TextColumn::make('browser')
                     ->label('Browser')
                     ->sortable()
                     ->toggleable(),
+                TextColumn::make('os')
+                    ->label('OS')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('viewed_at', 'desc');
     }
@@ -61,14 +73,14 @@ class RecentActivityWidget extends TableWidget
             return $seconds.'s';
         }
 
-        $minutes = floor($seconds / 60);
+        $minutes = (int) floor($seconds / 60);
         $remainingSeconds = $seconds % 60;
 
         if ($minutes < 60) {
             return $remainingSeconds > 0 ? "{$minutes}m {$remainingSeconds}s" : "{$minutes}m";
         }
 
-        $hours = floor($minutes / 60);
+        $hours = (int) floor($minutes / 60);
         $remainingMinutes = $minutes % 60;
 
         return $remainingMinutes > 0 ? "{$hours}h {$remainingMinutes}m" : "{$hours}h";

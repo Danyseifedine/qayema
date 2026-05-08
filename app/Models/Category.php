@@ -13,36 +13,29 @@ class Category extends Model implements HasMedia
     use InteractsWithMedia;
 
     protected $fillable = [
-        'menu_id',
+        'restaurant_id',
         'name',
-        'description',
         'display_order',
     ];
 
-    protected $casts = [
-        'menu_id' => 'integer',
-        'display_order' => 'integer',
-    ];
-
-    /**
-     * Get the menu that owns the category.
-     */
-    public function menu(): BelongsTo
+    protected function casts(): array
     {
-        return $this->belongsTo(Menu::class);
+        return [
+            'restaurant_id' => 'integer',
+            'display_order' => 'integer',
+        ];
     }
 
-    /**
-     * Get the dishes for the category.
-     */
+    public function restaurant(): BelongsTo
+    {
+        return $this->belongsTo(Restaurant::class);
+    }
+
     public function dishes(): HasMany
     {
         return $this->hasMany(Dish::class)->orderBy('display_order');
     }
 
-    /**
-     * Register media collections.
-     */
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('image')

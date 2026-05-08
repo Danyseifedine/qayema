@@ -92,6 +92,36 @@ class ImageOptimizationService
     }
 
     /**
+     * Generic optimization dispatched by context name.
+     * Used by the async temp-upload endpoint.
+     */
+    public function optimizeByContext(UploadedFile $file, string $context): string
+    {
+        return match ($context) {
+            'logo' => $this->optimizeLogo($file),
+            'cover_image' => $this->optimizeCoverImage($file),
+            'dish' => $this->optimizeDishImage($file),
+            'category' => $this->optimizeCategoryImage($file),
+            default => $this->optimizeGeneric($file),
+        };
+    }
+
+    /**
+     * Generic optimization: max 1200×1200, max 200 KB.
+     * Suitable for any image where no specific context is known.
+     */
+    public function optimizeGeneric(UploadedFile $file): string
+    {
+        $image = $this->manager->read($file->getRealPath());
+        $image->scaleDown(width: 1200, height: 1200);
+
+        $tempPath = $this->tempDir().'/generic_'.uniqid().'.jpg';
+        $this->saveCompressed($image, $tempPath, 200 * 1024);
+
+        return $tempPath;
+    }
+
+    /**
      * Return the path to the shared temp directory, creating it if necessary.
      */
     private function tempDir(): string

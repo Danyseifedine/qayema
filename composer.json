@@ -12,9 +12,12 @@
         "intervention/image": "^3.11",
         "lab404/laravel-impersonate": "^1.7",
         "laravel/framework": "^12.0",
+        "laravel/socialite": "^5.27",
         "laravel/tinker": "^2.10.1",
+        "propaganistas/laravel-phone": "^6.0",
         "simplesoftwareio/simple-qrcode": "^4.2",
-        "spatie/laravel-medialibrary": "^11.17"
+        "spatie/laravel-medialibrary": "^11.17",
+        "ysfkaya/filament-phone-input": "^4.1"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

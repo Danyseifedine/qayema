@@ -3,7 +3,7 @@
 namespace Tests\Feature\MenuOwner;
 
 use App\Models\Dish;
-use App\Models\Menu;
+use App\Models\Restaurant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -15,15 +15,14 @@ class DishFormTest extends TestCase
     public function test_dish_edit_page_includes_full_form_and_dish_form_id(): void
     {
         $owner = User::factory()->create();
-        $menu = Menu::query()->create([
+        $restaurant = Restaurant::query()->create([
             'user_id' => $owner->id,
-            'name' => 'Test Menu',
-            'slug' => 'test-menu-dish-form',
-            'menu_style' => 'home',
+            'name' => 'Test Restaurant',
+            'slug' => 'test-restaurant-dish-form',
             'is_active' => true,
         ]);
         $dish = Dish::query()->create([
-            'menu_id' => $menu->id,
+            'restaurant_id' => $restaurant->id,
             'name' => 'Test Dish',
             'display_order' => 0,
             'is_available' => true,

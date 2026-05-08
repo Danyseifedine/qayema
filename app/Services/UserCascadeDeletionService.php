@@ -10,7 +10,7 @@ use Illuminate\Validation\ValidationException;
 class UserCascadeDeletionService
 {
     /**
-     * Permanently delete the user and all owned data (menus, dishes, categories, media, sessions, etc.).
+     * Permanently delete the user and all owned data (restaurant, dishes, categories, media, sessions, etc.).
      */
     public function delete(User $user): void
     {
@@ -33,24 +33,22 @@ class UserCascadeDeletionService
             $this->deleteDatabaseSessions($user);
             $this->deletePasswordResetTokens($user);
 
-            $menus = $user->menus()->with(['dishes', 'categories'])->get();
+            $restaurant = $user->restaurant()->with(['dishes', 'categories'])->first();
 
-            foreach ($menus as $menu) {
-                foreach ($menu->dishes as $dish) {
+            if ($restaurant) {
+                foreach ($restaurant->dishes as $dish) {
                     $dish->delete();
                 }
-                foreach ($menu->categories as $category) {
+                foreach ($restaurant->categories as $category) {
                     $category->delete();
                 }
 
-                $menu->socialLinks()->delete();
-                $menu->statistics()->delete();
-                $menu->settings()->delete();
-                $menu->delete();
+                $restaurant->socialLinks()->delete();
+                $restaurant->statistics()->delete();
+                $restaurant->clearMediaCollection('logo');
+                $restaurant->clearMediaCollection('cover_image');
+                $restaurant->delete();
             }
-
-            $user->clearMediaCollection('logo');
-            $user->clearMediaCollection('cover_image');
 
             $user->deleteQuietly();
         });

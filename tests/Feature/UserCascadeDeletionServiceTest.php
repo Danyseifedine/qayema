@@ -5,7 +5,7 @@ namespace Tests\Feature;
 use App\Enums\UserRole;
 use App\Models\Category;
 use App\Models\Dish;
-use App\Models\Menu;
+use App\Models\Restaurant;
 use App\Models\User;
 use App\Services\UserCascadeDeletionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -19,20 +19,19 @@ class UserCascadeDeletionServiceTest extends TestCase
     public function test_deletes_user_and_owned_menu_data(): void
     {
         $owner = User::factory()->create(['role' => UserRole::MenuOwner]);
-        $menu = Menu::query()->create([
+        $restaurant = Restaurant::query()->create([
             'user_id' => $owner->id,
             'name' => 'M',
             'slug' => 'm-slug-delete-test',
-            'menu_style' => 'home',
             'is_active' => true,
         ]);
         $category = Category::query()->create([
-            'menu_id' => $menu->id,
+            'restaurant_id' => $restaurant->id,
             'name' => 'C',
             'display_order' => 0,
         ]);
         $dish = Dish::query()->create([
-            'menu_id' => $menu->id,
+            'restaurant_id' => $restaurant->id,
             'category_id' => $category->id,
             'name' => 'D',
             'display_order' => 0,
@@ -44,7 +43,7 @@ class UserCascadeDeletionServiceTest extends TestCase
         app(UserCascadeDeletionService::class)->delete($owner->fresh());
 
         $this->assertDatabaseMissing('users', ['id' => $owner->id]);
-        $this->assertDatabaseMissing('menus', ['id' => $menu->id]);
+        $this->assertDatabaseMissing('restaurants', ['id' => $restaurant->id]);
         $this->assertDatabaseMissing('categories', ['id' => $category->id]);
         $this->assertDatabaseMissing('dishes', ['id' => $dish->id]);
     }

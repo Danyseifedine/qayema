@@ -46,20 +46,16 @@ class UsersTable
                         default => is_string($state) ? $state : $state->value,
                     })
                     ->sortable(),
-                TextColumn::make('restaurant_name')
-                    ->label('Business Name')
+                TextColumn::make('restaurant.name')
+                    ->label('Restaurant')
                     ->placeholder('N/A')
                     ->searchable()
                     ->toggleable(),
-                TextColumn::make('phone')
+                TextColumn::make('restaurant.phone')
+                    ->label('Phone')
                     ->placeholder('N/A')
                     ->searchable()
                     ->toggleable(),
-                TextColumn::make('menus_count')
-                    ->label('Menus')
-                    ->placeholder('N/A')
-                    ->counts('menus')
-                    ->sortable(),
                 TextColumn::make('created_at')
                     ->placeholder('N/A')
                     ->dateTime()
@@ -85,7 +81,7 @@ class UsersTable
                 DeleteAction::make()
                     ->requiresConfirmation()
                     ->modalHeading('Delete user')
-                    ->modalDescription('This permanently deletes the user, every menu they own, all categories and dishes (including images), social links, statistics, settings, profile media, and their sessions.')
+                    ->modalDescription('This permanently deletes the user, their restaurant, all categories and dishes (including images), social links, statistics, profile media, and their sessions.')
                     ->action(function (User $record): void {
                         app(UserCascadeDeletionService::class)->delete($record);
                     }),
@@ -95,7 +91,7 @@ class UsersTable
                     DeleteBulkAction::make()
                         ->requiresConfirmation()
                         ->modalHeading('Delete selected users')
-                        ->modalDescription('Each selected user will be fully removed along with all menus, dishes, categories, images, and related data. Users you are not allowed to delete will be skipped.')
+                        ->modalDescription('Each selected user will be fully removed along with their restaurant, all dishes, categories, images, and related data. Users you are not allowed to delete will be skipped.')
                         ->action(function ($records): void {
                             $deletion = app(UserCascadeDeletionService::class);
                             foreach ($records as $record) {

@@ -17,16 +17,13 @@ class EnsureRestaurantSetupComplete
     {
         $user = auth()->user();
 
-        // Allow admins to bypass
         if ($user && $user->isAdmin()) {
             return $next($request);
         }
 
-        // Check if user is menu owner and setup is not complete
-        if ($user && ! $user->isRestaurantSetupComplete()) {
-            // Allow access to setup routes and profile
-            if (! $request->routeIs('restaurant-setup.*') && ! $request->routeIs('profile.*') && ! $request->routeIs('logout')) {
-                return redirect()->route('restaurant-setup.index');
+        if ($user && ! $user->restaurant) {
+            if (! $request->routeIs('menu-owner.restaurant.*') && ! $request->routeIs('profile.*') && ! $request->routeIs('logout')) {
+                return redirect()->route('menu-owner.restaurant.index');
             }
         }
 

@@ -3,25 +3,35 @@
 namespace App\Http\Controllers\MenuOwner;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function index(): View|RedirectResponse
+    public function index(Request $request): View
     {
-        $user = auth()->user();
+        $user = $request->user();
+        $restaurant = $user->restaurant;
 
-        // Redirect to setup if not complete (for menu owners only)
-        if ($user->isMenuOwner() && ! $user->isRestaurantSetupComplete()) {
-            return redirect()->route('restaurant-setup.index');
+        if (! $restaurant) {
+            return view('dashboard.dashboard', [
+                'restaurant' => null,
+                'categories' => collect(),
+                'dishes' => collect(),
+                'totalViews' => 0,
+                'uniqueVisitors' => 0,
+            ]);
         }
 
-        // Redirect to statistics as the default dashboard
-        if ($user->isMenuOwner() || $user->isAdmin()) {
-            return redirect()->route('menu-owner.statistics.index');
-        }
+        $categories = $restaurant->categories()->withCount('dishes')->get();
+        $dishes = $restaurant->dishes()->with('category')->get();
 
-        return view('menu-owner.dashboard');
+        return view('dashboard.dashboard', [
+            'restaurant' => $restaurant,
+            'categories' => $categories,
+            'dishes' => $dishes,
+            'totalViews' => $restaurant->getTotalViews(),
+            'uniqueVisitors' => $restaurant->getUniqueVisitors(),
+        ]);
     }
 }

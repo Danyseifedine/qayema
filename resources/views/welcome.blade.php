@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
@@ -67,7 +67,7 @@
                         <svg class="arr" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </a>
                 @else
-                    <a class="btn btn-ink btn-sm nav-cta" href="{{ route('register') }}">
+                    <a class="btn btn-ink btn-sm nav-cta" href="{{ route('login') }}">
                         <span x-text="t.nav.cta">Get started free</span>
                         <svg class="arr" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </a>
@@ -107,7 +107,7 @@
                             <svg class="arr" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         </a>
                     @else
-                        <a class="btn btn-ink btn-sm nav-mobile-cta" href="{{ route('register') }}" @click="mobileOpen = false">
+                        <a class="btn btn-ink btn-sm nav-mobile-cta" href="{{ route('login') }}" @click="mobileOpen = false">
                             <span x-text="t.nav.cta">Get started free</span>
                             <svg class="arr" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         </a>
@@ -147,7 +147,7 @@
                             <svg class="arr" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         </a>
                     @else
-                        <a class="btn btn-ink" href="{{ route('register') }}">
+                        <a class="btn btn-ink" href="{{ route('login') }}">
                             <span x-text="t.hero.cta1">Start for free</span>
                             <svg class="arr" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         </a>
@@ -745,7 +745,7 @@
                         <svg class="arr" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </a>
                 @else
-                    <a class="btn btn-primary" href="{{ route('register') }}">
+                    <a class="btn btn-primary" href="{{ route('login') }}">
                         <span x-text="t.cta.cta1">Start for free</span>
                         <svg class="arr" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </a>

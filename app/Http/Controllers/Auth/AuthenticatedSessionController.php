@@ -28,13 +28,6 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        $user = Auth::user();
-
-        // Redirect menu owners to setup if not complete
-        if ($user && $user->isMenuOwner() && ! $user->isRestaurantSetupComplete()) {
-            return redirect()->route('restaurant-setup.index');
-        }
-
         return redirect()->intended(route('dashboard', absolute: false));
     }
 

@@ -4,7 +4,7 @@ namespace App\Http\Controllers\MenuOwner;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SocialLinkRequest;
-use App\Models\MenuSocialLink;
+use App\Models\RestaurantSocialLink;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -13,86 +13,85 @@ class SocialLinkController extends Controller
 {
     public function index(Request $request): View
     {
-        $menu = $request->user()->currentMenu();
+        $restaurant = $request->user()->restaurant;
 
-        $socialLinks = $menu
-            ? MenuSocialLink::where('menu_id', $menu->id)
+        $socialLinks = $restaurant
+            ? RestaurantSocialLink::where('restaurant_id', $restaurant->id)
                 ->orderBy('created_at')
                 ->get()
             : collect();
 
-        return view('menu-owner.social-links.index', [
+        return view('dashboard.social-links.index', [
             'socialLinks' => $socialLinks,
-            'menu' => $menu,
+            'restaurant' => $restaurant,
         ]);
     }
 
     public function create(Request $request): View|RedirectResponse
     {
-        $menu = $request->user()->currentMenu();
+        $restaurant = $request->user()->restaurant;
 
-        if (! $menu) {
-            return redirect()->route('menu-owner.menus.index')
-                ->with('error', 'Please create a menu first before adding social links.');
+        if (! $restaurant) {
+            return redirect()->route('menu-owner.restaurant.index')
+                ->with('error', __('menu_owner.common.messages.setup_first'));
         }
 
-        return view('menu-owner.social-links.form', [
+        return view('dashboard.social-links.form', [
             'socialLink' => null,
-            'menu' => $menu,
+            'restaurant' => $restaurant,
         ]);
     }
 
     public function store(SocialLinkRequest $request): RedirectResponse
     {
-        $menu = $request->user()->currentMenu();
+        $restaurant = $request->user()->restaurant;
 
-        if (! $menu) {
-            return redirect()->route('menu-owner.menus.index')
-                ->with('error', 'Please create a menu first before adding social links.');
+        if (! $restaurant) {
+            return redirect()->route('menu-owner.restaurant.index')
+                ->with('error', __('menu_owner.common.messages.setup_first'));
         }
 
-        if ($menu->hasReachedSocialLinkLimit()) {
+        if ($restaurant->hasReachedSocialLinkLimit()) {
             return redirect()->route('menu-owner.social-links.index')
-                ->with('error', "You have reached the maximum limit of {$menu->social_link_limit} social links for this menu.");
+                ->with('error', __('menu_owner.common.messages.limit_social'));
         }
 
         $data = $request->validated();
-        $data['menu_id'] = $menu->id;
+        $data['restaurant_id'] = $restaurant->id;
 
-        MenuSocialLink::create($data);
+        RestaurantSocialLink::create($data);
 
         return redirect()->route('menu-owner.social-links.index')
-            ->with('success', 'Social link created successfully!');
+            ->with('success', __('menu_owner.common.messages.social_link_created'));
     }
 
-    public function edit(Request $request, MenuSocialLink $socialLink): View
+    public function edit(Request $request, RestaurantSocialLink $socialLink): View
     {
         $this->authorize('update', $socialLink);
 
-        return view('menu-owner.social-links.form', [
+        return view('dashboard.social-links.form', [
             'socialLink' => $socialLink,
-            'menu' => $socialLink->menu,
+            'restaurant' => $socialLink->restaurant,
         ]);
     }
 
-    public function update(SocialLinkRequest $request, MenuSocialLink $socialLink): RedirectResponse
+    public function update(SocialLinkRequest $request, RestaurantSocialLink $socialLink): RedirectResponse
     {
         $this->authorize('update', $socialLink);
 
-        $data = $request->validated();
-        $socialLink->update($data);
+        $socialLink->update($request->validated());
 
         return redirect()->route('menu-owner.social-links.index')
-            ->with('success', 'Social link updated successfully!');
+            ->with('success', __('menu_owner.common.messages.social_link_updated'));
     }
 
-    public function destroy(Request $request, MenuSocialLink $socialLink): RedirectResponse
+    public function destroy(RestaurantSocialLink $socialLink): RedirectResponse
     {
         $this->authorize('delete', $socialLink);
 
         $socialLink->delete();
 
         return redirect()->route('menu-owner.social-links.index')
-            ->with('success', 'Social link deleted successfully!');
+            ->with('success', __('menu_owner.common.messages.social_link_deleted'));
     }
 }

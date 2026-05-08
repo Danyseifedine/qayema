@@ -4,106 +4,85 @@ namespace App\Http\Controllers\MenuOwner;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\DishRequest;
-use App\Models\Category;
 use App\Models\Dish;
-use App\Services\ImageOptimizationService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class DishController extends Controller
 {
-    public function __construct(private readonly ImageOptimizationService $imageService) {}
-
     public function index(Request $request): View
     {
-        $user = $request->user();
-        $menu = $user->currentMenu();
+        $restaurant = $request->user()->restaurant;
 
-        $dishes = $menu
-            ? Dish::where('menu_id', $menu->id)
-                ->with('category')
-                ->orderBy('display_order')
-                ->orderBy('name')
-                ->get()
+        $dishes = $restaurant
+            ? $restaurant->dishes()->with('category')->orderBy('name')->get()
             : collect();
 
-        return view('menu-owner.dishes.index', [
+        return view('dashboard.dishes.index', [
             'dishes' => $dishes,
-            'menu' => $menu,
+            'restaurant' => $restaurant,
         ]);
     }
 
     public function create(Request $request): View|RedirectResponse
     {
-        $user = $request->user();
-        $menu = $user->currentMenu();
+        $restaurant = $request->user()->restaurant;
 
-        if (! $menu) {
-            return redirect()->route('menu-owner.menus.index')
-                ->with('error', 'Please create a menu first before adding dishes.');
+        if (! $restaurant) {
+            return redirect()->route('menu-owner.restaurant.index')
+                ->with('error', __('menu_owner.common.messages.setup_first'));
         }
 
-        if ($menu->hasReachedDishLimit()) {
+        if ($restaurant->hasReachedDishLimit()) {
             return redirect()->route('menu-owner.dishes.index')
-                ->with('error', 'You have reached the maximum number of dishes allowed.');
+                ->with('error', __('menu_owner.common.messages.limit_dishes'));
         }
 
-        $categories = Category::where('menu_id', $menu->id)
-            ->orderBy('display_order')
-            ->orderBy('name')
-            ->get();
-
-        return view('menu-owner.dishes.form', [
+        return view('dashboard.dishes.form', [
             'dish' => null,
-            'menu' => $menu,
-            'categories' => $categories,
+            'restaurant' => $restaurant,
+            'categories' => $restaurant->categories()->orderBy('name')->get(),
         ]);
     }
 
     public function store(DishRequest $request): RedirectResponse
     {
-        $user = $request->user();
-        $menu = $user->currentMenu();
+        $restaurant = $request->user()->restaurant;
 
-        if (! $menu) {
-            return redirect()->route('menu-owner.menus.index')
-                ->with('error', 'Please create a menu first before adding dishes.');
+        if (! $restaurant) {
+            return redirect()->route('menu-owner.restaurant.index')
+                ->with('error', __('menu_owner.common.messages.setup_first'));
         }
 
-        if ($menu->hasReachedDishLimit()) {
+        if ($restaurant->hasReachedDishLimit()) {
             return redirect()->route('menu-owner.dishes.index')
-                ->with('error', 'You have reached the maximum number of dishes allowed for your menu.');
+                ->with('error', __('menu_owner.common.messages.limit_dishes'));
         }
 
         $data = $request->validated();
-        $data['menu_id'] = $menu->id;
+        $data['restaurant_id'] = $restaurant->id;
+        $data['display_order'] = $restaurant->dishes()->max('display_order') + 1;
 
         $dish = Dish::create($data);
 
-        $this->handleImageUploads($request, $dish);
+        $this->syncImage($request, $dish);
 
         return redirect()->route('menu-owner.dishes.index')
-            ->with('success', 'Dish created successfully!');
+            ->with('success', __('menu_owner.common.messages.dish_created'));
     }
 
-    public function edit(Dish $dish): View|RedirectResponse
+    public function edit(Dish $dish): View
     {
         $this->authorize('update', $dish);
 
-        $menu = $dish->menu;
-        $categories = Category::where('menu_id', $menu->id)
-            ->orderBy('display_order')
-            ->orderBy('name')
-            ->get();
+        $restaurant = $dish->restaurant;
 
-        return view('menu-owner.dishes.form', [
+        return view('dashboard.dishes.form', [
             'dish' => $dish,
-            'menu' => $menu,
-            'categories' => $categories,
+            'restaurant' => $restaurant,
+            'categories' => $restaurant->categories()->orderBy('name')->get(),
         ]);
     }
 
@@ -111,22 +90,12 @@ class DishController extends Controller
     {
         $this->authorize('update', $dish);
 
-        $data = $request->validated();
-        $dish->update($data);
+        $dish->update($request->validated());
 
-        if ($request->has('delete_images') && is_array($request->input('delete_images'))) {
-            foreach ($request->input('delete_images') as $imageId) {
-                $media = $dish->getMedia('images')->where('id', (int) $imageId)->first();
-                if ($media) {
-                    $media->delete();
-                }
-            }
-        }
-
-        $this->handleImageUploads($request, $dish);
+        $this->syncImage($request, $dish);
 
         return redirect()->route('menu-owner.dishes.index')
-            ->with('success', 'Dish updated successfully!');
+            ->with('success', __('menu_owner.common.messages.dish_updated'));
     }
 
     public function destroy(Dish $dish): RedirectResponse
@@ -136,39 +105,42 @@ class DishController extends Controller
         $dish->delete();
 
         return redirect()->route('menu-owner.dishes.index')
-            ->with('success', 'Dish deleted successfully!');
+            ->with('success', __('menu_owner.common.messages.dish_deleted'));
     }
 
-    private function handleImageUploads(Request $request, Dish $dish): void
+    public function reorder(Request $request): JsonResponse
     {
-        if (! $request->hasFile('images')) {
+        $request->validate(['a' => 'required|integer', 'b' => 'required|integer']);
+
+        $restaurant = $request->user()->restaurant;
+
+        $dishA = $restaurant->dishes()->findOrFail($request->integer('a'));
+        $dishB = $restaurant->dishes()->findOrFail($request->integer('b'));
+
+        [$dishA->display_order, $dishB->display_order] = [$dishB->display_order, $dishA->display_order];
+        $dishA->save();
+        $dishB->save();
+
+        session()->flash('success', __('menu_owner.common.messages.reorder_success'));
+
+        return response()->json(['success' => true]);
+    }
+
+    private function syncImage(DishRequest $request, Dish $dish): void
+    {
+        if ($request->filled('dish_image_key')) {
+            $path = storage_path('app/temp/'.$request->input('dish_image_key').'.jpg');
+
+            if (file_exists($path)) {
+                $dish->clearMediaCollection('images');
+                $dish->addMedia($path)->usingName('dish-image')->toMediaCollection('images');
+            }
+
             return;
         }
 
-        foreach (Arr::wrap($request->file('images')) as $image) {
-            if (! $image instanceof UploadedFile || ! $image->isValid()) {
-                continue;
-            }
-
-            try {
-                $optimizedPath = $this->imageService->optimizeDishImage($image);
-
-                if (! file_exists($optimizedPath) || ! is_readable($optimizedPath)) {
-                    Log::error('Optimized dish image not readable: '.$optimizedPath);
-
-                    continue;
-                }
-
-                $dish->addMedia($optimizedPath)
-                    ->usingName(pathinfo($image->getClientOriginalName(), PATHINFO_FILENAME))
-                    ->toMediaCollection('images');
-
-                if (file_exists($optimizedPath)) {
-                    unlink($optimizedPath);
-                }
-            } catch (\Exception $e) {
-                Log::error('Failed to save dish image: '.$e->getMessage());
-            }
+        if ($request->boolean('delete_dish_image')) {
+            $dish->clearMediaCollection('images');
         }
     }
 }
