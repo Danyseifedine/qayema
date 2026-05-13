@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->validateCsrfTokens(except: [
             '*/*/track-exit',
+            '*/*/track-whatsapp-order',
         ]);
         $middleware->alias([
             'owner.locale' => \App\Http\Middleware\SetMenuOwnerLocale::class,

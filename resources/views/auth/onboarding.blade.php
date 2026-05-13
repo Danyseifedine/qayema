@@ -1,541 +1,817 @@
 @php
-    $appName  = config('app.name', 'Qayema');
-    $currencies = ['USD','EUR','GBP','AED','SAR','LBP','EGP','MAD','TND','JOD','QAR','KWD','BHD','OMR','TRY','CAD','AUD'];
-    $languages  = ['en'=>'English','ar'=>'العربية','fr'=>'Français','de'=>'Deutsch','es'=>'Español','it'=>'Italiano','pt'=>'Português','ru'=>'Русский','tr'=>'Türkçe','hi'=>'हिन्दी','zh'=>'中文','ja'=>'日本語','ko'=>'한국어','nl'=>'Nederlands'];
+    $appName    = config('app.name', 'Qayema');
+    $locale     = app()->getLocale();
+    $isRtl      = in_array($locale, config('locales.rtl', []));
+    $dir        = $isRtl ? 'rtl' : 'ltr';
+    $allLocales = config('locales.locales');
+    $currencyOptions = collect(config('currencies', []))
+        ->map(fn ($c, $code) => ['value' => $code, 'label' => $code, 'flag' => $c['symbol'] ?? '', 'meta' => $c['name'] ?? $code])
+        ->values()->all();
+
+    // Pre-fill existing restaurant data for back-navigation
+    $existingCdTagIds   = $restaurant ? $restaurant->tags->whereIn('category', ['cuisine', 'dietary'])->pluck('id')->values()->all() : [];
+    $existingCdTagSlugs = $restaurant ? $restaurant->tags->whereIn('category', ['cuisine', 'dietary'])->pluck('slug')->values()->all() : [];
+    $existingVsTagIds   = $restaurant ? $restaurant->tags->whereIn('category', ['vibe', 'style'])->pluck('id')->values()->all() : [];
+    $existingVsTagSlugs = $restaurant ? $restaurant->tags->whereIn('category', ['vibe', 'style'])->pluck('slug')->values()->all() : [];
+
+    $allTemplatesJson = $templates->map(fn ($t) => [
+        'id'        => $t->id,
+        'name'      => $t->name,
+        'thumbnail' => $t->getFirstMediaUrl('thumbnail'),
+        'tagSlugs'  => $t->tags->pluck('slug')->values(),
+    ]);
+
+    $stepData = [
+        ['key' => __('menu_owner.onboarding.step1_title'), 'short' => __('menu_owner.onboarding.step1_desc'), 'stage' => __('menu_owner.onboarding.step1_stage'), 'tag' => __('menu_owner.onboarding.step1_tag')],
+        ['key' => __('menu_owner.onboarding.step2_title'), 'short' => __('menu_owner.onboarding.step2_desc'), 'stage' => __('menu_owner.onboarding.step2_stage'), 'tag' => __('menu_owner.onboarding.step2_tag')],
+        ['key' => __('menu_owner.onboarding.step3_title'), 'short' => __('menu_owner.onboarding.step3_desc'), 'stage' => __('menu_owner.onboarding.step3_stage'), 'tag' => __('menu_owner.onboarding.step3_tag')],
+        ['key' => __('menu_owner.onboarding.step4_title'), 'short' => __('menu_owner.onboarding.step4_desc'), 'stage' => __('menu_owner.onboarding.step4_stage'), 'tag' => __('menu_owner.onboarding.step4_tag')],
+        ['key' => __('menu_owner.onboarding.step5_title'), 'short' => __('menu_owner.onboarding.step5_desc'), 'stage' => __('menu_owner.onboarding.step5_stage'), 'tag' => __('menu_owner.onboarding.step5_tag')],
+        ['key' => __('menu_owner.onboarding.step6_title'), 'short' => __('menu_owner.onboarding.step6_desc'), 'stage' => __('menu_owner.onboarding.step6_stage'), 'tag' => __('menu_owner.onboarding.step6_tag')],
+    ];
 @endphp
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="ltr">
+<html lang="{{ str_replace('_', '-', $locale) }}" dir="{{ $dir }}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<title>Get Started — {{ $appName }}</title>
+<title>{{ $appName }} — {{ __('menu_owner.onboarding.step1_title') }}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-@vite(['resources/css/login.css', 'resources/js/app.js'])
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=Noto+Kufi+Arabic:wght@400;500;600&display=swap" rel="stylesheet">
+@vite(['resources/css/login.css', 'resources/css/ui.css', 'resources/js/app.js'])
+<script>
+    window._onb = {
+        step:       {{ $step }},
+        totalSteps: {{ $totalSteps }},
+        stepData:   @json($stepData),
+        templates:  @json($allTemplatesJson),
+        locale:     @json($locale),
+        routes: {
+            advance: @json(route('onboarding.advance')),
+        },
+        existing: {
+            name:               @json($restaurant?->name ?? ''),
+            preferred_language: @json($restaurant?->preferred_language ?? $locale),
+            country_code:       @json($restaurant?->country_code ?? ''),
+            phone:              @json($restaurant?->phone ?? ''),
+            currency:           @json($restaurant?->currency ?? 'USD'),
+            cdTagIds:           @json($existingCdTagIds),
+            cdTagSlugs:         @json($existingCdTagSlugs),
+            vsTagIds:           @json($existingVsTagIds),
+            vsTagSlugs:         @json($existingVsTagSlugs),
+            templateId:         @json($restaurant?->template_id),
+            hasLogo:            @json($restaurant?->hasMedia('logo') ?? false),
+        },
+        i18n: {
+            nameRequired:     @json(__('menu_owner.onboarding.name_required')),
+            nameMin:          @json(__('menu_owner.onboarding.name_min')),
+            phoneRequired:    @json(__('menu_owner.onboarding.phone_required')),
+            currencyRequired: @json(__('menu_owner.onboarding.currency_required')),
+            logoRequired:     @json(__('menu_owner.onboarding.logo_required')),
+            selectTemplate:   @json(__('menu_owner.onboarding.select_template')),
+            uploadError:      @json(__('menu_owner.onboarding.upload_error')),
+            somethingWrong:   @json(__('menu_owner.onboarding.something_wrong')),
+        },
+    };
+</script>
 <style>
-/* ── Layout ─────────────────────────────────────────── */
-.onb-wrap {
-    min-height: 100vh;
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    padding: 40px 16px 60px;
-    background: radial-gradient(80% 60% at -10% -10%, rgba(200,168,90,.14), transparent 60%), var(--paper);
+:root {
+  --olive: #6B7A4F;
+  --olive-deep: #4F5C3A;
+  --olive-soft: #A8B388;
+  --muted-dark: rgba(246,241,232,.62);
+  --line-dark: rgba(255,255,255,.10);
 }
-.onb-card {
-    width: 100%;
-    max-width: 580px;
-    background: #fff;
-    border-radius: 20px;
-    border: 1px solid var(--line);
-    box-shadow: 0 4px 32px rgba(15,15,16,.07);
-    padding: 40px 44px 36px;
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body { font-family: var(--font-sans); background: var(--paper); color: var(--ink); -webkit-font-smoothing: antialiased; min-height: 100vh; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; cursor: pointer; }
+input, textarea, select { font: inherit; color: inherit; }
+
+/* ── Shell ───────────────────────────────────────────── */
+.shell { min-height: 100vh; display: grid; grid-template-columns: 1.05fr 1fr; }
+
+/* ── Left: form pane ─────────────────────────────────── */
+.left {
+  position: relative; padding: 28px 56px 32px;
+  display: flex; flex-direction: column;
+  background:
+    radial-gradient(80% 60% at -10% -10%, rgba(212,194,142,.30), transparent 60%),
+    var(--paper);
 }
-@media (max-width: 600px) { .onb-card { padding: 28px 20px 24px; } }
+.left-top { display: flex; align-items: center; justify-content: space-between; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 500; letter-spacing: -0.01em; font-size: 17px; }
+.brand img { height: 70px; width: auto; }
+.left-top-right { display: flex; align-items: center; gap: 18px; font-size: 12.5px; color: var(--muted); }
+.save-pill { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 999px; background: rgba(107,122,79,.10); color: var(--olive-deep); font-size: 11.5px; letter-spacing: .04em; }
+.save-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--olive); box-shadow: 0 0 0 4px rgba(107,122,79,.15); }
+.left-top-right a { color: var(--muted); }
+.left-top-right a:hover { color: var(--ink); }
 
-/* ── Logo ───────────────────────────────────────────── */
-.onb-logo { margin-bottom: 32px; }
-.onb-logo img { height: 44px; width: auto; }
+/* ── Step metadata ───────────────────────────────────── */
+.step-meta { display: flex; align-items: baseline; gap: 14px; margin: 48px 0 8px; }
+.step-meta .num { font-family: var(--font-display); font-style: italic; font-size: 88px; line-height: 0.85; color: var(--olive-deep); letter-spacing: -0.04em; font-weight: 400; }
+.step-meta .num .of { font-size: 26px; color: var(--muted); margin-left: 2px; letter-spacing: 0; }
+.step-meta .crumb { font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); flex: 1; padding-bottom: 6px; display: flex; flex-direction: column; gap: 6px; }
+.step-meta .crumb .label { color: var(--ink); font-weight: 500; font-size: 13px; letter-spacing: 0; text-transform: none; }
+.step-meta .crumb .dash { width: 28px; height: 1px; background: var(--ink); }
 
-/* ── Progress ───────────────────────────────────────── */
-.onb-progress { margin-bottom: 32px; }
-.onb-progress-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
-.onb-progress-track { height: 4px; background: var(--sand); border-radius: 99px; overflow: hidden; }
-.onb-progress-fill { height: 100%; background: var(--accent); border-radius: 99px; transition: width .4s cubic-bezier(.4,0,.2,1); }
+/* ── Form body ───────────────────────────────────────── */
+.form-body { flex: 1; max-width: 540px; display: flex; flex-direction: column; }
+h1.title { margin: 0; font-size: clamp(36px, 4.2vw, 58px); line-height: 1.0; letter-spacing: -0.03em; font-weight: 400; }
+h1.title .it { font-family: var(--font-display); font-style: italic; color: var(--olive-deep); letter-spacing: -0.012em; }
+.lead { margin: 16px 0 32px; font-size: 15px; line-height: 1.55; color: var(--muted); max-width: 44ch; }
 
-/* ── Step header ────────────────────────────────────── */
-.onb-eyebrow { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--accent-deep); margin-bottom: 10px; }
-.onb-eyebrow span { width: 18px; height: 1px; background: var(--accent); display: block; }
-.onb-title { font-family: var(--font-display); font-size: 24px; line-height: 1.2; color: var(--ink); margin: 0 0 6px; }
-.onb-desc { font-size: 13.5px; color: var(--muted); line-height: 1.6; margin: 0 0 24px; }
-
-/* ── Form fields ────────────────────────────────────── */
-.onb-fields { display: flex; flex-direction: column; gap: 16px; }
-.onb-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.onb-field label { display: block; font-size: 12.5px; font-weight: 600; color: var(--ink); margin-bottom: 6px; }
-.onb-field input,
-.onb-field select {
-    width: 100%; padding: 9px 12px; font-size: 14px; font-family: var(--font-sans);
-    background: var(--paper); border: 1.5px solid var(--sand-2); border-radius: 9px;
-    color: var(--ink); outline: none; transition: border-color .15s;
-    appearance: none; -webkit-appearance: none;
+/* ── Form fields ─────────────────────────────────────── */
+.fields { display: flex; flex-direction: column; gap: 18px; }
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.field { display: flex; flex-direction: column; gap: 8px; }
+.field-label { font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.field-label .req { color: var(--olive-deep); margin-left: 4px; }
+.f-input, .f-select {
+  appearance: none; background: #fff; border: .5px solid var(--line); border-radius: 12px;
+  padding: 14px 16px; font-size: 15px; letter-spacing: -0.005em; color: var(--ink); width: 100%;
+  transition: border-color .2s ease, box-shadow .2s ease;
 }
-.onb-field input:focus, .onb-field select:focus { border-color: var(--accent); }
-.onb-field .onb-fe-error { font-size: 12px; color: #dc2626; margin-top: 4px; }
-
-/* ── Upload areas (Step 2) ──────────────────────────── */
-.onb-uploads { display: flex; flex-direction: column; gap: 16px; }
-.onb-upload { border: 2px dashed var(--sand-2); border-radius: 12px; overflow: hidden; cursor: pointer; transition: border-color .2s; }
-.onb-upload:hover { border-color: var(--accent); }
-.onb-upload-inner { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 28px 20px; }
-.onb-upload-label { font-size: 12.5px; font-weight: 600; color: var(--ink); }
-.onb-upload-hint { font-size: 12px; color: var(--muted); }
-.onb-upload-preview { width: 100%; height: 140px; object-fit: cover; display: block; }
-.onb-upload-logo-preview { width: 80px; height: 80px; object-fit: cover; border-radius: 10px; }
-.onb-upload-replace { font-size: 11.5px; color: var(--accent-deep); margin-top: 6px; }
-.onb-upload-uploading { font-size: 12px; color: var(--muted); animation: onb-pulse 1s ease infinite; }
-@keyframes onb-pulse { 0%,100% { opacity:1 } 50% { opacity:.4 } }
-
-/* ── Type grid (Step 3) ─────────────────────────────── */
-.onb-type-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); gap: 10px; margin-bottom: 24px; }
-.onb-type-card {
-    border: 2px solid var(--sand-2); border-radius: 12px; padding: 14px 10px;
-    display: flex; flex-direction: column; align-items: center; gap: 7px;
-    cursor: pointer; transition: border-color .15s, background .15s;
-    text-align: center;
+.f-input::placeholder { color: rgba(15,15,16,.32); }
+.f-input:focus, .f-select:focus { outline: none; border-color: var(--olive); box-shadow: 0 0 0 3px rgba(107,122,79,.12); }
+.f-select {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%230F0F10' stroke-width='1.6'><path d='M6 9l6 6 6-6'/></svg>");
+  background-repeat: no-repeat; background-position: right 14px center; padding-right: 40px;
 }
-.onb-type-card:hover { border-color: var(--accent-soft); background: var(--paper); }
-.onb-type-card.selected { border-color: var(--accent); background: rgba(200,168,90,.08); }
-.onb-type-icon { font-size: 26px; line-height: 1; }
-.onb-type-name { font-size: 12.5px; font-weight: 600; color: var(--ink); }
+.f-error { font-size: 12px; color: #dc2626; margin-top: 4px; }
 
-/* ── Tags (Step 3) ──────────────────────────────────── */
-.onb-tag-section { margin-bottom: 20px; }
-.onb-tag-category { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
-.onb-tag-chips { display: flex; flex-wrap: wrap; gap: 7px; }
-.onb-tag-chip {
-    border: 1.5px solid var(--sand-2); border-radius: 99px; padding: 5px 13px;
-    font-size: 12.5px; font-weight: 500; color: var(--ink); cursor: pointer;
-    transition: border-color .15s, background .15s;
+/* ── Upload areas ────────────────────────────────────── */
+.upload-area {
+  border: 1.5px dashed rgba(15,15,16,.18); border-radius: 14px; cursor: pointer;
+  overflow: hidden; transition: border-color .2s;
 }
-.onb-tag-chip:hover { border-color: var(--accent-soft); background: var(--paper); }
-.onb-tag-chip.selected { border-color: var(--accent); background: rgba(200,168,90,.08); color: var(--accent-deep); }
+.upload-area:hover { border-color: var(--olive); }
+.upload-inner { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 24px 16px; }
+.upload-icon { color: var(--muted); }
+.upload-lbl { font-size: 13px; font-weight: 600; color: var(--ink); }
+.upload-hint { font-size: 11.5px; color: var(--muted); }
+.upload-preview-img { width: 100%; height: 130px; object-fit: cover; display: block; }
+.upload-logo-preview { width: 72px; height: 72px; object-fit: cover; border-radius: 10px; }
+.upload-replace { font-size: 11.5px; color: var(--olive-deep); margin-top: 4px; }
+.uploading-text { font-size: 12px; color: var(--muted); animation: onb-pulse 1s ease infinite; }
+@keyframes onb-pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
 
-/* ── Template grid (Step 4) ─────────────────────────── */
-.onb-tpl-section-label { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
-.onb-tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
-.onb-tpl-card {
-    border: 2px solid var(--sand-2); border-radius: 12px; overflow: hidden;
-    cursor: pointer; transition: border-color .15s;
+/* ── Tag chips ───────────────────────────────────────── */
+.tag-section { margin-bottom: 20px; }
+.tag-cat { font-size: 10.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 9px; }
+.tag-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.tag-chip {
+  border: .5px solid var(--line); background: #fff; border-radius: 999px;
+  padding: 6px 14px; font-size: 13px; color: var(--ink); cursor: pointer;
+  transition: border-color .15s, background .15s;
 }
-.onb-tpl-card:hover { border-color: var(--accent-soft); }
-.onb-tpl-card.selected { border-color: var(--accent); }
-.onb-tpl-thumb { width: 100%; height: 90px; background: var(--paper); display: flex; align-items: center; justify-content: center; }
-.onb-tpl-thumb img { width: 100%; height: 100%; object-fit: cover; }
-.onb-tpl-no-thumb { font-size: 28px; }
-.onb-tpl-name { font-size: 12.5px; font-weight: 600; color: var(--ink); padding: 8px 10px 9px; }
-.onb-tpl-badge { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; background: rgba(200,168,90,.15); color: var(--accent-deep); border-radius: 4px; padding: 1px 5px; margin: 0 0 2px 6px; vertical-align: middle; }
+.tag-chip:hover { border-color: rgba(107,122,79,.4); background: var(--paper); }
+.tag-chip.on { border-color: var(--olive); background: rgba(107,122,79,.07); color: var(--olive-deep); font-weight: 500; }
 
-/* ── Actions ────────────────────────────────────────── */
-.onb-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 32px; gap: 12px; }
-.onb-back { font-size: 13.5px; font-weight: 500; color: var(--muted); background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; gap: 6px; transition: color .18s; }
-.onb-back:hover { color: var(--ink); }
-.onb-back svg { width: 14px; height: 14px; }
-.onb-next {
-    display: inline-flex; align-items: center; gap: 8px; background: var(--ink); color: var(--paper);
-    font-size: 14px; font-weight: 600; border: none; border-radius: 10px; padding: 11px 22px;
-    cursor: pointer; transition: background .18s, opacity .18s; margin-left: auto;
+/* ── Template grid ───────────────────────────────────── */
+.tpl-section-lbl { font-size: 10.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-bottom: 18px; }
+.tpl-card { border: .5px solid var(--line); background: #fff; border-radius: 14px; overflow: hidden; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+.tpl-card:hover { border-color: rgba(107,122,79,.4); }
+.tpl-card.on { border-color: var(--olive); box-shadow: 0 0 0 1px var(--olive); }
+.tpl-thumb { width: 100%; height: 86px; background: var(--paper); display: flex; align-items: center; justify-content: center; font-size: 26px; }
+.tpl-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tpl-name { font-size: 12.5px; font-weight: 500; color: var(--ink); padding: 8px 10px 9px; }
+
+/* ── Footer actions ──────────────────────────────────── */
+.left-foot { margin-top: 28px; padding-top: 20px; border-top: .5px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.left-foot .meter { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--muted); }
+.meter-track { width: 180px; height: 3px; border-radius: 999px; background: rgba(15,15,16,.08); overflow: hidden; }
+.meter-fill { height: 100%; background: var(--olive); transition: width .35s cubic-bezier(.5,.0,.2,1); }
+.btn { display: inline-flex; align-items: center; gap: 8px; height: 46px; padding: 0 22px; border-radius: 999px; font-size: 14px; font-weight: 500; letter-spacing: -0.005em; border: .5px solid transparent; background: transparent; transition: transform .15s, background .2s, color .2s, opacity .2s; }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: .35; cursor: not-allowed; }
+.btn-ink { background: var(--ink); color: var(--paper); }
+.btn-ink:hover:not(:disabled) { background: #1c1c1f; }
+.btn-ink .arr { transition: transform .25s; }
+.btn-ink:hover:not(:disabled) .arr { transform: translateX(3px); }
+.btn-ghost { color: var(--ink); }
+.btn-ghost:hover:not(:disabled) { background: rgba(15,15,16,.05); }
+.btn .arr-left { transform: scaleX(-1); }
+.btn:hover:not(:disabled) .arr-left { transform: scaleX(-1) translateX(3px); }
+@keyframes btn-spin { to { transform: rotate(360deg); } }
+.spin { animation: btn-spin .8s linear infinite; }
+
+/* ── Right: dark editorial pane ──────────────────────── */
+.right {
+  position: relative; background: var(--ink); color: var(--paper);
+  padding: 36px 48px 40px; display: flex; flex-direction: column; gap: 24px; overflow: hidden;
 }
-.onb-next:hover { background: var(--ink-2); }
-.onb-next:disabled { opacity: .55; cursor: not-allowed; }
-.onb-next svg { width: 14px; height: 14px; }
-@keyframes onb-spin { to { transform: rotate(360deg); } }
-.onb-spin { animation: onb-spin .8s linear infinite; }
-
-/* ── Error alert ────────────────────────────────────── */
-.onb-alert { background: #fef2f2; border: 1px solid #fecaca; border-radius: 9px; padding: 10px 14px; font-size: 13px; color: #dc2626; margin-bottom: 16px; }
+.right::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(70% 50% at 80% 10%, rgba(168,179,136,.18), transparent 60%),
+    radial-gradient(60% 50% at 10% 100%, rgba(212,194,142,.10), transparent 70%);
+}
+/* Dots rail */
+.right-rail { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.rail-eyebrow { font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--olive-soft); display: flex; align-items: center; gap: 10px; }
+.rail-eyebrow .dash { width: 24px; height: 1px; background: var(--olive-soft); }
+.dots { display: flex; align-items: center; gap: 8px; }
+.dot-btn {
+  appearance: none; border: 0; padding: 0;
+  width: 32px; height: 32px; border-radius: 50%; background: transparent; color: var(--muted-dark);
+  border: .5px solid var(--line-dark); display: grid; place-items: center;
+  font-size: 12px; transition: all .2s; cursor: pointer;
+}
+.dot-btn:hover { color: var(--paper); border-color: rgba(255,255,255,.3); }
+.dot-btn.done { background: var(--olive); color: var(--paper); border-color: var(--olive); }
+.dot-btn.active { background: var(--paper); color: var(--ink); border-color: var(--paper); box-shadow: 0 0 0 4px rgba(246,241,232,.10); }
+.dot-btn svg { width: 12px; height: 12px; }
+.dot-line { width: 18px; height: 1px; background: var(--line-dark); }
+.dot-line.done { background: var(--olive); }
+/* Stage */
+.stage { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; gap: 20px; min-height: 0; }
+.stage-head { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; }
+.stage-title { font-family: var(--font-display); font-style: italic; font-size: 36px; line-height: 1.05; letter-spacing: -0.012em; color: var(--paper); margin: 0; max-width: 16ch; }
+.stage-tag { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted-dark); display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border: .5px solid var(--line-dark); border-radius: 999px; white-space: nowrap; }
+.stage-tag .pip { width: 6px; height: 6px; border-radius: 50%; background: var(--olive-soft); box-shadow: 0 0 0 4px rgba(168,179,136,.15); }
+/* Phone mockup */
+.phone-wrap { flex: 1; display: grid; place-items: center; position: relative; min-height: 340px; }
+.phone { position: relative; width: 268px; aspect-ratio: 9/19.2; background: #0a0a0b; border-radius: 40px; padding: 7px; box-shadow: 0 0 0 1.5px #2a2a2d, 0 50px 100px -30px rgba(0,0,0,.50); transform: rotate(-2deg); }
+.phone-screen { width: 100%; height: 100%; background: var(--paper); border-radius: 32px; overflow: hidden; position: relative; color: var(--ink); display: flex; flex-direction: column; }
+.phone-notch { position: absolute; top: 7px; left: 50%; transform: translateX(-50%); width: 28%; height: 16px; background: #0a0a0b; border-radius: 999px; z-index: 5; }
+.ps-status { display: flex; justify-content: space-between; align-items: center; padding: 12px 22px 6px; font-size: 10px; font-weight: 600; }
+.ps-header { padding: 14px 16px 10px; border-bottom: .5px solid var(--line); }
+.ps-rest { font-family: var(--font-display); font-style: italic; font-size: 20px; line-height: 1.05; letter-spacing: -0.01em; }
+.ps-sub { margin-top: 4px; font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.ps-list { flex: 1; padding: 6px 16px; overflow: hidden; }
+.ps-item { display: grid; grid-template-columns: 1fr 30px; gap: 10px; padding: 9px 0; border-bottom: .5px solid var(--line); align-items: center; }
+.ps-item:last-child { border-bottom: 0; }
+.ps-item .name { font-size: 11px; font-weight: 500; }
+.ps-item .desc { font-size: 8.5px; color: var(--muted); margin-top: 1px; }
+.ps-item .price { font-size: 10px; font-weight: 500; text-align: right; }
+.annot { position: absolute; z-index: 4; display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; background: rgba(255,255,255,.04); border: .5px solid var(--line-dark); backdrop-filter: blur(6px); border-radius: 999px; font-size: 11.5px; color: var(--paper); box-shadow: 0 14px 30px -16px rgba(0,0,0,.4); white-space: nowrap; }
+.annot .pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--olive-soft); box-shadow: 0 0 0 4px rgba(168,179,136,.18); }
+.annot.tl { top: 10%; left: -4%; transform: rotate(-2deg); }
+.annot.br { bottom: 16%; right: -4%; transform: rotate(2deg); }
+/* Stat strip */
+.stage-foot { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border-top: .5px solid var(--line-dark); padding-top: 18px; }
+.stage-foot > div { border-right: .5px solid var(--line-dark); padding-right: 14px; }
+.stage-foot > div:last-child { border-right: 0; }
+.stage-foot .k { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted-dark); margin-bottom: 8px; }
+.stage-foot .v { font-size: 20px; letter-spacing: -0.02em; color: var(--paper); line-height: 1; }
+.stage-foot .v .it { font-family: var(--font-display); font-style: italic; color: var(--olive-soft); margin-right: 2px; }
+.stage-foot .v .u { font-family: var(--font-display); font-style: italic; color: var(--muted-dark); font-size: .58em; margin-left: 3px; }
+/* Alert */
+.onb-alert { background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 10px 14px; font-size: 13px; color: #dc2626; margin-bottom: 16px; }
+/* Responsive */
+@media (max-width: 1024px) {
+  .left { padding: 24px 36px; }
+  .right { padding: 28px 32px 32px; }
+  .step-meta .num { font-size: 68px; }
+  .annot { display: none; }
+  .right-rail { flex-direction: column; align-items: flex-start; gap: 12px; }
+}
+@media (max-width: 880px) {
+  .shell { grid-template-columns: 1fr; }
+  .right { display: none; }
+  .step-meta { margin: 32px 0 8px; }
+  .row-2 { grid-template-columns: 1fr; }
+}
+@media (max-width: 520px) {
+  .left { padding: 18px 22px; }
+  .step-meta .num { font-size: 54px; }
+  h1.title { font-size: 32px; }
+  .left-foot { flex-direction: column; align-items: stretch; gap: 14px; }
+  .save-pill { display: none; }
+  .meter-track { width: 100%; flex: 1; }
+  .left-foot .meter { width: 100%; }
+}
 </style>
 </head>
 <body>
-<div class="onb-wrap">
-<div class="onb-card"
-     x-data="{
-         step: {{ $step }},
-         totalSteps: {{ $totalSteps }},
-         loading: false,
-         errors: {},
-         globalError: '',
+<div class="shell" x-data="wizard">
 
-         /* Step 1 */
-         s1: { name: '', country_code: '', phone: '', currency: 'USD', preferred_language: 'en' },
+    {{-- ══════════════ LEFT: Form ══════════════ --}}
+    <section class="left">
 
-         /* Step 2 */
-         logoKey: null, logoPreview: null, logoUploading: false,
-         coverKey: null, coverPreview: null, coverUploading: false,
-
-         /* Step 3 */
-         selectedTypeId: null,
-         selectedTagIds: [],
-         selectedTagSlugs: [],
-
-         toggleTag(id, slug) {
-             const i = this.selectedTagIds.indexOf(id);
-             if (i === -1) { this.selectedTagIds.push(id); this.selectedTagSlugs.push(slug); }
-             else { this.selectedTagIds.splice(i, 1); this.selectedTagSlugs.splice(this.selectedTagSlugs.indexOf(slug), 1); }
-         },
-
-         /* Step 4 */
-         selectedTemplateId: null,
-         allTemplates: @json($templates->map(fn($t) => [
-             'id'       => $t->id,
-             'name'     => $t->name,
-             'thumbnail'=> $t->getFirstMediaUrl('thumbnail'),
-             'tagSlugs' => $t->tags->pluck('slug')->values(),
-         ])),
-
-         get recommendedTemplates() {
-             if (!this.selectedTagSlugs.length) return [];
-             return this.allTemplates.filter(t => t.tagSlugs.some(s => this.selectedTagSlugs.includes(s)));
-         },
-         get otherTemplates() {
-             return this.allTemplates;
-         },
-
-         /* File upload */
-         async uploadFile(file, type) {
-             const isLogo = type === 'logo';
-             if (isLogo) this.logoUploading = true; else this.coverUploading = true;
-             try {
-                 const fd = new FormData();
-                 fd.append('file', file);
-                 fd.append('context', isLogo ? 'logo' : 'cover_image');
-                 const res = await fetch('{{ route('menu-owner.temp-upload') }}', {
-                     method: 'POST',
-                     headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
-                     body: fd,
-                 });
-                 const data = await res.json();
-                 if (isLogo) { this.logoKey = data.key; this.logoPreview = URL.createObjectURL(file); }
-                 else { this.coverKey = data.key; this.coverPreview = URL.createObjectURL(file); }
-             } catch { this.globalError = 'Upload failed. Please try again.'; }
-             finally { if (isLogo) this.logoUploading = false; else this.coverUploading = false; }
-         },
-
-         handleFileInput(event, type) {
-             const file = event.target.files[0];
-             if (file) this.uploadFile(file, type);
-         },
-
-         handleDrop(event, type) {
-             const file = event.dataTransfer.files[0];
-             if (file) this.uploadFile(file, type);
-         },
-
-         /* Progress */
-         get progressPct() { return Math.round(((this.step - 1) / this.totalSteps) * 100); },
-
-         /* Advance */
-         async advance() {
-             if (this.loading) return;
-             this.errors = {};
-             this.globalError = '';
-
-             /* Client-side validation */
-             if (this.step === 1 && !this.s1.name.trim()) {
-                 this.errors.name = 'Restaurant name is required.';
-                 return;
-             }
-             if (this.step === 4 && !this.selectedTemplateId) {
-                 this.errors.template = 'Please select a template to continue.';
-                 return;
-             }
-
-             this.loading = true;
-             try {
-                 let body = {};
-                 if (this.step === 1) body = { ...this.s1 };
-                 else if (this.step === 2) body = { logo_key: this.logoKey, cover_image_key: this.coverKey };
-                 else if (this.step === 3) body = { restaurant_type_id: this.selectedTypeId, tag_ids: this.selectedTagIds };
-                 else if (this.step === 4) body = { template_id: this.selectedTemplateId };
-
-                 const res = await fetch('{{ route('onboarding.advance') }}', {
-                     method: 'POST',
-                     headers: {
-                         'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
-                         'Accept': 'application/json',
-                         'Content-Type': 'application/json',
-                     },
-                     body: JSON.stringify(body),
-                 });
-
-                 if (res.status === 422) {
-                     const data = await res.json();
-                     this.errors = data.errors ?? {};
-                     this.globalError = data.message ?? '';
-                     return;
-                 }
-
-                 const data = await res.json();
-                 if (data.completed) { window.location = data.redirect; return; }
-                 this.step = data.step;
-             } catch { this.globalError = 'Something went wrong. Please try again.'; }
-             finally { this.loading = false; }
-         },
-
-         back() { if (this.step > 1) this.step--; },
-     }">
-
-    {{-- Logo --}}
-    <div class="onb-logo">
-        <a href="{{ url('/') }}">
-            <img src="{{ asset('images/logo/logo.png') }}" alt="{{ $appName }}">
-        </a>
-    </div>
-
-    {{-- Progress --}}
-    <div class="onb-progress">
-        <div class="onb-progress-meta">
-            <span x-text="`Step ${step} of ${totalSteps}`"></span>
-            <span x-text="`${progressPct}% complete`"></span>
-        </div>
-        <div class="onb-progress-track">
-            <div class="onb-progress-fill" :style="`width: ${progressPct}%`"></div>
-        </div>
-    </div>
-
-    {{-- Global error --}}
-    <div class="onb-alert" x-show="globalError" x-text="globalError" x-cloak></div>
-
-    {{-- ── Step 1 — Basics ──────────────────────────────── --}}
-    <div x-show="step === 1"
-         x-transition:enter="transition ease-out duration-200"
-         x-transition:enter-start="opacity-0 translate-y-2"
-         x-transition:enter-end="opacity-100 translate-y-0"
-         x-cloak>
-        <div class="onb-eyebrow"><span></span>Step 1 of {{ $totalSteps }}</div>
-        <h1 class="onb-title">Your restaurant</h1>
-        <p class="onb-desc">Tell us the basics. You can update everything later in the dashboard.</p>
-
-        <div class="onb-fields">
-            <div class="onb-field">
-                <label>Restaurant name <span style="color:#dc2626">*</span></label>
-                <input type="text" x-model="s1.name" placeholder="e.g. Joe's Burgers" autofocus>
-                <div class="onb-fe-error" x-show="errors.name" x-text="errors.name" x-cloak></div>
+        {{-- Top bar --}}
+        <header class="left-top">
+            <div class="brand">
+                <a href="{{ url('/') }}">
+                    <img src="{{ asset('images/logo/q-logo.png') }}" alt="{{ $appName }}">
+                </a>
             </div>
-
-            <div class="onb-row">
-                <div class="onb-field">
-                    <label>Country code</label>
-                    <input type="text" x-model="s1.country_code" placeholder="+1">
-                </div>
-                <div class="onb-field">
-                    <label>Phone number</label>
-                    <input type="text" x-model="s1.phone" placeholder="555 000 1234">
-                </div>
-            </div>
-
-            <div class="onb-row">
-                <div class="onb-field">
-                    <label>Currency</label>
-                    <select x-model="s1.currency">
-                        @foreach($currencies as $c)
-                            <option value="{{ $c }}">{{ $c }}</option>
+            <div class="left-top-right">
+                {{-- Language switcher — available on every step --}}
+                <div class="lang-picker" x-data="{ open: false }" @click.outside="open = false">
+                    <button class="lang-trigger" @click="open = !open" :aria-expanded="open" type="button">
+                        <span>{{ $allLocales[$locale]['flag'] ?? '' }}</span>
+                        <span>{{ strtoupper($locale) }}</span>
+                        <svg class="lang-chevron" :class="open ? 'open' : ''"
+                             width="12" height="12" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <path d="M6 9l6 6 6-6"/>
+                        </svg>
+                    </button>
+                    <div class="lang-dropdown" x-show="open" x-cloak
+                         x-transition:enter="lang-drop-enter"
+                         x-transition:enter-start="lang-drop-enter-start"
+                         x-transition:enter-end="lang-drop-enter-end"
+                         x-transition:leave="lang-drop-enter"
+                         x-transition:leave-start="lang-drop-enter-end"
+                         x-transition:leave-end="lang-drop-enter-start">
+                        @foreach($allLocales as $code => $info)
+                            <a class="lang-option {{ $locale === $code ? 'active' : '' }}"
+                               href="{{ route('locale.switch', $code) }}">
+                                <span>{{ $info['flag'] }}</span>
+                                <span>{{ $info['name'] }}</span>
+                            </a>
                         @endforeach
-                    </select>
+                    </div>
                 </div>
-                <div class="onb-field">
-                    <label>Menu language</label>
-                    <select x-model="s1.preferred_language">
-                        @foreach($languages as $code => $label)
-                            <option value="{{ $code }}">{{ $label }}</option>
+                <a href="{{ route('logout') }}"
+                   onclick="event.preventDefault(); document.getElementById('onb-logout').submit();">
+                    {{ __('menu_owner.nav.log_out') }}
+                </a>
+                <form id="onb-logout" method="POST" action="{{ route('logout') }}" style="display:none">@csrf</form>
+            </div>
+        </header>
+
+        {{-- Step number + crumb --}}
+        <div class="step-meta">
+            <div class="num">
+                <span x-text="String(step).padStart(2, '0')"></span>
+                <span class="of"> / <span x-text="String(totalSteps).padStart(2, '0')"></span></span>
+            </div>
+            <div class="crumb">
+                <span class="dash"></span>
+                <span x-text="cur.key"></span>
+                <span class="label" x-text="cur.short"></span>
+            </div>
+        </div>
+
+        {{-- Form body --}}
+        <div class="form-body">
+
+            <div class="onb-alert" x-show="globalError" x-text="globalError" x-cloak></div>
+
+            {{-- ── Step 1 — Restaurant name + language ── --}}
+            <div x-show="step === 1" x-transition:enter="transition ease-out duration-180" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" x-cloak>
+                <h1 class="title">{!! __('menu_owner.onboarding.step1_heading', ['em' => '<span class="it">'.__('menu_owner.onboarding.step1_em').'</span>']) !!}</h1>
+                <p class="lead">{{ __('menu_owner.onboarding.step1_desc') }}</p>
+                <div class="fields">
+                    <x-ui.field name="name" :label="__('menu_owner.onboarding.name_label')" required>
+                        <x-ui.input name="name" x-model="s1.name"
+                            :placeholder="__('menu_owner.onboarding.name_placeholder')"
+                            autofocus required />
+                        <div class="ui-help error" x-show="errors.name" x-text="errors.name" x-cloak></div>
+                    </x-ui.field>
+
+                </div>
+            </div>
+
+            {{-- ── Step 2 — Contact + Currency ── --}}
+            <div x-show="step === 2" x-transition:enter="transition ease-out duration-180" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" x-cloak
+                 @change="onContactChange($event)">
+                <h1 class="title">{!! __('menu_owner.onboarding.step2_heading', ['em' => '<span class="it">'.__('menu_owner.onboarding.step2_em').'</span>']) !!}</h1>
+                <p class="lead">{{ __('menu_owner.onboarding.step2_desc') }}</p>
+                <div class="fields">
+                    <x-ui.field :label="__('menu_owner.onboarding.phone_label')" required>
+                        <x-ui.phone name="phone" cc-name="country_code"
+                            :value="$restaurant?->phone"
+                            :cc-value="$restaurant?->country_code ?? 'LB'" />
+                        <div class="ui-help error" x-show="errors.phone" x-text="errors.phone" x-cloak></div>
+                    </x-ui.field>
+
+                    <x-ui.field name="currency" :label="__('menu_owner.onboarding.currency_label')" required>
+                        <x-ui.combo name="currency"
+                            :options="$currencyOptions"
+                            :value="$restaurant?->currency ?? 'USD'"
+                            :placeholder="__('menu_owner.restaurant.currency_placeholder')"
+                            :up="true" />
+                        <div class="ui-help error" x-show="errors.currency" x-text="errors.currency" x-cloak></div>
+                    </x-ui.field>
+                </div>
+            </div>
+
+            {{-- ── Step 3 — Branding ── --}}
+            <div x-show="step === 3" x-transition:enter="transition ease-out duration-180" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" x-cloak>
+                <h1 class="title">{!! __('menu_owner.onboarding.step3_heading', ['em' => '<span class="it">'.__('menu_owner.onboarding.step3_em').'</span>']) !!}</h1>
+                <p class="lead">{{ __('menu_owner.onboarding.step3_desc') }}</p>
+                <div class="fields">
+                    <x-ui.field :label="__('menu_owner.onboarding.logo_label')" required>
+                        <x-ui.dropzone name="logo" context="logo"
+                            :value="$restaurant?->getFirstMediaUrl('logo') ?: null"
+                            :hint="__('menu_owner.onboarding.logo_hint')" />
+                        <div class="ui-help error" x-show="errors.logo" x-text="errors.logo" x-cloak></div>
+                    </x-ui.field>
+
+                    <x-ui.field :label="__('menu_owner.onboarding.cover_label')"
+                                :optional="__('menu_owner.onboarding.optional')">
+                        <x-ui.dropzone name="cover_image" context="cover_image"
+                            :value="$restaurant?->getFirstMediaUrl('cover_image') ?: null"
+                            :hint="__('menu_owner.onboarding.cover_hint')" />
+                    </x-ui.field>
+                </div>
+            </div>
+
+            {{-- ── Step 4 — Cuisine + Dietary tags ── --}}
+            <div x-show="step === 4" x-transition:enter="transition ease-out duration-180" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" x-cloak>
+                <h1 class="title">{!! __('menu_owner.onboarding.step4_heading', ['em' => '<span class="it">'.__('menu_owner.onboarding.step4_em').'</span>']) !!}</h1>
+                <p class="lead">{{ __('menu_owner.onboarding.step4_desc') }}</p>
+                @foreach(['cuisine', 'dietary'] as $cat)
+                @if(isset($tags[$cat]) && $tags[$cat]->isNotEmpty())
+                <div class="tag-section">
+                    <div class="tag-cat">{{ __('menu_owner.onboarding.tag_'.$cat) }}</div>
+                    <div class="tag-chips">
+                        @foreach($tags[$cat] as $tag)
+                        <button type="button" class="tag-chip"
+                                :class="{ on: cdTagIds.includes({{ $tag->id }}) }"
+                                @click="toggleCd({{ $tag->id }}, '{{ $tag->slug }}')">{{ $tag->name }}</button>
                         @endforeach
-                    </select>
+                    </div>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- ── Step 2 — Branding ────────────────────────────── --}}
-    <div x-show="step === 2"
-         x-transition:enter="transition ease-out duration-200"
-         x-transition:enter-start="opacity-0 translate-y-2"
-         x-transition:enter-end="opacity-100 translate-y-0"
-         x-cloak>
-        <div class="onb-eyebrow"><span></span>Step 2 of {{ $totalSteps }}</div>
-        <h1 class="onb-title">Your branding</h1>
-        <p class="onb-desc">Upload a logo and a cover image. These appear on your public menu.</p>
-
-        <div class="onb-uploads">
-            {{-- Logo --}}
-            <div class="onb-upload"
-                 @dragover.prevent @drop.prevent="handleDrop($event, 'logo')"
-                 @click="$refs.logoInput.click()">
-                <template x-if="!logoPreview && !logoUploading">
-                    <div class="onb-upload-inner">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="color:var(--muted)"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
-                        <div class="onb-upload-label">Logo <span style="font-weight:400;color:var(--muted)">(recommended)</span></div>
-                        <div class="onb-upload-hint">Square · JPG, PNG, WebP · max 10MB</div>
-                    </div>
-                </template>
-                <template x-if="logoUploading">
-                    <div class="onb-upload-inner">
-                        <div class="onb-upload-uploading">Uploading…</div>
-                    </div>
-                </template>
-                <template x-if="logoPreview && !logoUploading">
-                    <div class="onb-upload-inner">
-                        <img :src="logoPreview" class="onb-upload-logo-preview">
-                        <div class="onb-upload-replace">Click to replace</div>
-                    </div>
-                </template>
-                <input type="file" x-ref="logoInput" accept="image/jpeg,image/png,image/webp"
-                       @change="handleFileInput($event, 'logo')" style="display:none">
-            </div>
-
-            {{-- Cover image --}}
-            <div class="onb-upload"
-                 @dragover.prevent @drop.prevent="handleDrop($event, 'cover_image')"
-                 @click="$refs.coverInput.click()">
-                <template x-if="!coverPreview && !coverUploading">
-                    <div class="onb-upload-inner">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="color:var(--muted)"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
-                        <div class="onb-upload-label">Cover image <span style="font-weight:400;color:var(--muted)">(optional)</span></div>
-                        <div class="onb-upload-hint">Wide banner · 1920×600 recommended · max 10MB</div>
-                    </div>
-                </template>
-                <template x-if="coverUploading">
-                    <div class="onb-upload-inner">
-                        <div class="onb-upload-uploading">Uploading…</div>
-                    </div>
-                </template>
-                <template x-if="coverPreview && !coverUploading">
-                    <img :src="coverPreview" class="onb-upload-preview">
-                </template>
-                <input type="file" x-ref="coverInput" accept="image/jpeg,image/png,image/webp"
-                       @change="handleFileInput($event, 'cover_image')" style="display:none">
-            </div>
-        </div>
-    </div>
-
-    {{-- ── Step 3 — Profile ─────────────────────────────── --}}
-    <div x-show="step === 3"
-         x-transition:enter="transition ease-out duration-200"
-         x-transition:enter-start="opacity-0 translate-y-2"
-         x-transition:enter-end="opacity-100 translate-y-0"
-         x-cloak>
-        <div class="onb-eyebrow"><span></span>Step 3 of {{ $totalSteps }}</div>
-        <h1 class="onb-title">Your restaurant's style</h1>
-        <p class="onb-desc">Pick your type and a few tags. We'll use these to recommend the best template for you.</p>
-
-        {{-- Restaurant type --}}
-        <div class="onb-type-grid">
-            @foreach($restaurantTypes as $type)
-            <div class="onb-type-card"
-                 :class="{ selected: selectedTypeId === {{ $type->id }} }"
-                 @click="selectedTypeId = (selectedTypeId === {{ $type->id }} ? null : {{ $type->id }})">
-                <span class="onb-type-icon">{{ $type->icon }}</span>
-                <span class="onb-type-name">{{ $type->name }}</span>
-            </div>
-            @endforeach
-        </div>
-
-        {{-- Tags grouped by category --}}
-        @foreach($tags as $category => $categoryTags)
-        <div class="onb-tag-section">
-            <div class="onb-tag-category">{{ ucfirst($category) }}</div>
-            <div class="onb-tag-chips">
-                @foreach($categoryTags as $tag)
-                <div class="onb-tag-chip"
-                     :class="{ selected: selectedTagIds.includes({{ $tag->id }}) }"
-                     @click="toggleTag({{ $tag->id }}, '{{ $tag->slug }}')">
-                    {{ $tag->name }}
-                </div>
+                @endif
                 @endforeach
             </div>
+
+            {{-- ── Step 5 — Vibe + Style tags ── --}}
+            <div x-show="step === 5" x-transition:enter="transition ease-out duration-180" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" x-cloak>
+                <h1 class="title">{!! __('menu_owner.onboarding.step5_heading', ['em' => '<span class="it">'.__('menu_owner.onboarding.step5_em').'</span>']) !!}</h1>
+                <p class="lead">{{ __('menu_owner.onboarding.step5_desc') }}</p>
+                @foreach(['vibe', 'style'] as $cat)
+                @if(isset($tags[$cat]) && $tags[$cat]->isNotEmpty())
+                <div class="tag-section">
+                    <div class="tag-cat">{{ __('menu_owner.onboarding.tag_'.$cat) }}</div>
+                    <div class="tag-chips">
+                        @foreach($tags[$cat] as $tag)
+                        <button type="button" class="tag-chip"
+                                :class="{ on: vsTagIds.includes({{ $tag->id }}) }"
+                                @click="toggleVs({{ $tag->id }}, '{{ $tag->slug }}')">{{ $tag->name }}</button>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
+                @endforeach
+            </div>
+
+            {{-- ── Step 6 — Template picker ── --}}
+            <div x-show="step === 6" x-transition:enter="transition ease-out duration-180" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" x-cloak>
+                <h1 class="title">{!! __('menu_owner.onboarding.step6_heading', ['em' => '<span class="it">'.__('menu_owner.onboarding.step6_em').'</span>']) !!}</h1>
+                <p class="lead">{{ __('menu_owner.onboarding.step6_desc') }}</p>
+                <div class="f-error" x-show="errors.template" x-text="errors.template" x-cloak style="margin-bottom:12px"></div>
+
+                <template x-if="recommendedTemplates.length > 0">
+                    <div>
+                        <div class="tpl-section-lbl">{{ __('menu_owner.onboarding.recommended') }}</div>
+                        <div class="tpl-grid">
+                            <template x-for="t in recommendedTemplates" :key="t.id">
+                                <div class="tpl-card" :class="{ on: selectedTemplateId === t.id }" @click="selectedTemplateId = t.id">
+                                    <div class="tpl-thumb">
+                                        <template x-if="t.thumbnail"><img :src="t.thumbnail" :alt="t.name"></template>
+                                        <template x-if="!t.thumbnail"><span>🎨</span></template>
+                                    </div>
+                                    <div class="tpl-name" x-text="t.name"></div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+
+                <template x-if="otherTemplates.length > 0">
+                    <div>
+                        <div class="tpl-section-lbl">{{ __('menu_owner.onboarding.all_templates') }}</div>
+                        <div class="tpl-grid">
+                            <template x-for="t in otherTemplates" :key="t.id">
+                                <div class="tpl-card" :class="{ on: selectedTemplateId === t.id }" @click="selectedTemplateId = t.id">
+                                    <div class="tpl-thumb">
+                                        <template x-if="t.thumbnail"><img :src="t.thumbnail" :alt="t.name"></template>
+                                        <template x-if="!t.thumbnail"><span>🎨</span></template>
+                                    </div>
+                                    <div class="tpl-name" x-text="t.name"></div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+
+                <template x-if="allTemplates.length === 0">
+                    <p style="color:var(--muted);font-size:13.5px;padding:24px 0;text-align:center">{{ __('menu_owner.onboarding.no_templates') }}</p>
+                </template>
+            </div>
+
+        </div>{{-- /form-body --}}
+
+        {{-- Footer --}}
+        <footer class="left-foot">
+            <div class="meter">
+                <div class="meter-track">
+                    <div class="meter-fill" :style="`width: ${progress}%`"></div>
+                </div>
+                <span x-text="'{{ __('menu_owner.onboarding.pct_complete') }}'.replace(':pct', progress)"></span>
+            </div>
+            <div style="display:flex;gap:8px">
+                <button type="button" class="btn btn-ghost" x-show="step > 1" @click="back()" x-cloak>
+                    <svg class="arr-left" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    {{ __('menu_owner.onboarding.back') }}
+                </button>
+                <button type="button" class="btn btn-ink" @click="advance()"
+                        :disabled="loading">
+                    <template x-if="loading">
+                        <svg class="spin" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" d="M21 12a9 9 0 11-6.219-8.56"/></svg>
+                    </template>
+                    <template x-if="!loading">
+                        <span x-text="step === totalSteps ? '{{ __('menu_owner.onboarding.finish') }}' : '{{ __('menu_owner.onboarding.continue') }}'"></span>
+                    </template>
+                    <template x-if="loading">
+                        <span>{{ __('menu_owner.onboarding.please_wait') }}</span>
+                    </template>
+                    <template x-if="!loading">
+                        <svg class="arr" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    </template>
+                </button>
+            </div>
+        </footer>
+
+    </section>
+
+    {{-- ══════════════ RIGHT: Dark editorial ══════════════ --}}
+    <aside class="right">
+
+        {{-- Dots rail --}}
+        <div class="right-rail">
+            <div class="rail-eyebrow">
+                <span class="dash"></span>
+                {{ __('menu_owner.onboarding.onboarding_label') }}
+            </div>
+            <div class="dots">
+                @for($i = 1; $i <= $totalSteps; $i++)
+                    <button type="button" class="dot-btn"
+                            :class="{ done: step > {{ $i }}, active: step === {{ $i }} }"
+                            @click="if (step > {{ $i }}) step = {{ $i }}"
+                            title="{{ $stepData[$i - 1]['key'] }}">
+                        <template x-if="step > {{ $i }}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                        </template>
+                        <template x-if="step <= {{ $i }}">
+                            <span>{{ $i }}</span>
+                        </template>
+                    </button>
+                    @if($i < $totalSteps)
+                    <span class="dot-line" :class="{ done: step > {{ $i }} }"></span>
+                    @endif
+                @endfor
+            </div>
         </div>
-        @endforeach
-    </div>
 
-    {{-- ── Step 4 — Template ────────────────────────────── --}}
-    <div x-show="step === 4"
-         x-transition:enter="transition ease-out duration-200"
-         x-transition:enter-start="opacity-0 translate-y-2"
-         x-transition:enter-end="opacity-100 translate-y-0"
-         x-cloak>
-        <div class="onb-eyebrow"><span></span>Step 4 of {{ $totalSteps }}</div>
-        <h1 class="onb-title">Pick a template</h1>
-        <p class="onb-desc">Choose how your public menu will look. You can change this anytime.</p>
+        {{-- Stage --}}
+        <div class="stage">
+            <div class="stage-head">
+                <h2 class="stage-title" x-text="cur.stage"></h2>
+                <span class="stage-tag">
+                    <span class="pip"></span>
+                    <span x-text="`{{ __('menu_owner.onboarding.step_label') }} ${String(step).padStart(2,'0')}`"></span>
+                </span>
+            </div>
 
-        <div class="onb-fe-error" x-show="errors.template" x-text="errors.template" x-cloak style="margin-bottom:14px"></div>
+            {{-- Phone mockup --}}
+            <div class="phone-wrap">
+                <span class="annot tl">
+                    <span class="pulse"></span>
+                    <span x-text="step === 1 ? s1.name || '{{ $appName }}' : step === 2 ? '{{ __('menu_owner.onboarding.step2_title') }}' : step === 3 ? '{{ __('menu_owner.onboarding.logo_label') }}' : step === 4 ? cdTagIds.length + ' {{ __('menu_owner.onboarding.tags_count') }}' : step === 5 ? vsTagIds.length + ' {{ __('menu_owner.onboarding.tags_count') }}' : '{{ __('menu_owner.onboarding.stat_stage') }}'"></span>
+                </span>
 
-        {{-- Recommended --}}
-        <template x-if="recommendedTemplates.length > 0">
-            <div>
-                <div class="onb-tpl-section-label">Recommended for you</div>
-                <div class="onb-tpl-grid">
-                    <template x-for="t in recommendedTemplates" :key="t.id">
-                        <div class="onb-tpl-card"
-                             :class="{ selected: selectedTemplateId === t.id }"
-                             @click="selectedTemplateId = t.id">
-                            <div class="onb-tpl-thumb">
-                                <template x-if="t.thumbnail">
-                                    <img :src="t.thumbnail" :alt="t.name">
-                                </template>
-                                <template x-if="!t.thumbnail">
-                                    <span class="onb-tpl-no-thumb">🎨</span>
-                                </template>
-                            </div>
-                            <div class="onb-tpl-name" x-text="t.name"></div>
+                <div class="phone">
+                    <div class="phone-screen">
+                        <div class="phone-notch"></div>
+                        <div class="ps-status">
+                            <span>9:41</span>
+                            <span style="opacity:.7">● ● ●</span>
                         </div>
-                    </template>
+                        <div class="ps-header">
+                            <div class="ps-rest" x-text="s1.name || '{{ $appName }}'"></div>
+                            <div class="ps-sub" x-text="step <= 2 ? selectedCurrency + ' · ' + (s1.preferred_language || '{{ $locale }}').toUpperCase() : '{{ __('menu_owner.onboarding.step1_title') }}'"></div>
+                        </div>
+                        <div class="ps-list">
+                            <div class="ps-item">
+                                <div><div class="name">Saffron risotto</div><div class="desc">Aged carnaroli, lemon</div></div>
+                                <div class="price" x-text="currencySymbol + '24'"></div>
+                            </div>
+                            <div class="ps-item">
+                                <div><div class="name">Heirloom tomato</div><div class="desc">Burrata, basil oil</div></div>
+                                <div class="price" x-text="currencySymbol + '18'"></div>
+                            </div>
+                            <div class="ps-item">
+                                <div><div class="name">Za'atar flatbread</div><div class="desc">Stone-baked, labneh</div></div>
+                                <div class="price" x-text="currencySymbol + '12'"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <span class="annot br">
+                    <span class="pulse"></span>
+                    <span x-text="step === 2 ? selectedCurrency : step === 6 && selectedTemplateId ? '{{ __('menu_owner.onboarding.template_selected') }}' : '{{ __('menu_owner.onboarding.pct_complete') }}'.replace(':pct', progress)"></span>
+                </span>
+            </div>
+
+            {{-- Stat strip --}}
+            <div class="stage-foot">
+                <div style="padding: 5px;">
+                    <div class="k">{{ __('menu_owner.onboarding.stat_setup') }}</div>
+                    <div class="v"><span class="it" x-text="progress"></span><span class="u">%</span></div>
+                </div>
+                <div style="padding: 5px;">
+                    <div class="k">{{ __('menu_owner.onboarding.stat_time_left') }}</div>
+                    <div class="v"><span class="it" x-text="totalSteps - step + 1"></span><span class="u">min</span></div>
+                </div>
+                <div style="padding: 5px;">
+                    <div class="k">{{ __('menu_owner.onboarding.stat_stage') }}</div>
+                    <div class="v" style="font-family:var(--font-display);font-style:italic;color:var(--olive-soft);font-size:16px" x-text="cur.tag"></div>
                 </div>
             </div>
-        </template>
+        </div>
 
-        {{-- All / remaining --}}
-        <template x-if="otherTemplates.length > 0">
-            <div>
-                <div class="onb-tpl-section-label">All templates</div>
-                <div class="onb-tpl-grid">
-                    <template x-for="t in otherTemplates" :key="t.id">
-                        <div class="onb-tpl-card"
-                             :class="{ selected: selectedTemplateId === t.id }"
-                             @click="selectedTemplateId = t.id">
-                            <div class="onb-tpl-thumb">
-                                <template x-if="t.thumbnail">
-                                    <img :src="t.thumbnail" :alt="t.name">
-                                </template>
-                                <template x-if="!t.thumbnail">
-                                    <span class="onb-tpl-no-thumb">🎨</span>
-                                </template>
-                            </div>
-                            <div class="onb-tpl-name" x-text="t.name"></div>
-                        </div>
-                    </template>
-                </div>
-            </div>
-        </template>
-
-        {{-- No templates at all --}}
-        <template x-if="allTemplates.length === 0">
-            <div style="text-align:center;padding:32px;color:var(--muted);font-size:13.5px">
-                No templates available yet.
-            </div>
-        </template>
-    </div>
-
-    {{-- ── Actions ──────────────────────────────────────── --}}
-    <div class="onb-actions">
-        <button type="button" class="onb-back" x-show="step > 1" @click="back()" x-cloak>
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19 12H5M12 5l-7 7 7 7"/>
-            </svg>
-            Back
-        </button>
-
-        <button type="button" class="onb-next" @click="advance()" :disabled="loading || logoUploading || coverUploading">
-            <template x-if="!loading">
-                <span x-text="step === totalSteps ? 'Finish' : 'Continue'"></span>
-            </template>
-            <template x-if="loading">
-                <span>Please wait…</span>
-            </template>
-            <template x-if="!loading">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7"/>
-                </svg>
-            </template>
-            <template x-if="loading">
-                <svg class="onb-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                    <path stroke-linecap="round" d="M21 12a9 9 0 11-6.219-8.56"/>
-                </svg>
-            </template>
-        </button>
-    </div>
+    </aside>
 
 </div>
-</div>
+<script>
+document.addEventListener('alpine:init', () => {
+    const _o = window._onb;
+
+    const dom = (name) => document.querySelector(`[name="${name}"]`)?.value ?? '';
+
+    Alpine.data('wizard', () => ({
+        step:       _o.step,
+        totalSteps: _o.totalSteps,
+        loading:    false,
+        errors:     {},
+        globalError: '',
+
+        stepData: _o.stepData,
+        get cur()      { return this.stepData[this.step - 1]; },
+        get progress() { return Math.round(((this.step - 1) / this.totalSteps) * 100); },
+
+        /* Step 1 */
+        s1: { name: _o.existing.name, preferred_language: _o.existing.preferred_language },
+
+        /* Step 2 — currency tracked for right-panel display only */
+        selectedCurrency: _o.existing.currency || 'USD',
+        get currencySymbol() {
+            const map = { EUR: '€', GBP: '£', JPY: '¥', SAR: '﷼', INR: '₹', CNY: '¥' };
+            return map[this.selectedCurrency] ?? '$';
+        },
+        onContactChange(e) {
+            if (e.target.name === 'currency') { this.selectedCurrency = e.target.value || 'USD'; }
+        },
+
+        /* Step 4 */
+        cdTagIds: _o.existing.cdTagIds, cdTagSlugs: _o.existing.cdTagSlugs,
+        toggleCd(id, slug) {
+            const i = this.cdTagIds.indexOf(id);
+            if (i === -1) { this.cdTagIds.push(id); this.cdTagSlugs.push(slug); }
+            else { this.cdTagIds.splice(i, 1); this.cdTagSlugs.splice(this.cdTagSlugs.indexOf(slug), 1); }
+        },
+
+        /* Step 5 */
+        vsTagIds: _o.existing.vsTagIds, vsTagSlugs: _o.existing.vsTagSlugs,
+        toggleVs(id, slug) {
+            const i = this.vsTagIds.indexOf(id);
+            if (i === -1) { this.vsTagIds.push(id); this.vsTagSlugs.push(slug); }
+            else { this.vsTagIds.splice(i, 1); this.vsTagSlugs.splice(this.vsTagSlugs.indexOf(slug), 1); }
+        },
+
+        /* Step 6 */
+        selectedTemplateId: _o.existing.templateId,
+        allTemplates: _o.templates,
+        get allTagSlugs() { return [...this.cdTagSlugs, ...this.vsTagSlugs]; },
+        get recommendedTemplates() {
+            if (!this.allTagSlugs.length) return [];
+            return this.allTemplates.filter(t => t.tagSlugs.some(s => this.allTagSlugs.includes(s)));
+        },
+        get otherTemplates() { return this.allTemplates; },
+
+
+        /* ── Snapshot system ─────────────────────────────────────────
+           Captures each step's state when the step becomes active.
+           advance() skips the API call if nothing changed.           */
+        _snap: {},
+
+        _captureSnap(step) {
+            switch (step) {
+                case 1:
+                    this._snap[1] = JSON.stringify({ name: this.s1.name.trim(), lang: this.s1.preferred_language });
+                    break;
+                case 2:
+                    this._snap[2] = JSON.stringify({ cc: dom('country_code'), phone: dom('phone'), currency: dom('currency') });
+                    break;
+                case 3:
+                    this._snap[3] = `${dom('logo_key')}|${dom('cover_image_key')}`;
+                    break;
+                case 4:
+                    this._snap[4] = [...this.cdTagIds].sort().join(',');
+                    break;
+                case 5:
+                    this._snap[5] = [...this.vsTagIds].sort().join(',');
+                    break;
+                case 6:
+                    this._snap[6] = String(this.selectedTemplateId ?? '');
+                    break;
+            }
+        },
+
+        _isUnchanged() {
+            switch (this.step) {
+                case 1: return this._snap[1] === JSON.stringify({ name: this.s1.name.trim(), lang: this.s1.preferred_language });
+                case 2: return this._snap[2] === JSON.stringify({ cc: dom('country_code'), phone: dom('phone'), currency: dom('currency') });
+                case 3: return this._snap[3] === `${dom('logo_key')}|${dom('cover_image_key')}`;
+                case 4: return this._snap[4] === [...this.cdTagIds].sort().join(',');
+                case 5: return this._snap[5] === [...this.vsTagIds].sort().join(',');
+                case 6: return this._snap[6] === String(this.selectedTemplateId ?? '');
+                default: return false;
+            }
+        },
+
+        init() {
+            // Capture snapshot when step changes (use $nextTick so DOM components have rendered)
+            this.$watch('step', step => this.$nextTick(() => this._captureSnap(step)));
+            this.$nextTick(() => this._captureSnap(this.step));
+        },
+
+        /* Advance */
+        async advance() {
+            if (this.loading) return;
+            this.errors = {}; this.globalError = '';
+
+            // ── Frontend validation (always runs) ──
+            if (this.step === 1) {
+                if (!this.s1.name.trim()) { this.errors.name = _o.i18n.nameRequired; return; }
+                if (this.s1.name.trim().length < 2) { this.errors.name = _o.i18n.nameMin; return; }
+            }
+            if (this.step === 2) {
+                if (!dom('phone').trim()) { this.errors.phone = _o.i18n.phoneRequired; return; }
+                if (!dom('currency')) { this.errors.currency = _o.i18n.currencyRequired; return; }
+            }
+            if (this.step === 3) {
+                if (!dom('logo_key') && !_o.existing.hasLogo) { this.errors.logo = _o.i18n.logoRequired; return; }
+            }
+            if (this.step === 6 && !this.selectedTemplateId) { this.errors.template = _o.i18n.selectTemplate; return; }
+
+            // ── Skip API if nothing changed ──
+            if (this._isUnchanged()) {
+                this.step = this.step + 1;
+                return;
+            }
+
+            this.loading = true;
+            try {
+                let body = { _step: this.step };
+                if (this.step === 1) {
+                    body = { ...body, ...this.s1 };
+                } else if (this.step === 2) {
+                    body = { ...body, country_code: dom('country_code'), phone: dom('phone'), currency: dom('currency') };
+                } else if (this.step === 3) {
+                    body = { ...body, logo_key: dom('logo_key'), cover_image_key: dom('cover_image_key') };
+                } else if (this.step === 4) {
+                    body = { ...body, tag_ids: this.cdTagIds };
+                } else if (this.step === 5) {
+                    body = { ...body, tag_ids: this.vsTagIds };
+                } else if (this.step === 6) {
+                    body = { ...body, template_id: this.selectedTemplateId };
+                }
+
+                const res = await fetch(_o.routes.advance, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(body),
+                });
+
+                if (res.status === 422) {
+                    const d = await res.json();
+                    this.errors = d.errors ?? {};
+                    this.globalError = d.message ?? '';
+                    return;
+                }
+
+                const d = await res.json();
+                if (d.completed) { window.location = d.redirect; return; }
+                this.step = d.step;
+
+                // Update snapshot after a successful save so the next
+                // back-and-continue on this step is also skippable.
+                this._captureSnap(this.step - 1);
+            } catch { this.globalError = _o.i18n.somethingWrong; }
+            finally { this.loading = false; }
+        },
+
+        back() { if (this.step > 1) this.step--; },
+    }));
+});
+</script>
 </body>
 </html>

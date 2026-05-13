@@ -56,7 +56,7 @@
             <div>
                 <div class="dash-eyebrow">
                     <span class="dash-line"></span>
-                    Dashboard
+                    {{ __('menu_owner.dashboard.eyebrow') }}
                 </div>
                 <h1 class="dash-h1">
                     @if($restaurant)
@@ -83,14 +83,14 @@
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>
                         </svg>
-                        Preview
+                        {{ __('menu_owner.dashboard.preview') }}
                     </a>
                 @endif
                 <a href="{{ route('menu-owner.dishes.create') }}" class="dash-btn dash-btn-ink">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
                         <path d="M12 5v14M5 12h14"/>
                     </svg>
-                    Add dish
+                    {{ __('menu_owner.dashboard.add_dish') }}
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
                         <path d="M5 12h14M13 6l6 6-6 6"/>
                     </svg>
@@ -101,32 +101,32 @@
         {{-- ── KPI strip ── --}}
         <div class="dash-kpis">
             <div class="dash-kpi">
-                <div class="dk-label">Active dishes</div>
+                <div class="dk-label">{{ __('menu_owner.dashboard.active_dishes') }}</div>
                 <div class="dk-value">
                     {{ $activeDishCount }}<span class="u">/{{ $totalDishCount }}</span>
                 </div>
                 <div class="dk-sub {{ $totalDishCount === 0 || $activeDishCount === $totalDishCount ? 'muted' : '' }}">
                     @if($totalDishCount === 0)
-                        No dishes yet
+                        {{ __('menu_owner.dashboard.no_dishes_yet') }}
                     @elseif($activeDishCount === $totalDishCount)
-                        All dishes active
+                        {{ __('menu_owner.dashboard.all_dishes_active') }}
                     @else
-                        {{ $totalDishCount - $activeDishCount }} hidden
+                        {{ __('menu_owner.dashboard.hidden_count', ['count' => $totalDishCount - $activeDishCount]) }}
                     @endif
                 </div>
             </div>
             <div class="dash-kpi">
-                <div class="dk-label">Total views</div>
+                <div class="dk-label">{{ __('menu_owner.dashboard.total_views') }}</div>
                 <div class="dk-value">{{ number_format($totalViews) }}</div>
-                <div class="dk-sub muted">Menu page visits</div>
+                <div class="dk-sub muted">{{ __('menu_owner.dashboard.menu_page_visits') }}</div>
             </div>
             <div class="dash-kpi">
-                <div class="dk-label">Unique visitors</div>
+                <div class="dk-label">{{ __('menu_owner.dashboard.unique_visitors') }}</div>
                 <div class="dk-value">{{ number_format($uniqueVisitors) }}</div>
-                <div class="dk-sub muted">Distinct sessions</div>
+                <div class="dk-sub muted">{{ __('menu_owner.dashboard.distinct_sessions') }}</div>
             </div>
             <div class="dash-kpi">
-                <div class="dk-label">Categories</div>
+                <div class="dk-label">{{ __('menu_owner.dashboard.categories') }}</div>
                 <div class="dk-value">{{ $categories->count() }}</div>
                 <div class="dk-sub muted">
                     {{ $categories->sum('dishes_count') }} {{ Str::plural('dish', $categories->sum('dishes_count')) }} total
@@ -138,13 +138,13 @@
         <div class="dash-toolbar">
             <div class="dash-tabs">
                 <button class="dash-tab" :class="tab === 'all' ? 'on' : ''" @click="tab = 'all'">
-                    All <span class="cnt" x-text="dishes.length"></span>
+                    {{ __('menu_owner.dashboard.filter_all') }} <span class="cnt" x-text="dishes.length"></span>
                 </button>
                 <button class="dash-tab" :class="tab === 'active' ? 'on' : ''" @click="tab = 'active'">
-                    Active <span class="cnt" x-text="count('active')"></span>
+                    {{ __('menu_owner.dashboard.filter_active') }} <span class="cnt" x-text="count('active')"></span>
                 </button>
                 <button class="dash-tab" :class="tab === 'hidden' ? 'on' : ''" @click="tab = 'hidden'">
-                    Hidden <span class="cnt" x-text="count('hidden')"></span>
+                    {{ __('menu_owner.dashboard.filter_hidden') }} <span class="cnt" x-text="count('hidden')"></span>
                 </button>
             </div>
         </div>
@@ -188,10 +188,10 @@
                         <thead>
                             <tr>
                                 <th style="width:52px"></th>
-                                <th>Dish</th>
-                                <th>Category</th>
-                                <th>Price</th>
-                                <th>Status</th>
+                                <th>{{ __('menu_owner.dashboard.col_dish') }}</th>
+                                <th>{{ __('menu_owner.dashboard.col_category') }}</th>
+                                <th>{{ __('menu_owner.dashboard.col_price') }}</th>
+                                <th>{{ __('menu_owner.dashboard.col_status') }}</th>
                                 <th></th>
                             </tr>
                         </thead>
@@ -225,7 +225,7 @@
                                         <span class="dp-pill"
                                               :class="d.available ? 'live' : 'hidden-pill'">
                                             <span class="dot"></span>
-                                            <span x-text="d.available ? 'Active' : 'Hidden'"></span>
+                                            <span x-text="d.available ? '{{ __('menu_owner.dashboard.status_active') }}' : '{{ __('menu_owner.dashboard.status_hidden') }}'"></span>
                                         </span>
                                     </td>
                                     <td style="text-align:right">
@@ -240,7 +240,7 @@
                             <template x-if="filtered.length === 0">
                                 <tr>
                                     <td colspan="6" class="dash-empty">
-                                        No dishes match the current filter.
+                                        {{ __('menu_owner.dashboard.no_match') }}
                                     </td>
                                 </tr>
                             </template>
@@ -249,8 +249,8 @@
                 </div>
 
                 <div class="dash-panel-foot">
-                    <span x-text="`Showing ${filtered.length} of ${dishes.length}`"></span>
-                    <a href="{{ route('menu-owner.dishes.index') }}">Manage all dishes →</a>
+                    <span x-text="'{{ __('menu_owner.dashboard.showing_of') }}'.replace(':shown', filtered.length).replace(':total', dishes.length)"></span>
+                    <a href="{{ route('menu-owner.dishes.index') }}">{{ __('menu_owner.dashboard.manage_all') }} →</a>
                 </div>
             </div>
 
@@ -263,12 +263,12 @@
                         <div class="dash-preview-head">
                             <div class="plbl">
                                 <span class="dot"></span>
-                                Live preview
+                                {{ __('menu_owner.dashboard.live_preview') }}
                             </div>
                             <a href="{{ route('public.menu', $restaurant->slug) }}"
                                target="_blank"
                                class="plink">
-                                Open
+                                {{ __('menu_owner.dashboard.open') }}
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/>
                                 </svg>
@@ -300,7 +300,7 @@
                                                 <div class="pp">{{ number_format((float) $dish->price, 2) }}</div>
                                             </div>
                                         @empty
-                                            <div class="ps-empty">No active dishes yet</div>
+                                            <div class="ps-empty">{{ __('menu_owner.dashboard.no_active_dishes') }}</div>
                                         @endforelse
                                     </div>
                                 </div>
@@ -312,21 +312,21 @@
                 {{-- Stats mini cards --}}
                 <div class="dash-mini-cards">
                     <div class="dash-mini-card">
-                        <div class="mc-lbl">Total views</div>
+                        <div class="mc-lbl">{{ __('menu_owner.dashboard.total_views') }}</div>
                         <div class="mc-val"><span class="it">{{ number_format($totalViews) }}</span></div>
-                        <div class="mc-desc">Menu page visits</div>
+                        <div class="mc-desc">{{ __('menu_owner.dashboard.menu_page_visits') }}</div>
                     </div>
                     <div class="dash-mini-card">
-                        <div class="mc-lbl">Visitors</div>
+                        <div class="mc-lbl">{{ __('menu_owner.dashboard.visitors') }}</div>
                         <div class="mc-val"><span class="it">{{ number_format($uniqueVisitors) }}</span></div>
-                        <div class="mc-desc">Unique sessions</div>
+                        <div class="mc-desc">{{ __('menu_owner.dashboard.unique_sessions') }}</div>
                     </div>
                 </div>
 
                 {{-- Quick links --}}
                 <div class="dash-quick">
                     <div class="dash-quick-head">
-                        <span class="it">Quick</span> actions
+                        {{ __('menu_owner.dashboard.quick_actions') }}
                     </div>
                     <div class="dash-quick-list">
                         <a href="{{ route('menu-owner.dishes.create') }}" class="dash-quick-item">
@@ -335,7 +335,7 @@
                                     <path d="M12 5v14M5 12h14"/>
                                 </svg>
                             </span>
-                            <span class="qi-label">Add a dish</span>
+                            <span class="qi-label">{{ __('menu_owner.dashboard.add_dish_label') }}</span>
                             <span class="qi-arr">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
                                     <path d="M9 6l6 6-6 6"/>
@@ -348,7 +348,7 @@
                                     <path d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 17V7a4 4 0 014-4z"/>
                                 </svg>
                             </span>
-                            <span class="qi-label">Manage categories</span>
+                            <span class="qi-label">{{ __('menu_owner.dashboard.manage_categories') }}</span>
                             <span class="qi-arr">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
                                     <path d="M9 6l6 6-6 6"/>
@@ -361,7 +361,7 @@
                                     <path d="M3 3v18h18"/><path d="M7 14l3-4 4 3 5-7"/>
                                 </svg>
                             </span>
-                            <span class="qi-label">View statistics</span>
+                            <span class="qi-label">{{ __('menu_owner.dashboard.view_statistics') }}</span>
                             <span class="qi-arr">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
                                     <path d="M9 6l6 6-6 6"/>
@@ -375,7 +375,7 @@
                                     <path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 01-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 01-4 0v-.1a1.7 1.7 0 00-1-1.5 1.7 1.7 0 00-1.9.4l-.1.1a2 2 0 11-2.8-2.9l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 010-4h.1a1.7 1.7 0 001.5-1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 014 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 012.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 010 4h-.1a1.7 1.7 0 00-1.5 1z"/>
                                 </svg>
                             </span>
-                            <span class="qi-label">Restaurant settings</span>
+                            <span class="qi-label">{{ __('menu_owner.dashboard.restaurant_settings') }}</span>
                             <span class="qi-arr">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
                                     <path d="M9 6l6 6-6 6"/>

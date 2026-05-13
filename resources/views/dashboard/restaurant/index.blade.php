@@ -402,27 +402,11 @@
 
                         {{-- Preferred Language --}}
                         @php
-                            $localeData = [
-                                'en' => ['name' => 'English',    'flag' => '🇬🇧'],
-                                'ar' => ['name' => 'العربية',    'flag' => '🇸🇦'],
-                                'fr' => ['name' => 'Français',   'flag' => '🇫🇷'],
-                                'de' => ['name' => 'Deutsch',    'flag' => '🇩🇪'],
-                                'es' => ['name' => 'Español',    'flag' => '🇪🇸'],
-                                'it' => ['name' => 'Italiano',   'flag' => '🇮🇹'],
-                                'hi' => ['name' => 'हिन्दी',    'flag' => '🇮🇳'],
-                                'pt' => ['name' => 'Português',  'flag' => '🇵🇹'],
-                                'ru' => ['name' => 'Русский',    'flag' => '🇷🇺'],
-                                'tr' => ['name' => 'Türkçe',     'flag' => '🇹🇷'],
-                                'zh' => ['name' => '中文',       'flag' => '🇨🇳'],
-                                'ja' => ['name' => '日本語',     'flag' => '🇯🇵'],
-                                'ko' => ['name' => '한국어',     'flag' => '🇰🇷'],
-                                'nl' => ['name' => 'Nederlands', 'flag' => '🇳🇱'],
-                            ];
-                            $langOptions = collect(config('locales.supported', ['en']))
-                                ->map(fn($code) => [
+                            $langOptions = collect(config('locales.locales'))
+                                ->map(fn ($data, $code) => [
                                     'value' => $code,
-                                    'label' => $localeData[$code]['name'] ?? $code,
-                                    'flag'  => $localeData[$code]['flag'] ?? '',
+                                    'label' => $data['name'],
+                                    'flag'  => $data['flag'],
                                 ])->values()->all();
                         @endphp
                         <div>

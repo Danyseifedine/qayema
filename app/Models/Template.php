@@ -35,7 +35,7 @@ class Template extends Model implements HasMedia
 
     public function tags(): BelongsToMany
     {
-        return $this->belongsToMany(Tag::class);
+        return $this->belongsToMany(Tag::class, 'template_tag');
     }
 
     /**

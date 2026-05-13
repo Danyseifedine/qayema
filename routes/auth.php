@@ -16,10 +16,12 @@ Route::middleware(['guest', 'owner.locale'])->group(function () {
     Route::get('auth/google/callback', [GoogleController::class, 'callback'])->name('auth.google.callback');
 });
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth'])->group(function () {
     Route::put('password', [PasswordController::class, 'update'])->name('password.update');
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+});
 
+Route::middleware(['auth', 'owner.locale'])->group(function () {
     Route::get('/onboarding', [OnboardingController::class, 'show'])->name('onboarding');
     Route::post('/onboarding/advance', [OnboardingController::class, 'advance'])->name('onboarding.advance');
 });

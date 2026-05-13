@@ -1,6 +1,6 @@
 {
   "resources/css/app.css": {
-    "file": "assets/app-BMMglgYL.css",
+    "file": "assets/app-Buxmokix.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -9,7 +9,7 @@
     ]
   },
   "resources/css/dashboard.css": {
-    "file": "assets/dashboard-gplgians.css",
+    "file": "assets/dashboard-BNSJHMTD.css",
     "src": "resources/css/dashboard.css",
     "isEntry": true,
     "name": "dashboard",
@@ -18,7 +18,7 @@
     ]
   },
   "resources/css/login.css": {
-    "file": "assets/login-CbP8-7Cx.css",
+    "file": "assets/login-ChWFTGok.css",
     "src": "resources/css/login.css",
     "isEntry": true,
     "name": "login",
@@ -27,7 +27,7 @@
     ]
   },
   "resources/css/ui.css": {
-    "file": "assets/ui-BD626Jgs.css",
+    "file": "assets/ui-Cd3COA6F.css",
     "src": "resources/css/ui.css",
     "isEntry": true,
     "name": "ui",

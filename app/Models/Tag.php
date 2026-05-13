@@ -16,6 +16,6 @@ class Tag extends Model
 
     public function templates(): BelongsToMany
     {
-        return $this->belongsToMany(Template::class);
+        return $this->belongsToMany(Template::class, 'template_tag');
     }
 }

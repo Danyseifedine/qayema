@@ -30,7 +30,21 @@
       "Bash(powershell -Command \"\\(Get-Content app/Http/Controllers/MenuOwner/CategoryController.php\\) -replace \\\\\"route\\\\\\\\\\('dashboard\\\\\\\\.categories\\\\\\\\.index'\\\\\\\\\\)\\\\\", \\\\\"route\\('menu-owner.categories.index'\\)\\\\\" | Set-Content app/Http/Controllers/MenuOwner/CategoryController.php -Encoding utf8\")",
       "Bash(powershell -Command \"\\(Get-Content app/Http/Controllers/MenuOwner/DishController.php\\) -replace \\\\\"route\\\\\\\\\\('dashboard\\\\\\\\.dishes\\\\\\\\.index'\\\\\\\\\\)\\\\\", \\\\\"route\\('menu-owner.dishes.index'\\)\\\\\" | Set-Content app/Http/Controllers/MenuOwner/DishController.php -Encoding utf8\")",
       "Bash(powershell -Command ' *)",
-      "Bash(Get-Content resources/css/login.css -Tail 20)"
+      "Bash(Get-Content resources/css/login.css -Tail 20)",
+      "Bash(Get-ChildItem \"c:\\\\Users\\\\scorp\\\\Desktop\\\\lebify\\\\menux\\\\routes\" -Filter \"*.php\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\scorp\\\\Desktop\\\\lebify\" -Recurse -Filter \"*stepper*\" -ErrorAction SilentlyContinue)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\scorp\\\\Desktop\\\\lebify\\\\menux\\\\resources\\\\views\\\\components\\\\ui\\\\\" -File | Select-Object Name)",
+      "mcp__laravel-boost__database-query",
+      "mcp__laravel-boost__browser-logs",
+      "Bash(php -r \"echo json_encode\\(json_decode\\(file_get_contents\\('php://stdin'\\)\\), JSON_PRETTY_PRINT\\);\")",
+      "PowerShell(head -30)",
+      "Bash(grep -n \">[ ]*[A-Z][a-zA-Z ]*<\\\\|>[ ]*[A-Z][a-zA-Z ]*$\" resources/views/dashboard/dashboard.blade.php)",
+      "Bash(php -r 'foreach\\(['\\\\''ar'\\\\'','\\\\''de'\\\\'','\\\\''es'\\\\'','\\\\''fr'\\\\'','\\\\''hi'\\\\'','\\\\''it'\\\\'','\\\\''ja'\\\\'','\\\\''ko'\\\\'','\\\\''nl'\\\\'','\\\\''pt'\\\\'','\\\\''ru'\\\\'','\\\\''tr'\\\\'','\\\\''zh'\\\\''] as $l\\) { $d = include '\\\\''lang/'\\\\''.$l.'\\\\''/menu_owner.php'\\\\''; echo $l.'\\\\'': '\\\\''.\\( isset\\($d['\\\\''menu_scan'\\\\'']\\) ? '\\\\''OK'\\\\'' : '\\\\''MISSING'\\\\'' \\).'\\\\''\\\\n'\\\\''; }')",
+      "Bash(php -l resources/views/dashboard/menu-scan/index.blade.php)",
+      "Bash(php -l app/Http/Controllers/MenuOwner/MenuScanController.php)",
+      "Bash(php -l app/Http/Controllers/MenuOwner/SearchController.php)",
+      "Bash(php -l app/Http/Controllers/MenuOwner/StatisticController.php)",
+      "Bash(php -l resources/views/dashboard/statistics/index.blade.php)"
     ]
   }
 }

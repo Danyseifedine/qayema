@@ -7,6 +7,7 @@ use App\Http\Controllers\MenuOwner\MenuScanController;
 use App\Http\Controllers\MenuOwner\ProfileController;
 use App\Http\Controllers\MenuOwner\QrCodeController;
 use App\Http\Controllers\MenuOwner\RestaurantController;
+use App\Http\Controllers\MenuOwner\SearchController;
 use App\Http\Controllers\MenuOwner\SettingsController;
 use App\Http\Controllers\MenuOwner\SocialLinkController;
 use App\Http\Controllers\MenuOwner\StatisticController;
@@ -56,6 +57,9 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureOnboardingComplete::class,
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::middleware(\App\Http\Middleware\EnsureUserIsMenuOwner::class)->group(function () {
+        // Search
+        Route::get('/search', [SearchController::class, 'search'])->name('menu-owner.search');
+
         // Temp image upload (optimize & store for deferred form submission)
         Route::post('/temp-upload', [TempUploadController::class, 'store'])->name('menu-owner.temp-upload');
 

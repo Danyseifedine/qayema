@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
         $this->call(SettingsSeeder::class);
         $this->call(RestaurantTypeSeeder::class);
         $this->call(TagSeeder::class);
+        $this->call(TemplateSeeder::class);
         $this->call(TemplateTagSeeder::class);
         User::create([
             'name' => 'Admin',

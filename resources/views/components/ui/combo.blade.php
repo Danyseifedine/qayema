@@ -19,6 +19,7 @@
     'grouped'     => false,
     'placeholder' => 'Select option',
     'searchable'  => true,
+    'up'          => false,
 ])
 
 @php
@@ -81,6 +82,9 @@
                  this.open = false;
              }
              this.q = '';
+             this.$nextTick(() => this.$el.dispatchEvent(
+                 new CustomEvent('combo-change', { detail: { value: this.val }, bubbles: true })
+             ));
          },
 
          clear() { this.val = this.multiple ? [] : ''; this.q = ''; },
@@ -154,7 +158,7 @@
     @endif
 
     {{-- â”€â”€ Dropdown list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ --}}
-    <div class="ui-menu" x-show="open" x-cloak>
+    <div class="ui-menu {{ $up ? 'up' : '' }}" x-show="open" x-cloak>
         <div class="ui-menu-list">
             <template x-for="row in filteredFlat" :key="row.value">
                 <div>

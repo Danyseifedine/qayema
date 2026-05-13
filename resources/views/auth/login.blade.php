@@ -4,22 +4,7 @@
     $dir       = $isRtl ? 'rtl' : 'ltr';
     $appName   = config('app.name', 'Qayema');
 
-    $locales = [
-        'en' => ['flag' => '🇬🇧', 'name' => 'English'],
-        'ar' => ['flag' => '🇸🇦', 'name' => 'العربية'],
-        'fr' => ['flag' => '🇫🇷', 'name' => 'Français'],
-        'de' => ['flag' => '🇩🇪', 'name' => 'Deutsch'],
-        'es' => ['flag' => '🇪🇸', 'name' => 'Español'],
-        'it' => ['flag' => '🇮🇹', 'name' => 'Italiano'],
-        'pt' => ['flag' => '🇵🇹', 'name' => 'Português'],
-        'ru' => ['flag' => '🇷🇺', 'name' => 'Русский'],
-        'tr' => ['flag' => '🇹🇷', 'name' => 'Türkçe'],
-        'hi' => ['flag' => '🇮🇳', 'name' => 'हिन्दी'],
-        'zh' => ['flag' => '🇨🇳', 'name' => '中文'],
-        'ja' => ['flag' => '🇯🇵', 'name' => '日本語'],
-        'ko' => ['flag' => '🇰🇷', 'name' => '한국어'],
-        'nl' => ['flag' => '🇳🇱', 'name' => 'Nederlands'],
-    ];
+    $locales = config('locales.locales');
 
     $currentLocale = $locales[$locale] ?? $locales['en'];
 @endphp
