@@ -267,6 +267,10 @@ return [
         'section_basic' => 'Temel bilgiler',
         'section_pricing' => 'Fiyatlandırma ve görünürlük',
         'section_photo' => 'Fotoğraf',
+        'section_tags' => 'Yemek Etiketleri',
+        'tags_label' => 'Etiketler (İsteğe Bağlı)',
+        'tags_help' => 'Bu yemeği tanımlayan kısa etiketler ekleyin — porsiyon büyüklüğü, hazırlama süresi veya önemli özellikler gibi. Yazıp Enter\'a basın.',
+        'tags_placeholder' => 'ör. 2 porsiyon, 30 dk, Acı…',
     ],
 
     'social_links' => [

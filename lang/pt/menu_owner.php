@@ -267,6 +267,10 @@ return [
         'section_basic' => 'Informações básicas',
         'section_pricing' => 'Preços e visibilidade',
         'section_photo' => 'Foto',
+        'section_tags' => 'Rótulos do prato',
+        'tags_label' => 'Rótulos (Opcional)',
+        'tags_help' => 'Adicione rótulos curtos que descrevam este prato — como tamanho da porção, tempo de preparo ou características principais. Digite e pressione Enter.',
+        'tags_placeholder' => 'ex. 2 porções, 30 min, Picante…',
     ],
 
     'social_links' => [

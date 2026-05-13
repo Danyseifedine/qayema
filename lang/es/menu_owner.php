@@ -267,6 +267,10 @@ return [
         'section_basic' => 'Información básica',
         'section_pricing' => 'Precios y visibilidad',
         'section_photo' => 'Foto',
+        'section_tags' => 'Etiquetas del plato',
+        'tags_label' => 'Etiquetas (Opcional)',
+        'tags_help' => 'Añade etiquetas cortas que describan este plato — como el tamaño de la porción, tiempo de preparación o características clave. Escribe y pulsa Enter.',
+        'tags_placeholder' => 'p. ej. 2 porciones, 30 min, Picante…',
     ],
 
     'social_links' => [

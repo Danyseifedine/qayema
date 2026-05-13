@@ -59,6 +59,148 @@ class TemplateForm
                             ->helperText('Recommended 800×500 px. Max 5 MB.'),
                     ]),
 
+                Section::make('Capabilities')
+                    ->description('Define what this template supports. Disabling a capability hides that feature entirely for any restaurant using this template.')
+                    ->schema([
+
+                        // ── Restaurant Profile ────────────────────────────────────────────────
+                        Section::make('Restaurant Profile')
+                            ->columns(3)
+                            ->schema([
+                                Toggle::make('has_logo')
+                                    ->label('Logo')
+                                    ->default(true)
+                                    ->helperText('Restaurant logo is displayed.'),
+
+                                Toggle::make('has_cover_image')
+                                    ->label('Cover Image')
+                                    ->default(true)
+                                    ->helperText('Hero/banner image at the top.'),
+
+                                Toggle::make('has_description')
+                                    ->label('Description')
+                                    ->default(true)
+                                    ->helperText('About / description section.'),
+
+                                Toggle::make('has_phone')
+                                    ->label('Phone Number')
+                                    ->default(true)
+                                    ->helperText('Phone number is displayed.'),
+
+                                Toggle::make('has_address')
+                                    ->label('Address (text)')
+                                    ->default(true)
+                                    ->live()
+                                    ->helperText('Location shown as a text string.'),
+
+                                Toggle::make('has_map')
+                                    ->label('Map Embed')
+                                    ->default(true)
+                                    ->hidden(fn (Get $get): bool => ! $get('has_address'))
+                                    ->helperText('Embedded map (requires Address enabled).'),
+
+                                Toggle::make('has_schedule')
+                                    ->label('Opening Hours')
+                                    ->default(true)
+                                    ->helperText('Schedule / opening hours section.'),
+
+                                Toggle::make('has_social_links')
+                                    ->label('Social Links')
+                                    ->default(true)
+                                    ->helperText('Instagram, Facebook, TikTok etc.'),
+                            ]),
+
+                        // ── Menu Content ──────────────────────────────────────────────────────
+                        Section::make('Menu Content')
+                            ->columns(3)
+                            ->schema([
+                                Toggle::make('has_dish_images')
+                                    ->label('Dish Images')
+                                    ->default(true)
+                                    ->helperText('Photo shown on each dish card.'),
+
+                                Toggle::make('has_dish_ingredients')
+                                    ->label('Dish Ingredients')
+                                    ->default(true)
+                                    ->helperText('Ingredient list shown on dishes.'),
+
+                                Toggle::make('has_dish_prices')
+                                    ->label('Dish Prices')
+                                    ->default(true)
+                                    ->helperText('Price is shown on dish cards.'),
+
+                                Toggle::make('has_dish_tags')
+                                    ->label('Dish Tags')
+                                    ->default(true)
+                                    ->helperText('Dietary / cuisine tags on dishes.'),
+
+                                Toggle::make('has_category_images')
+                                    ->label('Category Images')
+                                    ->default(true)
+                                    ->helperText('Image shown on category headers.'),
+
+                                Toggle::make('has_category_description')
+                                    ->label('Category Description')
+                                    ->default(true)
+                                    ->helperText('Description text under category name.'),
+                            ]),
+
+                        // ── UI / UX ───────────────────────────────────────────────────────────
+                        Section::make('UI / UX')
+                            ->columns(3)
+                            ->schema([
+                                Toggle::make('has_search')
+                                    ->label('Search Bar')
+                                    ->default(true)
+                                    ->live()
+                                    ->helperText('Dish search bar visible to customers.'),
+
+                                Toggle::make('has_search_title')
+                                    ->label('Search Title')
+                                    ->default(true)
+                                    ->hidden(fn (Get $get): bool => ! $get('has_search'))
+                                    ->helperText('Heading above the search bar (requires Search enabled).'),
+
+                                Toggle::make('has_order_page_title')
+                                    ->label('Order Page Title')
+                                    ->default(true)
+                                    ->helperText('Title heading on the order/cart page.'),
+
+                                Toggle::make('has_final_price_show')
+                                    ->label('Final Price')
+                                    ->default(true)
+                                    ->helperText('Total / final price shown to the customer.'),
+
+                                Toggle::make('has_share_button')
+                                    ->label('Share Button')
+                                    ->default(true)
+                                    ->helperText('Button to share the menu link.'),
+
+                                Toggle::make('has_qr_code')
+                                    ->label('QR Code')
+                                    ->default(true)
+                                    ->helperText('QR code download page.'),
+                            ]),
+
+                        // ── Direction ─────────────────────────────────────────────────────────
+                        Section::make('Direction')
+                            ->columns(2)
+                            ->schema([
+                                Select::make('default_direction')
+                                    ->label('Default Direction')
+                                    ->options(['ltr' => 'LTR — Left to Right', 'rtl' => 'RTL — Right to Left'])
+                                    ->default('ltr')
+                                    ->required()
+                                    ->helperText('The text direction this template renders with by default.'),
+
+                                Toggle::make('allows_direction_change')
+                                    ->label('Allow Direction Switch')
+                                    ->default(true)
+                                    ->helperText('Whether the restaurant owner can flip the direction.'),
+                            ]),
+
+                    ]),
+
                 Section::make('Settings Schema')
                     ->description('Define the settings this template exposes. Each row is one customisable field shown in the restaurant\'s settings form.')
                     ->schema([

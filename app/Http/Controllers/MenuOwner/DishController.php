@@ -44,6 +44,7 @@ class DishController extends Controller
             'dish' => null,
             'restaurant' => $restaurant,
             'categories' => $restaurant->categories()->orderBy('name')->get(),
+            'tagValues' => [],
         ]);
     }
 
@@ -83,6 +84,7 @@ class DishController extends Controller
             'dish' => $dish,
             'restaurant' => $restaurant,
             'categories' => $restaurant->categories()->orderBy('name')->get(),
+            'tagValues' => $dish->tags ?? [],
         ]);
     }
 

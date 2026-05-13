@@ -15,6 +15,7 @@ class Category extends Model implements HasMedia
     protected $fillable = [
         'restaurant_id',
         'name',
+        'description',
         'display_order',
     ];
 

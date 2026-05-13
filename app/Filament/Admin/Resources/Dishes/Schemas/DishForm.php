@@ -67,6 +67,17 @@ class DishForm
                             ->columnSpanFull(),
                     ]),
 
+                Section::make('Tags')
+                    ->description('Assign dietary, cuisine, vibe or style tags to this dish.')
+                    ->schema([
+                        Select::make('tags')
+                            ->relationship('tags', 'name')
+                            ->multiple()
+                            ->searchable()
+                            ->preload()
+                            ->helperText('Tags help customers filter dishes. Managed under System → Tags.'),
+                    ]),
+
                 Section::make('Display & Availability')
                     ->columns(2)
                     ->schema([

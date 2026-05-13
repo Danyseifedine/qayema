@@ -62,6 +62,13 @@
                             <p class="ui-fe-error" x-show="errors.name" x-text="errors.name"></p>
                         </div>
 
+                        <x-ui.field name="description"
+                                    label="{{ __('menu_owner.categories.description_optional') }}">
+                            <x-ui.textarea name="description" rows="3" maxlength="1000"
+                                           placeholder="{{ __('menu_owner.categories.placeholder_description') }}"
+                                           :value="old('description', $category?->description)" />
+                        </x-ui.field>
+
                         @if ($category)
                             <x-ui.field name="display_order"
                                         label="{{ __('menu_owner.categories.display_order') }}"

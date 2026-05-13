@@ -267,6 +267,10 @@ return [
         'section_basic' => '基本信息',
         'section_pricing' => '价格与显示',
         'section_photo' => '图片',
+        'section_tags' => '菜品标签',
+        'tags_label' => '标签（可选）',
+        'tags_help' => '添加描述此菜品的简短标签 — 例如份量、准备时间或主要特点。输入后按 Enter 键。',
+        'tags_placeholder' => '例如：2人份、30分钟、辣…',
     ],
 
     'social_links' => [

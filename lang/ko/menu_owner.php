@@ -267,6 +267,10 @@ return [
         'section_basic' => '기본 정보',
         'section_pricing' => '가격 및 표시',
         'section_photo' => '사진',
+        'section_tags' => '요리 라벨',
+        'tags_label' => '라벨 (선택사항)',
+        'tags_help' => '이 요리를 설명하는 짧은 라벨을 추가하세요 — 예: 인분, 조리 시간, 주요 특징. 입력 후 Enter를 누르세요.',
+        'tags_placeholder' => '예: 2인분, 30분, 매운맛…',
     ],
 
     'social_links' => [

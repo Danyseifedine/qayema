@@ -17,6 +17,7 @@ class Dish extends Model implements HasMedia
         'name',
         'price',
         'ingredients',
+        'tags',
         'is_available',
         'display_order',
     ];
@@ -29,6 +30,7 @@ class Dish extends Model implements HasMedia
             'price' => 'decimal:2',
             'is_available' => 'boolean',
             'display_order' => 'integer',
+            'tags' => 'array',
         ];
     }
 

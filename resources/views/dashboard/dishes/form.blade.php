@@ -130,6 +130,46 @@
                     </div>
                 </div>
 
+                {{-- ── Tags ────────────────────────────────────────── --}}
+                <div class="qf-section">
+                    <div class="qf-section-title">{{ __('menu_owner.dishes.section_tags') }}</div>
+                    <x-ui.field name="tags"
+                                label="{{ __('menu_owner.dishes.tags_label') }}"
+                                help="{{ __('menu_owner.dishes.tags_help') }}">
+                        <div x-data="{
+                                tags: @js(old('tags', $tagValues ?? [])),
+                                input: '',
+                                add() {
+                                    const t = this.input.trim().toLowerCase();
+                                    if (t && !this.tags.includes(t)) this.tags.push(t);
+                                    this.input = '';
+                                },
+                                remove(i) { this.tags.splice(i, 1); },
+                             }">
+                            <div class="ui-tags-wrap" @click="$el.querySelector('input').focus()">
+                                <template x-for="(tag, i) in tags" :key="tag">
+                                    <span class="ui-chip olive">
+                                        <span x-text="tag"></span>
+                                        <button type="button" class="x" @click.stop="remove(i)" aria-label="Remove">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 6l12 12M6 18L18 6"/></svg>
+                                        </button>
+                                    </span>
+                                </template>
+                                <input type="text"
+                                       x-model="input"
+                                       @keydown.enter.prevent="add()"
+                                       @keydown.comma.prevent="add()"
+                                       @keydown.backspace="input === '' && tags.length && tags.pop()"
+                                       maxlength="50"
+                                       placeholder="{{ __('menu_owner.dishes.tags_placeholder') }}">
+                            </div>
+                            <template x-for="tag in tags" :key="tag">
+                                <input type="hidden" name="tags[]" :value="tag">
+                            </template>
+                        </div>
+                    </x-ui.field>
+                </div>
+
                 {{-- ── Pricing & visibility ─────────────────────────── --}}
                 <div class="qf-section">
                     <div class="qf-section-title">{{ __('menu_owner.dishes.section_pricing') }}</div>

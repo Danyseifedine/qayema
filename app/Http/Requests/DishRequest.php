@@ -24,6 +24,8 @@ class DishRequest extends FormRequest
             'display_order' => $isCreate ? ['nullable', 'integer', 'min:0'] : ['required', 'integer', 'min:0'],
             'dish_image_key' => $isCreate ? ['required', 'string', 'uuid'] : ['nullable', 'string', 'uuid'],
             'delete_dish_image' => ['nullable', 'boolean'],
+            'tags' => ['nullable', 'array'],
+            'tags.*' => ['string', 'max:50'],
         ];
     }
 

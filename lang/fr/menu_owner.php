@@ -316,6 +316,10 @@ return [
         'section_basic' => 'Informations de base',
         'section_pricing' => 'Tarification et visibilité',
         'section_photo' => 'Photo',
+        'section_tags' => 'Étiquettes du plat',
+        'tags_label' => 'Étiquettes (Optionnel)',
+        'tags_help' => 'Ajoutez des étiquettes courtes décrivant ce plat — comme la taille de la portion, le temps de préparation ou les caractéristiques clés. Tapez et appuyez sur Entrée.',
+        'tags_placeholder' => 'ex. 2 portions, 30 min, Épicé…',
     ],
 
     'social_links' => [

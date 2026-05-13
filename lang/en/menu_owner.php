@@ -316,6 +316,10 @@ return [
         'section_basic' => 'Basic information',
         'section_pricing' => 'Pricing & visibility',
         'section_photo' => 'Photo',
+        'section_tags' => 'Dish Labels',
+        'tags_label' => 'Labels (Optional)',
+        'tags_help' => 'Add short labels that describe this dish — like serving size, prep time, or key traits. Type and press Enter.',
+        'tags_placeholder' => 'e.g. Serves 2, 30 min, Spicy…',
     ],
 
     'social_links' => [

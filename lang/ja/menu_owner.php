@@ -267,6 +267,10 @@ return [
         'section_basic' => '基本情報',
         'section_pricing' => '価格と表示',
         'section_photo' => '写真',
+        'section_tags' => '料理ラベル',
+        'tags_label' => 'ラベル（任意）',
+        'tags_help' => '料理を表す短いラベルを追加してください — 例えば、何人前か、調理時間、特徴など。入力してEnterを押してください。',
+        'tags_placeholder' => '例：2人前、30分、辛口…',
     ],
 
     'social_links' => [

@@ -271,6 +271,10 @@ return [
         'section_basic' => 'Informazioni di base',
         'section_pricing' => 'Prezzi e visibilità',
         'section_photo' => 'Foto',
+        'section_tags' => 'Etichette del piatto',
+        'tags_label' => 'Etichette (Opzionale)',
+        'tags_help' => 'Aggiungi brevi etichette che descrivono questo piatto — come la dimensione della porzione, il tempo di preparazione o le caratteristiche principali. Digita e premi Invio.',
+        'tags_placeholder' => 'es. 2 porzioni, 30 min, Piccante…',
     ],
 
     'social_links' => [

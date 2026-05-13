@@ -267,6 +267,10 @@ return [
         'section_basic' => 'Basisinformatie',
         'section_pricing' => 'Prijzen en zichtbaarheid',
         'section_photo' => 'Foto',
+        'section_tags' => 'Gerecht labels',
+        'tags_label' => 'Labels (Optioneel)',
+        'tags_help' => 'Voeg korte labels toe die dit gerecht beschrijven — zoals portiegrootte, bereidingstijd of belangrijke kenmerken. Typ en druk op Enter.',
+        'tags_placeholder' => 'bijv. 2 porties, 30 min, Pittig…',
     ],
 
     'social_links' => [

@@ -461,13 +461,15 @@ input[type='number'] { direction: ltr; }
 }
 .ui-tags-wrap:hover { border-color: var(--line-strong); }
 .ui-tags-wrap:focus-within {
-    border-color: var(--olive);
+    border-color: var(--line-strong);
     background: #fff;
-    box-shadow: 0 0 0 3px rgba(107,122,79,.12);
+    outline: none;
+    box-shadow: none;
 }
 .ui-tags-wrap input {
     border: 0;
-    outline: 0;
+    outline: none;
+    box-shadow: none;
     background: transparent;
     font-size: 14px;
     padding: 6px 4px;

@@ -17,6 +17,7 @@ class CategoryRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'min:2', 'max:255'],
+            'description' => ['nullable', 'string', 'max:1000'],
             'display_order' => $isCreate ? ['nullable', 'integer', 'min:0'] : ['required', 'integer', 'min:0'],
             'image_key' => ['nullable', 'string', 'uuid'],
             'delete_image' => ['nullable', 'boolean'],

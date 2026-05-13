@@ -312,6 +312,10 @@ return [
         'section_basic' => 'Grundlegende Informationen',
         'section_pricing' => 'Preise & Sichtbarkeit',
         'section_photo' => 'Foto',
+        'section_tags' => 'Gericht-Etiketten',
+        'tags_label' => 'Etiketten (Optional)',
+        'tags_help' => 'Fügen Sie kurze Etiketten hinzu — z. B. Portionsgröße, Zubereitungszeit oder besondere Merkmale. Tippen und Enter drücken.',
+        'tags_placeholder' => 'z. B. 2 Portionen, 30 Min, Scharf…',
     ],
 
     'social_links' => [
