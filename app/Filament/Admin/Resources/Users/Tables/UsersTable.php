@@ -12,9 +12,12 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class UsersTable
 {
@@ -25,13 +28,16 @@ class UsersTable
                 TextColumn::make('name')
                     ->placeholder('N/A')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->weight('bold'),
+
                 TextColumn::make('email')
-                    ->label('Email address')
+                    ->label('Email')
                     ->placeholder('N/A')
                     ->searchable()
                     ->sortable()
                     ->copyable(),
+
                 TextColumn::make('role')
                     ->placeholder('N/A')
                     ->badge()
@@ -46,21 +52,56 @@ class UsersTable
                         default => is_string($state) ? $state : $state->value,
                     })
                     ->sortable(),
+
+                IconColumn::make('onboarding_completed_at')
+                    ->label('Setup')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-clock')
+                    ->trueColor('success')
+                    ->falseColor('warning')
+                    ->tooltip(fn (User $record): string => $record->onboarding_completed_at
+                        ? 'Completed '.$record->onboarding_completed_at->diffForHumans()
+                        : 'Step '.$record->onboarding_step.' of 6')
+                    ->getStateUsing(fn (User $record): bool => ! is_null($record->onboarding_completed_at)),
+
                 TextColumn::make('restaurant.name')
                     ->label('Restaurant')
-                    ->placeholder('N/A')
+                    ->placeholder('—')
                     ->searchable()
+                    ->sortable()
+                    ->url(fn (User $record): ?string => $record->restaurant
+                        ? route('filament.admin.resources.restaurants.edit', ['record' => $record->restaurant->getKey()])
+                        : null),
+
+                TextColumn::make('dishes_count')
+                    ->label('Dishes')
+                    ->getStateUsing(fn (User $record): string => (string) ($record->restaurant?->dishes()->count() ?? '—'))
+                    ->placeholder('—')
                     ->toggleable(),
-                TextColumn::make('restaurant.phone')
-                    ->label('Phone')
-                    ->placeholder('N/A')
-                    ->searchable()
+
+                TextColumn::make('views_count')
+                    ->label('Total Views')
+                    ->getStateUsing(fn (User $record): string => (string) ($record->restaurant?->statistics()->count() ?? '—'))
+                    ->placeholder('—')
+                    ->badge()
+                    ->color('info')
                     ->toggleable(),
+
+                TextColumn::make('restaurant.is_active')
+                    ->label('Menu Active')
+                    ->placeholder('—')
+                    ->badge()
+                    ->color(fn ($state): string => $state ? 'success' : 'danger')
+                    ->formatStateUsing(fn ($state): string => $state ? 'Active' : 'Inactive')
+                    ->toggleable(),
+
                 TextColumn::make('created_at')
-                    ->placeholder('N/A')
+                    ->label('Joined')
                     ->dateTime()
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->since()
+                    ->toggleable(),
             ])
             ->filters([
                 SelectFilter::make('role')
@@ -68,6 +109,22 @@ class UsersTable
                         UserRole::Admin->value => 'Admin',
                         UserRole::MenuOwner->value => 'Menu Owner',
                     ]),
+
+                Filter::make('onboarding_completed')
+                    ->label('Setup complete')
+                    ->query(fn (Builder $query) => $query->whereNotNull('onboarding_completed_at')),
+
+                Filter::make('onboarding_pending')
+                    ->label('Setup pending')
+                    ->query(fn (Builder $query) => $query->whereNull('onboarding_completed_at')),
+
+                Filter::make('joined_today')
+                    ->label('Joined today')
+                    ->query(fn (Builder $query) => $query->whereDate('created_at', today())),
+
+                Filter::make('joined_this_week')
+                    ->label('Joined this week')
+                    ->query(fn (Builder $query) => $query->where('created_at', '>=', now()->startOfWeek())),
             ])
             ->recordActions([
                 Action::make('impersonate')
@@ -91,7 +148,7 @@ class UsersTable
                     DeleteBulkAction::make()
                         ->requiresConfirmation()
                         ->modalHeading('Delete selected users')
-                        ->modalDescription('Each selected user will be fully removed along with their restaurant, all dishes, categories, images, and related data. Users you are not allowed to delete will be skipped.')
+                        ->modalDescription('Each selected user will be fully removed along with their restaurant, all dishes, categories, images, and related data.')
                         ->action(function ($records): void {
                             $deletion = app(UserCascadeDeletionService::class);
                             foreach ($records as $record) {

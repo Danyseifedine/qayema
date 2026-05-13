@@ -461,6 +461,26 @@ return [
         'name_placeholder' => 'ex. Chez Marie',
         'name_required' => 'Le nom du restaurant est obligatoire.',
         'name_min' => 'Le nom du restaurant doit comporter au moins 2 caractères.',
+        'name_hint' => 'C\'est le nom que vos clients verront sur votre page de menu.',
+
+        'slug_label' => 'Lien du menu',
+        'slug_hint' => 'Partagez ce lien avec vos clients pour qu\'ils puissent voir votre menu.',
+        'slug_required' => 'Un lien de menu est requis.',
+        'slug_taken' => 'Ce lien est déjà pris. Veuillez en choisir un autre.',
+        'slug_checking' => 'Vérification de la disponibilité…',
+        'slug_available' => 'Ce lien est disponible.',
+        'slug_taken_hint' => 'Ce lien est déjà pris — essayez autre chose.',
+
+        'phone_hint' => 'Les clients peuvent utiliser ce numéro pour vous contacter ou passer des commandes WhatsApp.',
+        'currency_hint' => 'Tous les prix des plats sur votre menu seront affichés dans cette devise.',
+
+        'logo_field_hint' => 'Affiché en haut de votre page de menu public.',
+        'cover_field_hint' => 'Une bannière large affichée derrière le nom de votre restaurant. Recommandé : 1200 × 400 px.',
+
+        'tags_hint' => 'Sélectionnez tout ce qui s\'applique. Les clients ne les voient pas — ils aident à organiser votre menu.',
+        'vibe_hint' => 'Choisissez les tags qui décrivent le mieux l\'atmosphère de votre restaurant.',
+        'template_hint' => 'Contrôle l\'apparence de votre menu pour les clients. Vous pouvez le changer à tout moment depuis vos paramètres.',
+
         'currency_required' => 'Veuillez sélectionner une devise.',
         'phone_required' => 'Le numéro de téléphone est requis.',
         'logo_required' => 'Veuillez télécharger un logo pour continuer.',

@@ -24,4 +24,5 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth', 'owner.locale'])->group(function () {
     Route::get('/onboarding', [OnboardingController::class, 'show'])->name('onboarding');
     Route::post('/onboarding/advance', [OnboardingController::class, 'advance'])->name('onboarding.advance');
+    Route::get('/onboarding/check-slug', [OnboardingController::class, 'checkSlug'])->name('onboarding.check-slug');
 });

@@ -412,6 +412,26 @@ return [
         'name_placeholder' => 'bijv. De Gouden Lepel',
         'name_required' => 'Restaurantnaam is verplicht.',
         'name_min' => 'De restaurantnaam moet minimaal 2 tekens lang zijn.',
+        'name_hint' => 'Dit is de naam die uw gasten zien op uw menupagina.',
+
+        'slug_label' => 'Menu-link',
+        'slug_hint' => 'Deel deze link met gasten zodat ze uw menu kunnen bekijken.',
+        'slug_required' => 'Een menu-link is vereist.',
+        'slug_taken' => 'Deze link is al bezet. Kies een andere.',
+        'slug_checking' => 'Beschikbaarheid controleren…',
+        'slug_available' => 'Deze link is beschikbaar.',
+        'slug_taken_hint' => 'Deze link is al bezet — probeer iets anders.',
+
+        'phone_hint' => 'Gasten kunnen dit nummer gebruiken om contact op te nemen of WhatsApp-bestellingen te plaatsen.',
+        'currency_hint' => 'Alle gerechten op uw menu worden weergegeven in deze valuta.',
+
+        'logo_field_hint' => 'Wordt bovenaan uw openbare menupagina weergegeven.',
+        'cover_field_hint' => 'Een breed bannerafbeelding achter de naam van uw restaurant. Aanbevolen: 1200 × 400 px.',
+
+        'tags_hint' => 'Selecteer alles wat van toepassing is. Gasten zien deze niet — ze helpen uw menu te organiseren.',
+        'vibe_hint' => 'Kies tags die de sfeer van uw restaurant het best beschrijven.',
+        'template_hint' => 'Bepaalt hoe uw menu eruitziet voor gasten. U kunt dit op elk moment wijzigen in de instellingen.',
+
         'currency_required' => 'Selecteer een valuta.',
         'phone_required' => 'Telefoonnummer is verplicht.',
         'logo_required' => 'Upload een logo om door te gaan.',

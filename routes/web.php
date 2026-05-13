@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\MenuOwner\CategoryController;
 use App\Http\Controllers\MenuOwner\DashboardController;
 use App\Http\Controllers\MenuOwner\DishController;
@@ -121,6 +122,15 @@ Route::middleware(['auth', 'owner.locale'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+
+// Legal pages
+Route::get('/privacy-policy', fn () => view('legal.privacy'))->name('privacy');
+Route::get('/terms-of-service', fn () => view('legal.terms'))->name('terms');
+Route::get('/cookie-policy', fn () => view('legal.cookies'))->name('cookies');
+
+// Contact page
+Route::get('/contact', [ContactController::class, 'show'])->name('contact');
+Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
 
 // Public restaurant/menu routes
 Route::post('/{slug}/track-exit', [PortalMenuController::class, 'trackExit'])

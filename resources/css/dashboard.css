@@ -2322,3 +2322,6 @@
 .sbl-av-item-danger { color: var(--danger); }
 .sbl-av-item-danger svg { color: var(--danger); }
 .sbl-av-item-danger:hover { background: rgba(220,38,38,.06); }
+
+/* Page transitions */
+.sbl-page { will-change: opacity, transform; }

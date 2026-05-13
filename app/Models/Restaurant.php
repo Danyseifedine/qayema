@@ -53,7 +53,14 @@ class Restaurant extends Model implements HasMedia
 
         static::creating(function ($restaurant) {
             if (empty($restaurant->slug)) {
-                $restaurant->slug = Str::slug($restaurant->name);
+                $base = Str::slug($restaurant->name);
+                $slug = $base;
+                $count = 2;
+                while (static::where('slug', $slug)->exists()) {
+                    $slug = $base.'-'.$count;
+                    $count++;
+                }
+                $restaurant->slug = $slug;
             }
         });
     }

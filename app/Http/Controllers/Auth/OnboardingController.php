@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Mail\WelcomeRestaurantOwner;
 use App\Models\Restaurant;
 use App\Models\Tag;
 use App\Models\Template;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class OnboardingController extends Controller
@@ -30,6 +33,23 @@ class OnboardingController extends Controller
         ]);
     }
 
+    public function checkSlug(Request $request): JsonResponse
+    {
+        $slug = Str::slug($request->query('slug', ''));
+
+        if (strlen($slug) < 2) {
+            return response()->json(['available' => false, 'slug' => $slug]);
+        }
+
+        $ownId = $request->user()->restaurant?->id;
+
+        $taken = Restaurant::where('slug', $slug)
+            ->when($ownId, fn ($q) => $q->where('id', '!=', $ownId))
+            ->exists();
+
+        return response()->json(['available' => ! $taken, 'slug' => $slug]);
+    }
+
     public function advance(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -45,31 +65,30 @@ class OnboardingController extends Controller
         $next = $current + 1;
 
         switch ($current) {
-            case 0: // Step 1 — restaurant name + preferred language
+            case 0: // Step 1 — restaurant name + slug + preferred language
+                $restaurant = $user->restaurant;
+
                 $validated = $request->validate([
                     'name' => ['required', 'string', 'min:2', 'max:255'],
+                    'slug' => [
+                        'required', 'string', 'min:2', 'max:100',
+                        'regex:/^[a-z0-9][a-z0-9-]*[a-z0-9]$/',
+                        Rule::unique('restaurants', 'slug')->ignore($restaurant?->id),
+                    ],
                     'preferred_language' => ['nullable', 'string', 'in:'.implode(',', config('locales.supported', ['en']))],
                 ]);
-
-                $restaurant = $user->restaurant;
 
                 if ($restaurant) {
                     $restaurant->update([
                         'name' => $validated['name'],
+                        'slug' => $validated['slug'],
                         'preferred_language' => $validated['preferred_language'] ?? 'en',
                     ]);
                 } else {
-                    $base = Str::slug($validated['name']);
-                    $slug = $base;
-                    $i = 1;
-                    while (Restaurant::where('slug', $slug)->exists()) {
-                        $slug = $base.'-'.$i++;
-                    }
-
                     Restaurant::create([
                         'user_id' => $user->id,
                         'name' => $validated['name'],
-                        'slug' => $slug,
+                        'slug' => $validated['slug'],
                         'preferred_language' => $validated['preferred_language'] ?? 'en',
                         'dish_limit' => 40,
                         'category_limit' => 10,
@@ -167,6 +186,8 @@ class OnboardingController extends Controller
                     'onboarding_step' => 6,
                     'onboarding_completed_at' => now(),
                 ]);
+
+                Mail::to($user->email)->send(new WelcomeRestaurantOwner($user, $restaurant));
 
                 return response()->json([
                     'completed' => true,

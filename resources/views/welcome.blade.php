@@ -5,16 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>Qayema — قايمة | Digital menus for restaurants</title>
+    <title>Qayema, قايمة | Digital menus for restaurants</title>
 
     <x-seo
-        title="Qayema — The digital menu your restaurant deserves"
-        description="Qayema turns every table into a frictionless dining experience. One QR code, a beautifully designed digital menu, 10 languages with Arabic RTL, and a dashboard your staff will love. Free to start."
+        title="Qayema, The digital menu your restaurant deserves"
+        description="Qayema, قائمة, Arabic for 'menu'. One QR code, a beautifully designed digital menu, AI menu scanner, and a dashboard in 14 languages with full Arabic RTL. Free to start."
         keywords="digital menu, restaurant menu, QR menu, online menu, Arabic menu, RTL menu, Qayema, قايمة, Lebify"
         author="Lebify Group"
         :url="url('/')"
         :image="asset('images/logo/logo.png')"
-        imageAlt="Qayema — Digital menus"
+        imageAlt="Qayema, Digital menus"
         type="website"
         :siteName="config('seo.organization.name', 'Lebify Group')"
     />
@@ -29,7 +29,7 @@
 </head>
 <body>
 
-<div id="page" x-data="menuXApp()" x-init="
+<div id="page" x-data="QayemaApp()" x-init="
     document.documentElement.lang = lang;
     document.documentElement.dir  = isAr ? 'rtl' : 'ltr';
 ">
@@ -137,7 +137,7 @@
                         <span x-text="t.hero.meta">The digital menu, refined</span>
                     </div>
                     <p class="hero-sub" x-text="t.hero.sub">
-                        MenuX turns every table into a frictionless dining experience — a single QR code, a beautifully designed digital menu, and a dashboard your staff will love.
+                        Qayema turns every table into a frictionless dining experience, a single QR code, a beautifully designed digital menu, and a dashboard your staff will love.
                     </p>
                 </div>
                 <div class="hero-actions">
@@ -243,7 +243,7 @@
                             </div>
                             <div class="tc-foot">
                                 <b x-text="isAr ? 'امسح للقائمة' : 'SCAN TO ORDER'">SCAN TO ORDER</b>
-                                <span>menux.lebify.dev</span>
+                                <span>Qayema.lebify.dev</span>
                             </div>
                         </div>
 
@@ -407,7 +407,7 @@
                     </div>
                     <div class="problem-num" x-text="t.problem.cards[1].n">02</div>
                     <h3 x-text="t.problem.cards[1].h">The reprint cycle</h3>
-                    <p style="margin-top:8px" x-text="t.problem.cards[1].p">Change a price, update a special, swap a dish — wait three days for the printer. Your menu is always slightly out of date.</p>
+                    <p style="margin-top:8px" x-text="t.problem.cards[1].p">Change a price, update a special, swap a dish, wait three days for the printer. Your menu is always slightly out of date.</p>
                 </div>
 
                 {{-- Card 3: No insight --}}
@@ -443,7 +443,7 @@
                     </h2>
                 </div>
                 <p class="right" x-text="t.solution.sub">
-                    MenuX is the layer between your kitchen and your guest's phone. No app downloads. No clunky tablets. Just a beautiful, always-current menu.
+                    Qayema is the layer between your kitchen and your guest's phone. No app downloads. No clunky tablets. Just a beautiful, always-current menu.
                 </p>
             </div>
 
@@ -625,7 +625,7 @@
                     </h2>
                 </div>
                 <p class="right" x-text="t.features.sub">
-                    Every feature your restaurant needs — from the QR code on the table to the analytics in the dashboard.
+                    Every feature your restaurant needs, from the QR code on the table to the analytics in the dashboard.
                 </p>
             </div>
 
@@ -689,7 +689,7 @@
                     </h2>
                 </div>
                 <p class="right" x-text="t.testimonials.sub">
-                    From fast-casual to fine dining — MenuX fits the way your restaurant actually runs.
+                    From fast-casual to fine dining, Qayema fits the way your restaurant actually runs.
                 </p>
             </div>
 
@@ -737,7 +737,7 @@
         <div class="wrap">
             <div class="eyebrow" style="justify-content:center;margin-bottom:28px"><span class="dot" style="background:var(--accent-soft)"></span> <span style="color:var(--accent-soft)" x-text="t.cta.eyebrow">Free to start</span></div>
             <h2 x-html="t.cta.headline">Ready to modernise <em class="it">your menu?</em></h2>
-            <p x-text="t.cta.sub">Join restaurant owners already using MenuX. No credit card needed.</p>
+            <p x-text="t.cta.sub">Join restaurant owners already using Qayema. No credit card needed.</p>
             <div class="cta-actions">
                 @auth
                     <a class="btn btn-primary" href="{{ route('dashboard') }}">
@@ -779,7 +779,14 @@
                         <h4 x-text="col.title"></h4>
                         <ul>
                             <template x-for="(link, j) in col.links" :key="j">
-                                <li><a :href="link.href" x-text="link.label"></a></li>
+                                <li>
+                                    <a
+                                        :href="link.disabled ? null : link.href"
+                                        :target="link.target || null"
+                                        :style="link.disabled ? 'opacity:0.35;cursor:not-allowed;pointer-events:none' : ''"
+                                        x-text="link.label"
+                                    ></a>
+                                </li>
                             </template>
                         </ul>
                     </div>
@@ -789,7 +796,10 @@
 
             <div class="foot-bottom">
                 <span x-text="t.footer.copy">© 2025 Lebify Group. All rights reserved.</span>
-                <span x-text="t.footer.made">Made with care in Beirut.</span>
+                <span style="display:inline-flex;align-items:center;gap:5px">
+                    <span x-text="t.footer.made">Made with care</span>
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0"><path d="M7 12.25S1.75 9.1 1.75 5.25a3.25 3.25 0 0 1 5.25-2.56A3.25 3.25 0 0 1 12.25 5.25C12.25 9.1 7 12.25 7 12.25Z" fill="#e74c3c"/></svg>
+                </span>
             </div>
         </div>
     </footer>
@@ -800,7 +810,7 @@
      Alpine.js data
      ───────────────────────────────────────────────────── --}}
 <script>
-function menuXApp() {
+function QayemaApp() {
     const copy = {
         en: {
             nav: {
@@ -813,14 +823,14 @@ function menuXApp() {
             },
             hero: {
                 headline:  'Menus, <em class="it">reimagined</em> <span class="soft">for your restaurant.</span>',
-                meta:      'The digital menu, refined',
-                sub:       'Qayema turns every table into a frictionless dining experience — a single QR code, a beautifully designed digital menu, and a dashboard your staff will love.',
+                meta:      'Qayema · قائمة · Arabic for "menu"',
+                sub:       'Qayema turns every table into a frictionless dining experience, a single QR code, a beautifully designed digital menu, and a dashboard your staff will love.',
                 cta1:      'Start for free',
                 cta2:      'See how it works',
                 ctaAuth:   'Go to dashboard',
                 stats: [
                     { k: 'No credit card',  v: 'Free' },
-                    { k: 'Languages + RTL', v: '10'   },
+                    { k: 'Dashboard languages', v: '14'   },
                     { k: 'Menu load time',  v: ''     },
                     { k: 'Menu updates',    v: 'Live' },
                 ],
@@ -839,7 +849,7 @@ function menuXApp() {
                 sub:      'Every minute a guest waits for a menu, a refill, or the bill, your kitchen falls further behind and your reviews get a little colder.',
                 cards: [
                     { n: '01', h: 'The endless wait',    p: 'Guests stare at a sticky laminated menu while servers run between tables. Orders arrive late, food arrives later.' },
-                    { n: '02', h: 'The reprint cycle',   p: 'Change a price, update a special, swap a dish — wait three days for the printer. Your menu is always slightly out of date.' },
+                    { n: '02', h: 'The reprint cycle',   p: 'Change a price, update a special, swap a dish, wait three days for the printer. Your menu is always slightly out of date.' },
                     { n: '03', h: 'No insight at all',   p: "Paper menus don't tell you which dishes get looked at, how long people browse, or what they skip. You're running blind." },
                 ],
             },
@@ -856,31 +866,31 @@ function menuXApp() {
                     },
                     {
                         tag:     'Multilingual',
-                        h:       'Designed for guests in their own language.',
-                        p:       '10 language presets with native Arabic RTL support. Your menu looks and reads perfectly whether the guest is local or visiting from abroad.',
-                        bullets: ['10 language presets including Arabic RTL', 'Guests switch language with one tap', 'Typography tuned for every script'],
+                        h:       'Manage your restaurant in your own language.',
+                        p:       'The dashboard speaks 14 languages including full Arabic RTL support. Switch the interface to your native language and manage everything without friction.',
+                        bullets: ['14 dashboard languages including Arabic RTL', 'Switch your dashboard language in one click', 'Full RTL layout for Arabic & right-to-left scripts'],
                     },
                     {
                         tag:     'Dashboard',
                         h:       "A back-of-house tool that doesn't fight you back.",
                         p:       'Upload dishes. Set categories. Customize layouts, fonts, and colors. Track visitor stats. No training required.',
-                        bullets: ['Drag-and-drop dish management', 'Real-time visitor analytics', 'Custom colors, fonts, and layouts'],
+                        bullets: ['AI scans your paper menu, import in seconds', 'Real-time visitor analytics with period filters', 'WhatsApp ordering built in'],
                     },
                 ],
             },
             features: {
                 eyebrow: 'Everything you need',
                 headline: 'A complete restaurant <em class="it">menu platform.</em>',
-                sub:     'Every feature your restaurant needs — from the QR code on the table to the analytics in the dashboard.',
+                sub:     'Every feature your restaurant needs, from the QR code on the table to the analytics in the dashboard.',
                 items: [
                     { icon: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h.01M17 14h.01M14 17h.01M17 17h.01M20 14h.01M20 17h.01M14 20h.01M17 20h.01M20 20h.01"/>',  h: 'QR Code',           p: 'Your table card is ready the moment your menu goes live. Download, print, laminate.',                        meta: 'Printable PDF'     },
                     { icon: '<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>',                                                                                                                                                                                            h: 'Real-time sync',    p: 'Mark a dish unavailable and it disappears everywhere in under 200ms. No delay, no lag.',                    meta: 'Live updates'      },
-                    { icon: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',                                                                                       h: '10 Languages',      p: 'Arabic RTL, English, French, Turkish, Spanish and more. Guests pick theirs with one tap.',                  meta: 'Incl. RTL'         },
-                    { icon: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>',                                                                                                                       h: 'Photo uploads',     p: 'Auto-optimised dish photos that look great on any screen, fast on any connection.',                          meta: 'Auto-resize'       },
+                    { icon: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',                                                                                       h: '14 Dashboard Languages', p: 'Run your dashboard in Arabic, English, French, Turkish, Japanese and 9 more. Full RTL support for Arabic.', meta: 'Incl. RTL'     },
+                    { icon: '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/><path d="M13 2 3 14h9l-1 8 10-12h-9z"/>',                                                                          h: 'AI Menu Scanner',   p: 'Photograph your paper menu. AI reads it, extracts every dish, price, and category, and imports them in seconds.', meta: 'AI-powered'        },
                     { icon: '<path d="M18 20V10M12 20V4M6 20v-6"/>',                                                                                                                                                                                                   h: 'Analytics',         p: 'See scan count, time on menu, peak hours, and which dishes attract the most attention.',                    meta: 'Visitor data'      },
                     { icon: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',                                                                                                                                                                          h: 'Category control',  p: 'Create sections, reorder dishes, hide entire categories in one click. Your menu, your rules.',              meta: 'Full control'      },
-                    { icon: '<circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>',                                                                        h: 'Custom branding',   p: 'Your colors, your logo. MenuX stays in the background — your restaurant identity comes through.',           meta: 'Your identity'     },
-                    { icon: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',                                                                                                                                                                                h: 'No app required',   p: 'Guests open a browser link — no install, no account, no friction. Works on every smartphone.',              meta: 'Zero friction'     },
+                    { icon: '<circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>',                                                                        h: 'Custom branding',   p: 'Your colors, your logo. Qayema stays in the background, your restaurant identity comes through.',           meta: 'Your identity'     },
+                    { icon: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',                                                                                                                                                                                h: 'No app required',   p: 'Guests open a browser link, no install, no account, no friction. Works on every smartphone.',              meta: 'Zero friction'     },
                 ],
             },
             how: {
@@ -911,10 +921,10 @@ function menuXApp() {
             testimonials: {
                 eyebrow: 'Stories',
                 headline: 'Restaurateurs <em class="it">speak for themselves.</em>',
-                sub:     'From fast-casual to fine dining — MenuX fits the way your restaurant actually runs.',
+                sub:     'From fast-casual to fine dining, Qayema fits the way your restaurant actually runs.',
                 quotes: [
                     {
-                        q:    'We switched from a laminated paper menu to MenuX in one afternoon. Our guests noticed immediately — and our servers stopped getting asked "what is this dish?" every five minutes.',
+                        q:    'We switched from a laminated paper menu to Qayema in one afternoon. Our guests noticed immediately, and our servers stopped getting asked "what is this dish?" every five minutes.',
                         who:  'Khalid A.',
                         role: 'Owner, Maison Aran · Riyadh',
                     },
@@ -933,7 +943,7 @@ function menuXApp() {
             cta: {
                 eyebrow: 'Free to start',
                 headline: 'Ready to modernise <em class="it">your menu?</em>',
-                sub:     'Join restaurant owners already using MenuX. No credit card needed.',
+                sub:     'Join restaurant owners already using Qayema. No credit card needed.',
                 cta1:    'Start for free',
                 cta2:    'See how it works',
                 fine:    'Free forever on the starter plan. Upgrade when you need more.',
@@ -953,23 +963,23 @@ function menuXApp() {
                     {
                         title: 'Company',
                         links: [
-                            { label: 'About Lebify', href: '#' },
-                            { label: 'Blog',         href: '#' },
-                            { label: 'Careers',      href: '#' },
-                            { label: 'Contact',      href: '#' },
+                            { label: 'About Lebify', href: 'https://www.lebify.dev/', target: '_blank' },
+                            { label: 'Blog',         href: '#', disabled: true },
+                            { label: 'Careers',      href: '#', disabled: true },
+                            { label: 'Contact',      href: '{{ route('contact') }}' },
                         ],
                     },
                     {
                         title: 'Legal',
                         links: [
-                            { label: 'Privacy policy', href: '#' },
-                            { label: 'Terms of use',   href: '#' },
-                            { label: 'Cookie policy',  href: '#' },
+                            { label: 'Privacy policy', href: '{{ route('privacy') }}' },
+                            { label: 'Terms of use',   href: '{{ route('terms') }}' },
+                            { label: 'Cookie policy',  href: '{{ route('cookies') }}' },
                         ],
                     },
                 ],
                 copy:  '© 2025 Lebify Group. All rights reserved.',
-                made:  'Made with care in Beirut.',
+                made:  'Made with care',
             },
         },
         ar: {
@@ -983,14 +993,14 @@ function menuXApp() {
             },
             hero: {
                 headline:  'قوائمٌ <em class="it">أُعيد تصوّرها</em> <span class="soft">للمطعم العصري.</span>',
-                meta:      'القائمة الرقمية، بأناقة',
-                sub:       'Qayema تحوّل كل طاولة إلى تجربة طلب سلسة — رمز QR واحد، وقائمة رقمية مصمّمة بأناقة، ولوحة تحكّم سيشكرك عليها فريقك فعلاً.',
+                meta:      'Qayema · قائمة · اسمنا من كلمة "القائمة"',
+                sub:       'Qayema تحوّل كل طاولة إلى تجربة طلب سلسة, رمز QR واحد، وقائمة رقمية مصمّمة بأناقة، ولوحة تحكّم سيشكرك عليها فريقك فعلاً.',
                 cta1:      'ابدأ مجاناً',
                 cta2:      'اكتشف كيف تعمل',
                 ctaAuth:   'لوحة التحكم',
                 stats: [
                     { k: 'بدون بطاقة ائتمان', v: 'مجاني' },
-                    { k: 'لغة مع RTL',         v: '10'    },
+                    { k: 'لغة للوحة التحكم',   v: '14'    },
                     { k: 'زمن تحميل القائمة',  v: ''      },
                     { k: 'تحديثات القائمة',    v: 'مباشر' },
                 ],
@@ -1009,7 +1019,7 @@ function menuXApp() {
                 sub:      'كل دقيقة ينتظرها الضيف لقائمته أو فاتورته، يتأخر فيها مطبخك أكثر، وتبرد فيها تقييماتك قليلاً.',
                 cards: [
                     { n: '01', h: 'الانتظار الطويل',      p: 'الضيوف يحدّقون في قائمة لاصقة بينما يركض النادل بين الطاولات. الطلبات تتأخر، والطعام يتأخر أكثر.' },
-                    { n: '02', h: 'دورة إعادة الطباعة',    p: 'تغيّر سعراً، تحدّث طبقاً مميزاً، تستبدل صنفاً — انتظر ثلاثة أيام للمطبعة. قائمتك دائماً غير محدّثة.' },
+                    { n: '02', h: 'دورة إعادة الطباعة',    p: 'تغيّر سعراً، تحدّث طبقاً مميزاً، تستبدل صنفاً, انتظر ثلاثة أيام للمطبعة. قائمتك دائماً غير محدّثة.' },
                     { n: '03', h: 'لا رؤية ولا بيانات',    p: 'القوائم الورقية لا تخبرك أي الأطباق يُنظر إليها، ولا كم يتصفّح الضيف، ولا ما يتجاهله. أنت تعمل في الظلام.' },
                 ],
             },
@@ -1026,31 +1036,31 @@ function menuXApp() {
                     },
                     {
                         tag:     'متعدد اللغات',
-                        h:       'مصمّم للضيوف بلغتهم الأصلية.',
-                        p:       '10 إعدادات لغوية مع دعم عربي كامل للكتابة من اليمين لليسار. قائمتك تبدو وتُقرأ بشكل صحيح سواء كان الضيف محلياً أو زائراً.',
-                        bullets: ['10 إعدادات لغوية بما فيها العربية RTL', 'يغيّر الضيف اللغة بنقرة واحدة', 'خطوط مُهيّأة لكل نص'],
+                        h:       'أدِر مطعمك بلغتك الأصلية.',
+                        p:       'لوحة التحكم تدعم 14 لغة بما فيها العربية الكاملة من اليمين لليسار. غيّر لغة الواجهة ببساطة وأدِر كل شيء بلا أي احتكاك.',
+                        bullets: ['14 لغة للوحة التحكم بما فيها العربية RTL', 'غيّر لغة لوحة التحكم بنقرة واحدة', 'واجهة كاملة من اليمين لليسار للعربية'],
                     },
                     {
                         tag:     'لوحة التحكم',
                         h:       'أداة إدارية لا تقاومك.',
                         p:       'ارفع الأطباق. حدّد الفئات. خصّص التخطيط والخطوط والألوان. تتبّع إحصائيات الزوار. بدون تدريب مسبق.',
-                        bullets: ['إدارة الأطباق بالسحب والإفلات', 'إحصائيات زوار فورية', 'ألوان وخطوط وتخطيطات مخصّصة'],
+                        bullets: ['الذكاء الاصطناعي يقرأ قائمتك الورقية ويستوردها', 'إحصائيات زوار فورية مع فلترة بالفترة الزمنية', 'طلبات واتساب مدمجة في القائمة'],
                     },
                 ],
             },
             features: {
                 eyebrow: 'كل ما تحتاجه',
                 headline: 'منصة قائمة طعام <em class="it">متكاملة.</em>',
-                sub:     'كل ميزة يحتاجها مطعمك — من رمز QR على الطاولة إلى الإحصائيات في لوحة التحكم.',
+                sub:     'كل ميزة يحتاجها مطعمك, من رمز QR على الطاولة إلى الإحصائيات في لوحة التحكم.',
                 items: [
                     { icon: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h.01M17 14h.01M14 17h.01M17 17h.01M20 14h.01M20 17h.01M14 20h.01M17 20h.01M20 20h.01"/>',  h: 'رمز QR',              p: 'بطاقة طاولتك جاهزة فور نشر قائمتك. نزّلها، اطبعها، ضعها على الطاولة.',                              meta: 'PDF جاهز للطباعة' },
                     { icon: '<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>',                                                                                                                                                                                            h: 'مزامنة فورية',        p: 'علّم طبقاً كمنتهٍ فيختفي في أقل من 200 مللي ثانية من كل الأجهزة.',                                  meta: 'تحديث مباشر'      },
-                    { icon: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',                                                                                       h: '10 لغات',             p: 'عربي، إنجليزي، فرنسي، تركي، إسباني والمزيد. الضيف يختار لغته بنقرة واحدة.',                          meta: 'يشمل RTL'          },
-                    { icon: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>',                                                                                                                       h: 'صور الأطباق',         p: 'صور محسّنة تلقائياً تبدو رائعة على أي شاشة وتحمّل بسرعة على أي اتصال.',                             meta: 'تحسين تلقائي'     },
+                    { icon: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',                                                                                       h: '14 لغة للوحة التحكم',  p: 'أدِر لوحة تحكمك بالعربية، الإنجليزية، الفرنسية، التركية، اليابانية وتسع لغات أخرى. دعم كامل للعربية RTL.', meta: 'يشمل RTL'    },
+                    { icon: '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/><path d="M13 2 3 14h9l-1 8 10-12h-9z"/>',                                                                          h: 'ماسح القائمة بالذكاء الاصطناعي', p: 'صوّر قائمتك الورقية. يقرأها الذكاء الاصطناعي ويستخرج كل طبق وسعر وفئة ويستوردها في ثوانٍ.', meta: 'بالذكاء الاصطناعي' },
                     { icon: '<path d="M18 20V10M12 20V4M6 20v-6"/>',                                                                                                                                                                                                   h: 'إحصائيات',            p: 'عدد المسح، وقت التصفح، أوقات الذروة، والأطباق الأكثر استقطاباً للاهتمام.',                          meta: 'بيانات الزوار'    },
                     { icon: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',                                                                                                                                                                          h: 'إدارة الفئات',        p: 'أنشئ أقساماً، رتّب الأطباق، أخفِ فئات بأكملها بنقرة. قائمتك بشروطك.',                             meta: 'تحكم كامل'        },
-                    { icon: '<circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>',                                                                        h: 'هويتك البصرية',       p: 'ألوانك وشعارك. MenuX يختفي خلف علامتك التجارية — مطعمك هو من يتألق.',                               meta: 'هويتك'            },
-                    { icon: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',                                                                                                                                                                                h: 'لا تطبيق مطلوب',      p: 'الضيوف يفتحون رابطاً في المتصفح — لا تنزيل، لا حساب، لا احتكاك.',                                  meta: 'بدون احتكاك'      },
+                    { icon: '<circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>',                                                                        h: 'هويتك البصرية',       p: 'ألوانك وشعارك. Qayema يختفي خلف علامتك التجارية, مطعمك هو من يتألق.',                               meta: 'هويتك'            },
+                    { icon: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',                                                                                                                                                                                h: 'لا تطبيق مطلوب',      p: 'الضيوف يفتحون رابطاً في المتصفح, لا تنزيل، لا حساب، لا احتكاك.',                                  meta: 'بدون احتكاك'      },
                 ],
             },
             how: {
@@ -1081,10 +1091,10 @@ function menuXApp() {
             testimonials: {
                 eyebrow: 'قصص نجاح',
                 headline: 'أصحاب المطاعم <em class="it">يتحدثون بأنفسهم.</em>',
-                sub:     'من الوجبات السريعة إلى المطاعم الراقية — MenuX يناسب طريقة عمل مطعمك فعلاً.',
+                sub:     'من الوجبات السريعة إلى المطاعم الراقية, Qayema يناسب طريقة عمل مطعمك فعلاً.',
                 quotes: [
                     {
-                        q:    'انتقلنا من قائمة ورقية مُغلّفة إلى MenuX في بعد ظهر واحد. ضيوفنا لاحظوا الفرق فوراً — وتوقف نادلونا عن الإجابة على سؤال "ما هذا الطبق؟" كل خمس دقائق.',
+                        q:    'انتقلنا من قائمة ورقية مُغلّفة إلى Qayema في بعد ظهر واحد. ضيوفنا لاحظوا الفرق فوراً, وتوقف نادلونا عن الإجابة على سؤال "ما هذا الطبق؟" كل خمس دقائق.',
                         who:  'خالد أ.',
                         role: 'مالك، ميزون أران · الرياض',
                     },
@@ -1103,7 +1113,7 @@ function menuXApp() {
             cta: {
                 eyebrow: 'مجاني للبدء',
                 headline: 'هل أنت مستعد لتحديث <em class="it">قائمتك؟</em>',
-                sub:     'انضم إلى أصحاب مطاعم يستخدمون MenuX الآن. لا بطاقة ائتمان مطلوبة.',
+                sub:     'انضم إلى أصحاب مطاعم يستخدمون Qayema الآن. لا بطاقة ائتمان مطلوبة.',
                 cta1:    'ابدأ مجاناً',
                 cta2:    'اكتشف كيف تعمل',
                 fine:    'مجاني للأبد على الخطة المجانية. طوّر عندما تكون مستعداً.',
@@ -1123,23 +1133,23 @@ function menuXApp() {
                     {
                         title: 'الشركة',
                         links: [
-                            { label: 'عن ليبيفاي', href: '#' },
-                            { label: 'المدوّنة',   href: '#' },
-                            { label: 'وظائف',      href: '#' },
-                            { label: 'تواصل معنا', href: '#' },
+                            { label: 'عن ليبيفاي', href: 'https://www.lebify.dev/', target: '_blank' },
+                            { label: 'المدوّنة',   href: '#', disabled: true },
+                            { label: 'وظائف',      href: '#', disabled: true },
+                            { label: 'تواصل معنا', href: '{{ route('contact') }}' },
                         ],
                     },
                     {
                         title: 'قانوني',
                         links: [
-                            { label: 'سياسة الخصوصية', href: '#' },
-                            { label: 'شروط الاستخدام', href: '#' },
-                            { label: 'سياسة الكوكيز',  href: '#' },
+                            { label: 'سياسة الخصوصية', href: '{{ route('privacy') }}' },
+                            { label: 'شروط الاستخدام', href: '{{ route('terms') }}' },
+                            { label: 'سياسة الكوكيز',  href: '{{ route('cookies') }}' },
                         ],
                     },
                 ],
                 copy:  '© 2025 مجموعة ليبيفاي. جميع الحقوق محفوظة.',
-                made:  'صُنع باهتمام في بيروت.',
+                made:  'صُنع باهتمام',
             },
         },
     };

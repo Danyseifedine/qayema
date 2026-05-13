@@ -412,6 +412,26 @@ return [
         'name_placeholder' => 'örn. Ali\'nin Kebapçısı',
         'name_required' => 'Restoran adı zorunludur.',
         'name_min' => 'Restoran adı en az 2 karakter olmalıdır.',
+        'name_hint' => 'Misafirlerinizin menü sayfanızda göreceği isim budur.',
+
+        'slug_label' => 'Menü bağlantısı',
+        'slug_hint' => 'Bu bağlantıyı misafirlerinizle paylaşın, menünüzü görebilsinler.',
+        'slug_required' => 'Bir menü bağlantısı gereklidir.',
+        'slug_taken' => 'Bu bağlantı zaten alınmış. Lütfen başka bir tane seçin.',
+        'slug_checking' => 'Kullanılabilirlik kontrol ediliyor…',
+        'slug_available' => 'Bu bağlantı mevcut.',
+        'slug_taken_hint' => 'Bu bağlantı zaten alınmış — farklı bir şey deneyin.',
+
+        'phone_hint' => 'Misafirler sizi aramak veya WhatsApp siparişi vermek için bu numarayı kullanabilir.',
+        'currency_hint' => 'Menünizdeki tüm yemek fiyatları bu para biriminde gösterilecektir.',
+
+        'logo_field_hint' => 'Kamuya açık menü sayfanızın üst kısmında görünür.',
+        'cover_field_hint' => 'Restoranınızın adının arkasında görünen geniş bir banner görseli. Önerilen: 1200 × 400 piksel.',
+
+        'tags_hint' => 'Geçerli olan her şeyi seçin. Misafirler bunları görmez — menünüzü düzenlemenize yardımcı olur.',
+        'vibe_hint' => 'Restoranınızın atmosferini en iyi tanımlayan etiketleri seçin.',
+        'template_hint' => 'Misafirler için menünüzün nasıl göründüğünü kontrol eder. Bunu ayarlardan istediğiniz zaman değiştirebilirsiniz.',
+
         'currency_required' => 'Lütfen bir para birimi seçin.',
         'phone_required' => 'Telefon numarası zorunludur.',
         'logo_required' => 'Devam etmek için lütfen bir logo yükleyin.',

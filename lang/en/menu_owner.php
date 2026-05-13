@@ -463,6 +463,26 @@ return [
         'name_placeholder' => 'e.g. Joe\'s Burgers',
         'name_required' => 'Restaurant name is required.',
         'name_min' => 'Restaurant name must be at least 2 characters.',
+        'name_hint' => 'This is the name your guests will see on your menu page.',
+
+        'slug_label' => 'Menu link',
+        'slug_hint' => 'Share this link with guests so they can view your menu.',
+        'slug_required' => 'A menu link is required.',
+        'slug_taken' => 'This link is already taken. Please choose another.',
+        'slug_checking' => 'Checking availability…',
+        'slug_available' => 'This link is available.',
+        'slug_taken_hint' => 'This link is already taken — try something different.',
+
+        'phone_hint' => 'Guests can use this number to contact you or send WhatsApp orders.',
+        'currency_hint' => 'All dish prices on your menu will be shown in this currency.',
+
+        'logo_field_hint' => 'Shown at the top of your public menu page.',
+        'cover_field_hint' => 'A wide banner displayed behind your restaurant name. Recommended: 1200 × 400 px.',
+
+        'tags_hint' => 'Select all that apply. Guests do not see these — they help organise your menu.',
+        'vibe_hint' => 'Choose tags that best describe the atmosphere of your restaurant.',
+        'template_hint' => 'Controls how your menu looks to guests. You can change this any time from your settings.',
+
         'currency_required' => 'Please select a currency.',
         'phone_required' => 'Phone number is required.',
         'logo_required' => 'Please upload a logo to continue.',

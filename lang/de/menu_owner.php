@@ -457,6 +457,26 @@ return [
         'name_placeholder' => 'z.B. Joes Burger',
         'name_required' => 'Restaurantname ist erforderlich.',
         'name_min' => 'Der Restaurantname muss mindestens 2 Zeichen lang sein.',
+        'name_hint' => 'Dies ist der Name, den Ihre Gäste auf der Menüseite sehen.',
+
+        'slug_label' => 'Menü-Link',
+        'slug_hint' => 'Teilen Sie diesen Link mit Gästen, damit sie Ihr Menü ansehen können.',
+        'slug_required' => 'Ein Menü-Link ist erforderlich.',
+        'slug_taken' => 'Dieser Link ist bereits vergeben. Bitte wählen Sie einen anderen.',
+        'slug_checking' => 'Verfügbarkeit wird geprüft…',
+        'slug_available' => 'Dieser Link ist verfügbar.',
+        'slug_taken_hint' => 'Dieser Link ist bereits vergeben — versuchen Sie einen anderen.',
+
+        'phone_hint' => 'Gäste können diese Nummer nutzen, um Sie zu kontaktieren oder WhatsApp-Bestellungen aufzugeben.',
+        'currency_hint' => 'Alle Gerichtpreise in Ihrem Menü werden in dieser Währung angezeigt.',
+
+        'logo_field_hint' => 'Wird oben auf Ihrer öffentlichen Menüseite angezeigt.',
+        'cover_field_hint' => 'Ein breites Bannerbild hinter Ihrem Restaurantnamen. Empfohlen: 1200 × 400 px.',
+
+        'tags_hint' => 'Wählen Sie alles, was zutrifft. Gäste sehen dies nicht — sie helfen bei der Organisation Ihres Menüs.',
+        'vibe_hint' => 'Wählen Sie Tags, die die Atmosphäre Ihres Restaurants am besten beschreiben.',
+        'template_hint' => 'Bestimmt, wie Ihr Menü für Gäste aussieht. Sie können dies jederzeit in den Einstellungen ändern.',
+
         'currency_required' => 'Bitte wählen Sie eine Währung aus.',
         'phone_required' => 'Telefonnummer ist erforderlich.',
         'logo_required' => 'Bitte laden Sie ein Logo hoch, um fortzufahren.',

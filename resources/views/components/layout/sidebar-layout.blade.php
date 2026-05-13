@@ -680,7 +680,9 @@
             </div>
         </div>
 
-        {{ $slot }}
+        <div class="sbl-page">
+            {{ $slot }}
+        </div>
 
     </div>
 </div>
@@ -775,5 +777,33 @@
 </div>
 
 @stack('scripts')
+<script>
+(function () {
+    var page = document.querySelector('.sbl-page');
+    if (!page || !window.gsap) return;
+
+    // Entry — fade in on every page load
+    gsap.from(page, {
+        opacity: 0, y: 8, duration: 0.25, ease: 'power2.out', clearProps: 'all',
+    });
+
+    // Exit — intercept internal anchor clicks
+    document.addEventListener('click', function (e) {
+        var a = e.target.closest('a[href]');
+        if (!a) return;
+        var href = a.getAttribute('href');
+        if (!href || href.startsWith('#') || href.startsWith('javascript')
+            || href.startsWith('mailto') || a.target === '_blank'
+            || a.hostname !== window.location.hostname) return;
+        if (a.href === window.location.href) return;
+
+        e.preventDefault();
+        gsap.to(page, {
+            opacity: 0, y: -6, duration: 0.18, ease: 'power2.in',
+            onComplete: function () { window.location.href = href; },
+        });
+    });
+}());
+</script>
 </body>
 </html>

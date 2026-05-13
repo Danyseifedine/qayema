@@ -3,10 +3,12 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Admin\Resources\Categories\CategoryResource;
+use App\Filament\Admin\Resources\ContactMessages\ContactMessageResource;
 use App\Filament\Admin\Resources\Dishes\DishResource;
 use App\Filament\Admin\Resources\Restaurants\RestaurantResource;
 use App\Filament\Admin\Resources\RestaurantSocialLinks\RestaurantSocialLinkResource;
 use App\Filament\Admin\Resources\RestaurantStatistics\RestaurantStatisticResource;
+use App\Filament\Admin\Resources\Tags\TagResource;
 use App\Filament\Admin\Resources\Templates\TemplateResource;
 use App\Filament\Admin\Resources\Users\UserResource;
 use App\Http\Middleware\EnsureUserIsAdmin;
@@ -45,6 +47,8 @@ class AdminPanelProvider extends PanelProvider
                 DishResource::class,
                 RestaurantSocialLinkResource::class,
                 RestaurantStatisticResource::class,
+                ContactMessageResource::class,
+                TagResource::class,
             ])
             ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\Filament\Admin\Pages')
             ->pages([
@@ -52,6 +56,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Admin/Widgets'), for: 'App\Filament\Admin\Widgets')
             ->widgets([
+                \App\Filament\Admin\Widgets\TodayOverviewWidget::class,
                 \App\Filament\Admin\Widgets\RestaurantStatsWidget::class,
                 \App\Filament\Admin\Widgets\VisitorStatsWidget::class,
                 \App\Filament\Admin\Widgets\PopularRestaurantsWidget::class,

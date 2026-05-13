@@ -412,6 +412,26 @@ return [
         'name_placeholder' => '例如：老王烤肉',
         'name_required' => '餐厅名称为必填项。',
         'name_min' => '餐厅名称至少需要2个字符。',
+        'name_hint' => '这是您的顾客在菜单页面上看到的名称。',
+
+        'slug_label' => '菜单链接',
+        'slug_hint' => '将此链接分享给顾客，让他们查看您的菜单。',
+        'slug_required' => '菜单链接是必填项。',
+        'slug_taken' => '此链接已被使用，请选择其他链接。',
+        'slug_checking' => '正在检查可用性…',
+        'slug_available' => '此链接可用。',
+        'slug_taken_hint' => '此链接已被使用，请尝试其他链接。',
+
+        'phone_hint' => '顾客可以使用此号码联系您或发送WhatsApp订单。',
+        'currency_hint' => '您菜单上所有菜品的价格都将以此货币显示。',
+
+        'logo_field_hint' => '显示在您的公开菜单页面顶部。',
+        'cover_field_hint' => '显示在您餐厅名称后面的宽幅横幅图片。推荐尺寸：1200 × 400 像素。',
+
+        'tags_hint' => '选择所有适用的选项。顾客不会看到这些 — 它们帮助整理您的菜单。',
+        'vibe_hint' => '选择最能描述您餐厅氛围的标签。',
+        'template_hint' => '控制顾客看到的菜单外观。您可以随时在设置中更改。',
+
         'currency_required' => '请选择一种货币。',
         'phone_required' => '电话号码为必填项。',
         'logo_required' => '请上传徽标以继续。',

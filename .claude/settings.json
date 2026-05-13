@@ -44,7 +44,25 @@
       "Bash(php -l app/Http/Controllers/MenuOwner/MenuScanController.php)",
       "Bash(php -l app/Http/Controllers/MenuOwner/SearchController.php)",
       "Bash(php -l app/Http/Controllers/MenuOwner/StatisticController.php)",
-      "Bash(php -l resources/views/dashboard/statistics/index.blade.php)"
+      "Bash(php -l resources/views/dashboard/statistics/index.blade.php)",
+      "Bash(php -l resources/views/welcome.blade.php)",
+      "Bash(php -l resources/views/legal/layout.blade.php)",
+      "Bash(php -l resources/views/legal/privacy.blade.php)",
+      "Bash(php -l resources/views/legal/terms.blade.php)",
+      "Bash(php -l resources/views/legal/cookies.blade.php)",
+      "Bash(grep -n 'sbl-main\\\\|sbl-page\\\\|sbl-body\\\\|sbl-inner\\\\|page-content\\\\|main-content\\\\|$slot' 'c:\\\\Users\\\\scorp\\\\Desktop\\\\lebify\\\\menux\\\\resources\\\\views\\\\components\\\\layout\\\\sidebar-layout.blade.php')",
+      "Bash(npm install *)",
+      "Bash(n/* Page transitions */)",
+      "Bash(Add-Content -Path \"c:\\\\Users\\\\scorp\\\\Desktop\\\\lebify\\\\menux\\\\resources\\\\css\\\\dashboard.css\" -Value \"`n/* Page transitions */`n.sbl-page { will-change: opacity, transform; }\")",
+      "Read(//c/Users/scorp/Desktop/lebify/menux/lang$f/**)",
+      "Bash(grep -n 'back\\(\\)\\\\|step > 1\\\\|step = {{ $i }}' 'c:\\\\Users\\\\scorp\\\\Desktop\\\\lebify\\\\menux\\\\resources\\\\views\\\\auth\\\\onboarding.blade.php')",
+      "Bash(Get-ChildItem -Path \"app/Filament\" -Recurse -Name)",
+      "Bash(Remove-Item -Recurse -Force \"c:\\\\Users\\\\scorp\\\\Desktop\\\\lebify\\\\menux\\\\app\\\\Filament\\\\Resources\\\\ContactMessages\")",
+      "Bash(Remove-Item -Recurse -Force \"c:\\\\Users\\\\scorp\\\\Desktop\\\\lebify\\\\menux\\\\app\\\\Filament\\\\Resources\\\\Tags\")",
+      "Bash(Write-Output \"Done\")",
+      "Bash(./vendor/bin/pint --dirty)",
+      "Bash(php -l app/Filament/Admin/Resources/ContactMessages/ContactMessageResource.php)",
+      "Bash(php -l app/Filament/Admin/Resources/Tags/TagResource.php)"
     ]
   }
 }

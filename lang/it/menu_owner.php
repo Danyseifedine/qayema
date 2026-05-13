@@ -416,6 +416,26 @@ return [
         'name_placeholder' => 'es. Trattoria da Mario',
         'name_required' => 'Il nome del ristorante è obbligatorio.',
         'name_min' => 'Il nome del ristorante deve contenere almeno 2 caratteri.',
+        'name_hint' => 'Questo è il nome che i tuoi clienti vedranno sulla pagina del menu.',
+
+        'slug_label' => 'Link del menu',
+        'slug_hint' => 'Condividi questo link con i clienti per permettere loro di visualizzare il tuo menu.',
+        'slug_required' => 'È richiesto un link per il menu.',
+        'slug_taken' => 'Questo link è già in uso. Sceglierne un altro.',
+        'slug_checking' => 'Verifica disponibilità…',
+        'slug_available' => 'Questo link è disponibile.',
+        'slug_taken_hint' => 'Questo link è già in uso — prova qualcosa di diverso.',
+
+        'phone_hint' => 'I clienti possono usare questo numero per contattarti o fare ordini WhatsApp.',
+        'currency_hint' => 'Tutti i prezzi dei piatti nel tuo menu saranno mostrati in questa valuta.',
+
+        'logo_field_hint' => 'Visualizzato in cima alla tua pagina menu pubblica.',
+        'cover_field_hint' => 'Un\'immagine banner larga dietro il nome del tuo ristorante. Consigliato: 1200 × 400 px.',
+
+        'tags_hint' => 'Seleziona tutto ciò che si applica. I clienti non le vedono — aiutano a organizzare il menu.',
+        'vibe_hint' => 'Scegli i tag che descrivono meglio l\'atmosfera del tuo ristorante.',
+        'template_hint' => 'Controlla l\'aspetto del menu per i clienti. Puoi cambiarlo in qualsiasi momento dalle impostazioni.',
+
         'currency_required' => 'Seleziona una valuta.',
         'phone_required' => 'Il numero di telefono è obbligatorio.',
         'logo_required' => 'Carica un logo per continuare.',

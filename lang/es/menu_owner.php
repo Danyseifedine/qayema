@@ -412,6 +412,26 @@ return [
         'name_placeholder' => 'p.ej. Las Brasas',
         'name_required' => 'El nombre del restaurante es obligatorio.',
         'name_min' => 'El nombre del restaurante debe tener al menos 2 caracteres.',
+        'name_hint' => 'Este es el nombre que verán sus clientes en la página de su menú.',
+
+        'slug_label' => 'Enlace del menú',
+        'slug_hint' => 'Comparta este enlace con sus clientes para que puedan ver su menú.',
+        'slug_required' => 'Se requiere un enlace de menú.',
+        'slug_taken' => 'Este enlace ya está en uso. Por favor elija otro.',
+        'slug_checking' => 'Comprobando disponibilidad…',
+        'slug_available' => 'Este enlace está disponible.',
+        'slug_taken_hint' => 'Este enlace ya está en uso — pruebe con otro diferente.',
+
+        'phone_hint' => 'Los clientes pueden usar este número para contactarle o hacer pedidos por WhatsApp.',
+        'currency_hint' => 'Todos los precios de los platos en su menú se mostrarán en esta moneda.',
+
+        'logo_field_hint' => 'Se muestra en la parte superior de su página de menú público.',
+        'cover_field_hint' => 'Una imagen de banner ancha detrás del nombre de su restaurante. Recomendado: 1200 × 400 px.',
+
+        'tags_hint' => 'Seleccione todo lo que aplique. Los clientes no las ven — ayudan a organizar su menú.',
+        'vibe_hint' => 'Elija etiquetas que describan mejor el ambiente de su restaurante.',
+        'template_hint' => 'Controla el aspecto de su menú para los clientes. Puede cambiarlo en cualquier momento desde su configuración.',
+
         'currency_required' => 'Por favor, seleccione una moneda.',
         'phone_required' => 'El número de teléfono es obligatorio.',
         'logo_required' => 'Por favor, sube un logotipo para continuar.',

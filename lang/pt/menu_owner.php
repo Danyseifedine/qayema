@@ -412,6 +412,26 @@ return [
         'name_placeholder' => 'ex. Cantina do João',
         'name_required' => 'O nome do restaurante é obrigatório.',
         'name_min' => 'O nome do restaurante deve ter pelo menos 2 caracteres.',
+        'name_hint' => 'Este é o nome que os seus clientes verão na página do menu.',
+
+        'slug_label' => 'Link do menu',
+        'slug_hint' => 'Partilhe este link com os clientes para que possam ver o seu menu.',
+        'slug_required' => 'É necessário um link de menu.',
+        'slug_taken' => 'Este link já está em uso. Por favor escolha outro.',
+        'slug_checking' => 'A verificar disponibilidade…',
+        'slug_available' => 'Este link está disponível.',
+        'slug_taken_hint' => 'Este link já está em uso — tente outro diferente.',
+
+        'phone_hint' => 'Os clientes podem usar este número para contactá-lo ou fazer encomendas por WhatsApp.',
+        'currency_hint' => 'Todos os preços dos pratos no seu menu serão mostrados nesta moeda.',
+
+        'logo_field_hint' => 'Exibido no topo da sua página de menu público.',
+        'cover_field_hint' => 'Uma imagem de banner larga atrás do nome do seu restaurante. Recomendado: 1200 × 400 px.',
+
+        'tags_hint' => 'Selecione tudo o que se aplica. Os clientes não as veem — ajudam a organizar o seu menu.',
+        'vibe_hint' => 'Escolha etiquetas que descrevam melhor a atmosfera do seu restaurante.',
+        'template_hint' => 'Controla o aspeto do seu menu para os clientes. Pode alterá-lo a qualquer momento nas definições.',
+
         'currency_required' => 'Por favor, selecione uma moeda.',
         'phone_required' => 'O número de telefone é obrigatório.',
         'logo_required' => 'Por favor, carregue um logotipo para continuar.',
