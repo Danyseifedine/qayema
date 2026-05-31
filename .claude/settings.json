@@ -62,7 +62,8 @@
       "Bash(Write-Output \"Done\")",
       "Bash(./vendor/bin/pint --dirty)",
       "Bash(php -l app/Filament/Admin/Resources/ContactMessages/ContactMessageResource.php)",
-      "Bash(php -l app/Filament/Admin/Resources/Tags/TagResource.php)"
+      "Bash(php -l app/Filament/Admin/Resources/Tags/TagResource.php)",
+      "Bash(php -r ' *)"
     ]
   }
 }
