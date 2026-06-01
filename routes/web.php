@@ -127,6 +127,7 @@ Route::middleware(['auth', 'owner.locale'])->group(function () {
 Route::get('/privacy-policy', fn () => view('legal.privacy'))->name('privacy');
 Route::get('/terms-of-service', fn () => view('legal.terms'))->name('terms');
 Route::get('/cookie-policy', fn () => view('legal.cookies'))->name('cookies');
+Route::get('/refund-policy', fn () => view('legal.refund'))->name('refund');
 
 // Contact page
 Route::get('/contact', [ContactController::class, 'show'])->name('contact');
