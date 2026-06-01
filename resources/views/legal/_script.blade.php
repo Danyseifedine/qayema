@@ -160,9 +160,10 @@ function QayemaApp() {
                     {
                         title: 'Legal',
                         links: [
-                            { label: 'Privacy policy', href: '#' },
-                            { label: 'Terms of use',   href: '#' },
-                            { label: 'Cookie policy',  href: '#' },
+                            { label: 'Privacy policy', href: '{{ route('privacy') }}' },
+                            { label: 'Terms of use',   href: '{{ route('terms') }}' },
+                            { label: 'Cookie policy',  href: '{{ route('cookies') }}' },
+                            { label: 'Refund policy',  href: '{{ route('refund') }}' },
                         ],
                     },
                 ],
@@ -330,9 +331,10 @@ function QayemaApp() {
                     {
                         title: 'قانوني',
                         links: [
-                            { label: 'سياسة الخصوصية', href: '#' },
-                            { label: 'شروط الاستخدام', href: '#' },
-                            { label: 'سياسة الكوكيز',  href: '#' },
+                            { label: 'سياسة الخصوصية', href: '{{ route('privacy') }}' },
+                            { label: 'شروط الاستخدام', href: '{{ route('terms') }}' },
+                            { label: 'سياسة الكوكيز',  href: '{{ route('cookies') }}' },
+                            { label: 'سياسة الاسترداد', href: '{{ route('refund') }}' },
                         ],
                     },
                 ],
