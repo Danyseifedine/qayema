@@ -90,7 +90,7 @@
          clear() { this.val = this.multiple ? [] : ''; this.q = ''; },
      }"
      :class="open ? 'open' : ''"
-     @click.outside="open = false">
+     @click.outside="open = false; q = ''">
 
     {{-- â”€â”€ Trigger â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ --}}
     <div class="ui-combo-control" @click="open = !open">

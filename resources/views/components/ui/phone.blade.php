@@ -131,10 +131,13 @@ $list = $countries ?? $defaultCountries;
     {{-- ── Phone number input ──── --}}
     <input
         type="tel"
+        inputmode="tel"
+        maxlength="30"
         @if ($name)    name="{{ $name }}"       @endif
         class="ui-phone-num"
         placeholder="{{ $placeholder }}"
         value="{{ old($name ?? '', $value) }}"
+        oninput="this.value = this.value.replace(/[^0-9+()\s.\-]/g, '')"
         @if ($required) required @endif
         {{ $attributes->except(['class','type','name','placeholder']) }}
     >

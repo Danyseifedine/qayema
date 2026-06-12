@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Admin\Resources\BlockedIps\BlockedIpResource;
 use App\Filament\Admin\Resources\Categories\CategoryResource;
 use App\Filament\Admin\Resources\ContactMessages\ContactMessageResource;
 use App\Filament\Admin\Resources\Dishes\DishResource;
@@ -49,6 +50,7 @@ class AdminPanelProvider extends PanelProvider
                 RestaurantStatisticResource::class,
                 ContactMessageResource::class,
                 TagResource::class,
+                BlockedIpResource::class,
             ])
             ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\Filament\Admin\Pages')
             ->pages([

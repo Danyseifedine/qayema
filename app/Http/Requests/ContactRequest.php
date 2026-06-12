@@ -2,12 +2,14 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\ValidCaptcha;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ContactRequest extends FormRequest
 {
     public function authorize(): bool
     {
+        // Public contact form — open to guests; abuse is mitigated by rate limiting.
         return true;
     }
 
@@ -17,6 +19,7 @@ class ContactRequest extends FormRequest
             'name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:255'],
             'message' => ['required', 'string', 'min:10', 'max:2000'],
+            'g-recaptcha-response' => [new ValidCaptcha],
         ];
     }
 

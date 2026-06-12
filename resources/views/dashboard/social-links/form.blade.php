@@ -40,10 +40,9 @@
 
                     <x-ui.field name="url" label="{{ __('menu_owner.social_links.url') }}"
                                 help="{{ __('menu_owner.social_links.url_desc') }}">
-                        <x-ui.input name="url" type="url"
+                        <x-ui.input name="url" type="text" inputmode="url" autocomplete="off"
                                     :value="old('url', $socialLink?->url)"
-                                    placeholder="{{ __('menu_owner.social_links.placeholder_url') }}"
-                                    required />
+                                    placeholder="{{ __('menu_owner.social_links.placeholder_url') }}" />
                     </x-ui.field>
                 </div>
 

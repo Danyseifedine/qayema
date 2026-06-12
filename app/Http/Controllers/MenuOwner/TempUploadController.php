@@ -4,13 +4,17 @@ namespace App\Http\Controllers\MenuOwner;
 
 use App\Http\Controllers\Controller;
 use App\Services\ImageOptimizationService;
+use App\Services\MediaSyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class TempUploadController extends Controller
 {
-    public function __construct(private readonly ImageOptimizationService $optimizer) {}
+    public function __construct(
+        private readonly ImageOptimizationService $optimizer,
+        private readonly MediaSyncService $media,
+    ) {}
 
     public function store(Request $request): JsonResponse
     {
@@ -29,8 +33,8 @@ class TempUploadController extends Controller
         $optimizedPath = $this->optimizer->optimizeByContext($file, $context);
 
         $key = Str::uuid()->toString();
-        $destDir = storage_path('app/temp');
-        $dest = $destDir.'/'.$key.'.jpg';
+        $destDir = $this->media->tempDir($request->user()->id);
+        $dest = $this->media->tempPath($request->user()->id, $key);
 
         if (! is_dir($destDir)) {
             mkdir($destDir, 0755, true);
@@ -51,16 +55,25 @@ class TempUploadController extends Controller
         ]);
     }
 
+    /**
+     * Best-effort cleanup of stale temp uploads across all user folders.
+     *
+     * Cross-user safety comes from per-user storage paths (see MediaSyncService),
+     * not from this window — a user can only ever reference temp files under their
+     * own id. The window simply prevents abandoned uploads from accumulating.
+     */
     private function purgeStaleTemps(): void
     {
-        $dir = storage_path('app/temp');
+        $base = storage_path('app/temp');
 
-        if (! is_dir($dir)) {
+        if (! is_dir($base)) {
             return;
         }
 
-        foreach (glob($dir.'/*.jpg') as $file) {
-            if (filemtime($file) < time() - 7200) {
+        $cutoff = time() - 3600;
+
+        foreach (glob($base.'/{*.jpg,*/*.jpg}', GLOB_BRACE) as $file) {
+            if (filemtime($file) < $cutoff) {
                 @unlink($file);
             }
         }

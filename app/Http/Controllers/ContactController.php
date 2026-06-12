@@ -21,7 +21,7 @@ class ContactController extends Controller
     {
         $key = 'contact:'.$request->ip();
 
-        if (RateLimiter::tooManyAttempts($key, 10)) {
+        if (RateLimiter::tooManyAttempts($key, 3)) {
             $seconds = RateLimiter::availableIn($key);
             $hours = ceil($seconds / 3600);
 
@@ -37,7 +37,7 @@ class ContactController extends Controller
             'ip_address' => $request->ip(),
         ]);
 
-        Mail::to('dany.a.seifeddine@gmail.com')->send(new ContactMessageReceived($contact));
+        Mail::to(config('services.contact.recipient'))->send(new ContactMessageReceived($contact));
 
         // Decay hits after 24 hours
         RateLimiter::hit($key, 86400);

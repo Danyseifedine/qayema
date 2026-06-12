@@ -353,6 +353,10 @@
                             >
                                 @csrf
 
+                                @if(config('services.recaptcha.enabled'))
+                                    <input type="hidden" name="g-recaptcha-response" id="g-recaptcha-response">
+                                @endif
+
                                 <div class="ctc-row">
                                     {{-- Name --}}
                                     <div class="ctc-field">
@@ -486,8 +490,31 @@
 </div>
 
 <script>
-@include('legal._script')
+@include('partials.qayema-app')
 </script>
+
+@if(config('services.recaptcha.enabled'))
+    <script src="https://www.google.com/recaptcha/api.js?render={{ config('services.recaptcha.site_key') }}"></script>
+    <script>
+        (function () {
+            const siteKey = @json(config('services.recaptcha.site_key'));
+
+            function refreshCaptchaToken() {
+                grecaptcha.ready(function () {
+                    grecaptcha.execute(siteKey, { action: 'contact' }).then(function (token) {
+                        const field = document.getElementById('g-recaptcha-response');
+                        if (field) {
+                            field.value = token;
+                        }
+                    });
+                });
+            }
+
+            refreshCaptchaToken();
+            setInterval(refreshCaptchaToken, 110000);
+        })();
+    </script>
+@endif
 
 </body>
 </html>

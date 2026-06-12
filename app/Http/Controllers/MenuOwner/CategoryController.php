@@ -5,6 +5,8 @@ namespace App\Http\Controllers\MenuOwner;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CategoryRequest;
 use App\Models\Category;
+use App\Models\Restaurant;
+use App\Services\MediaSyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,6 +14,8 @@ use Illuminate\View\View;
 
 class CategoryController extends Controller
 {
+    public function __construct(private readonly MediaSyncService $media) {}
+
     public function index(Request $request): View
     {
         $restaurant = $request->user()->restaurant;
@@ -35,9 +39,8 @@ class CategoryController extends Controller
                 ->with('error', __('menu_owner.common.messages.setup_first'));
         }
 
-        if ($restaurant->hasReachedCategoryLimit()) {
-            return redirect()->route('menu-owner.categories.index')
-                ->with('error', __('menu_owner.common.messages.limit_categories'));
+        if ($redirect = $this->redirectIfCategoryLimitReached($restaurant)) {
+            return $redirect;
         }
 
         return view('dashboard.categories.form', [
@@ -55,9 +58,8 @@ class CategoryController extends Controller
                 ->with('error', __('menu_owner.common.messages.setup_first'));
         }
 
-        if ($restaurant->hasReachedCategoryLimit()) {
-            return redirect()->route('menu-owner.categories.index')
-                ->with('error', __('menu_owner.common.messages.limit_categories'));
+        if ($redirect = $this->redirectIfCategoryLimitReached($restaurant)) {
+            return $redirect;
         }
 
         $data = $request->validated();
@@ -122,21 +124,22 @@ class CategoryController extends Controller
         return response()->json(['success' => true]);
     }
 
+    private function redirectIfCategoryLimitReached(Restaurant $restaurant): ?RedirectResponse
+    {
+        return $restaurant->hasReachedCategoryLimit()
+            ? redirect()->route('menu-owner.categories.index')
+                ->with('error', __('menu_owner.common.messages.limit_categories'))
+            : null;
+    }
+
     private function syncImage(CategoryRequest $request, Category $category): void
     {
-        if ($request->filled('image_key')) {
-            $path = storage_path('app/temp/'.$request->input('image_key').'.jpg');
-
-            if (file_exists($path)) {
-                $category->clearMediaCollection('image');
-                $category->addMedia($path)->usingName('category-image')->toMediaCollection('image');
-            }
-
-            return;
-        }
-
-        if ($request->boolean('delete_image')) {
-            $category->clearMediaCollection('image');
-        }
+        $this->media->sync(
+            $category,
+            $request->input('image_key'),
+            $request->boolean('delete_image'),
+            'image',
+            'category-image',
+        );
     }
 }

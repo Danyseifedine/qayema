@@ -42,7 +42,7 @@
         </div>
         <div>
             <div class="k">{{ __('auth.brand.uptime') }}</div>
-            <div class="v"><span class="it">‹</span>99.99<span class="u">%</span></div>
+            <div class="v">99.99<span class="u">%</span></div>
         </div>
     </div>
 

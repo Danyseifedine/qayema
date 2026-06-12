@@ -2,13 +2,18 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Dish;
 use Illuminate\Foundation\Http\FormRequest;
 
 class DishRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $dish = $this->route('dish');
+
+        return $dish instanceof Dish
+            ? (bool) $this->user()?->can('update', $dish)
+            : (bool) $this->user()?->can('create', Dish::class);
     }
 
     public function rules(): array

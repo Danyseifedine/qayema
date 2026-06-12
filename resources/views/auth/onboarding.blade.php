@@ -8,6 +8,8 @@
         ->map(fn ($c, $code) => ['value' => $code, 'label' => $code, 'flag' => $c['symbol'] ?? '', 'meta' => $c['name'] ?? $code])
         ->values()->all();
 
+    $currencySymbols = collect(config('currencies', []))->map(fn ($c) => $c['symbol'] ?? '$')->all();
+
     // Pre-fill existing restaurant data for back-navigation
     $existingCdTagIds   = $restaurant ? $restaurant->tags->whereIn('category', ['cuisine', 'dietary'])->pluck('id')->values()->all() : [];
     $existingCdTagSlugs = $restaurant ? $restaurant->tags->whereIn('category', ['cuisine', 'dietary'])->pluck('slug')->values()->all() : [];
@@ -47,6 +49,8 @@
         totalSteps: {{ $totalSteps }},
         stepData:   @json($stepData),
         templates:  @json($allTemplatesJson),
+        currencySymbols: @json($currencySymbols),
+        currencyCodes: @json(array_keys(config('currencies', []))),
         locale:     @json($locale),
         routes: {
             advance:    @json(route('onboarding.advance')),
@@ -71,7 +75,9 @@
             nameRequired:     @json(__('menu_owner.onboarding.name_required')),
             nameMin:          @json(__('menu_owner.onboarding.name_min')),
             phoneRequired:    @json(__('menu_owner.onboarding.phone_required')),
+            phoneInvalid:     @json(__('menu_owner.onboarding.phone_invalid')),
             currencyRequired: @json(__('menu_owner.onboarding.currency_required')),
+            currencyInvalid:  @json(__('menu_owner.onboarding.currency_invalid')),
             logoRequired:     @json(__('menu_owner.onboarding.logo_required')),
             selectTemplate:   @json(__('menu_owner.onboarding.select_template')),
             uploadError:      @json(__('menu_owner.onboarding.upload_error')),
@@ -79,6 +85,8 @@
             slugRequired:     @json(__('menu_owner.onboarding.slug_required')),
             slugTaken:        @json(__('menu_owner.onboarding.slug_taken')),
             slugChecking:     @json(__('menu_owner.onboarding.slug_checking')),
+            tagsOne:          @json(__('menu_owner.onboarding.tags_count_one')),
+            tagsMany:         @json(__('menu_owner.onboarding.tags_count')),
         },
     };
 </script>
@@ -391,6 +399,7 @@ h1.title .it { font-family: var(--font-display); font-style: italic; color: var(
                             <x-ui.input name="slug"
                                 x-model="s1.slug"
                                 @input="onSlugInput()"
+                                @blur="onSlugBlur()"
                                 :prefix="parse_url(config('app.url'), PHP_URL_HOST) . '/'"
                                 placeholder="your-restaurant"
                                 autocomplete="off"
@@ -421,7 +430,9 @@ h1.title .it { font-family: var(--font-display); font-style: italic; color: var(
 
             {{-- ── Step 2 — Contact + Currency ── --}}
             <div x-show="step === 2" x-cloak
-                 @change="onContactChange($event)">
+                 @change="onContactChange($event)"
+                 @combo-change="onCurrencyChange($event)"
+                 @input="errors.phone = ''">
                 <h1 class="title">{!! __('menu_owner.onboarding.step2_heading', ['em' => '<span class="it">'.__('menu_owner.onboarding.step2_em').'</span>']) !!}</h1>
                 <p class="lead">{{ __('menu_owner.onboarding.step2_desc') }}</p>
                 <div class="fields">
@@ -450,7 +461,8 @@ h1.title .it { font-family: var(--font-display); font-style: italic; color: var(
                 <h1 class="title">{!! __('menu_owner.onboarding.step3_heading', ['em' => '<span class="it">'.__('menu_owner.onboarding.step3_em').'</span>']) !!}</h1>
                 <p class="lead">{{ __('menu_owner.onboarding.step3_desc') }}</p>
                 <div class="fields">
-                    <x-ui.field :label="__('menu_owner.onboarding.logo_label')" required>
+                    <x-ui.field :label="__('menu_owner.onboarding.logo_label')"
+                                :optional="__('menu_owner.onboarding.optional')">
                         <x-ui.dropzone name="logo" context="logo"
                             :value="$restaurant?->getFirstMediaUrl('logo') ?: null"
                             :hint="__('menu_owner.onboarding.logo_hint')" />
@@ -634,7 +646,7 @@ h1.title .it { font-family: var(--font-display); font-style: italic; color: var(
             <div class="phone-wrap">
                 <span class="annot tl">
                     <span class="pulse"></span>
-                    <span x-text="step === 1 ? s1.name || '{{ $appName }}' : step === 2 ? '{{ __('menu_owner.onboarding.step2_title') }}' : step === 3 ? '{{ __('menu_owner.onboarding.logo_label') }}' : step === 4 ? cdTagIds.length + ' {{ __('menu_owner.onboarding.tags_count') }}' : step === 5 ? vsTagIds.length + ' {{ __('menu_owner.onboarding.tags_count') }}' : '{{ __('menu_owner.onboarding.stat_stage') }}'"></span>
+                    <span x-text="step === 1 ? s1.name || '{{ $appName }}' : step === 2 ? '{{ __('menu_owner.onboarding.step2_title') }}' : step === 3 ? '{{ __('menu_owner.onboarding.logo_label') }}' : step === 4 ? tagsLabel(cdTagIds.length) : step === 5 ? tagsLabel(vsTagIds.length) : '{{ __('menu_owner.onboarding.stat_stage') }}'"></span>
                 </span>
 
                 <div class="phone">
@@ -646,7 +658,7 @@ h1.title .it { font-family: var(--font-display); font-style: italic; color: var(
                         </div>
                         <div class="ps-header">
                             <div class="ps-rest" x-text="s1.name || '{{ $appName }}'"></div>
-                            <div class="ps-sub" x-text="step <= 2 ? selectedCurrency + ' · ' + (s1.preferred_language || '{{ $locale }}').toUpperCase() : '{{ __('menu_owner.onboarding.step1_title') }}'"></div>
+                            <div class="ps-sub" x-text="selectedCurrency + ' · ' + (s1.preferred_language || '{{ $locale }}').toUpperCase()"></div>
                         </div>
                         <div class="ps-list">
                             <div class="ps-item">
@@ -706,7 +718,7 @@ document.addEventListener('alpine:init', () => {
 
         stepData: _o.stepData,
         get cur()      { return this.stepData[this.step - 1]; },
-        get progress() { return Math.round(((this.step - 1) / this.totalSteps) * 100); },
+        get progress() { return Math.round(((this.step - 1) / (this.totalSteps - 1)) * 100); },
 
         /* Step 1 */
         s1: { name: _o.existing.name, preferred_language: _o.existing.preferred_language, slug: _o.existing.slug },
@@ -717,6 +729,7 @@ document.addEventListener('alpine:init', () => {
         get slugPreview() { return _o.appHost + '/' + (this.s1.slug || '…'); },
 
         onNameInput() {
+            this.errors.name = '';
             if (!this.slugEdited) {
                 this.s1.slug = this.s1.name
                     .toLowerCase()
@@ -730,12 +743,19 @@ document.addEventListener('alpine:init', () => {
         },
 
         onSlugInput() {
+            this.errors.slug = '';
             this.slugEdited = true;
             this.s1.slug = this.s1.slug
                 .toLowerCase()
-                .replace(/[^a-z0-9-]/g, '')
+                .replace(/\s+/g, '-')        // spaces -> hyphens FIRST
+                .replace(/[^a-z0-9-]/g, '')  // then strip anything else
                 .replace(/-+/g, '-')
-                .replace(/^-/, '');
+                .replace(/^-+/, '');
+            this.checkSlugAvailability();
+        },
+
+        onSlugBlur() {
+            this.s1.slug = this.s1.slug.replace(/-+$/, '');
             this.checkSlugAvailability();
         },
 
@@ -758,11 +778,18 @@ document.addEventListener('alpine:init', () => {
         /* Step 2 — currency tracked for right-panel display only */
         selectedCurrency: _o.existing.currency || 'USD',
         get currencySymbol() {
-            const map = { EUR: '€', GBP: '£', JPY: '¥', SAR: '﷼', INR: '₹', CNY: '¥' };
-            return map[this.selectedCurrency] ?? '$';
+            return (_o.currencySymbols && _o.currencySymbols[this.selectedCurrency]) || '$';
         },
         onContactChange(e) {
-            if (e.target.name === 'currency') { this.selectedCurrency = e.target.value || 'USD'; }
+            if (e.target && e.target.name === 'currency') { this.selectedCurrency = e.target.value || 'USD'; this.errors.currency = ''; }
+            if (e.target && (e.target.name === 'phone' || e.target.name === 'country_code')) { this.errors.phone = ''; }
+        },
+        onCurrencyChange(e) {
+            this.selectedCurrency = (e.detail && e.detail.value) || 'USD';
+            this.errors.currency = '';
+        },
+        tagsLabel(n) {
+            return n + ' ' + (n === 1 ? _o.i18n.tagsOne : _o.i18n.tagsMany);
         },
 
         /* Step 4 */
@@ -889,12 +916,14 @@ document.addEventListener('alpine:init', () => {
                 if (this.slugStatus === 'checking') { this.errors.slug = _o.i18n.slugChecking; return; }
             }
             if (this.step === 2) {
-                if (!dom('phone').trim()) { this.errors.phone = _o.i18n.phoneRequired; return; }
-                if (!dom('currency')) { this.errors.currency = _o.i18n.currencyRequired; return; }
+                const phone = dom('phone').trim();
+                if (!phone) { this.errors.phone = _o.i18n.phoneRequired; return; }
+                if (!/^(?=(?:\D*\d){6,})[0-9+()\s.\-]{6,30}$/.test(phone)) { this.errors.phone = _o.i18n.phoneInvalid; return; }
+                const currency = dom('currency');
+                if (!currency) { this.errors.currency = _o.i18n.currencyRequired; return; }
+                if (!(_o.currencyCodes || []).includes(currency)) { this.errors.currency = _o.i18n.currencyInvalid; return; }
             }
-            if (this.step === 3) {
-                if (!dom('logo_key') && !_o.existing.hasLogo) { this.errors.logo = _o.i18n.logoRequired; return; }
-            }
+            // Step 3 (branding) — logo is optional; nothing to block on.
             if (this.step === 6 && !this.selectedTemplateId) { this.errors.template = _o.i18n.selectTemplate; return; }
 
             // ── Skip API if nothing changed (never skip the final step — it must complete server-side) ──
@@ -939,7 +968,7 @@ document.addEventListener('alpine:init', () => {
 
                 const d = await res.json();
                 if (d.completed) { window.location = d.redirect; return; }
-                this.step = d.step;
+                this.step = Math.min(d.step, this.totalSteps);
 
                 // Update snapshot after a successful save so the next
                 // back-and-continue on this step is also skippable.

@@ -2,13 +2,18 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Category;
 use Illuminate\Foundation\Http\FormRequest;
 
 class CategoryRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $category = $this->route('category');
+
+        return $category instanceof Category
+            ? (bool) $this->user()?->can('update', $category)
+            : (bool) $this->user()?->can('create', Category::class);
     }
 
     public function rules(): array

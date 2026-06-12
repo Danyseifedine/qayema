@@ -85,15 +85,13 @@ class MenuScanController extends Controller
      */
     public function status(Request $request, int $id): JsonResponse
     {
-        $scan = MenuScan::find($id);
+        $restaurant = $request->user()->restaurant;
 
-        if (! $scan) {
-            return response()->json(['message' => 'Scan not found.'], 404);
-        }
-
-        if ($scan->restaurant_id !== $request->user()->restaurant?->id) {
+        if (! $restaurant) {
             return response()->json(['message' => 'Forbidden.'], 403);
         }
+
+        $scan = $restaurant->menuScans()->findOrFail($id);
 
         return response()->json([
             'status' => $scan->status->value,
@@ -107,17 +105,13 @@ class MenuScanController extends Controller
      */
     public function import(Request $request, int $id): JsonResponse
     {
-        $scan = MenuScan::find($id);
-
-        if (! $scan) {
-            return response()->json(['message' => 'Scan not found.'], 404);
-        }
-
         $restaurant = $request->user()->restaurant;
 
-        if (! $restaurant || $scan->restaurant_id !== $restaurant->id) {
+        if (! $restaurant) {
             return response()->json(['message' => 'Forbidden.'], 403);
         }
+
+        $scan = $restaurant->menuScans()->findOrFail($id);
 
         if (! $scan->isCompleted()) {
             return response()->json(['message' => 'Scan is not ready to import yet.'], 422);

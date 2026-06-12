@@ -103,8 +103,8 @@
                     <x-btn href="{{ route('menu-owner.categories.index') }}" variant="secondary">{{ __('menu_owner.common.cancel') }}</x-btn>
                     <x-btn type="submit" variant="primary">
                         {{ $category
-                            ? __('menu_owner.common.update').' '.__('menu_owner.categories.title')
-                            : __('menu_owner.common.create').' '.__('menu_owner.categories.title') }}
+                            ? __('menu_owner.common.update')
+                            : __('menu_owner.categories.create_category') }}
                     </x-btn>
                 </div>
 

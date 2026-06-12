@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Auth;
 
 use App\Models\User;
+use App\Rules\ValidCaptcha;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
@@ -17,6 +18,7 @@ class LoginRequest extends FormRequest
      */
     public function authorize(): bool
     {
+        // Public login endpoint — credentials are verified in authenticate().
         return true;
     }
 
@@ -30,6 +32,7 @@ class LoginRequest extends FormRequest
         return [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
+            'g-recaptcha-response' => [new ValidCaptcha],
         ];
     }
 

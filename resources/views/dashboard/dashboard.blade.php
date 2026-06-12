@@ -67,10 +67,11 @@
                 </h1>
                 @if($restaurant)
                     <p class="dash-subhead">
-                        {{ $totalDishCount }} {{ Str::plural('dish', $totalDishCount) }}
-                        across {{ $categories->count() }} {{ Str::plural('category', $categories->count()) }}
+                        {{ trans_choice('menu_owner.dashboard.dishes_count', $totalDishCount, ['count' => $totalDishCount]) }}
+                        <span style="opacity:.45">·</span>
+                        {{ trans_choice('menu_owner.dashboard.categories_count', $categories->count(), ['count' => $categories->count()]) }}
                         @if($totalViews > 0)
-                            · {{ number_format($totalViews) }} total views
+                            <span style="opacity:.45">·</span> {{ trans_choice('menu_owner.dashboard.views_count', $totalViews, ['count' => number_format($totalViews)]) }}
                         @endif
                     </p>
                 @endif
@@ -129,7 +130,7 @@
                 <div class="dk-label">{{ __('menu_owner.dashboard.categories') }}</div>
                 <div class="dk-value">{{ $categories->count() }}</div>
                 <div class="dk-sub muted">
-                    {{ $categories->sum('dishes_count') }} {{ Str::plural('dish', $categories->sum('dishes_count')) }} total
+                    {{ trans_choice('menu_owner.dashboard.dishes_total', $categories->sum('dishes_count'), ['count' => $categories->sum('dishes_count')]) }}
                 </div>
             </div>
         </div>
@@ -156,9 +157,9 @@
             <div class="dash-panel">
                 <div class="dash-panel-head">
                     <h3>
-                        <span class="it">All</span> dishes
+                        <span class="it">{{ __('menu_owner.dashboard.all_dishes') }}</span>
                         <span style="color:var(--muted);font-size:12px;font-weight:400">
-                            · <span x-text="filtered.length"></span> items
+                            · <span x-text="filtered.length"></span> {{ __('menu_owner.dashboard.items') }}
                         </span>
                     </h3>
                 </div>
@@ -169,7 +170,7 @@
                         <button class="dash-cat-pill"
                                 :class="!cat ? 'on' : ''"
                                 @click="cat = null">
-                            All <span class="n">{{ $totalDishCount }}</span>
+                            {{ __('menu_owner.dashboard.filter_all') }} <span class="n">{{ $totalDishCount }}</span>
                         </button>
                         @foreach($categories as $category)
                             <button class="dash-cat-pill"

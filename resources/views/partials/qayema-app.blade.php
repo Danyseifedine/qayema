@@ -167,7 +167,7 @@ function QayemaApp() {
                         ],
                     },
                 ],
-                copy:  '© 2025 Lebify Group. All rights reserved.',
+                copy:  '© {{ date('Y') }} Lebify Group. All rights reserved.',
                 made:  'Made with care',
             },
         },
@@ -338,7 +338,7 @@ function QayemaApp() {
                         ],
                     },
                 ],
-                copy:  '© 2025 مجموعة ليبيفاي. جميع الحقوق محفوظة.',
+                copy:  '© {{ date('Y') }} مجموعة ليبيفاي. جميع الحقوق محفوظة.',
                 made:  'صُنع باهتمام',
             },
         },
@@ -358,4 +358,3 @@ function QayemaApp() {
         },
     };
 }
-</script>

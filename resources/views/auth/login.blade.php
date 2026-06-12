@@ -98,8 +98,22 @@
 
             <div class="login-divider"><span>{{ __('auth.login.divider') }}</span></div>
 
-            <form method="POST" action="{{ route('login') }}" class="fields">
+            <form method="POST" action="{{ route('login') }}" class="fields" novalidate
+                  x-data="{ emailError: '', passwordError: '' }"
+                  @input="emailError = ''; passwordError = ''"
+                  @submit="
+                      emailError = ''; passwordError = '';
+                      const em = $event.target.querySelector('input[name=email]');
+                      const pw = $event.target.querySelector('input[name=password]');
+                      if (em && ! em.checkValidity()) { emailError = em.validationMessage; }
+                      if (pw && ! pw.checkValidity()) { passwordError = pw.validationMessage; }
+                      if (emailError || passwordError) { $event.preventDefault(); (emailError ? em : pw).focus(); }
+                  ">
                 @csrf
+
+                @if(config('services.recaptcha.enabled'))
+                    <input type="hidden" name="g-recaptcha-response" id="g-recaptcha-response">
+                @endif
 
                 {{-- Email --}}
                 <div class="ui-field">
@@ -114,6 +128,7 @@
                     @error('email')
                         <div class="ui-help error">{{ $message }}</div>
                     @enderror
+                    <div class="ui-help error" x-show="emailError" x-text="emailError" x-cloak></div>
                 </div>
 
                 {{-- Password --}}
@@ -128,6 +143,7 @@
                     @error('password')
                         <div class="ui-help error">{{ $message }}</div>
                     @enderror
+                    <div class="ui-help error" x-show="passwordError" x-text="passwordError" x-cloak></div>
                 </div>
 
                 {{-- Remember me --}}
@@ -152,9 +168,9 @@
         <div class="form-foot">
             <span>© {{ date('Y') }} {{ $appName }}</span>
             <span>
-                <a href="#">{{ __('auth.login.privacy') }}</a>
+                <a href="{{ route('privacy') }}">{{ __('auth.login.privacy') }}</a>
                 <span class="dot-sep">·</span>
-                <a href="#">{{ __('auth.login.terms') }}</a>
+                <a href="{{ route('terms') }}">{{ __('auth.login.terms') }}</a>
             </span>
         </div>
     </section>
@@ -163,5 +179,28 @@
     <x-auth.brand-panel :is-rtl="$isRtl" />
 
 </div>
+
+@if(config('services.recaptcha.enabled'))
+    <script src="https://www.google.com/recaptcha/api.js?render={{ config('services.recaptcha.site_key') }}"></script>
+    <script>
+        (function () {
+            const siteKey = @json(config('services.recaptcha.site_key'));
+
+            function refreshCaptchaToken() {
+                grecaptcha.ready(function () {
+                    grecaptcha.execute(siteKey, { action: 'login' }).then(function (token) {
+                        const field = document.getElementById('g-recaptcha-response');
+                        if (field) {
+                            field.value = token;
+                        }
+                    });
+                });
+            }
+
+            refreshCaptchaToken();
+            setInterval(refreshCaptchaToken, 110000);
+        })();
+    </script>
+@endif
 </body>
 </html>

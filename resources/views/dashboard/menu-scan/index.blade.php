@@ -300,7 +300,7 @@
 
                                                     {{-- Price --}}
                                                     <div class="ms-editable-wrap ms-editable-wrap--price" :class="{ 'ms-editable--active': editPrice }">
-                                                        <span class="ms-dish-price" x-show="!editPrice" x-text="dish.price ? '$' + dish.price : '—'"></span>
+                                                        <span class="ms-dish-price" x-show="!editPrice" x-text="dish.price ? '{{ $restaurant?->currency ?? 'USD' }} ' + dish.price : '—'"></span>
                                                         <input class="ms-edit-input ms-edit-input--price"
                                                                x-show="editPrice"
                                                                x-model="dish.price"

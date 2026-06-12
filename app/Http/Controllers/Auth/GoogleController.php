@@ -48,6 +48,10 @@ class GoogleController extends Controller
         $user = User::where('email', $googleUser->getEmail())->first();
 
         if ($user) {
+            if ($user->email_verified_at === null) {
+                $user->forceFill(['email_verified_at' => now()])->save();
+            }
+
             $this->attachSocialAccount($user, $googleUser);
             Auth::login($user, remember: true);
 
@@ -61,6 +65,8 @@ class GoogleController extends Controller
             'role' => UserRole::MenuOwner,
             'onboarding_step' => 0,
         ]);
+
+        $user->forceFill(['email_verified_at' => now()])->save();
 
         $this->attachSocialAccount($user, $googleUser);
         Auth::login($user, remember: true);

@@ -1,0 +1,33 @@
+<?php
+
+namespace Database\Factories;
+
+use App\Models\BlockedIp;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\BlockedIp>
+ */
+class BlockedIpFactory extends Factory
+{
+    protected $model = BlockedIp::class;
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function definition(): array
+    {
+        return [
+            'ip' => fake()->ipv4(),
+            'reason' => null,
+            'expires_at' => null,
+        ];
+    }
+
+    public function expired(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'expires_at' => now()->subHour(),
+        ]);
+    }
+}

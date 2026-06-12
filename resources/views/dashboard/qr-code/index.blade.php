@@ -64,6 +64,22 @@
                      refreshPreview() {
                          this.$refs.qrImg.src = this.previewSrc;
                      },
+                     _luminance(hex) {
+                         const c = (hex || '').replace('#', '');
+                         if (! /^[0-9a-fA-F]{6}$/.test(c)) { return null; }
+                         const chan = [0, 2, 4].map(i => {
+                             const v = parseInt(c.substr(i, 2), 16) / 255;
+                             return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+                         });
+                         return 0.2126 * chan[0] + 0.7152 * chan[1] + 0.0722 * chan[2];
+                     },
+                     get lowContrast() {
+                         const l1 = this._luminance(this.fg);
+                         const l2 = this._luminance(this.bg);
+                         if (l1 === null || l2 === null) { return false; }
+                         const [hi, lo] = l1 > l2 ? [l1, l2] : [l2, l1];
+                         return (hi + 0.05) / (lo + 0.05) < 3;
+                     },
                      async save() {
                          this.saving = true;
                          const res = await fetch('{{ route('menu-owner.qr-code.save-settings') }}', {
@@ -172,6 +188,12 @@
                             <span x-show="!saving">{{ __('menu_owner.qr_code.save_settings') }}</span>
                             <span x-show="saving" x-cloak>…</span>
                         </button>
+
+                        <p class="qr-contrast-warn" x-show="lowContrast" x-cloak
+                           style="display:flex;gap:8px;align-items:flex-start;margin-top:12px;padding:10px 12px;border-radius:8px;background:rgba(231,76,60,.08);border:1px solid rgba(231,76,60,.25);color:#c0392b;font-size:12.5px;line-height:1.45">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                            <span>{{ __('menu_owner.qr_code.low_contrast') }}</span>
+                        </p>
 
                         <p class="qr-preview-hint">{{ __('menu_owner.qr_code.preview_live') }}</p>
                     </div>

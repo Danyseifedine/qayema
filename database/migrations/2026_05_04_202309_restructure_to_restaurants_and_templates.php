@@ -154,7 +154,9 @@ return new class extends Migration
             $table->dropColumn('menu_id');
         });
 
-        DB::statement('ALTER TABLE categories MODIFY restaurant_id BIGINT UNSIGNED NOT NULL');
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('ALTER TABLE categories MODIFY restaurant_id BIGINT UNSIGNED NOT NULL');
+        }
 
         // ── 8. dishes: add restaurant_id, backfill, drop menu_id ─────────
         Schema::table('dishes', function (Blueprint $table) {
@@ -176,7 +178,9 @@ return new class extends Migration
             $table->dropColumn('menu_id');
         });
 
-        DB::statement('ALTER TABLE dishes MODIFY restaurant_id BIGINT UNSIGNED NOT NULL');
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('ALTER TABLE dishes MODIFY restaurant_id BIGINT UNSIGNED NOT NULL');
+        }
 
         // ── 9. Drop legacy tables ─────────────────────────────────────────
         Schema::dropIfExists('menu_social_links');

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\MenuOwner;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\RestaurantRequest;
 use App\Models\Restaurant;
+use App\Services\MediaSyncService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -12,6 +13,8 @@ use Illuminate\View\View;
 
 class RestaurantController extends Controller
 {
+    public function __construct(private readonly MediaSyncService $media) {}
+
     public function index(Request $request): View
     {
         return view('dashboard.restaurant.index', [
@@ -51,33 +54,9 @@ class RestaurantController extends Controller
             $message = __('menu_owner.common.messages.restaurant_created');
         }
 
-        $this->syncMedia($request, $restaurant, 'logo_key', 'delete_logo', 'logo', 'logo');
-        $this->syncMedia($request, $restaurant, 'cover_image_key', 'delete_cover_image', 'cover_image', 'cover-image');
+        $this->media->sync($restaurant, $request->input('logo_key'), $request->boolean('delete_logo'), 'logo', 'logo');
+        $this->media->sync($restaurant, $request->input('cover_image_key'), $request->boolean('delete_cover_image'), 'cover_image', 'cover-image');
 
         return redirect()->route('menu-owner.restaurant.index')->with('success', $message);
-    }
-
-    private function syncMedia(
-        RestaurantRequest $request,
-        Restaurant $restaurant,
-        string $keyField,
-        string $deleteField,
-        string $collection,
-        string $mediaName,
-    ): void {
-        if ($request->filled($keyField)) {
-            $path = storage_path('app/temp/'.$request->input($keyField).'.jpg');
-
-            if (file_exists($path)) {
-                $restaurant->clearMediaCollection($collection);
-                $restaurant->addMedia($path)->usingName($mediaName)->toMediaCollection($collection);
-            }
-
-            return;
-        }
-
-        if ($request->boolean($deleteField)) {
-            $restaurant->clearMediaCollection($collection);
-        }
     }
 }

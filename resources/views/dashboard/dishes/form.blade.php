@@ -180,7 +180,7 @@
                                         label="{{ __('menu_owner.dishes.price_optional') }}"
                                         help="{{ __('menu_owner.dishes.price_optional_desc') }}">
                                 <x-ui.input name="price" type="number" step="0.01" min="0"
-                                            prefix="$"
+                                            prefix="{{ $restaurant->currency ?? 'USD' }}"
                                             :value="old('price', $dish?->price)"
                                             placeholder="0.00" />
                             </x-ui.field>
@@ -234,13 +234,13 @@
                     </x-btn>
                     @if ($restaurant && $restaurant->hasReachedDishLimit() && ! $dish)
                         <x-btn type="submit" variant="primary" disabled>
-                            {{ __('menu_owner.common.create') }} {{ __('menu_owner.dishes.title') }}
+                            {{ __('menu_owner.dishes.create_dish') }}
                         </x-btn>
                     @else
                         <x-btn type="submit" variant="primary">
                             {{ $dish
-                                ? __('menu_owner.common.update').' '.__('menu_owner.dishes.title')
-                                : __('menu_owner.common.create').' '.__('menu_owner.dishes.title') }}
+                                ? __('menu_owner.common.update')
+                                : __('menu_owner.dishes.create_dish') }}
                         </x-btn>
                     @endif
                 </div>

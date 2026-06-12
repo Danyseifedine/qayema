@@ -57,12 +57,12 @@ Route::middleware(['auth', 'owner.locale'])->group(function () {
 Route::middleware(['auth', \App\Http\Middleware\EnsureOnboardingComplete::class, \App\Http\Middleware\EnsureRestaurantSetupComplete::class, 'owner.locale'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    Route::middleware(\App\Http\Middleware\EnsureUserIsMenuOwner::class)->group(function () {
+    Route::middleware([\App\Http\Middleware\EnsureUserIsMenuOwner::class, 'throttle:mutations'])->group(function () {
         // Search
         Route::get('/search', [SearchController::class, 'search'])->name('menu-owner.search');
 
         // Temp image upload (optimize & store for deferred form submission)
-        Route::post('/temp-upload', [TempUploadController::class, 'store'])->name('menu-owner.temp-upload');
+        Route::post('/temp-upload', [TempUploadController::class, 'store'])->middleware('throttle:uploads')->name('menu-owner.temp-upload');
 
         // Restaurant
         Route::get('/restaurant', [RestaurantController::class, 'index'])->name('menu-owner.restaurant.index');
@@ -95,9 +95,9 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureOnboardingComplete::class,
 
         // Menu scan (AI)
         Route::get('/menu-scan', [MenuScanController::class, 'index'])->name('menu-owner.menu-scan.index');
-        Route::post('/menu-scan', [MenuScanController::class, 'scan'])->name('menu-owner.menu-scan.scan');
+        Route::post('/menu-scan', [MenuScanController::class, 'scan'])->middleware('throttle:uploads')->name('menu-owner.menu-scan.scan');
         Route::get('/menu-scan/{id}/status', [MenuScanController::class, 'status'])->name('menu-owner.menu-scan.status');
-        Route::post('/menu-scan/{id}/import', [MenuScanController::class, 'import'])->name('menu-owner.menu-scan.import');
+        Route::post('/menu-scan/{id}/import', [MenuScanController::class, 'import'])->middleware('throttle:uploads')->name('menu-owner.menu-scan.import');
 
         // QR Code
         Route::get('/qr-code', [QrCodeController::class, 'index'])->name('menu-owner.qr-code.index');
@@ -115,7 +115,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureOnboardingComplete::class,
 });
 
 // Profile
-Route::middleware(['auth', 'owner.locale'])->group(function () {
+Route::middleware(['auth', 'owner.locale', 'throttle:mutations'])->group(function () {
     Route::impersonate();
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -133,15 +133,19 @@ Route::get('/refund-policy', fn () => view('legal.refund'))->name('refund');
 Route::get('/contact', [ContactController::class, 'show'])->name('contact');
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
 
-// Public restaurant/menu routes
+// Public restaurant/menu routes. Throttled to curb abuse of the unauthenticated,
+// CSRF-exempt tracking endpoints (see bootstrap/app.php).
 Route::post('/{slug}/track-exit', [PortalMenuController::class, 'trackExit'])
     ->where('slug', '[a-z0-9-]+')
+    ->middleware('throttle:public')
     ->name('public.menu.track-exit');
 
 Route::post('/{slug}/track-whatsapp-order', [PortalMenuController::class, 'trackWhatsAppOrder'])
     ->where('slug', '[a-z0-9-]+')
+    ->middleware('throttle:public')
     ->name('public.menu.track-whatsapp-order');
 
 Route::get('/{slug}', [PortalMenuController::class, 'show'])
     ->where('slug', '[a-z0-9-]+')
+    ->middleware('throttle:public')
     ->name('public.menu');

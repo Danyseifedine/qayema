@@ -5,6 +5,8 @@ namespace App\Http\Controllers\MenuOwner;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\DishRequest;
 use App\Models\Dish;
+use App\Models\Restaurant;
+use App\Services\MediaSyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,6 +14,8 @@ use Illuminate\View\View;
 
 class DishController extends Controller
 {
+    public function __construct(private readonly MediaSyncService $media) {}
+
     public function index(Request $request): View
     {
         $restaurant = $request->user()->restaurant;
@@ -35,9 +39,8 @@ class DishController extends Controller
                 ->with('error', __('menu_owner.common.messages.setup_first'));
         }
 
-        if ($restaurant->hasReachedDishLimit()) {
-            return redirect()->route('menu-owner.dishes.index')
-                ->with('error', __('menu_owner.common.messages.limit_dishes'));
+        if ($redirect = $this->redirectIfDishLimitReached($restaurant)) {
+            return $redirect;
         }
 
         return view('dashboard.dishes.form', [
@@ -57,9 +60,8 @@ class DishController extends Controller
                 ->with('error', __('menu_owner.common.messages.setup_first'));
         }
 
-        if ($restaurant->hasReachedDishLimit()) {
-            return redirect()->route('menu-owner.dishes.index')
-                ->with('error', __('menu_owner.common.messages.limit_dishes'));
+        if ($redirect = $this->redirectIfDishLimitReached($restaurant)) {
+            return $redirect;
         }
 
         $data = $request->validated();
@@ -128,21 +130,22 @@ class DishController extends Controller
         return response()->json(['success' => true]);
     }
 
+    private function redirectIfDishLimitReached(Restaurant $restaurant): ?RedirectResponse
+    {
+        return $restaurant->hasReachedDishLimit()
+            ? redirect()->route('menu-owner.dishes.index')
+                ->with('error', __('menu_owner.common.messages.limit_dishes'))
+            : null;
+    }
+
     private function syncImage(DishRequest $request, Dish $dish): void
     {
-        if ($request->filled('dish_image_key')) {
-            $path = storage_path('app/temp/'.$request->input('dish_image_key').'.jpg');
-
-            if (file_exists($path)) {
-                $dish->clearMediaCollection('images');
-                $dish->addMedia($path)->usingName('dish-image')->toMediaCollection('images');
-            }
-
-            return;
-        }
-
-        if ($request->boolean('delete_dish_image')) {
-            $dish->clearMediaCollection('images');
-        }
+        $this->media->sync(
+            $dish,
+            $request->input('dish_image_key'),
+            $request->boolean('delete_dish_image'),
+            'images',
+            'dish-image',
+        );
     }
 }

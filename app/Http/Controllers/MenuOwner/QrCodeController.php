@@ -56,8 +56,8 @@ class QrCodeController extends Controller
 
         $saved = array_merge(self::DEFAULTS, $restaurant->qr_settings ?? []);
 
-        $fgColor = $request->input('fg', $saved['fg_color']);
-        $bgColor = $request->input('bg', $saved['bg_color']);
+        $fgColor = $this->normalizeHex($request->input('fg'), $saved['fg_color']);
+        $bgColor = $this->normalizeHex($request->input('bg'), $saved['bg_color']);
         $ec = in_array($request->input('ec', $saved['error_correction']), ['L', 'M', 'Q', 'H'])
             ? $request->input('ec', $saved['error_correction'])
             : 'M';
@@ -91,6 +91,13 @@ class QrCodeController extends Controller
         session()->flash('success', __('menu_owner.qr_code.settings_saved'));
 
         return response()->json(['success' => true]);
+    }
+
+    private function normalizeHex(mixed $value, string $fallback): string
+    {
+        return is_string($value) && preg_match('/^#?[0-9a-fA-F]{6}$/', $value)
+            ? '#'.ltrim($value, '#')
+            : $fallback;
     }
 
     private function hexToRgb(string $hex): array

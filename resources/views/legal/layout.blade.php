@@ -300,7 +300,7 @@
 </div>
 
 <script>
-@include('legal._script')
+@include('partials.qayema-app')
 </script>
 
 </body>

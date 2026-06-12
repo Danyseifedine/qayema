@@ -16,6 +16,8 @@ use Illuminate\View\View;
 
 class OnboardingController extends Controller
 {
+    private const TOTAL_STEPS = 6;
+
     public function show(Request $request): View|\Illuminate\Http\RedirectResponse
     {
         if ($request->user()->hasCompletedOnboarding()) {
@@ -26,7 +28,7 @@ class OnboardingController extends Controller
 
         return view('auth.onboarding', [
             'step' => $request->user()->currentOnboardingStep(),
-            'totalSteps' => 6,
+            'totalSteps' => self::TOTAL_STEPS,
             'tags' => Tag::all()->groupBy('category'),
             'templates' => Template::with('tags')->where('is_active', true)->get(),
             'restaurant' => $restaurant,
@@ -35,19 +37,23 @@ class OnboardingController extends Controller
 
     public function checkSlug(Request $request): JsonResponse
     {
-        $slug = Str::slug($request->query('slug', ''));
+        try {
+            $slug = Str::slug((string) $request->query('slug', ''));
 
-        if (strlen($slug) < 2) {
-            return response()->json(['available' => false, 'slug' => $slug]);
+            if (strlen($slug) < 2) {
+                return response()->json(['available' => false, 'slug' => $slug]);
+            }
+
+            $ownId = $request->user()?->restaurant?->id;
+
+            $taken = Restaurant::where('slug', $slug)
+                ->when($ownId, fn ($q) => $q->where('id', '!=', $ownId))
+                ->exists();
+
+            return response()->json(['available' => ! $taken, 'slug' => $slug]);
+        } catch (\Throwable) {
+            return response()->json(['available' => false, 'slug' => ''], 200);
         }
-
-        $ownId = $request->user()->restaurant?->id;
-
-        $taken = Restaurant::where('slug', $slug)
-            ->when($ownId, fn ($q) => $q->where('id', '!=', $ownId))
-            ->exists();
-
-        return response()->json(['available' => ! $taken, 'slug' => $slug]);
     }
 
     public function advance(Request $request): JsonResponse
@@ -55,18 +61,26 @@ class OnboardingController extends Controller
         $user = $request->user();
         $dbStep = $user->onboarding_step ?? 0;
 
-        // Frontend sends the 1-based visual step; convert to 0-based.
-        // Clamp so you can't skip ahead beyond what's already been saved.
+        // Frontend sends the 1-based visual step; convert to 0-based and clamp to a
+        // valid range. Without this, rapid "next" clicks could push the returned
+        // step past the final one (07/06, 08/06, …) and run the wrong step handler.
         $submitted = $request->integer('_step', 1) - 1;
-        $current = min($submitted, $dbStep);
+        $current = max(0, min($submitted, self::TOTAL_STEPS - 1));
 
-        // Always update the DB to the step just processed so going back
-        // and resubmitting keeps the wizard in sync with where the user is.
+        // Every step after the first edits the restaurant created in step 1.
+        if ($current > 0 && ! $user->restaurant) {
+            return response()->json(['step' => 1], 200);
+        }
+
         $next = $current + 1;
 
         switch ($current) {
             case 0: // Step 1 — restaurant name + slug + preferred language
                 $restaurant = $user->restaurant;
+
+                // Normalize the slug server-side so spaces/uppercase/special chars
+                // can never reach validation or the database as an invalid value.
+                $request->merge(['slug' => Str::slug((string) $request->input('slug', ''))]);
 
                 $validated = $request->validate([
                     'name' => ['required', 'string', 'min:2', 'max:255'],
@@ -100,8 +114,11 @@ class OnboardingController extends Controller
             case 1: // Step 2 — country code + phone + currency
                 $validated = $request->validate([
                     'country_code' => ['nullable', 'string', 'max:10'],
-                    'phone' => ['required', 'string', 'max:30'],
-                    'currency' => ['required', 'string', 'max:10', 'in:'.implode(',', array_keys(config('currencies', [])))],
+                    'phone' => ['required', 'string', 'max:30', 'regex:/^(?=(?:\D*\d){6,})[0-9+()\s.\-]{6,30}$/'],
+                    'currency' => ['required', 'string', Rule::in(array_keys(config('currencies', [])))],
+                ], [
+                    'phone.regex' => 'Please enter a valid phone number using digits only.',
+                    'currency.in' => 'Please choose a currency from the list.',
                 ]);
 
                 $user->restaurant->update([
@@ -114,8 +131,11 @@ class OnboardingController extends Controller
             case 2: // Step 3 — branding (logo + cover image)
                 $restaurant = $user->restaurant;
 
+                // Logo is optional during onboarding — owners can add it later in
+                // restaurant settings. This keeps the wizard completable and prevents
+                // the (clamped) step-3 validation from blocking later steps.
                 $request->validate([
-                    'logo_key' => [$restaurant->hasMedia('logo') ? 'nullable' : 'required', 'string', 'regex:/^[a-f0-9\-]{36}$/'],
+                    'logo_key' => ['nullable', 'string', 'regex:/^[a-f0-9\-]{36}$/'],
                     'cover_image_key' => ['nullable', 'string', 'regex:/^[a-f0-9\-]{36}$/'],
                 ]);
 
@@ -195,10 +215,10 @@ class OnboardingController extends Controller
                 ]);
         }
 
-        $user->update(['onboarding_step' => $next]);
+        // Track the furthest step reached; never move the saved pointer backwards.
+        $user->update(['onboarding_step' => max($dbStep, $next)]);
 
-        // Always advance to the step immediately after the one submitted,
-        // regardless of how far ahead the DB frontier is.
-        return response()->json(['step' => $submitted + 2]);
+        // Advance to the step right after the one processed, capped at the total.
+        return response()->json(['step' => min($current + 2, self::TOTAL_STEPS)]);
     }
 }

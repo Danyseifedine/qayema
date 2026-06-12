@@ -63,7 +63,35 @@
       "Bash(./vendor/bin/pint --dirty)",
       "Bash(php -l app/Filament/Admin/Resources/ContactMessages/ContactMessageResource.php)",
       "Bash(php -l app/Filament/Admin/Resources/Tags/TagResource.php)",
-      "Bash(php -r ' *)"
+      "Bash(php -r ' *)",
+      "Bash(xargs wc -l)",
+      "Bash(git checkout *)",
+      "Bash(git rm *)",
+      "Bash(echo \"=== exit: $? ===\")",
+      "Bash(vendor/bin/pint app/Http/Requests/SocialLinkRequest.php)",
+      "Bash(vendor/bin/pint app/Http/Middleware/SecurityHeaders.php)",
+      "Bash(vendor/bin/pint app/Http/Middleware/BlockAbusiveIps.php)",
+      "Bash(vendor/bin/pint app/Services/Captcha.php app/Rules/ValidCaptcha.php config/services.php)",
+      "Bash(vendor/bin/pint app/Services/AbuseGuard.php)",
+      "Bash(vendor/bin/pint app/Http/Controllers/Auth/GoogleController.php)",
+      "Bash(vendor/bin/pint app/Models/BlockedIp.php database/factories/BlockedIpFactory.php database/migrations/2026_06_07_083607_create_blocked_ips_table.php database/migrations/2026_06_07_083608_add_ip_address_index_to_contact_messages.php)",
+      "Bash(php -r 'require '\\\\''vendor/autoload.php'\\\\''; $app = require '\\\\''bootstrap/app.php'\\\\''; $app->make\\(Illuminate\\\\Contracts\\\\Console\\\\Kernel::class\\)->bootstrap\\(\\); var_dump\\(config\\('\\\\''services.recaptcha'\\\\''\\)\\); var_dump\\(class_exists\\(App\\\\Services\\\\Captcha::class\\)\\); var_dump\\(class_exists\\(App\\\\Rules\\\\ValidCaptcha::class\\)\\); var_dump\\(app\\(App\\\\Services\\\\Captcha::class\\)->verify\\(null\\)\\);')",
+      "Bash(php -r \"require 'vendor/autoload.php'; var_dump\\(defined\\('Filament\\\\Support\\\\Icons\\\\Heroicon::OutlinedNoSymbol'\\) || in_array\\('OutlinedNoSymbol', array_column\\(\\\\Filament\\\\Support\\\\Icons\\\\Heroicon::cases\\(\\),'name'\\)\\), in_array\\('OutlinedLockOpen', array_column\\(\\\\Filament\\\\Support\\\\Icons\\\\Heroicon::cases\\(\\),'name'\\)\\), in_array\\('OutlinedNoSymbol', array_column\\(\\\\Filament\\\\Support\\\\Icons\\\\Heroicon::cases\\(\\),'name'\\)\\)\\);\")",
+      "Bash(vendor/bin/pint app/Filament/Admin/Resources/BlockedIps app/Providers/Filament/AdminPanelProvider.php)",
+      "Bash(vendor/bin/pint tests/Feature/Security database/factories/BlockedIpFactory.php)",
+      "Bash(vendor/bin/pint app/Filament/Admin/Resources/BlockedIps/Tables/BlockedIpsTable.php)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('=== INTEGRATION ===\\\\n', d['result']['integration'][:6000]\\); print\\('\\\\n\\\\n=== VERIFY ===\\\\n', json.dumps\\(d['result']['verify'], indent=2\\)\\)\")",
+      "Bash(find \"c:\\\\\\\\Users\\\\\\\\scorp\\\\\\\\Desktop\\\\\\\\lebify\\\\\\\\menux\\\\\\\\routes\" -name \"*.php\" -type f)",
+      "Bash(grep -r \"regex.*slug\\\\|slug.*regex\" \"c:\\\\\\\\Users\\\\\\\\scorp\\\\\\\\Desktop\\\\\\\\lebify\\\\\\\\menux\\\\\\\\app\" --include=\"*.php\")",
+      "Bash(find \"c:\\\\\\\\Users\\\\\\\\scorp\\\\\\\\Desktop\\\\\\\\lebify\\\\\\\\menux\" -name \"*.php\" -path \"*/Http/*\" -type f)",
+      "Bash(grep -n \"authenticate\\\\|FormRequest\\\\|rules\\(\\)\" \"c:\\\\\\\\Users\\\\\\\\scorp\\\\\\\\Desktop\\\\\\\\lebify\\\\\\\\menux\\\\\\\\app\\\\\\\\Http\\\\\\\\Controllers\\\\\\\\Auth\\\\\\\\AuthenticatedSessionController.php\")",
+      "Bash(cd /c/Users/scorp/Desktop/lebify/menux)",
+      "Bash(php scripts_tmp_i18n.php)",
+      "Bash(ls tests/Feature/Security)",
+      "Bash(grep -rnE 'updatedSlug|\\\\$this->slug|public.*\\\\$slug' app/ resources/)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\scorp\\.claude\\projects\\c--Users-scorp-Desktop-lebify-menux\\memory"
     ]
   }
 }

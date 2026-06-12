@@ -46,19 +46,7 @@
                 </p>
             @endif
 
-            <div x-data="{
-                     selected: null,
-                     async swap(targetId) {
-                         if (this.selected === null || this.selected === targetId) return;
-                         const res = await fetch('{{ route('menu-owner.dishes.reorder') }}', {
-                             method: 'POST',
-                             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' },
-                             body: JSON.stringify({ a: this.selected, b: targetId }),
-                         });
-                         if (res.ok) window.location.reload();
-                         this.selected = null;
-                     },
-                 }"
+            <div x-data="reorderGrid('{{ route('menu-owner.dishes.reorder') }}')"
                  @keydown.escape.window="selected = null">
 
                 <div x-show="selected !== null" x-cloak class="reorder-hint">
@@ -95,7 +83,7 @@
                                 <p style="font-size:12.5px;color:var(--olive-deep);margin:0 0 6px">{{ $dish->category->name }}</p>
                             @endif
                             @if ($dish->price)
-                                <p style="font-size:16px;font-weight:600;color:var(--ink);margin:0;font-feature-settings:'tnum'">${{ number_format($dish->price, 2) }}</p>
+                                <p style="font-size:16px;font-weight:600;color:var(--ink);margin:0;font-feature-settings:'tnum'">{{ \Illuminate\Support\Number::currency((float) $dish->price, $restaurant->currency ?? 'USD') }}</p>
                             @endif
                         </div>
                         <div class="qp-card-foot">

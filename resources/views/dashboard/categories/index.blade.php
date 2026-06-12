@@ -46,19 +46,7 @@
                 </p>
             @endif
 
-            <div x-data="{
-                     selected: null,
-                     async swap(targetId) {
-                         if (this.selected === null || this.selected === targetId) return;
-                         const res = await fetch('{{ route('menu-owner.categories.reorder') }}', {
-                             method: 'POST',
-                             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' },
-                             body: JSON.stringify({ a: this.selected, b: targetId }),
-                         });
-                         if (res.ok) window.location.reload();
-                         this.selected = null;
-                     },
-                 }"
+            <div x-data="reorderGrid('{{ route('menu-owner.categories.reorder') }}')"
                  @keydown.escape.window="selected = null">
 
                 <div x-show="selected !== null" x-cloak class="reorder-hint">

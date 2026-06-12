@@ -46,4 +46,14 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
+    'contact' => [
+        'recipient' => env('CONTACT_RECIPIENT_EMAIL', 'dany.a.seifeddine@gmail.com'),
+    ],
+
+    'recaptcha' => [
+        'site_key' => env('RECAPTCHA_SITE_KEY'),
+        'secret' => env('RECAPTCHA_SECRET'),
+        'enabled' => filled(env('RECAPTCHA_SECRET')),
+    ],
+
 ];
