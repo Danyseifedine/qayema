@@ -22,7 +22,6 @@ class MenuScanFactory extends Factory
         return [
             'restaurant_id' => Restaurant::factory(),
             'status' => MenuScanStatus::Pending,
-            'image_path' => 'menu-scans/'.fake()->uuid().'.jpg',
             'result' => null,
             'error' => null,
         ];

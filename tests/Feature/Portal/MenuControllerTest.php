@@ -24,7 +24,7 @@ class MenuControllerTest extends TestCase
 
         $this->get('/'.$restaurant->slug);
 
-        $this->assertDatabaseHas('restaurant_statistics', [
+        $this->assertDatabaseHas('menu_sessions', [
             'restaurant_id' => $restaurant->id,
         ]);
         $this->assertSame(1, RestaurantStatistic::where('restaurant_id', $restaurant->id)->count());

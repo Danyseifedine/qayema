@@ -20,17 +20,15 @@ class RestaurantFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'name' => fake()->company(),
+            'name' => ['en' => fake()->company()],
             'slug' => fake()->unique()->slug(3),
-            'description' => fake()->sentence(),
+            'description' => ['en' => fake()->sentence()],
             'country_code' => 'LB',
             'phone' => fake()->numerify('70######'),
             'is_active' => true,
-            'dish_limit' => 40,
-            'category_limit' => 10,
-            'social_link_limit' => 10,
             'currency' => 'USD',
-            'preferred_language' => 'en',
+            'default_locale' => 'en',
+            'timezone' => 'UTC',
         ];
     }
 

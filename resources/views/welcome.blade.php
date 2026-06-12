@@ -1,817 +1,334 @@
-﻿<!DOCTYPE html>
-<html lang="en" dir="ltr">
+<!DOCTYPE html>
+<html lang="en" dir="ltr" data-theme="light">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Qayema — قائمة مطعمك، حيّة برمز QR</title>
 
-    <title>Qayema, قايمة | Digital menus for restaurants</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&family=Noto+Kufi+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ asset('landing/qayema-styles.css') }}">
 
-    <x-seo
-        title="Qayema, The digital menu your restaurant deserves"
-        description="Qayema, قائمة, Arabic for 'menu'. One QR code, a beautifully designed digital menu, AI menu scanner, and a dashboard in 14 languages with full Arabic RTL. Free to start."
-        keywords="digital menu, restaurant menu, QR menu, online menu, Arabic menu, RTL menu, Qayema, قايمة, Lebify"
-        author="Lebify Group"
-        :url="url('/')"
-        :image="asset('images/logo/logo.png')"
-        imageAlt="Qayema, Digital menus"
-        type="website"
-        :siteName="config('seo.organization.name', 'Lebify Group')"
-    />
-
-    {{-- Fonts --}}
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=Noto+Kufi+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-    {{-- Welcome page CSS + Alpine.js --}}
-    @vite(['resources/css/welcome.css', 'resources/js/app.js'])
+<script>
+  (function(){ try {
+    var t = localStorage.getItem('qayema-theme') || 'light';
+    document.documentElement.setAttribute('data-theme', t);
+    var l = localStorage.getItem('qayema-lang') || 'en';
+    document.documentElement.setAttribute('lang', l);
+    document.documentElement.setAttribute('dir', l === 'ar' ? 'rtl' : 'ltr');
+  } catch(e){} })();
+</script>
 </head>
-<body>
+<body style="font-family: Geist">
 
-<div id="page" x-data="QayemaApp()" x-init="
-    document.documentElement.lang = lang;
-    document.documentElement.dir  = isAr ? 'rtl' : 'ltr';
-">
-
-    {{-- ─────────────────────────────────────────────────────
-         NAV
-         ───────────────────────────────────────────────────── --}}
-    <nav class="nav">
-        <div class="nav-inner wrap">
-
-            {{-- Brand --}}
-            <a class="brand" href="/">
-                <img src="{{ asset('images/logo/logo.png') }}" alt="Qayema" class="brand-logo">
-            </a>
-
-            {{-- Desktop links --}}
-            <div class="nav-links">
-                <a href="#features" @click="mobileOpen = false" x-text="t.nav.features">Features</a>
-                <a href="#how"      @click="mobileOpen = false" x-text="t.nav.how">How it works</a>
-                <a href="#stories"  @click="mobileOpen = false" x-text="t.nav.stories">Stories</a>
-            </div>
-
-            {{-- Right side --}}
-            <div class="nav-end">
-                {{-- Language toggle (desktop only) --}}
-                <div class="lang-switch nav-lang">
-                    <button :class="lang === 'en' ? 'on' : ''" @click="setLang('en')">EN</button>
-                    <button :class="lang === 'ar' ? 'on' : ''" @click="setLang('ar')">عربي</button>
-                </div>
-
-                {{-- CTA (desktop only) --}}
-                @auth
-                    <a class="btn btn-ink btn-sm nav-cta" href="{{ route('dashboard') }}">
-                        <span x-text="t.nav.dashboard">Dashboard</span>
-                        <svg class="arr" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    </a>
-                @else
-                    <a class="btn btn-ink btn-sm nav-cta" href="{{ route('login') }}">
-                        <span x-text="t.nav.cta">Get started free</span>
-                        <svg class="arr" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    </a>
-                @endauth
-
-                {{-- Hamburger --}}
-                <button class="nav-burger" @click="mobileOpen = !mobileOpen" :aria-expanded="mobileOpen.toString()" aria-label="Menu">
-                    <svg x-show="!mobileOpen" width="18" height="18" viewBox="0 0 18 18" fill="none">
-                        <path d="M2 4.5h14M2 9h14M2 13.5h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                    </svg>
-                    <svg x-show="mobileOpen" width="18" height="18" viewBox="0 0 18 18" fill="none">
-                        <path d="M4 4l10 10M14 4L4 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                    </svg>
-                </button>
-            </div>
-
+  <!-- ===== NAV ===== -->
+  <nav class="nav">
+    <div class="nav-in">
+      <a class="brand" href="#top"><img src="{{ asset('images/logo/logo.png') }}" alt="Qayema" /></a>
+      <div class="nav-links">
+        <a href="#features" data-en="Features" data-ar="المميزات">المميزات</a>
+        <a href="#how" data-en="How it works" data-ar="كيف يعمل">كيف يعمل</a>
+        <a href="#pricing" data-en="Pricing" data-ar="الأسعار">الأسعار</a>
+        <a href="#faq" data-en="FAQ" data-ar="الأسئلة">الأسئلة</a>
+      </div>
+      <div class="nav-right">
+        <div class="seg lang" role="group" aria-label="language">
+          <button data-l="ar">ع</button>
+          <button data-l="en">EN</button>
         </div>
+        <button class="theme-tog" id="themeTog" aria-label="theme">
+          <span class="knob">
+            <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+            <svg class="moon" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+          </span>
+        </button>
+        <a class="btn btn-gold btn-sm" data-magnetic href="{{ route('register') }}" data-en="Get started free" data-ar="ابدأ مجاناً">ابدأ مجاناً</a>
+      </div>
+    </div>
+  </nav>
+  <span id="top"></span>
 
-        {{-- Mobile panel --}}
-        <div class="nav-mobile" :class="mobileOpen ? 'nav-mobile--open' : ''">
-            <div class="wrap nav-mobile-inner">
+  <!-- ===== HERO ===== -->
+  <header class="hero">
+    <span class="hero-blob b1"></span>
+    <span class="hero-blob b2"></span>
+    <span class="hero-blob b3"></span>
 
-                <div class="nav-mobile-links">
-                    <a href="#features" @click="mobileOpen = false" x-text="t.nav.features">Features</a>
-                    <a href="#how"      @click="mobileOpen = false" x-text="t.nav.how">How it works</a>
-                    <a href="#stories"  @click="mobileOpen = false" x-text="t.nav.stories">Stories</a>
-                </div>
+    <div class="wrap hero-center">
+      <h1 class="display" data-en="Step into the <span class='it'>future</span><br>of menus: Human + <span class='it'>AI</span>." data-ar="ادخل إلى <span class='it'>مستقبل</span> القوائم:<br>إنسان + <span class='it'>ذكاء</span>.">ادخل إلى <span class="it">مستقبل</span> القوائم:<br>إنسان + <span class="it">ذكاء</span>.</h1>
+      <p class="hero-sub" data-en="Photograph your menu, let AI rebuild it bilingually, and go live with one QR — all in one Arabic-first platform." data-ar="صوّر قائمتك، ودع الذكاء الاصطناعي يعيد بناءها بلغتين، وانطلق برمز QR واحد — منصّة واحدة عربية أولاً.">صوّر قائمتك، ودع الذكاء الاصطناعي يعيد بناءها بلغتين، وانطلق برمز QR واحد — منصّة واحدة عربية أولاً.</p>
 
-                <div class="nav-mobile-foot">
-                    <div class="lang-switch">
-                        <button :class="lang === 'en' ? 'on' : ''" @click="setLang('en')">EN</button>
-                        <button :class="lang === 'ar' ? 'on' : ''" @click="setLang('ar')">عربي</button>
-                    </div>
-                    @auth
-                        <a class="btn btn-ink btn-sm nav-mobile-cta" href="{{ route('dashboard') }}" @click="mobileOpen = false">
-                            <span x-text="t.nav.dashboard">Dashboard</span>
-                            <svg class="arr" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        </a>
-                    @else
-                        <a class="btn btn-ink btn-sm nav-mobile-cta" href="{{ route('login') }}" @click="mobileOpen = false">
-                            <span x-text="t.nav.cta">Get started free</span>
-                            <svg class="arr" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        </a>
-                    @endauth
-                </div>
+      <form class="hero-form" action="{{ route('register') }}" method="GET">
+        <input type="email" data-en-ph="Enter your restaurant email" data-ar-ph="أدخل بريد مطعمك" placeholder="أدخل بريد مطعمك" />
+        <button type="submit" data-en="Get started free" data-ar="ابدأ مجاناً">ابدأ مجاناً</button>
+      </form>
 
-            </div>
-        </div>
-    </nav>
-
-    {{-- ─────────────────────────────────────────────────────
-         HERO
-         ───────────────────────────────────────────────────── --}}
-    <section class="hero">
-        <div class="wrap">
-
-            {{-- Headline --}}
-            <h1 class="hero-headline" x-html="t.hero.headline">
-                Menus, <em class="it">reimagined</em> <span class="soft">for your restaurant.</span>
-            </h1>
-
-            {{-- Subhead + CTA row --}}
-            <div class="hero-foot">
-                <div>
-                    <div class="meta">
-                        <span class="dash"></span>
-                        <span x-text="t.hero.meta">The digital menu, refined</span>
-                    </div>
-                    <p class="hero-sub" x-text="t.hero.sub">
-                        Qayema turns every table into a frictionless dining experience, a single QR code, a beautifully designed digital menu, and a dashboard your staff will love.
-                    </p>
-                </div>
-                <div class="hero-actions">
-                    @auth
-                        <a class="btn btn-ink" href="{{ route('dashboard') }}">
-                            <span x-text="t.hero.ctaAuth">Go to dashboard</span>
-                            <svg class="arr" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        </a>
-                    @else
-                        <a class="btn btn-ink" href="{{ route('login') }}">
-                            <span x-text="t.hero.cta1">Start for free</span>
-                            <svg class="arr" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        </a>
-                        <a class="btn btn-outline" href="#features">
-                            <svg width="11" height="11" viewBox="0 0 11 11" fill="currentColor"><path d="M2 1.5v8L9 5.5z"/></svg>
-                            <span x-text="t.hero.cta2">See how it works</span>
-                        </a>
-                    @endauth
-                </div>
-            </div>
-
-            {{-- Stats strip --}}
-            <div class="hero-strip">
-                <div>
-                    <div class="k" x-text="t.hero.stats[0].k">No credit card</div>
-                    <div class="v" x-text="t.hero.stats[0].v">Free</div>
-                </div>
-                <div>
-                    <div class="k" x-text="t.hero.stats[1].k">Languages + RTL</div>
-                    <div class="v">10</div>
-                </div>
-                <div>
-                    <div class="k" x-text="t.hero.stats[2].k">Menu load time</div>
-                    <div class="v"><span class="it">‹</span>800<span class="u">ms</span></div>
-                </div>
-                <div>
-                    <div class="k" x-text="t.hero.stats[3].k">Menu updates</div>
-                    <div class="v"><span class="it" style="font-size:.75em;vertical-align:baseline" x-text="t.hero.stats[3].v">Live</span></div>
-                </div>
-            </div>
-        </div>
-
-        {{-- Showcase: phone + QR card + annotations --}}
-        <div class="hero-showcase">
-            <div class="wrap">
-                <div class="hero-stage">
-
-                    {{-- Left annotation --}}
-                    <div class="annot">
-                        <span class="annot-pill">
-                            <span class="pulse"></span>
-                            <span x-text="t.hero.ann1">Synced with the kitchen</span>
-                        </span>
-                        <div class="annot-card">
-                            <div class="lbl">
-                                <span style="color:var(--accent)">●</span>
-                                <span x-text="t.hero.ann1card.lbl">Live update</span>
-                            </div>
-                            <div class="body" x-text="t.hero.ann1card.body">
-                                Mark a dish unavailable and it disappears across every table in 200ms.
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Center: phone + QR card --}}
-                    <div style="position:relative;display:flex;justify-content:center;align-items:flex-end">
-
-                        {{-- QR table card --}}
-                        <div class="table-card">
-                            <div class="tc-top">
-                                <div class="tc-logo" x-text="isAr ? 'ميزون' : 'Maison'">Maison</div>
-                                <div class="tc-table" x-text="isAr ? 'طاولة ١٤' : '14'">14</div>
-                            </div>
-                            <div class="qr-wrap">
-                                <svg viewBox="0 0 21 21" shape-rendering="crispEdges">
-                                    <g>
-                                        <rect x="0" y="0" width="7" height="7" fill="#E8DCCB"/>
-                                        <rect x="1" y="1" width="5" height="5" fill="#0F0F10"/>
-                                        <rect x="2" y="2" width="3" height="3" fill="#E8DCCB"/>
-                                    </g>
-                                    <g>
-                                        <rect x="14" y="0" width="7" height="7" fill="#E8DCCB"/>
-                                        <rect x="15" y="1" width="5" height="5" fill="#0F0F10"/>
-                                        <rect x="16" y="2" width="3" height="3" fill="#E8DCCB"/>
-                                    </g>
-                                    <g>
-                                        <rect x="0" y="14" width="7" height="7" fill="#E8DCCB"/>
-                                        <rect x="1" y="15" width="5" height="5" fill="#0F0F10"/>
-                                        <rect x="2" y="16" width="3" height="3" fill="#E8DCCB"/>
-                                    </g>
-                                    <rect x="9"  y="0"  width="2" height="4" fill="#E8DCCB"/>
-                                    <rect x="9"  y="6"  width="2" height="2" fill="#E8DCCB"/>
-                                    <rect x="8"  y="9"  width="4" height="2" fill="#E8DCCB"/>
-                                    <rect x="14" y="9"  width="2" height="2" fill="#E8DCCB"/>
-                                    <rect x="18" y="9"  width="3" height="2" fill="#E8DCCB"/>
-                                    <rect x="9"  y="14" width="2" height="4" fill="#E8DCCB"/>
-                                    <rect x="14" y="14" width="3" height="3" fill="#E8DCCB"/>
-                                    <rect x="18" y="14" width="3" height="3" fill="#E8DCCB"/>
-                                    <rect x="14" y="18" width="3" height="3" fill="#E8DCCB"/>
-                                    <rect x="18" y="18" width="3" height="3" fill="#E8DCCB"/>
-                                    <rect x="16" y="16" width="2" height="2" fill="#E8DCCB"/>
-                                </svg>
-                            </div>
-                            <div class="tc-foot">
-                                <b x-text="isAr ? 'امسح للقائمة' : 'SCAN TO ORDER'">SCAN TO ORDER</b>
-                                <span>Qayema.lebify.dev</span>
-                            </div>
-                        </div>
-
-                        {{-- Phone mockup --}}
-                        <div class="phone">
-                            <div class="phone-notch"></div>
-                            <div class="phone-screen">
-
-                                <div class="ps-status">
-                                    <span x-text="isAr ? '٩:٤١' : '9:41'">9:41</span>
-                                    <span class="ps-icons">
-                                        <svg viewBox="0 0 16 12" fill="currentColor"><path d="M2 8L4 8L4 11L2 11ZM5 6L7 6L7 11L5 11ZM8 4L10 4L10 11L8 11ZM11 1L13 1L13 11L11 11Z"/></svg>
-                                        <svg viewBox="0 0 16 16" fill="none"><path d="M2 7a8 8 0 0112 0M5 10a5 5 0 016 0M8 13a2 2 0 012 0" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-                                        <svg viewBox="0 0 24 12" fill="none"><rect x="1" y="2" width="20" height="8" rx="2" stroke="currentColor" stroke-width="1"/><rect x="3" y="4" width="13" height="4" fill="currentColor"/><path d="M22 4V8" stroke="currentColor" stroke-linecap="round"/></svg>
-                                    </span>
-                                </div>
-
-                                <div class="ps-header">
-                                    <div>
-                                        <div class="ps-rest" x-text="isAr ? 'ميزون أران' : 'Maison Aran'">Maison Aran</div>
-                                        <div style="font-size:9px;color:var(--muted);margin-top:2px" x-text="isAr ? 'قائمة المساء' : 'Evening menu'">Evening menu</div>
-                                    </div>
-                                    <div class="ps-tbl" x-text="isAr ? 'طاولة ١٤' : 'Table 14'">Table 14</div>
-                                </div>
-
-                                <div class="ps-tabs">
-                                    <span x-text="isAr ? 'المقبلات' : 'Mezze'">Mezze</span>
-                                    <span class="on" x-text="isAr ? 'الرئيسية' : 'Mains'">Mains</span>
-                                    <span x-text="isAr ? 'الحلويات' : 'Desserts'">Desserts</span>
-                                    <span x-text="isAr ? 'مشروبات' : 'Drinks'">Drinks</span>
-                                </div>
-
-                                <div class="ps-list">
-                                    <div class="ps-item">
-                                        <div>
-                                            <div class="name" x-text="isAr ? 'كباب الضأن المشوي' : 'Slow-Roast Lamb Shank'">Slow-Roast Lamb Shank</div>
-                                            <div class="desc" x-text="isAr ? 'بهارات شامية، أرز بسمتي، طحينة' : 'Levantine spice, basmati, tahini jus'">Levantine spice, basmati, tahini jus</div>
-                                        </div>
-                                        <div class="price" x-text="isAr ? '٧٨ ر.س' : '78 SAR'">78 SAR</div>
-                                    </div>
-                                    <div class="ps-item with-img">
-                                        <div class="thumb"></div>
-                                        <div>
-                                            <div class="name" x-text="isAr ? 'تبولة بقدونس بلدي' : 'Heritage Tabbouleh'">Heritage Tabbouleh</div>
-                                            <div class="desc" x-text="isAr ? 'بقدونس مفروم، بلغار، سماق' : 'Hand-cut parsley, bulgur, sumac'">Hand-cut parsley, bulgur, sumac</div>
-                                        </div>
-                                        <div class="price" x-text="isAr ? '٣٢ ر.س' : '32 SAR'">32 SAR</div>
-                                    </div>
-                                    <div class="ps-item">
-                                        <div>
-                                            <div class="name" x-text="isAr ? 'حمص بيت قائمة' : 'House Hummus'">House Hummus</div>
-                                            <div class="desc" x-text="isAr ? 'حمص مهروس، زيت زيتون، صنوبر' : 'Beit blend, smoked oil, pine'">Beit blend, smoked oil, pine</div>
-                                        </div>
-                                        <div class="price" x-text="isAr ? '٢٦ ر.س' : '26 SAR'">26 SAR</div>
-                                    </div>
-                                    <div class="ps-item with-img">
-                                        <div class="thumb"></div>
-                                        <div>
-                                            <div class="name" x-text="isAr ? 'سمك سيد محشي' : 'Stuffed Sea Bass'">Stuffed Sea Bass</div>
-                                            <div class="desc" x-text="isAr ? 'سمك متوسطي، أرز جوهري' : 'Mediterranean catch, jeweled rice'">Mediterranean catch, jeweled rice</div>
-                                        </div>
-                                        <div class="price" x-text="isAr ? '٩٤ ر.س' : '94 SAR'">94 SAR</div>
-                                    </div>
-                                </div>
-
-                                <div class="ps-footbar">
-                                    <div style="font-size:10px;color:var(--muted)" x-text="isAr ? '٤ أصناف' : '4 items'">4 items</div>
-                                    <div class="ps-cart">
-                                        <span class="cart-count">2</span>
-                                        <span x-text="isAr ? 'عرض الطلب · ١١٠ ر.س' : 'View order · 110 SAR'">View order · 110 SAR</span>
-                                    </div>
-                                </div>
-
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Right annotation --}}
-                    <div class="annot annot-right">
-                        <span class="annot-pill">
-                            <span x-text="t.hero.ann2">No app · zero friction</span>
-                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        </span>
-                        <div class="annot-card">
-                            <div class="lbl">
-                                <span x-text="t.hero.ann2card.lbl">Guest experience</span>
-                                &nbsp;·&nbsp;
-                                <span style="color:var(--accent)">4.9</span>
-                            </div>
-                            <div class="body" x-text="t.hero.ann2card.body">
-                                "It felt like the restaurant cared about us before we ordered."
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-        </div>
-    </section>
-
-    {{-- ─────────────────────────────────────────────────────
-         LOGOS
-         ───────────────────────────────────────────────────── --}}
-    <div class="logos">
-        <div class="wrap logos-inner">
-            <p class="logos-label" x-text="t.logos.label">Used by restaurant owners across the region</p>
-            <div class="logos-row">
-                <template x-for="(item, i) in t.logos.items" :key="i">
-                    <div class="logo-mark">
-                        <span :class="i % 2 === 0 ? 'it' : ''" x-text="item"></span>
-                    </div>
-                </template>
-            </div>
-        </div>
+      <div class="hero-rating">
+        <span class="hero-stars">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6.3 6.9.9-5 4.8 1.2 6.8L12 17.8 5.9 20.8 7.1 14l-5-4.8 6.9-.9z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6.3 6.9.9-5 4.8 1.2 6.8L12 17.8 5.9 20.8 7.1 14l-5-4.8 6.9-.9z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6.3 6.9.9-5 4.8 1.2 6.8L12 17.8 5.9 20.8 7.1 14l-5-4.8 6.9-.9z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6.3 6.9.9-5 4.8 1.2 6.8L12 17.8 5.9 20.8 7.1 14l-5-4.8 6.9-.9z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6.3 6.9.9-5 4.8 1.2 6.8L12 17.8 5.9 20.8 7.1 14l-5-4.8 6.9-.9z"/></svg>
+        </span>
+        <span class="sep"></span>
+        <span data-en="Loved by restaurants from <b>Riyadh to Lisbon</b>" data-ar="موثوق به في مطاعم من <b>الرياض إلى لشبونة</b>">موثوق به في مطاعم من <b>الرياض إلى لشبونة</b></span>
+      </div>
     </div>
 
-    {{-- ─────────────────────────────────────────────────────
-         PROBLEM
-         ───────────────────────────────────────────────────── --}}
-    <section id="problem" class="section light-2">
-        <div class="wrap">
-
-            {{-- Section head --}}
-            <div class="section-head">
-                <div>
-                    <div class="eyebrow"><span class="dot"></span> <span x-text="t.problem.eyebrow">The problem</span></div>
-                    <h2 style="margin-top:18px" x-html="t.problem.headline">
-                        Paper menus belong <em class="it">in the past.</em>
-                    </h2>
-                </div>
-                <p class="right" x-text="t.problem.sub">
-                    Every minute a guest waits for a menu, a refill, or the bill, your kitchen falls further behind and your reviews get a little colder.
-                </p>
-            </div>
-
-            {{-- Cards --}}
-            <div class="problem-grid">
-
-                {{-- Card 1: The wait --}}
-                <div class="problem-card">
-                    <div class="strike-ill">
-                        <svg viewBox="0 0 56 56" fill="none">
-                            <path d="M14 6H42M14 50H42M14 6V14C14 22 28 24 28 28C28 32 14 34 14 42V50M42 6V14C42 22 28 24 28 28C28 32 42 34 42 42V50" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-                            <path d="M22 14H34M22 42H34" stroke="currentColor" stroke-width="1.5"/>
-                            <line x1="6" y1="50" x2="50" y2="6" stroke="#C8543A" stroke-width="2" stroke-linecap="round"/>
-                        </svg>
-                    </div>
-                    <div class="problem-num" x-text="t.problem.cards[0].n">01</div>
-                    <h3 x-text="t.problem.cards[0].h">The endless wait</h3>
-                    <p style="margin-top:8px" x-text="t.problem.cards[0].p">Guests stare at a sticky laminated menu while servers run between tables. Orders arrive late, food arrives later.</p>
-                </div>
-
-                {{-- Card 2: The reprint cycle --}}
-                <div class="problem-card">
-                    <div class="strike-ill">
-                        <svg viewBox="0 0 56 56" fill="none">
-                            <rect x="14" y="6" width="28" height="44" rx="2" stroke="currentColor" stroke-width="1.5"/>
-                            <path d="M19 16H37M19 22H37M19 28H32M19 34H37M19 40H30" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-                            <line x1="6" y1="50" x2="50" y2="6" stroke="#C8543A" stroke-width="2" stroke-linecap="round"/>
-                        </svg>
-                    </div>
-                    <div class="problem-num" x-text="t.problem.cards[1].n">02</div>
-                    <h3 x-text="t.problem.cards[1].h">The reprint cycle</h3>
-                    <p style="margin-top:8px" x-text="t.problem.cards[1].p">Change a price, update a special, swap a dish, wait three days for the printer. Your menu is always slightly out of date.</p>
-                </div>
-
-                {{-- Card 3: No insight --}}
-                <div class="problem-card">
-                    <div class="strike-ill">
-                        <svg viewBox="0 0 56 56" fill="none">
-                            <path d="M10 10H44V46L40 42L36 46L32 42L28 46L24 42L20 46L16 42L12 46L10 44Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-                            <path d="M16 18H38M16 24H38M16 30H30" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-                            <line x1="6" y1="50" x2="50" y2="6" stroke="#C8543A" stroke-width="2" stroke-linecap="round"/>
-                        </svg>
-                    </div>
-                    <div class="problem-num" x-text="t.problem.cards[2].n">03</div>
-                    <h3 x-text="t.problem.cards[2].h">No insight at all</h3>
-                    <p style="margin-top:8px" x-text="t.problem.cards[2].p">Paper menus don't tell you which dishes get looked at, how long people browse, or what they skip. You're running blind.</p>
-                </div>
-
-            </div>
+    <div class="hero-shot">
+      <div class="browser">
+        <div class="bw-bar">
+          <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="url">app.qayema.io/menu</span>
         </div>
-    </section>
-
-    {{-- ─────────────────────────────────────────────────────
-         SOLUTION
-         ───────────────────────────────────────────────────── --}}
-    <section id="solution" class="section light">
-        <div class="wrap">
-
-            {{-- Section head --}}
-            <div class="section-head">
-                <div>
-                    <div class="eyebrow"><span class="dot"></span> <span x-text="t.solution.eyebrow">The solution</span></div>
-                    <h2 style="margin-top:18px" x-html="t.solution.headline">
-                        One QR. One menu. <em class="it">Everything in sync.</em>
-                    </h2>
-                </div>
-                <p class="right" x-text="t.solution.sub">
-                    Qayema is the layer between your kitchen and your guest's phone. No app downloads. No clunky tablets. Just a beautiful, always-current menu.
-                </p>
-            </div>
-
-            {{-- Feature rows --}}
-            <div class="solution-stack">
-
-                {{-- Row 1: Real-time (text left, dark vis right) --}}
-                <div class="feat-row">
-                    <div class="feat-text">
-                        <div class="eyebrow"><span class="dot"></span> <span x-text="t.solution.rows[0].tag">Real-time</span></div>
-                        <h3 x-text="t.solution.rows[0].h">A menu that updates the moment your kitchen does.</h3>
-                        <p x-text="t.solution.rows[0].p">Mark a dish 86'd from the dashboard and it disappears across every table instantly. Add a special? It's live in seconds.</p>
-                        <ul class="feat-bullets">
-                            <template x-for="b in t.solution.rows[0].bullets" :key="b">
-                                <li>
-                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7.5l3 3 5-6.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                    <span x-text="b"></span>
-                                </li>
-                            </template>
-                        </ul>
-                    </div>
-                    {{-- Vis 1: Live menu panel --}}
-                    <div class="feat-vis dark-vis" style="padding:40px">
-                        <div style="background:rgba(255,255,255,.03);border:.5px solid rgba(255,255,255,.08);border-radius:12px;padding:18px;color:var(--paper);max-width:360px;margin:40px auto">
-                            <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:rgba(246,241,232,.5)">
-                                <span>● Live</span><span x-text="isAr ? 'الرئيسية' : 'Mains'">Mains</span>
-                            </div>
-                            <div style="margin-top:16px;display:flex;flex-direction:column;gap:14px">
-                                <div style="display:flex;justify-content:space-between;align-items:center;font-size:14px;opacity:.32">
-                                    <span style="text-decoration:line-through" x-text="isAr ? 'كباب الضأن المشوي' : 'Slow-Roast Lamb Shank'">Slow-Roast Lamb Shank</span>
-                                    <span style="color:var(--accent-soft)">78 SAR</span>
-                                </div>
-                                <div style="display:flex;justify-content:space-between;align-items:center;font-size:14px">
-                                    <span x-text="isAr ? 'سمك سيد محشي' : 'Wood-Fire Sea Bass'">Wood-Fire Sea Bass</span>
-                                    <span style="color:var(--accent-soft)">94 SAR</span>
-                                </div>
-                                <div style="display:flex;justify-content:space-between;align-items:center;font-size:14px">
-                                    <span style="display:flex;align-items:center;gap:8px">
-                                        <span style="background:var(--accent);color:var(--ink);font-size:9px;padding:2px 7px;border-radius:999px;letter-spacing:.08em;text-transform:uppercase;font-weight:600" x-text="isAr ? 'جديد' : 'New'">New</span>
-                                        <span x-text="isAr ? 'منسف الكمأة' : 'Truffle Mansaf'">Truffle Mansaf</span>
-                                    </span>
-                                    <span style="color:var(--accent-soft)">120 SAR</span>
-                                </div>
-                                <div style="display:flex;justify-content:space-between;align-items:center;font-size:14px">
-                                    <span x-text="isAr ? 'ريبآي معتّق 280 غ' : 'Aged Ribeye, 280g'">Aged Ribeye, 280g</span>
-                                    <span style="color:var(--accent-soft)">165 SAR</span>
-                                </div>
-                            </div>
-                            <div style="margin-top:24px;padding-top:16px;border-top:.5px solid rgba(255,255,255,.08);font-size:11px;color:rgba(246,241,232,.45)" x-text="isAr ? 'مزامنة منذ ثانيتين · 18 طاولة' : 'Synced 2s ago · across 18 tables'">
-                                Synced 2s ago · across 18 tables
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Row 2: Multilingual (text right, light vis left) --}}
-                <div class="feat-row reverse">
-                    <div class="feat-text">
-                        <div class="eyebrow"><span class="dot"></span> <span x-text="t.solution.rows[1].tag">Multilingual</span></div>
-                        <h3 x-text="t.solution.rows[1].h">Designed for guests in their own language.</h3>
-                        <p x-text="t.solution.rows[1].p">10 language presets with native Arabic RTL support. Your menu looks and reads perfectly whether the guest is local or visiting from abroad.</p>
-                        <ul class="feat-bullets">
-                            <template x-for="b in t.solution.rows[1].bullets" :key="b">
-                                <li>
-                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7.5l3 3 5-6.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                    <span x-text="b"></span>
-                                </li>
-                            </template>
-                        </ul>
-                    </div>
-                    {{-- Vis 2: Two language cards --}}
-                    <div class="feat-vis" style="padding:32px;position:relative">
-                        <div style="position:absolute;inset:0;background:linear-gradient(160deg,var(--sand) 0%,var(--paper-2) 100%)"></div>
-                        <div style="position:relative;height:100%;display:flex;align-items:center;justify-content:center;gap:18px">
-                            {{-- EN card --}}
-                            <div style="width:190px;background:var(--paper);border-radius:14px;padding:18px;box-shadow:0 20px 40px -20px rgba(0,0,0,.18);transform:rotate(-4deg) translateY(-10px);border:.5px solid var(--line);direction:ltr;font-family:var(--font-sans)">
-                                <div style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:12px">EN</div>
-                                <div style="width:100%;aspect-ratio:4/3;border-radius:8px;background:linear-gradient(135deg,#6B5B3F,#3D3324);margin-bottom:14px"></div>
-                                <div style="font-size:13px;font-weight:500;line-height:1.25;margin-bottom:4px">Slow-Roast Lamb Shank</div>
-                                <div style="font-size:10px;color:var(--muted);line-height:1.4;margin-bottom:12px">Levantine spice, tahini</div>
-                                <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
-                                    <span style="color:var(--accent);font-weight:500">78 SAR</span>
-                                    <span style="width:20px;height:20px;border-radius:50%;background:var(--ink);color:var(--paper);display:grid;place-items:center;font-size:13px">+</span>
-                                </div>
-                            </div>
-                            {{-- AR card --}}
-                            <div style="width:190px;background:var(--paper);border-radius:14px;padding:18px;box-shadow:0 20px 40px -20px rgba(0,0,0,.18);transform:rotate(4deg) translateY(14px);border:.5px solid var(--line);direction:rtl;font-family:var(--font-ar)">
-                                <div style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:12px">عربي</div>
-                                <div style="width:100%;aspect-ratio:4/3;border-radius:8px;background:linear-gradient(135deg,#6B5B3F,#3D3324);margin-bottom:14px"></div>
-                                <div style="font-size:13px;font-weight:500;line-height:1.25;margin-bottom:4px">كباب الضأن المشوي</div>
-                                <div style="font-size:10px;color:var(--muted);line-height:1.4;margin-bottom:12px">بهارات شامية، طحينة</div>
-                                <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
-                                    <span style="color:var(--accent);font-weight:500">٧٨ ر.س</span>
-                                    <span style="width:20px;height:20px;border-radius:50%;background:var(--ink);color:var(--paper);display:grid;place-items:center;font-size:13px">+</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Row 3: Dashboard (text left, light vis right) --}}
-                <div class="feat-row">
-                    <div class="feat-text">
-                        <div class="eyebrow"><span class="dot"></span> <span x-text="t.solution.rows[2].tag">Dashboard</span></div>
-                        <h3 x-text="t.solution.rows[2].h">A back-of-house tool that doesn't fight you back.</h3>
-                        <p x-text="t.solution.rows[2].p">Upload dishes. Set categories. Customize layouts, fonts, and colors. Track visitor stats. No training required.</p>
-                        <ul class="feat-bullets">
-                            <template x-for="b in t.solution.rows[2].bullets" :key="b">
-                                <li>
-                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7.5l3 3 5-6.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                    <span x-text="b"></span>
-                                </li>
-                            </template>
-                        </ul>
-                    </div>
-                    {{-- Vis 3: Dashboard mockup --}}
-                    <div class="feat-vis" style="background:linear-gradient(160deg,var(--paper-2),var(--sand));padding:24px">
-                        <div style="background:var(--paper);border-radius:12px;height:100%;box-shadow:0 20px 40px -22px rgba(0,0,0,.2);border:.5px solid var(--line);overflow:hidden;display:flex;flex-direction:column">
-                            {{-- Title bar --}}
-                            <div style="padding:12px 18px;border-bottom:.5px solid var(--line);display:flex;align-items:center;justify-content:space-between">
-                                <div style="display:flex;gap:6px">
-                                    <span style="width:9px;height:9px;border-radius:50%;background:#E2796B"></span>
-                                    <span style="width:9px;height:9px;border-radius:50%;background:#E8C25C"></span>
-                                    <span style="width:9px;height:9px;border-radius:50%;background:var(--accent-soft)"></span>
-                                </div>
-                                <span style="color:var(--muted);font-size:11px;font-family:var(--font-display);font-style:italic">Qayema · dashboard</span>
-                                <span></span>
-                            </div>
-                            {{-- Body --}}
-                            <div style="display:grid;grid-template-columns:120px 1fr;flex:1">
-                                {{-- Sidebar --}}
-                                <div style="border-right:.5px solid var(--line);padding:16px;font-size:11px;color:var(--muted);display:flex;flex-direction:column;gap:12px">
-                                    <span>Overview</span>
-                                    <span style="color:var(--ink);font-weight:500"><span style="color:var(--accent);margin-right:6px">●</span>Menu</span>
-                                    <span>Dishes</span>
-                                    <span>Analytics</span>
-                                    <span>QR Code</span>
-                                    <span>Settings</span>
-                                </div>
-                                {{-- Content --}}
-                                <div style="padding:18px;display:flex;flex-direction:column;gap:10px">
-                                    <div style="font-size:13px;font-weight:500;margin-bottom:4px" x-text="isAr ? 'الرئيسية' : 'Mains'">Mains</div>
-                                    <div style="display:grid;grid-template-columns:1fr 60px 40px;align-items:center;padding:8px 12px;background:var(--paper-2);border-radius:6px;font-size:11.5px">
-                                        <span x-text="isAr ? 'كباب الضأن' : 'Slow-Roast Lamb'">Slow-Roast Lamb</span>
-                                        <span style="display:inline-flex;align-items:center;gap:4px;color:var(--accent)"><span style="width:6px;height:6px;border-radius:50%;background:var(--accent)"></span><span x-text="isAr ? 'نشط' : 'Active'">Active</span></span>
-                                        <span style="text-align:right;color:var(--ink)">78</span>
-                                    </div>
-                                    <div style="display:grid;grid-template-columns:1fr 60px 40px;align-items:center;padding:8px 12px;background:var(--paper-2);border-radius:6px;font-size:11.5px">
-                                        <span x-text="isAr ? 'سمك سيد' : 'Wood-Fire Bass'">Wood-Fire Bass</span>
-                                        <span style="display:inline-flex;align-items:center;gap:4px;color:var(--accent)"><span style="width:6px;height:6px;border-radius:50%;background:var(--accent)"></span><span x-text="isAr ? 'نشط' : 'Active'">Active</span></span>
-                                        <span style="text-align:right;color:var(--ink)">94</span>
-                                    </div>
-                                    <div style="display:grid;grid-template-columns:1fr 60px 40px;align-items:center;padding:8px 12px;background:var(--paper-2);border-radius:6px;font-size:11.5px">
-                                        <span x-text="isAr ? 'منسف الكمأة' : 'Truffle Mansaf'">Truffle Mansaf</span>
-                                        <span style="display:inline-flex;align-items:center;gap:4px;color:var(--muted)"><span style="width:6px;height:6px;border-radius:50%;background:var(--muted)"></span><span x-text="isAr ? 'مسودة' : 'Draft'">Draft</span></span>
-                                        <span style="text-align:right;color:var(--ink)">120</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
+        <div class="bw-body">
+          <iframe src="{{ asset('landing/qayema-dashboard.html') }}" title="Qayema dashboard" loading="lazy" scrolling="no" tabindex="-1" aria-hidden="true"></iframe>
         </div>
-    </section>
+      </div>
+    </div>
+  </header>
 
-    {{-- ─────────────────────────────────────────────────────
-         FEATURES GRID
-         ───────────────────────────────────────────────────── --}}
-    <section id="features" class="section light-2">
-        <div class="wrap">
-
-            <div class="section-head">
-                <div>
-                    <div class="eyebrow"><span class="dot"></span> <span x-text="t.features.eyebrow">Everything you need</span></div>
-                    <h2 style="margin-top:18px" x-html="t.features.headline">
-                        A complete restaurant <em class="it">menu platform.</em>
-                    </h2>
-                </div>
-                <p class="right" x-text="t.features.sub">
-                    Every feature your restaurant needs, from the QR code on the table to the analytics in the dashboard.
-                </p>
-            </div>
-
-            <div class="features-grid">
-                <template x-for="(f, i) in t.features.items" :key="i">
-                    <div class="feature-cell">
-                        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" x-html="f.icon"></svg>
-                        <h3 x-text="f.h"></h3>
-                        <p x-text="f.p"></p>
-                        <div class="meta" x-text="f.meta"></div>
-                    </div>
-                </template>
-            </div>
-
+  <!-- ===== PROBLEM ===== -->
+  <section class="sec" id="problem">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="eyebrow"><span class="bar"></span><span class="mono-label" data-en="The problem" data-ar="المشكلة">المشكلة</span></div>
+        <h2 class="display"><span data-en="Paper menus are" data-ar="القوائم الورقية">القوائم الورقية</span> <span class="gold-text" data-en="quietly costing you." data-ar="تكلّفك بصمت.">تكلّفك بصمت.</span></h2>
+      </div>
+      <div class="prob-grid" data-stagger>
+        <div class="prob-card">
+          <div class="num display">01</div>
+          <h3 data-en="Always out of date" data-ar="دائماً قديمة">دائماً قديمة</h3>
+          <p data-en="A price change or a sold-out dish means a stale PDF — or another trip to the printer." data-ar="تغيير سعر أو نفاد طبق يعني ملفاً قديماً — أو رحلة جديدة للمطبعة.">تغيير سعر أو نفاد طبق يعني ملفاً قديماً — أو رحلة جديدة للمطبعة.</p>
+          <div class="strike"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="6" y="3" width="12" height="18" rx="1"/><path d="M9 8h6M9 12h6M9 16h3"/><line x1="4" y1="21" x2="20" y2="3" stroke-width="2"/></svg></div>
         </div>
-    </section>
-
-    {{-- ─────────────────────────────────────────────────────
-         HOW IT WORKS
-         ───────────────────────────────────────────────────── --}}
-    <section id="how" class="section dark">
-        <div class="wrap">
-
-            <div class="section-head">
-                <div>
-                    <div class="eyebrow"><span class="dot"></span> <span x-text="t.how.eyebrow">How it works</span></div>
-                    <h2 style="margin-top:18px" x-html="t.how.headline">
-                        Up and running <em class="it">in under 10 minutes.</em>
-                    </h2>
-                </div>
-                <p class="right" x-text="t.how.sub">
-                    No developer needed. No onboarding call. Sign up, add your dishes, and your guests are scanning within the hour.
-                </p>
-            </div>
-
-            <div class="steps">
-                <template x-for="(step, i) in t.how.steps" :key="i">
-                    <div class="step">
-                        <div class="step-num" x-text="step.n">01</div>
-                        <h3 x-text="step.h"></h3>
-                        <p x-text="step.p"></p>
-                        <div class="step-vis" x-html="step.vis"></div>
-                    </div>
-                </template>
-            </div>
-
+        <div class="prob-card">
+          <div class="num display">02</div>
+          <h3 data-en="Reprint costs add up" data-ar="تكاليف الطباعة تتراكم">تكاليف الطباعة تتراكم</h3>
+          <p data-en="Every seasonal update, every typo, every new dish — printed, laminated, distributed, repeat." data-ar="كل تحديث موسمي، كل خطأ، كل طبق جديد — طباعة وتغليف وتوزيع، وتتكرر.">كل تحديث موسمي، كل خطأ، كل طبق جديد — طباعة وتغليف وتوزيع، وتتكرر.</p>
+          <div class="strike"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2M6 14h12v7H6z"/><line x1="4" y1="21" x2="20" y2="3" stroke-width="2"/></svg></div>
         </div>
-    </section>
-
-    {{-- ─────────────────────────────────────────────────────
-         TESTIMONIALS
-         ───────────────────────────────────────────────────── --}}
-    <section id="stories" class="section light">
-        <div class="wrap">
-
-            <div class="section-head">
-                <div>
-                    <div class="eyebrow"><span class="dot"></span> <span x-text="t.testimonials.eyebrow">Stories</span></div>
-                    <h2 style="margin-top:18px" x-html="t.testimonials.headline">
-                        Restaurateurs <em class="it">speak for themselves.</em>
-                    </h2>
-                </div>
-                <p class="right" x-text="t.testimonials.sub">
-                    From fast-casual to fine dining, Qayema fits the way your restaurant actually runs.
-                </p>
-            </div>
-
-            <div class="quote-grid">
-                {{-- Feature quote --}}
-                <div class="quote-card feature">
-                    <div>
-                        <div class="quote-mark">"</div>
-                        <p class="quote-text" x-text="t.testimonials.quotes[0].q"></p>
-                    </div>
-                    <div class="quote-meta">
-                        <div class="quote-avatar"></div>
-                        <div>
-                            <div class="who" x-text="t.testimonials.quotes[0].who"></div>
-                            <div class="role" x-text="t.testimonials.quotes[0].role"></div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Regular quotes --}}
-                <template x-for="(q, i) in t.testimonials.quotes.slice(1)" :key="i">
-                    <div class="quote-card">
-                        <div>
-                            <div class="quote-mark">"</div>
-                            <p class="quote-text" x-text="q.q"></p>
-                        </div>
-                        <div class="quote-meta">
-                            <div class="quote-avatar"></div>
-                            <div>
-                                <div class="who" x-text="q.who"></div>
-                                <div class="role" x-text="q.role"></div>
-                            </div>
-                        </div>
-                    </div>
-                </template>
-            </div>
-
+        <div class="prob-card">
+          <div class="num display">03</div>
+          <h3 data-en="Pinch, zoom, give up" data-ar="تكبير، تصغير، استسلام">تكبير، تصغير، استسلام</h3>
+          <p data-en="A blurry photo of a menu helps no one — and tells you nothing about what guests actually want." data-ar="صورة ضبابية لقائمة لا تفيد أحداً — ولا تخبرك بما يريده الضيوف فعلاً.">صورة ضبابية لقائمة لا تفيد أحداً — ولا تخبرك بما يريده الضيوف فعلاً.</p>
+          <div class="strike"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/><line x1="3" y1="21" x2="21" y2="3" stroke-width="2"/></svg></div>
         </div>
-    </section>
+      </div>
+    </div>
+  </section>
 
-    {{-- ─────────────────────────────────────────────────────
-         CTA
-         ───────────────────────────────────────────────────── --}}
-    <section class="cta-section">
-        <div class="wrap">
-            <div class="eyebrow" style="justify-content:center;margin-bottom:28px"><span class="dot" style="background:var(--accent-soft)"></span> <span style="color:var(--accent-soft)" x-text="t.cta.eyebrow">Free to start</span></div>
-            <h2 x-html="t.cta.headline">Ready to modernise <em class="it">your menu?</em></h2>
-            <p x-text="t.cta.sub">Join restaurant owners already using Qayema. No credit card needed.</p>
-            <div class="cta-actions">
-                @auth
-                    <a class="btn btn-primary" href="{{ route('dashboard') }}">
-                        <span x-text="t.nav.dashboard">Dashboard</span>
-                        <svg class="arr" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    </a>
-                @else
-                    <a class="btn btn-primary" href="{{ route('login') }}">
-                        <span x-text="t.cta.cta1">Start for free</span>
-                        <svg class="arr" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    </a>
-                    <a class="btn btn-ghost" href="#how" x-text="t.cta.cta2">See how it works</a>
-                @endauth
-            </div>
-            <p class="cta-fineprint" x-text="t.cta.fine">Free forever on the starter plan. Upgrade when you're ready.</p>
+  <!-- ===== SOLUTION ===== -->
+  <section class="sec" id="solution" style="padding-top:0;">
+    <div class="wrap sol">
+      <div class="sol-vis reveal">
+        <div class="sol-ring">
+          <div class="core">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M21 21v-4M17 21h1M14 21h.01"/></svg>
+          </div>
+          <div class="sol-orb" style="top:-6%;left:42%"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="7" y="2.5" width="10" height="19" rx="3"/></svg></div>
+          <div class="sol-orb" style="top:42%;right:-6%"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg></div>
+          <div class="sol-orb" style="bottom:-6%;left:42%"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4v16h16M8 14l3-4 3 2 4-6"/></svg></div>
+          <div class="sol-orb" style="top:42%;left:-6%"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8a2 2 0 0 1 2-2h2l1.5-2h7L17 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="12.5" r="3.5"/></svg></div>
         </div>
-    </section>
+      </div>
+      <div class="sol-copy reveal">
+        <div class="eyebrow"><span class="bar"></span><span class="mono-label" data-en="The solution" data-ar="الحل">الحل</span></div>
+        <h2 class="display" style="font-size:clamp(30px,3.6vw,48px);line-height:1.05;letter-spacing:-0.03em;"><span data-en="One living menu," data-ar="قائمة واحدة حيّة،">قائمة واحدة حيّة،</span> <span class="gold-text" data-en="one QR." data-ar="خلف رمز واحد.">خلف رمز واحد.</span></h2>
+        <ul class="sol-list">
+          <li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 6L9 17l-5-5"/></svg></span><div><h4 data-en="Always current" data-ar="محدّثة دائماً">محدّثة دائماً</h4><p data-en="Change a price or hide a dish — it's live everywhere in an instant." data-ar="غيّر سعراً أو أخفِ طبقاً — يظهر فوراً في كل مكان.">غيّر سعراً أو أخفِ طبقاً — يظهر فوراً في كل مكان.</p></div></li>
+          <li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="7" y="2.5" width="10" height="19" rx="3"/></svg></span><div><h4 data-en="Beautiful on every phone" data-ar="أنيقة على كل هاتف">أنيقة على كل هاتف</h4><p data-en="Editorial templates that load fast and read perfectly, big or small." data-ar="قوالب أنيقة تُحمّل بسرعة وتُقرأ بوضوح، صغيرة كانت أم كبيرة.">قوالب أنيقة تُحمّل بسرعة وتُقرأ بوضوح، صغيرة كانت أم كبيرة.</p></div></li>
+          <li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></span><div><h4 data-en="The QR never breaks" data-ar="الرمز لا ينكسر">الرمز لا ينكسر</h4><p data-en="Print it once. Switch templates, edit forever — the same code keeps working." data-ar="اطبعه مرة. بدّل القوالب وعدّل للأبد — الرمز نفسه يستمر.">اطبعه مرة. بدّل القوالب وعدّل للأبد — الرمز نفسه يستمر.</p></div></li>
+        </ul>
+      </div>
+    </div>
+  </section>
 
-    {{-- ─────────────────────────────────────────────────────
-         FOOTER
-         ───────────────────────────────────────────────────── --}}
-    <footer>
-        <div class="wrap">
-            <div class="foot-grid">
+  <!-- ===== FEATURES ===== -->
+  <section class="sec" id="features" style="padding-top:0;">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="eyebrow"><span class="bar"></span><span class="mono-label" data-en="Everything inside" data-ar="كل ما تحتاجه">كل ما تحتاجه</span></div>
+        <h2 class="display"><span data-en="Built to run" data-ar="مصمّمة لإدارة">مصمّمة لإدارة</span> <span class="gold-text" data-en="the whole menu." data-ar="القائمة بالكامل.">القائمة بالكامل.</span></h2>
+        <p data-en="From AI scanning to live analytics — one calm place to manage how your restaurant looks to every guest." data-ar="من المسح بالذكاء الاصطناعي إلى التحليلات المباشرة — مكان واحد هادئ لإدارة صورة مطعمك أمام كل ضيف.">من المسح بالذكاء الاصطناعي إلى التحليلات المباشرة — مكان واحد هادئ لإدارة صورة مطعمك أمام كل ضيف.</p>
+      </div>
+      <div class="features-wrap" id="featuresBox"></div>
+    </div>
+  </section>
 
-                {{-- Brand column --}}
-                <div>
-                    <a href="/" style="display:inline-block;margin-bottom:16px">
-                        <img src="{{ asset('images/logo/logo.png') }}" alt="Qayema" class="brand-logo-footer">
-                    </a>
-                    <p style="font-size:13.5px;line-height:1.6;max-width:28ch;margin:0" x-text="t.footer.tagline">
-                        The digital menu your restaurant deserves.
-                    </p>
-                </div>
-
-                {{-- Link columns --}}
-                <template x-for="(col, i) in t.footer.cols" :key="i">
-                    <div>
-                        <h4 x-text="col.title"></h4>
-                        <ul>
-                            <template x-for="(link, j) in col.links" :key="j">
-                                <li>
-                                    <a
-                                        :href="link.disabled ? null : link.href"
-                                        :target="link.target || null"
-                                        :style="link.disabled ? 'opacity:0.35;cursor:not-allowed;pointer-events:none' : ''"
-                                        x-text="link.label"
-                                    ></a>
-                                </li>
-                            </template>
-                        </ul>
-                    </div>
-                </template>
-
-            </div>
-
-            <div class="foot-bottom">
-                <span x-text="t.footer.copy">© 2025 Lebify Group. All rights reserved.</span>
-                <span style="display:inline-flex;align-items:center;gap:5px">
-                    <span x-text="t.footer.made">Made with care</span>
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0"><path d="M7 12.25S1.75 9.1 1.75 5.25a3.25 3.25 0 0 1 5.25-2.56A3.25 3.25 0 0 1 12.25 5.25C12.25 9.1 7 12.25 7 12.25Z" fill="#e74c3c"/></svg>
-                </span>
-            </div>
+  <!-- ===== HOW IT WORKS (pinned horizontal) ===== -->
+  <section class="how" id="how">
+    <div class="pin-wrap">
+      <div class="how-track" id="howTrack">
+        <div class="how-intro">
+          <span class="mono-label" data-en="How it works" data-ar="كيف يعمل">كيف يعمل</span>
+          <h2 class="display"><span data-en="From paper to" data-ar="من الورق إلى">من الورق إلى</span> <span class="gold-text" data-en="QR, in four moves." data-ar="رمز QR، بأربع خطوات.">رمز QR، بأربع خطوات.</span></h2>
+          <p data-en="Scroll to follow the journey — sign up, build, get your code, and watch it work." data-ar="مرّر لتتابع الرحلة — سجّل، ابنِ، احصل على رمزك، وراقب النتائج.">مرّر لتتابع الرحلة — سجّل، ابنِ، احصل على رمزك، وراقب النتائج.</p>
         </div>
-    </footer>
+        <!-- steps injected here -->
+      </div>
+    </div>
+    <div class="how-progress"><i></i></div>
+  </section>
 
-</div>{{-- end #page --}}
+  <!-- ===== STATS ===== -->
+  <section class="sec" id="stats" style="padding:90px 0;">
+    <div class="wrap">
+      <div class="stats reveal">
+        <div class="stat"><div class="v"><span class="gold-text" data-count="31" data-suf="s">0s</span></div><div class="k" data-en="Avg. menu build time" data-ar="متوسط زمن بناء القائمة">متوسط زمن بناء القائمة</div></div>
+        <div class="stat"><div class="v"><span data-count="14">0</span></div><div class="k" data-en="Languages supported" data-ar="لغة مدعومة">لغة مدعومة</div></div>
+        <div class="stat"><div class="v"><span data-count="0" data-dec="1">0</span><span class="gold-text" style="font-family:var(--font-display)">×</span></div><div class="k" data-en="Reprints required" data-ar="إعادة طباعة مطلوبة">إعادة طباعة مطلوبة</div></div>
+        <div class="stat"><div class="v"><span data-count="99.9" data-dec="1">0</span><span class="gold-text" style="font-family:var(--font-display)">%</span></div><div class="k" data-en="QR uptime" data-ar="جهوزية الرمز">جهوزية الرمز</div></div>
+      </div>
+    </div>
+  </section>
 
-{{-- ─────────────────────────────────────────────────────
-     Alpine.js data
-     ───────────────────────────────────────────────────── --}}
-<script>
-@include('partials.qayema-app')
-</script>
+  <!-- ===== PRICING ===== -->
+  <section class="sec" id="pricing" style="padding-top:0;">
+    <div class="wrap">
+      <div class="sec-head reveal" style="text-align:center;max-width:680px;margin-inline:auto;">
+        <div class="eyebrow" style="justify-content:center;"><span class="bar"></span><span class="mono-label" data-en="Pricing" data-ar="الأسعار">الأسعار</span></div>
+        <h2 class="display"><span data-en="Templates" data-ar="القوالب">القوالب</span> <span class="gold-text" data-en="are the plans." data-ar="هي الباقات.">هي الباقات.</span></h2>
+        <p style="margin-inline:auto;" data-en="Launch on a free template forever. Subscribe to a premium template only when you want its design — monthly, 6-month, or yearly." data-ar="انطلق بقالب مجاني للأبد. اشترك في قالب مميّز فقط عندما تريد تصميمه — شهرياً أو نصف سنوي أو سنوي.">انطلق بقالب مجاني للأبد. اشترك في قالب مميّز فقط عندما تريد تصميمه — شهرياً أو نصف سنوي أو سنوي.</p>
+      </div>
 
+      <div class="price-grid reveal">
+        <div class="plan">
+          <div class="tier" data-en="Free template" data-ar="قالب مجاني">قالب مجاني</div>
+          <div class="amt"><span class="big display gold-text" data-en="$0" data-ar="٠">٠</span><span class="per" data-en="forever" data-ar="للأبد">للأبد</span></div>
+          <p class="pdesc" data-en="Everything you need to take one beautiful menu live." data-ar="كل ما تحتاجه لإطلاق قائمة أنيقة واحدة.">كل ما تحتاجه لإطلاق قائمة أنيقة واحدة.</p>
+          <ul>
+            <li>__C__<span data-en="A free editorial template" data-ar="قالب أنيق مجاني">قالب أنيق مجاني</span></li>
+            <li>__C__<span data-en="Custom QR code" data-ar="رمز QR مخصّص">رمز QR مخصّص</span></li>
+            <li>__C__<span data-en="Arabic &amp; English" data-ar="عربي وإنجليزي">عربي وإنجليزي</span></li>
+            <li>__C__<span data-en="WhatsApp ordering" data-ar="الطلب عبر واتساب">الطلب عبر واتساب</span></li>
+          </ul>
+          <a class="btn btn-line" data-magnetic href="{{ route('register') }}" data-en="Start free" data-ar="ابدأ مجاناً">ابدأ مجاناً</a>
+        </div>
+
+        <div class="plan hot">
+          <div class="tier" data-en="Premium template" data-ar="قالب مميّز">قالب مميّز</div>
+          <div class="amt"><span class="big display gold-text" data-en="$12" data-ar="٤٥ ر.س">٤٥ ر.س</span><span class="per" data-en="/ month · per template" data-ar="شهرياً · لكل قالب">شهرياً · لكل قالب</span></div>
+          <p class="pdesc" data-en="Subscribe to a premium design. Monthly, 6-month or yearly." data-ar="اشترك في تصميم مميّز. شهرياً أو نصف سنوي أو سنوي.">اشترك في تصميم مميّز. شهرياً أو نصف سنوي أو سنوي.</p>
+          <ul>
+            <li>__C__<span data-en="Everything in Free" data-ar="كل مزايا المجاني">كل مزايا المجاني</span></li>
+            <li>__C__<span data-en="Premium editorial templates" data-ar="قوالب مميّزة أنيقة">قوالب مميّزة أنيقة</span></li>
+            <li>__C__<span data-en="Live analytics dashboard" data-ar="لوحة تحليلات مباشرة">لوحة تحليلات مباشرة</span></li>
+            <li>__C__<span data-en="Variants, sizes &amp; ingredients" data-ar="أحجام ومكوّنات وخيارات">أحجام ومكوّنات وخيارات</span></li>
+            <li>__C__<span data-en="Switch templates anytime" data-ar="بدّل القوالب متى شئت">بدّل القوالب متى شئت</span></li>
+          </ul>
+          <a class="btn btn-gold" data-magnetic href="{{ route('register') }}" data-en="Choose premium" data-ar="اختر المميّز">اختر المميّز</a>
+        </div>
+      </div>
+      <p class="price-note reveal"><b data-en="Your menu is safe." data-ar="قائمتك بأمان.">قائمتك بأمان.</b> <span data-en="If a subscription ends, your menu simply pauses — it is never deleted." data-ar="إذا انتهى الاشتراك، تتوقف قائمتك مؤقتاً فقط — ولا تُحذف أبداً.">إذا انتهى الاشتراك، تتوقف قائمتك مؤقتاً فقط — ولا تُحذف أبداً.</span></p>
+    </div>
+  </section>
+
+  <!-- ===== TESTIMONIALS ===== -->
+  <section class="sec" id="stories" style="padding-top:0;">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="eyebrow"><span class="bar"></span><span class="mono-label" data-en="Loved by restaurants" data-ar="مطاعم تحبّها">مطاعم تحبّها</span></div>
+        <h2 class="display"><span data-en="From paper to" data-ar="من الورق إلى">من الورق إلى</span> <span class="gold-text" data-en="praised, fast." data-ar="الإعجاب، بسرعة.">الإعجاب، بسرعة.</span></h2>
+      </div>
+      <div class="quotes" data-stagger>
+        <div class="quote lead">
+          <div><div class="mk">"</div><p class="qt" data-en="We photographed our menu on a Tuesday and were taking QR orders by dinner. Updates that used to take a week now take ten seconds." data-ar="صوّرنا قائمتنا يوم الثلاثاء وكنّا نستقبل الطلبات بالرمز عند العشاء. تحديثات كانت تأخذ أسبوعاً صارت بعشر ثوانٍ.">صوّرنا قائمتنا يوم الثلاثاء وكنّا نستقبل الطلبات بالرمز عند العشاء. تحديثات كانت تأخذ أسبوعاً صارت بعشر ثوانٍ.</p></div>
+          <div class="by"><span class="av display">ل</span><div><div class="nm" data-en="Layla Othman" data-ar="ليلى عثمان">ليلى عثمان</div><div class="rl" data-en="Owner · Maison Aran" data-ar="مالكة · ميزون أران">مالكة · ميزون أران</div></div></div>
+        </div>
+        <div class="quote">
+          <div><div class="mk">"</div><p class="qt" data-en="Finally, our Arabic menu looks as good as the English one." data-ar="أخيراً، قائمتنا العربية تبدو بجمال الإنجليزية.">أخيراً، قائمتنا العربية تبدو بجمال الإنجليزية.</p></div>
+          <div class="by"><span class="av display">ر</span><div><div class="nm" data-en="Reem Al-Saud" data-ar="ريم آل سعود">ريم آل سعود</div><div class="rl" data-en="Concept lead · Sabor" data-ar="مديرة المفهوم · سابور">مديرة المفهوم · سابور</div></div></div>
+        </div>
+        <div class="quote">
+          <div><div class="mk">"</div><p class="qt" data-en="The analytics told us which dishes to push. Revenue followed." data-ar="أخبرتنا التحليلات بالأطباق التي نروّجها. وتبعها الدخل.">أخبرتنا التحليلات بالأطباق التي نروّجها. وتبعها الدخل.</p></div>
+          <div class="by"><span class="av display">م</span><div><div class="nm" data-en="Marco Vidale" data-ar="ماركو فيدالي">ماركو فيدالي</div><div class="rl" data-en="GM · Olea &amp; Co." data-ar="مدير عام · أوليا">مدير عام · أوليا</div></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FAQ ===== -->
+  <section class="sec" id="faq" style="padding-top:0;">
+    <div class="wrap">
+      <div class="sec-head reveal" style="text-align:center;max-width:640px;margin-inline:auto;">
+        <div class="eyebrow" style="justify-content:center;"><span class="bar"></span><span class="mono-label" data-en="Questions" data-ar="أسئلة">أسئلة</span></div>
+        <h2 class="display"><span data-en="Good to" data-ar="من الجيد أن">من الجيد أن</span> <span class="gold-text" data-en="know." data-ar="تعرف.">تعرف.</span></h2>
+      </div>
+      <div class="faq" id="faqList"></div>
+    </div>
+  </section>
+
+  <!-- ===== FINAL CTA ===== -->
+  <section class="final">
+    <div class="wrap">
+      <div class="final-box reveal">
+        <img class="qmark" src="{{ asset('images/logo/q-logo.png') }}" alt="" />
+        <h2 class="display"><span data-en="Turn your menu into a" data-ar="حوّل قائمتك إلى">حوّل قائمتك إلى</span> <span class="gold-text" data-en="QR experience today." data-ar="تجربة QR اليوم.">تجربة QR اليوم.</span></h2>
+        <p data-en="Photograph it, let AI design it, and share one QR your guests will love — in both languages." data-ar="صوّرها، دع الذكاء الاصطناعي يصمّمها، وشارك رمز QR واحداً سيحبّه ضيوفك — باللغتين.">صوّرها، دع الذكاء الاصطناعي يصمّمها، وشارك رمز QR واحداً سيحبّه ضيوفك — باللغتين.</p>
+        <div class="acts">
+          <a class="btn btn-gold" data-magnetic href="{{ route('register') }}" data-en="Get started free" data-ar="ابدأ مجاناً">ابدأ مجاناً</a>
+          <a class="btn btn-line" href="#how" data-en="See how it works" data-ar="شاهد كيف يعمل">شاهد كيف يعمل</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer>
+    <div class="wrap">
+      <div class="foot-top">
+        <div class="foot-brand">
+          <img src="{{ asset('images/logo/logo.png') }}" alt="Qayema" />
+          <p data-en="The AI menu studio for modern restaurants. Photograph, generate, and serve — one QR, two languages." data-ar="استوديو القوائم بالذكاء الاصطناعي للمطاعم الحديثة. صوّر، أنشئ، وقدّم — رمز واحد، لغتان.">استوديو القوائم بالذكاء الاصطناعي للمطاعم الحديثة. صوّر، أنشئ، وقدّم — رمز واحد، لغتان.</p>
+          <div class="seg lang" role="group" aria-label="language">
+            <button data-l="ar">ع</button>
+            <button data-l="en">EN</button>
+          </div>
+        </div>
+        <div class="foot-col">
+          <h5 data-en="Product" data-ar="المنتج">المنتج</h5>
+          <a href="#features" data-en="Features" data-ar="المميزات">المميزات</a>
+          <a href="#pricing" data-en="Pricing" data-ar="الأسعار">الأسعار</a>
+          <a href="#how" data-en="How it works" data-ar="كيف يعمل">كيف يعمل</a>
+        </div>
+        <div class="foot-col">
+          <h5 data-en="Company" data-ar="الشركة">الشركة</h5>
+          <a href="#" data-en="About" data-ar="عن قيمة">عن قيمة</a>
+          <a href="{{ route('contact') }}" data-en="Contact" data-ar="تواصل">تواصل</a>
+          <a href="#stories" data-en="Stories" data-ar="قصص">قصص</a>
+        </div>
+        <div class="foot-col">
+          <h5 data-en="Legal" data-ar="قانوني">قانوني</h5>
+          <a href="{{ route('terms') }}" data-en="Terms" data-ar="الشروط">الشروط</a>
+          <a href="{{ route('privacy') }}" data-en="Privacy" data-ar="الخصوصية">الخصوصية</a>
+          <a href="{{ route('cookies') }}" data-en="Cookies" data-ar="الكوكيز">الكوكيز</a>
+          <a href="{{ route('refund') }}" data-en="Refund Policy" data-ar="سياسة الاسترجاع">سياسة الاسترجاع</a>
+        </div>
+      </div>
+      <div class="foot-bot">
+        <span class="cp" data-en="© 2026 Qayema. All rights reserved." data-ar="© ٢٠٢٦ قيمة. جميع الحقوق محفوظة.">© ٢٠٢٦ قيمة. جميع الحقوق محفوظة.</span>
+        <div class="foot-soc">
+          <a href="#" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".8" fill="currentColor"/></svg></a>
+          <a href="#" aria-label="X"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 2H22l-7.1 8.1L23 22h-6.8l-5-6.6L5.5 22H2.3l7.6-8.7L1.5 2h6.9l4.5 6 5.9-6zm-1.2 18h1.9L7.4 4H5.4l12.3 16z"/></svg></a>
+          <a href="#" aria-label="WhatsApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M3 21l1.7-5A8 8 0 1 1 8 19.3z"/></svg></a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- GSAP + Lenis -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
+  <script src="{{ asset('landing/qayema-app-landing.js') }}"></script>
+  <script>
+    // inject check icons into pricing lists (keeps markup tidy)
+    document.querySelectorAll('.plan li').forEach(function(li){
+      li.innerHTML = li.innerHTML.replace('__C__', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>');
+    });
+  </script>
 </body>
 </html>

@@ -75,8 +75,8 @@ class MenuScanControllerTest extends TestCase
         );
 
         $response->assertOk();
-        $this->assertDatabaseHas('categories', ['restaurant_id' => $restaurant->id, 'name' => 'Mains']);
-        $this->assertDatabaseHas('dishes', ['restaurant_id' => $restaurant->id, 'name' => 'Kafta']);
+        $this->assertDatabaseHas('categories', ['restaurant_id' => $restaurant->id, 'name->en' => 'Mains']);
+        $this->assertDatabaseHas('dishes', ['restaurant_id' => $restaurant->id, 'name->en' => 'Kafta']);
         $this->assertSame(2, Dish::where('restaurant_id', $restaurant->id)->count());
         $this->assertSame(1, Category::where('restaurant_id', $restaurant->id)->count());
     }

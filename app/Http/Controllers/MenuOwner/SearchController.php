@@ -25,16 +25,21 @@ class SearchController extends Controller
         }
 
         $term = '%'.$q.'%';
+        $orderColumn = 'name->'.($restaurant->default_locale ?? 'en');
 
         $dishes = Dish::where('restaurant_id', $restaurant->id)
-            ->where('name', 'like', $term)
-            ->orderBy('name')
+            ->where(fn ($query) => $query
+                ->where('name->ar', 'like', $term)
+                ->orWhere('name->en', 'like', $term))
+            ->orderBy($orderColumn)
             ->limit(6)
             ->get(['id', 'name', 'is_available']);
 
         $categories = Category::where('restaurant_id', $restaurant->id)
-            ->where('name', 'like', $term)
-            ->orderBy('name')
+            ->where(fn ($query) => $query
+                ->where('name->ar', 'like', $term)
+                ->orWhere('name->en', 'like', $term))
+            ->orderBy($orderColumn)
             ->limit(4)
             ->get(['id', 'name']);
 

@@ -23,7 +23,7 @@ class DishForm
                         Select::make('restaurant_id')
                             ->label('Restaurant')
                             ->relationship('restaurant', 'name')
-                            ->searchable()
+                            ->getOptionLabelFromRecordUsing(fn ($record): string => (string) $record->name)
                             ->preload()
                             ->required()
                             ->live()
@@ -32,7 +32,7 @@ class DishForm
                         Select::make('category_id')
                             ->label('Category')
                             ->relationship('category', 'name', fn ($query, $get) => $query->where('restaurant_id', $get('restaurant_id')))
-                            ->searchable()
+                            ->getOptionLabelFromRecordUsing(fn ($record): string => (string) $record->name)
                             ->preload()
                             ->nullable()
                             ->helperText('Optional. Groups this dish under a category.'),
@@ -72,8 +72,8 @@ class DishForm
                     ->schema([
                         Select::make('tags')
                             ->relationship('tags', 'name')
+                            ->getOptionLabelFromRecordUsing(fn ($record): string => (string) $record->name)
                             ->multiple()
-                            ->searchable()
                             ->preload()
                             ->helperText('Tags help customers filter dishes. Managed under System → Tags.'),
                     ]),

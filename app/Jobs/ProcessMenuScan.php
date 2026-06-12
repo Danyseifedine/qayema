@@ -7,7 +7,6 @@ use App\Services\GeminiMenuExtractorService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Throwable;
 
@@ -54,14 +53,11 @@ class ProcessMenuScan implements ShouldQueue
 
         $scan->markProcessing();
 
-        $imagePath = $scan->image_path
-            ? Storage::disk('local')->path($scan->image_path)
-            : null;
+        $imagePath = $scan->getFirstMedia('scan')?->getPath();
 
         if (! $imagePath || ! file_exists($imagePath)) {
             Log::error('ProcessMenuScan: image file missing', [
                 'scan_id' => $this->menuScanId,
-                'image_path' => $scan->image_path,
             ]);
 
             $scan->markFailed('The uploaded image is no longer available. Please try again.');
@@ -72,7 +68,6 @@ class ProcessMenuScan implements ShouldQueue
 
         Log::info('ProcessMenuScan: calling Gemini API', [
             'scan_id' => $this->menuScanId,
-            'image_path' => $scan->image_path,
         ]);
 
         try {
@@ -120,13 +115,10 @@ class ProcessMenuScan implements ShouldQueue
 
     private function deleteImage(MenuScan $scan): void
     {
-        if ($scan->image_path) {
-            Storage::disk('local')->delete($scan->image_path);
+        $scan->clearMediaCollection('scan');
 
-            Log::info('ProcessMenuScan: temp image deleted', [
-                'scan_id' => $scan->id,
-                'image_path' => $scan->image_path,
-            ]);
-        }
+        Log::info('ProcessMenuScan: scan image deleted', [
+            'scan_id' => $scan->id,
+        ]);
     }
 }

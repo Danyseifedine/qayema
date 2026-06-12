@@ -60,7 +60,7 @@
         existing: {
             name:               @json($restaurant?->name ?? ''),
             slug:               @json($restaurant?->slug ?? ''),
-            preferred_language: @json($restaurant?->preferred_language ?? $locale),
+            default_locale: @json($restaurant?->default_locale ?? (in_array($locale, ['ar','en']) ? $locale : 'ar')),
             country_code:       @json($restaurant?->country_code ?? ''),
             phone:              @json($restaurant?->phone ?? ''),
             currency:           @json($restaurant?->currency ?? 'USD'),
@@ -658,7 +658,7 @@ h1.title .it { font-family: var(--font-display); font-style: italic; color: var(
                         </div>
                         <div class="ps-header">
                             <div class="ps-rest" x-text="s1.name || '{{ $appName }}'"></div>
-                            <div class="ps-sub" x-text="selectedCurrency + ' · ' + (s1.preferred_language || '{{ $locale }}').toUpperCase()"></div>
+                            <div class="ps-sub" x-text="selectedCurrency + ' · ' + (s1.default_locale || '{{ $locale }}').toUpperCase()"></div>
                         </div>
                         <div class="ps-list">
                             <div class="ps-item">
@@ -721,7 +721,7 @@ document.addEventListener('alpine:init', () => {
         get progress() { return Math.round(((this.step - 1) / (this.totalSteps - 1)) * 100); },
 
         /* Step 1 */
-        s1: { name: _o.existing.name, preferred_language: _o.existing.preferred_language, slug: _o.existing.slug },
+        s1: { name: _o.existing.name, default_locale: _o.existing.default_locale, slug: _o.existing.slug },
         slugEdited:  !!_o.existing.slug, // true when user has manually touched the slug field
         slugStatus:  'idle',             // idle | checking | available | taken
         _slugTimer:  null,
@@ -827,7 +827,7 @@ document.addEventListener('alpine:init', () => {
         _captureSnap(step) {
             switch (step) {
                 case 1:
-                    this._snap[1] = JSON.stringify({ name: this.s1.name.trim(), lang: this.s1.preferred_language, slug: this.s1.slug });
+                    this._snap[1] = JSON.stringify({ name: this.s1.name.trim(), lang: this.s1.default_locale, slug: this.s1.slug });
                     break;
                 case 2:
                     this._snap[2] = JSON.stringify({ cc: dom('country_code'), phone: dom('phone'), currency: dom('currency') });
@@ -849,7 +849,7 @@ document.addEventListener('alpine:init', () => {
 
         _isUnchanged() {
             switch (this.step) {
-                case 1: return this._snap[1] === JSON.stringify({ name: this.s1.name.trim(), lang: this.s1.preferred_language, slug: this.s1.slug });
+                case 1: return this._snap[1] === JSON.stringify({ name: this.s1.name.trim(), lang: this.s1.default_locale, slug: this.s1.slug });
                 case 2: return this._snap[2] === JSON.stringify({ cc: dom('country_code'), phone: dom('phone'), currency: dom('currency') });
                 case 3: return this._snap[3] === `${dom('logo_key')}|${dom('cover_image_key')}`;
                 case 4: return this._snap[4] === [...this.cdTagIds].sort().join(',');

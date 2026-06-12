@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ $restaurant->preferred_language ?? 'en' }}" dir="{{ ($settings['menu_direction'] ?? 'ltr') === 'rtl' ? 'rtl' : 'ltr' }}">
+<html lang="{{ $restaurant->default_locale ?? 'ar' }}" dir="{{ ($settings['menu_direction'] ?? 'ltr') === 'rtl' ? 'rtl' : 'ltr' }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">

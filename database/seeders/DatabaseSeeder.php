@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
         $this->call(TagSeeder::class);
         $this->call(TemplateSeeder::class);
         $this->call(TemplateTagSeeder::class);
+        $this->call(FeatureSeeder::class);
         User::create([
             'name' => 'Admin',
             'email' => 'admin@admin.com',

@@ -21,7 +21,7 @@ class CategoryController extends Controller
         $restaurant = $request->user()->restaurant;
 
         $categories = $restaurant
-            ? $restaurant->categories()->orderBy('name')->get()
+            ? $restaurant->categories()->orderBy('name->'.($restaurant->default_locale ?? 'en'))->get()
             : collect();
 
         return view('dashboard.categories.index', [
@@ -62,7 +62,7 @@ class CategoryController extends Controller
             return $redirect;
         }
 
-        $data = $request->validated();
+        $data = $this->translateContent($request->validated(), $restaurant->default_locale ?? 'ar');
         $data['restaurant_id'] = $restaurant->id;
         $data['display_order'] = $restaurant->categories()->max('display_order') + 1;
 
@@ -88,7 +88,11 @@ class CategoryController extends Controller
     {
         $this->authorize('update', $category);
 
-        $category->update($request->validated());
+        $category->update($this->translateContent(
+            $request->validated(),
+            $category->restaurant->default_locale ?? 'ar',
+            $category,
+        ));
 
         $this->syncImage($request, $category);
 
@@ -122,6 +126,25 @@ class CategoryController extends Controller
         session()->flash('success', __('menu_owner.common.messages.reorder_success'));
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Wrap submitted plain strings into the restaurant's base-language
+     * translation, preserving any existing translation in the other locale.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function translateContent(array $data, string $locale, ?Category $category = null): array
+    {
+        foreach (['name', 'description'] as $field) {
+            if (array_key_exists($field, $data) && ! is_array($data[$field])) {
+                $existing = $category?->getTranslations($field) ?? [];
+                $data[$field] = array_merge($existing, [$locale => $data[$field]]);
+            }
+        }
+
+        return $data;
     }
 
     private function redirectIfCategoryLimitReached(Restaurant $restaurant): ?RedirectResponse

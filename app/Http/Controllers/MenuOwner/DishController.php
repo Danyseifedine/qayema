@@ -21,7 +21,7 @@ class DishController extends Controller
         $restaurant = $request->user()->restaurant;
 
         $dishes = $restaurant
-            ? $restaurant->dishes()->with('category')->orderBy('name')->get()
+            ? $restaurant->dishes()->with('category')->orderBy($this->nameColumn($restaurant))->get()
             : collect();
 
         return view('dashboard.dishes.index', [
@@ -46,8 +46,9 @@ class DishController extends Controller
         return view('dashboard.dishes.form', [
             'dish' => null,
             'restaurant' => $restaurant,
-            'categories' => $restaurant->categories()->orderBy('name')->get(),
+            'categories' => $restaurant->categories()->orderBy($this->nameColumn($restaurant))->get(),
             'tagValues' => [],
+            'allTags' => \App\Models\Tag::orderBy('category')->get(),
         ]);
     }
 
@@ -64,11 +65,15 @@ class DishController extends Controller
             return $redirect;
         }
 
-        $data = $request->validated();
+        $data = $this->translateContent($request->validated(), $restaurant->default_locale ?? 'ar');
+        $tagIds = $data['tags'] ?? [];
+        unset($data['tags']);
+
         $data['restaurant_id'] = $restaurant->id;
         $data['display_order'] = $restaurant->dishes()->max('display_order') + 1;
 
         $dish = Dish::create($data);
+        $dish->tags()->sync($tagIds);
 
         $this->syncImage($request, $dish);
 
@@ -85,8 +90,9 @@ class DishController extends Controller
         return view('dashboard.dishes.form', [
             'dish' => $dish,
             'restaurant' => $restaurant,
-            'categories' => $restaurant->categories()->orderBy('name')->get(),
-            'tagValues' => $dish->tags ?? [],
+            'categories' => $restaurant->categories()->orderBy($this->nameColumn($restaurant))->get(),
+            'tagValues' => $dish->tags()->pluck('tags.id')->all(),
+            'allTags' => \App\Models\Tag::orderBy('category')->get(),
         ]);
     }
 
@@ -94,12 +100,41 @@ class DishController extends Controller
     {
         $this->authorize('update', $dish);
 
-        $dish->update($request->validated());
+        $data = $this->translateContent($request->validated(), $dish->restaurant->default_locale ?? 'ar', $dish);
+        $tagIds = $data['tags'] ?? [];
+        unset($data['tags']);
+
+        $dish->update($data);
+        $dish->tags()->sync($tagIds);
 
         $this->syncImage($request, $dish);
 
         return redirect()->route('menu-owner.dishes.index')
             ->with('success', __('menu_owner.common.messages.dish_updated'));
+    }
+
+    /**
+     * Wrap submitted plain strings into the restaurant's base-language
+     * translation, preserving any existing translation in the other locale.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function translateContent(array $data, string $locale, ?Dish $dish = null): array
+    {
+        foreach (['name', 'ingredients'] as $field) {
+            if (array_key_exists($field, $data) && ! is_array($data[$field])) {
+                $existing = $dish?->getTranslations($field) ?? [];
+                $data[$field] = array_merge($existing, [$locale => $data[$field]]);
+            }
+        }
+
+        return $data;
+    }
+
+    private function nameColumn(\App\Models\Restaurant $restaurant): string
+    {
+        return 'name->'.($restaurant->default_locale ?? 'en');
     }
 
     public function destroy(Dish $dish): RedirectResponse

@@ -89,24 +89,23 @@ class OnboardingController extends Controller
                         'regex:/^[a-z0-9][a-z0-9-]*[a-z0-9]$/',
                         Rule::unique('restaurants', 'slug')->ignore($restaurant?->id),
                     ],
-                    'preferred_language' => ['nullable', 'string', 'in:'.implode(',', config('locales.supported', ['en']))],
+                    'default_locale' => ['nullable', 'string', 'in:ar,en'],
                 ]);
+
+                $defaultLocale = $validated['default_locale'] ?? 'ar';
 
                 if ($restaurant) {
                     $restaurant->update([
-                        'name' => $validated['name'],
+                        'name' => [$defaultLocale => $validated['name']],
                         'slug' => $validated['slug'],
-                        'preferred_language' => $validated['preferred_language'] ?? 'en',
+                        'default_locale' => $defaultLocale,
                     ]);
                 } else {
                     Restaurant::create([
                         'user_id' => $user->id,
-                        'name' => $validated['name'],
+                        'name' => [$defaultLocale => $validated['name']],
                         'slug' => $validated['slug'],
-                        'preferred_language' => $validated['preferred_language'] ?? 'en',
-                        'dish_limit' => 40,
-                        'category_limit' => 10,
-                        'social_link_limit' => 10,
+                        'default_locale' => $defaultLocale,
                     ]);
                 }
                 break;
@@ -139,11 +138,13 @@ class OnboardingController extends Controller
                     'cover_image_key' => ['nullable', 'string', 'regex:/^[a-f0-9\-]{36}$/'],
                 ]);
 
+                $media = app(\App\Services\MediaSyncService::class);
+
                 foreach (['logo', 'cover_image'] as $key) {
                     $mediaKey = $request->input("{$key}_key");
 
                     if ($mediaKey) {
-                        $path = storage_path("app/temp/{$mediaKey}.jpg");
+                        $path = $media->tempPath($user->id, $mediaKey);
 
                         if (file_exists($path)) {
                             $restaurant->clearMediaCollection($key);

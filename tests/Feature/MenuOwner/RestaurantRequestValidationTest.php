@@ -25,7 +25,7 @@ class RestaurantRequestValidationTest extends TestCase
             'name' => 'My Restaurant',
             'phone' => '70123456',
             'currency' => 'USD',
-            'preferred_language' => 'en',
+            'default_locale' => 'en',
             'logo_key' => str()->uuid()->toString(),
         ], $overrides);
 

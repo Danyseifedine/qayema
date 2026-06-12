@@ -22,7 +22,7 @@ class CategoryForm
                         Select::make('restaurant_id')
                             ->label('Restaurant')
                             ->relationship('restaurant', 'name')
-                            ->searchable()
+                            ->getOptionLabelFromRecordUsing(fn ($record): string => (string) $record->name)
                             ->preload()
                             ->required()
                             ->helperText('The restaurant this category belongs to.'),

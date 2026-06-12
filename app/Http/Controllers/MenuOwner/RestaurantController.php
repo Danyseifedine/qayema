@@ -42,14 +42,21 @@ class RestaurantController extends Controller
         }
         $data['slug'] = $slug;
 
+        // Translatable content is written under the restaurant's base language,
+        // preserving any translation already stored for the other locale.
+        $locale = $data['default_locale'] ?? $restaurant?->default_locale ?? 'ar';
+        foreach (['name', 'description', 'address'] as $translatable) {
+            if (array_key_exists($translatable, $data) && ! is_array($data[$translatable])) {
+                $existing = $restaurant?->getTranslations($translatable) ?? [];
+                $data[$translatable] = array_merge($existing, [$locale => $data[$translatable]]);
+            }
+        }
+
         if ($restaurant) {
             $restaurant->update($data);
             $message = __('menu_owner.common.messages.restaurant_updated');
         } else {
             $data['user_id'] = $user->id;
-            $data['dish_limit'] = 40;
-            $data['category_limit'] = 10;
-            $data['social_link_limit'] = 10;
             $restaurant = Restaurant::create($data);
             $message = __('menu_owner.common.messages.restaurant_created');
         }

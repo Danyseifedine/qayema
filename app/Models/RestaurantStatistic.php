@@ -10,6 +10,12 @@ class RestaurantStatistic extends Model
 {
     use HasFactory;
 
+    /**
+     * Raw per-visit rows live in menu_sessions (v2 rename); dashboards will
+     * move to the restaurant_stats_daily rollup.
+     */
+    protected $table = 'menu_sessions';
+
     protected $fillable = [
         'restaurant_id',
         'session_id',

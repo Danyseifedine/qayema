@@ -88,7 +88,9 @@
       "Bash(cd /c/Users/scorp/Desktop/lebify/menux)",
       "Bash(php scripts_tmp_i18n.php)",
       "Bash(ls tests/Feature/Security)",
-      "Bash(grep -rnE 'updatedSlug|\\\\$this->slug|public.*\\\\$slug' app/ resources/)"
+      "Bash(grep -rnE 'updatedSlug|\\\\$this->slug|public.*\\\\$slug' app/ resources/)",
+      "mcp__claude_ai_Mermaid_Chart__validate_and_render_mermaid_diagram",
+      "Bash(python -c ' *)"
     ],
     "additionalDirectories": [
       "c:\\Users\\scorp\\.claude\\projects\\c--Users-scorp-Desktop-lebify-menux\\memory"

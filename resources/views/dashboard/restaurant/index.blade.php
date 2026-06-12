@@ -140,7 +140,7 @@
                               ok = false;
                           }
 
-                          const lang = this.$el.querySelector('input[name=preferred_language]');
+                          const lang = this.$el.querySelector('input[name=default_locale]');
                           if (!lang || !lang.value) {
                               this.errors.language = '{{ __('menu_owner.restaurant.validation.language_required') }}';
                               ok = false;
@@ -403,6 +403,7 @@
                         {{-- Preferred Language --}}
                         @php
                             $langOptions = collect(config('locales.locales'))
+                                ->only(['ar', 'en'])
                                 ->map(fn ($data, $code) => [
                                     'value' => $code,
                                     'label' => $data['name'],
@@ -410,14 +411,14 @@
                                 ])->values()->all();
                         @endphp
                         <div>
-                            <x-ui.field name="preferred_language"
+                            <x-ui.field name="default_locale"
                                         label="{{ __('menu_owner.restaurant.preferred_language') }}"
                                         help="{{ __('menu_owner.restaurant.preferred_language_desc') }}"
                                         required>
                                 <x-ui.combo
-                                    name="preferred_language"
+                                    name="default_locale"
                                     :options="$langOptions"
-                                    :value="old('preferred_language', $restaurant?->preferred_language ?? 'en')"
+                                    :value="old('default_locale', $restaurant?->default_locale ?? 'ar')"
                                     :searchable="false" />
                             </x-ui.field>
                             <p class="ui-fe-error" x-show="errors.language" x-text="errors.language"></p>

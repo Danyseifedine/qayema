@@ -29,8 +29,9 @@ class RestaurantsTable
 
                 TextColumn::make('name')
                     ->placeholder('N/A')
-                    ->searchable()
-                    ->sortable()
+                    ->searchable(query: fn ($query, string $search) => $query
+                        ->where('name->ar', 'like', "%{$search}%")
+                        ->orWhere('name->en', 'like', "%{$search}%"))
                     ->weight('bold'),
 
                 TextColumn::make('user.name')
@@ -51,8 +52,9 @@ class RestaurantsTable
                     ->sortable(),
 
                 TextColumn::make('dish_limit')
-                    ->label('Limit')
-                    ->placeholder('N/A')
+                    ->label('Dish Limit')
+                    ->getStateUsing(fn (Restaurant $record): int => $record->dish_limit)
+                    ->badge()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('categories_count')

@@ -5,12 +5,18 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\Translatable\HasTranslations;
 
 class Dish extends Model implements HasMedia
 {
-    use HasFactory, InteractsWithMedia;
+    use HasFactory, HasTranslations, InteractsWithMedia;
+
+    /** @var string[] */
+    public array $translatable = ['name', 'ingredients'];
 
     protected $fillable = [
         'restaurant_id',
@@ -18,7 +24,6 @@ class Dish extends Model implements HasMedia
         'name',
         'price',
         'ingredients',
-        'tags',
         'is_available',
         'display_order',
     ];
@@ -31,7 +36,6 @@ class Dish extends Model implements HasMedia
             'price' => 'decimal:2',
             'is_available' => 'boolean',
             'display_order' => 'integer',
-            'tags' => 'array',
         ];
     }
 
@@ -43,6 +47,16 @@ class Dish extends Model implements HasMedia
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(Tag::class, 'dish_tag');
+    }
+
+    public function variants(): HasMany
+    {
+        return $this->hasMany(DishVariant::class)->orderBy('display_order');
     }
 
     public function registerMediaCollections(): void

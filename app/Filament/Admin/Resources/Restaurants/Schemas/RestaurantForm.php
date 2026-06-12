@@ -66,40 +66,17 @@ class RestaurantForm
                             ->columnSpanFull(),
                     ]),
 
-                Section::make('Template & Limits')
-                    ->description('Assign a display template and set the content limits for this restaurant.')
-                    ->columns(3)
+                Section::make('Template')
+                    ->description('Assign a display template. Limits and feature access come from the template\'s bundled features (entitlements), plus any add-ons or manual grants.')
                     ->schema([
                         Select::make('template_id')
                             ->label('Template')
                             ->relationship('template', 'name')
-                            ->searchable()
+                            ->getOptionLabelFromRecordUsing(fn ($record): string => (string) $record->name)
                             ->preload()
                             ->nullable()
                             ->placeholder('No template')
-                            ->helperText('Controls the public menu design.')
-                            ->columnSpan(3),
-                        TextInput::make('dish_limit')
-                            ->label('Dish Limit')
-                            ->numeric()
-                            ->required()
-                            ->default(40)
-                            ->minValue(1)
-                            ->helperText('Max dishes allowed.'),
-                        TextInput::make('category_limit')
-                            ->label('Category Limit')
-                            ->numeric()
-                            ->required()
-                            ->default(10)
-                            ->minValue(1)
-                            ->helperText('Max categories allowed.'),
-                        TextInput::make('social_link_limit')
-                            ->label('Social Link Limit')
-                            ->numeric()
-                            ->required()
-                            ->default(4)
-                            ->minValue(1)
-                            ->helperText('Max social links allowed.'),
+                            ->helperText('Controls the public menu design and the bundled entitlements.'),
                     ]),
 
                 Section::make('Visibility')

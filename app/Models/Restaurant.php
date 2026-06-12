@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Entitlements;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,10 +11,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\Translatable\HasTranslations;
 
 class Restaurant extends Model implements HasMedia
 {
-    use HasFactory, InteractsWithMedia;
+    use HasFactory, HasTranslations, InteractsWithMedia;
+
+    /** @var string[] */
+    public array $translatable = ['name', 'description', 'address'];
 
     protected $fillable = [
         'user_id',
@@ -23,16 +28,14 @@ class Restaurant extends Model implements HasMedia
         'country_code',
         'phone',
         'is_active',
-        'dish_limit',
-        'category_limit',
-        'social_link_limit',
         'template_id',
         'template_settings',
         'qr_settings',
         'address',
         'google_maps_url',
         'currency',
-        'preferred_language',
+        'default_locale',
+        'timezone',
         'restaurant_type_id',
     ];
 
@@ -40,28 +43,29 @@ class Restaurant extends Model implements HasMedia
     {
         return [
             'is_active' => 'boolean',
-            'dish_limit' => 'integer',
-            'category_limit' => 'integer',
-            'social_link_limit' => 'integer',
             'template_settings' => 'array',
             'qr_settings' => 'array',
         ];
     }
 
-    protected static function boot(): void
+    protected static function booted(): void
     {
-        parent::boot();
-
-        static::creating(function ($restaurant) {
+        static::creating(function (self $restaurant) {
             if (empty($restaurant->slug)) {
                 $base = Str::slug($restaurant->name);
-                $slug = $base;
+                $slug = $base !== '' ? $base : 'menu';
                 $count = 2;
                 while (static::where('slug', $slug)->exists()) {
                     $slug = $base.'-'.$count;
                     $count++;
                 }
                 $restaurant->slug = $slug;
+            }
+        });
+
+        static::saved(function (self $restaurant) {
+            if ($restaurant->wasChanged('template_id')) {
+                Entitlements::flush($restaurant->id);
             }
         });
     }
@@ -106,9 +110,77 @@ class Restaurant extends Model implements HasMedia
         return $this->hasMany(RestaurantStatistic::class);
     }
 
+    public function dailyStats(): HasMany
+    {
+        return $this->hasMany(RestaurantDailyStat::class);
+    }
+
     public function menuScans(): HasMany
     {
         return $this->hasMany(MenuScan::class);
+    }
+
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
+    public function featureGrants(): HasMany
+    {
+        return $this->hasMany(RestaurantFeature::class);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function entitlements(): Entitlements
+    {
+        return Entitlements::for($this);
+    }
+
+    public function activeTemplateSubscription(): ?Subscription
+    {
+        if ($this->template_id === null) {
+            return null;
+        }
+
+        return $this->subscriptions()
+            ->active()
+            ->where('subscribable_type', Template::class)
+            ->where('subscribable_id', $this->template_id)
+            ->latest('current_period_end')
+            ->first();
+    }
+
+    /**
+     * The public menu is served only when the assigned template is free or
+     * carries an active (or in-grace) subscription. Expiry takes the menu
+     * offline without touching any data.
+     */
+    public function menuIsPubliclyAvailable(): bool
+    {
+        if (! $this->template || $this->template->isFree()) {
+            return true;
+        }
+
+        return $this->activeTemplateSubscription() !== null;
+    }
+
+    public function getDishLimitAttribute(): int
+    {
+        return $this->entitlements()->limit('dish_limit');
+    }
+
+    public function getCategoryLimitAttribute(): int
+    {
+        return $this->entitlements()->limit('category_limit');
+    }
+
+    public function getSocialLinkLimitAttribute(): int
+    {
+        return $this->entitlements()->limit('social_link_limit');
     }
 
     public function hasReachedDishLimit(): bool

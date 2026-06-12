@@ -19,7 +19,7 @@ class SocialLinkRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'platform' => ['required', 'string', 'in:instagram,x,facebook,tiktok'],
+            'platform' => ['required', 'string', 'in:instagram,x,facebook,tiktok,whatsapp'],
             'url' => ['required', 'url', 'max:255', 'regex:/^https?:\/\//i'],
         ];
     }

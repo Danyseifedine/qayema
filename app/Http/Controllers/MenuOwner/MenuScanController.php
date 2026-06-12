@@ -49,7 +49,7 @@ class MenuScanController extends Controller
             return response()->json(['message' => 'No restaurant found.'], 422);
         }
 
-        $scan = DB::transaction(function () use ($request, $restaurant) {
+        $scan = DB::transaction(function () use ($restaurant) {
             $scansToday = MenuScan::where('restaurant_id', $restaurant->id)
                 ->whereDate('created_at', today())
                 ->lockForUpdate()
@@ -59,13 +59,16 @@ class MenuScanController extends Controller
                 return null;
             }
 
-            $path = $request->file('image')->store('menu-scans', 'local');
-
-            return MenuScan::create([
+            $scan = MenuScan::create([
                 'restaurant_id' => $restaurant->id,
                 'status' => MenuScanStatus::Pending,
-                'image_path' => $path,
             ]);
+
+            $scan->addMediaFromRequest('image')
+                ->usingName('menu-scan')
+                ->toMediaCollection('scan');
+
+            return $scan;
         });
 
         if (! $scan) {
@@ -167,11 +170,12 @@ class MenuScanController extends Controller
                 $allDishes = [];
                 $categoryCount = 0;
                 $now = now();
+                $locale = $restaurant->default_locale ?? 'ar';
 
                 foreach ($scanCategories as $order => $categoryData) {
                     $category = Category::create([
                         'restaurant_id' => $restaurant->id,
-                        'name' => $categoryData['name'],
+                        'name' => [$locale => $categoryData['name']],
                         'display_order' => $order,
                     ]);
 
@@ -181,9 +185,11 @@ class MenuScanController extends Controller
                         $allDishes[] = [
                             'restaurant_id' => $restaurant->id,
                             'category_id' => $category->id,
-                            'name' => $dishData['name'],
+                            'name' => json_encode([$locale => $dishData['name']], JSON_UNESCAPED_UNICODE),
                             'price' => $dishData['price'] ?? null,
-                            'ingredients' => $dishData['ingredients'] ?? null,
+                            'ingredients' => filled($dishData['ingredients'] ?? null)
+                                ? json_encode([$locale => $dishData['ingredients']], JSON_UNESCAPED_UNICODE)
+                                : null,
                             'is_available' => true,
                             'display_order' => $dishOrder,
                             'created_at' => $now,

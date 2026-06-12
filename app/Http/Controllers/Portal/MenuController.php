@@ -16,7 +16,7 @@ class MenuController extends Controller
 
     public function __construct(private readonly DeviceDetectionService $deviceDetection) {}
 
-    public function show(Request $request, string $slug): View
+    public function show(Request $request, string $slug): View|\Illuminate\Http\Response
     {
         $this->guardSlug($slug);
 
@@ -30,6 +30,13 @@ class MenuController extends Controller
                 'dishes' => fn ($q) => $q->where('is_available', true)->whereNull('category_id')->orderBy('display_order'),
             ])
             ->firstOrFail();
+
+        // Paid template without an active subscription: serve a friendly
+        // "temporarily unavailable" page with HTTP 200 so printed QR codes
+        // never break; data stays intact and renewal restores the menu.
+        if (! $restaurant->menuIsPubliclyAvailable()) {
+            return response()->view('portal.menu.unavailable', ['restaurant' => $restaurant]);
+        }
 
         $this->trackVisitor($request, $restaurant);
 

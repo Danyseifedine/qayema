@@ -24,7 +24,7 @@
 
     $locales         = config('locales.locales');
     $currentLocale   = app()->getLocale();
-    $preferredLocale = $restaurant?->preferred_language ?? $currentLocale;
+    $preferredLocale = $restaurant?->default_locale ?? $currentLocale;
 
     $userAvatar  = $authUser?->socialAccounts()->where('provider', 'google')->value('avatar');
     $userInitial = mb_strtoupper(mb_substr($authUser?->name ?? '?', 0, 1));
