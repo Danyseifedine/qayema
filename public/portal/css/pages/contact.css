@@ -3,6 +3,9 @@
    Uses the shared design tokens from app.css
    ============================================================ */
 
+/* the [hidden] attribute must beat class-level display rules (success/form/banner toggles) */
+[hidden] { display: none !important; }
+
 .ctc { padding: 150px 0 110px; }
 .ctc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 72px; align-items: start; }
 
@@ -40,11 +43,12 @@ html[lang="ar"] .ctc-headline .it { font-style: normal; }
   transition: border-color .18s var(--ease), box-shadow .18s var(--ease), background .18s var(--ease);
 }
 .ctc-input::placeholder, .ctc-textarea::placeholder { color: var(--faint); }
-.ctc-input:focus, .ctc-textarea:focus { border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); box-shadow: 0 0 0 3px rgba(200,168,90,.12); }
+.ctc-input:focus, .ctc-textarea:focus { border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); box-shadow: 0 0 0 3px rgba(248,211,141,.12); }
 .ctc-input.is-error, .ctc-textarea.is-error { border-color: rgba(226,121,107,.6); box-shadow: 0 0 0 3px rgba(226,121,107,.1); }
 .ctc-textarea { resize: none; height: 142px; line-height: 1.6; }
 .ctc-field-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; min-height: 18px; }
 .ctc-error { margin: 6px 0 0; font-size: 12.5px; color: #E2796B; line-height: 1.4; }
+.ctc-error:empty { display: none; }   /* no gap when there's no error */
 .ctc-char-count { margin-inline-start: auto; font-size: 11.5px; color: var(--faint); flex-shrink: 0; }
 .ctc-char-count.over { color: #E2796B; }
 .ctc-rate-banner { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 22px; padding: 14px 16px; border-radius: 12px; background: rgba(226,121,107,.08); border: 1px solid rgba(226,121,107,.22); font-size: 13.5px; color: #E2796B; line-height: 1.5; }

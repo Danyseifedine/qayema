@@ -2,12 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\TooManyContactMessages;
 use App\Http\Requests\ContactRequest;
-use App\Mail\ContactMessageReceived;
-use App\Models\ContactMessage;
+use App\Services\Portal\ContactService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\View\View;
 
 class ContactController extends Controller
@@ -17,31 +16,29 @@ class ContactController extends Controller
         return view('portal.contact');
     }
 
-    public function store(ContactRequest $request): RedirectResponse
+    public function store(ContactRequest $request, ContactService $contacts): RedirectResponse|JsonResponse
     {
-        $key = 'contact:'.$request->ip();
-
-        if (RateLimiter::tooManyAttempts($key, 3)) {
-            $seconds = RateLimiter::availableIn($key);
-            $hours = ceil($seconds / 3600);
-
-            return back()
-                ->withInput()
-                ->withErrors(['rate_limit' => "You've reached the 3-message daily limit. Try again in {$hours} hour(s)."]);
+        // Honeypot: bots fill the hidden "website" field. Pretend success and drop
+        if (filled($request->input('website'))) {
+            return $request->expectsJson()
+                ? $this->success(message: 'Your message has been sent.')
+                : back()->with('success', true);
         }
 
-        $contact = ContactMessage::create([
-            'name' => $request->string('name'),
-            'email' => $request->string('email'),
-            'message' => $request->string('message'),
-            'ip_address' => $request->ip(),
-        ]);
+        try {
+            $contacts->submit($request->safe()->only(['name', 'email', 'message']), (string) $request->ip());
+        } catch (TooManyContactMessages $e) {
+            // Locale is resolved server-side (owner.locale middleware), so the
+            // message comes back already translated for both AJAX and no-JS paths.
+            $message = __('portal.contact.js.rate_limit', ['hours' => $e->retryAfterHours]);
 
-        Mail::to(config('services.contact.recipient'))->send(new ContactMessageReceived($contact));
+            return $request->expectsJson()
+                ? $this->error($message, ['rate_limit' => [$message]], 429)
+                : back()->withInput()->withErrors(['rate_limit' => $message]);
+        }
 
-        // Decay hits after 24 hours
-        RateLimiter::hit($key, 86400);
-
-        return back()->with('success', true);
+        return $request->expectsJson()
+            ? $this->success(message: 'Your message has been sent.')
+            : back()->with('success', true);
     }
 }

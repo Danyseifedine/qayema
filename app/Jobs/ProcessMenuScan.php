@@ -3,7 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\MenuScan;
-use App\Services\GeminiMenuExtractorService;
+use App\Services\ThirdParty\GeminiMenuExtractorService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;

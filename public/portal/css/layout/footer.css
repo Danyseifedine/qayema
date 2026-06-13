@@ -24,7 +24,7 @@ footer::after {
   left: -12%;
   width: 124%;
   height: clamp(170px, 22vw, 320px);
-  background: url("../../images/footer_bg.svg") bottom center / 100% auto no-repeat;
+  background: url("../../assets/images/footer_bg.svg") bottom center / 100% auto no-repeat;
   pointer-events: none;
   z-index: 0;
   will-change: transform;

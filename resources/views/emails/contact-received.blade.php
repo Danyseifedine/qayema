@@ -5,7 +5,8 @@
 
 ---
 
-{{ $contactMessage->message }}
+@php $safeMessage = str_replace(['\', '`', '*', '_', '[', ']', '(', ')', '#', '>', '!', '~'], ['\\', '\`', '\*', '\_', '\[', '\]', '\(', '\)', '\#', '\>', '\!', '\~'], $contactMessage->message); @endphp
+{{ $safeMessage }}
 
 ---
 

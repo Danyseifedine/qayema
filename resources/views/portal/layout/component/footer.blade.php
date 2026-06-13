@@ -2,40 +2,41 @@
 @php
     // Section links jump home first when viewed from a non-home portal page.
     $base = request()->is('/') ? '' : '/';
+    $locale = app()->getLocale();
 @endphp
 <footer>
   <div class="wrap">
     <div class="foot-top">
       <div class="foot-brand">
         <img src="{{ asset('images/logo/logo.svg') }}" alt="Qayema"/>
-        <p data-en="The AI menu studio for modern restaurants. Photograph, generate, and serve — one QR, two languages." data-ar="استوديو القوائم بالذكاء الاصطناعي للمطاعم الحديثة. صوّر، أنشئ، وقدّم — رمز واحد، لغتان.">The AI menu studio for modern restaurants. Photograph, generate, and serve — one QR, two languages.</p>
+        <p>{{ __('portal.footer.tagline') }}</p>
         <div class="seg lang" role="group" aria-label="language">
-          <button data-l="ar">ع</button>
-          <button data-l="en">EN</button>
+          <a href="{{ route('locale.switch', 'ar') }}" class="{{ $locale === 'ar' ? 'on' : '' }}">ع</a>
+          <a href="{{ route('locale.switch', 'en') }}" class="{{ $locale === 'en' ? 'on' : '' }}">EN</a>
         </div>
       </div>
       <div class="foot-col">
-        <h5 data-en="Product" data-ar="المنتج">Product</h5>
-        <a href="{{ $base }}#features" data-en="Features" data-ar="المميزات">Features</a>
-        <a href="{{ $base }}#pricing" data-en="Pricing" data-ar="الأسعار">Pricing</a>
-        <a href="{{ $base }}#how" data-en="How it works" data-ar="كيف يعمل">How it works</a>
+        <h5>{{ __('portal.footer.product') }}</h5>
+        <a href="{{ $base }}#features">{{ __('portal.nav.features') }}</a>
+        <a href="{{ $base }}#pricing">{{ __('portal.nav.pricing') }}</a>
+        <a href="{{ $base }}#how">{{ __('portal.nav.how') }}</a>
       </div>
       <div class="foot-col">
-        <h5 data-en="Company" data-ar="الشركة">Company</h5>
-        <a href="#" data-en="About" data-ar="عن قيمة">About</a>
-        <a href="{{ route('contact') }}" data-en="Contact" data-ar="تواصل">Contact</a>
-        <a href="{{ $base }}#stories" data-en="Stories" data-ar="قصص">Stories</a>
+        <h5>{{ __('portal.footer.company') }}</h5>
+        <a href="#">{{ __('portal.footer.about') }}</a>
+        <a href="{{ route('contact') }}">{{ __('portal.footer.contact') }}</a>
+        <a href="{{ $base }}#stories">{{ __('portal.footer.stories') }}</a>
       </div>
       <div class="foot-col">
-        <h5 data-en="Legal" data-ar="قانوني">Legal</h5>
-        <a href="{{ route('terms') }}" data-en="Terms" data-ar="الشروط">Terms</a>
-        <a href="{{ route('privacy') }}" data-en="Privacy" data-ar="الخصوصية">Privacy</a>
-        <a href="{{ route('cookies') }}" data-en="Cookies" data-ar="الكوكيز">Cookies</a>
-        <a href="{{ route('refund') }}" data-en="Refund Policy" data-ar="سياسة الاسترجاع">Refund Policy</a>
+        <h5>{{ __('portal.footer.legal') }}</h5>
+        <a href="{{ route('terms') }}">{{ __('portal.footer.terms') }}</a>
+        <a href="{{ route('privacy') }}">{{ __('portal.footer.privacy') }}</a>
+        <a href="{{ route('cookies') }}">{{ __('portal.footer.cookies') }}</a>
+        <a href="{{ route('refund') }}">{{ __('portal.footer.refund') }}</a>
       </div>
     </div>
     <div class="foot-bot">
-      <span class="cp" data-en="© 2026 Qayema. All rights reserved." data-ar="© ٢٠٢٦ قيمة. جميع الحقوق محفوظة.">© 2026 Qayema. All rights reserved.</span>
+      <span class="cp">{{ __('portal.footer.copyright') }}</span>
       <div class="foot-soc">
         <a href="#" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".8" fill="currentColor"/></svg></a>
         <a href="#" aria-label="X"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 2H22l-7.1 8.1L23 22h-6.8l-5-6.6L5.5 22H2.3l7.6-8.7L1.5 2h6.9l4.5 6 5.9-6zm-1.2 18h1.9L7.4 4H5.4l12.3 16z"/></svg></a>

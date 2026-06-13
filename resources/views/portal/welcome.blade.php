@@ -1,5 +1,28 @@
 @extends('portal.layout.master.master')
 
+@php
+    // Inline icon set (server-rendered; was previously injected by landing.js)
+    $ICON = [
+        'camera' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h2l1.5-2h7L17 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="12.5" r="3.5"/></svg>',
+        'globe' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>',
+        'palette' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 0 18c1.7 0 2-1.3 1.2-2.2-.8-1 .1-2.3 1.3-2.3H17a4 4 0 0 0 4-4 8.5 8.5 0 0 0-9-9.5z"/><circle cx="7.5" cy="11" r="1.2" fill="currentColor"/><circle cx="11" cy="7.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="9" r="1.2" fill="currentColor"/></svg>',
+        'qr' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M21 21v-4M17 21h1M14 21h.01"/></svg>',
+        'whatsapp' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l1.7-5A8 8 0 1 1 8 19.3z"/><path d="M8.5 9.5c0 3 2 5 5 5 .8 0 1.3-.7.8-1.3l-1-1c-.3-.3-.7-.2-1 0l-.4.3c-.8-.4-1.4-1-1.8-1.8l.3-.4c.2-.3.3-.7 0-1l-1-1c-.6-.5-1.3 0-1.3.8z"/></svg>',
+        'chart' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v16h16"/><path d="M8 14l3-4 3 2 4-6"/></svg>',
+        'layers' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5M3 17l9 5 9-5" opacity=".6"/></svg>',
+        'phone' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="3"/><path d="M11 18.5h2"/></svg>',
+        'user' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-6 8-6s8 2 8 6"/></svg>',
+        'check' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+        'spark' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6z"/></svg>',
+    ];
+    // per-item icons for the solution list (fixed, decorative)
+    $solIcons = [
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 6L9 17l-5-5"/></svg>',
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="7" y="2.5" width="10" height="19" rx="3"/></svg>',
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>',
+    ];
+@endphp
+
 @section('content')
 
   {{-- ===== HERO ===== --}}
@@ -9,24 +32,22 @@
     <span class="hero-blob b3"></span>
 
     <div class="wrap hero-center">
-      <h1 class="display" data-en="Step into the <span class='it'>future</span><br>of menus: Human + <span class='it'>AI</span>." data-ar="ادخل إلى <span class='it'>مستقبل</span> القوائم:<br>إنسان + <span class='it'>ذكاء</span>.">Step into the <span class="it">future</span><br>of menus: Human + <span class="it">AI</span>.</h1>
-      <p class="hero-sub" data-en="Photograph your menu, let AI rebuild it bilingually, and go live with one QR — all in one Arabic-first platform." data-ar="صوّر قائمتك، ودع الذكاء الاصطناعي يعيد بناءها بلغتين، وانطلق برمز QR واحد — منصّة واحدة عربية أولاً.">Photograph your menu, let AI rebuild it bilingually, and go live with one QR — all in one Arabic-first platform.</p>
+      <h1 class="display">{!! __('portal.hero.title') !!}</h1>
+      <p class="hero-sub">{{ __('portal.hero.sub') }}</p>
 
       <form class="hero-form" action="{{ route('register') }}" method="GET">
-        <input type="email" data-en-ph="Enter your restaurant email" data-ar-ph="أدخل بريد مطعمك" placeholder="Enter your restaurant email" />
-        <button type="submit" data-en="Get started free" data-ar="ابدأ مجاناً">Get started free</button>
+        <input type="email" placeholder="{{ __('portal.hero.email_placeholder') }}" />
+        <button type="submit">{{ __('portal.hero.cta') }}</button>
       </form>
 
       <div class="hero-rating">
         <span class="hero-stars">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6.3 6.9.9-5 4.8 1.2 6.8L12 17.8 5.9 20.8 7.1 14l-5-4.8 6.9-.9z"/></svg>
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6.3 6.9.9-5 4.8 1.2 6.8L12 17.8 5.9 20.8 7.1 14l-5-4.8 6.9-.9z"/></svg>
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6.3 6.9.9-5 4.8 1.2 6.8L12 17.8 5.9 20.8 7.1 14l-5-4.8 6.9-.9z"/></svg>
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6.3 6.9.9-5 4.8 1.2 6.8L12 17.8 5.9 20.8 7.1 14l-5-4.8 6.9-.9z"/></svg>
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6.3 6.9.9-5 4.8 1.2 6.8L12 17.8 5.9 20.8 7.1 14l-5-4.8 6.9-.9z"/></svg>
+          @for ($i = 0; $i < 5; $i++)
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6.3 6.9.9-5 4.8 1.2 6.8L12 17.8 5.9 20.8 7.1 14l-5-4.8 6.9-.9z"/></svg>
+          @endfor
         </span>
         <span class="sep"></span>
-        <span data-en="Loved by restaurants from <b>Riyadh to Lisbon</b>" data-ar="موثوق به في مطاعم من <b>الرياض إلى لشبونة</b>">Loved by restaurants from <b>Riyadh to Lisbon</b></span>
+        <span>{!! __('portal.hero.rating') !!}</span>
       </div>
     </div>
 
@@ -47,28 +68,26 @@
   <section class="sec" id="problem">
     <div class="wrap">
       <div class="sec-head reveal">
-        <div class="eyebrow"><span class="bar"></span><span class="mono-label" data-en="The problem" data-ar="المشكلة">The problem</span></div>
-        <h2 class="display"><span data-en="Paper menus are" data-ar="القوائم الورقية">Paper menus are</span> <span class="gold-text" data-en="quietly costing you." data-ar="تكلّفك بصمت.">quietly costing you.</span></h2>
+        <div class="eyebrow"><span class="bar"></span><span class="mono-label">{{ __('portal.problem.eyebrow') }}</span></div>
+        <h2 class="display"><span>{{ __('portal.problem.title') }}</span> <span class="gold-text">{{ __('portal.problem.title_gold') }}</span></h2>
       </div>
       <div class="prob-grid" data-stagger>
-        <div class="prob-card">
-          <div class="num display">01</div>
-          <h3 data-en="Always out of date" data-ar="دائماً قديمة">Always out of date</h3>
-          <p data-en="A price change or a sold-out dish means a stale PDF — or another trip to the printer." data-ar="تغيير سعر أو نفاد طبق يعني ملفاً قديماً — أو رحلة جديدة للمطبعة.">A price change or a sold-out dish means a stale PDF — or another trip to the printer.</p>
-          <div class="strike"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="6" y="3" width="12" height="18" rx="1"/><path d="M9 8h6M9 12h6M9 16h3"/><line x1="4" y1="21" x2="20" y2="3" stroke-width="2"/></svg></div>
-        </div>
-        <div class="prob-card">
-          <div class="num display">02</div>
-          <h3 data-en="Reprint costs add up" data-ar="تكاليف الطباعة تتراكم">Reprint costs add up</h3>
-          <p data-en="Every seasonal update, every typo, every new dish — printed, laminated, distributed, repeat." data-ar="كل تحديث موسمي، كل خطأ، كل طبق جديد — طباعة وتغليف وتوزيع، وتتكرر.">Every seasonal update, every typo, every new dish — printed, laminated, distributed, repeat.</p>
-          <div class="strike"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2M6 14h12v7H6z"/><line x1="4" y1="21" x2="20" y2="3" stroke-width="2"/></svg></div>
-        </div>
-        <div class="prob-card">
-          <div class="num display">03</div>
-          <h3 data-en="Pinch, zoom, give up" data-ar="تكبير، تصغير، استسلام">Pinch, zoom, give up</h3>
-          <p data-en="A blurry photo of a menu helps no one — and tells you nothing about what guests actually want." data-ar="صورة ضبابية لقائمة لا تفيد أحداً — ولا تخبرك بما يريده الضيوف فعلاً.">A blurry photo of a menu helps no one — and tells you nothing about what guests actually want.</p>
-          <div class="strike"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/><line x1="3" y1="21" x2="21" y2="3" stroke-width="2"/></svg></div>
-        </div>
+        @foreach (__('portal.problem.cards') as $i => $card)
+          <div class="prob-card">
+            <div class="num display">0{{ $i + 1 }}</div>
+            <h3>{{ $card['title'] }}</h3>
+            <p>{{ $card['desc'] }}</p>
+            <div class="strike">
+              @if ($i === 0)
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="6" y="3" width="12" height="18" rx="1"/><path d="M9 8h6M9 12h6M9 16h3"/><line x1="4" y1="21" x2="20" y2="3" stroke-width="2"/></svg>
+              @elseif ($i === 1)
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2M6 14h12v7H6z"/><line x1="4" y1="21" x2="20" y2="3" stroke-width="2"/></svg>
+              @else
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/><line x1="3" y1="21" x2="21" y2="3" stroke-width="2"/></svg>
+              @endif
+            </div>
+          </div>
+        @endforeach
       </div>
     </div>
   </section>
@@ -88,12 +107,15 @@
         </div>
       </div>
       <div class="sol-copy reveal">
-        <div class="eyebrow"><span class="bar"></span><span class="mono-label" data-en="The solution" data-ar="الحل">The solution</span></div>
-        <h2 class="display" style="font-size:clamp(30px,3.6vw,48px);line-height:1.05;letter-spacing:-0.03em;"><span data-en="One living menu," data-ar="قائمة واحدة حيّة،">One living menu,</span> <span class="gold-text" data-en="one QR." data-ar="خلف رمز واحد.">one QR.</span></h2>
+        <div class="eyebrow"><span class="bar"></span><span class="mono-label">{{ __('portal.solution.eyebrow') }}</span></div>
+        <h2 class="display" style="font-size:clamp(30px,3.6vw,48px);line-height:1.05;letter-spacing:-0.03em;"><span>{{ __('portal.solution.title') }}</span> <span class="gold-text">{{ __('portal.solution.title_gold') }}</span></h2>
         <ul class="sol-list">
-          <li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 6L9 17l-5-5"/></svg></span><div><h4 data-en="Always current" data-ar="محدّثة دائماً">Always current</h4><p data-en="Change a price or hide a dish — it's live everywhere in an instant." data-ar="غيّر سعراً أو أخفِ طبقاً — يظهر فوراً في كل مكان.">Change a price or hide a dish — it's live everywhere in an instant.</p></div></li>
-          <li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="7" y="2.5" width="10" height="19" rx="3"/></svg></span><div><h4 data-en="Beautiful on every phone" data-ar="أنيقة على كل هاتف">Beautiful on every phone</h4><p data-en="Editorial templates that load fast and read perfectly, big or small." data-ar="قوالب أنيقة تُحمّل بسرعة وتُقرأ بوضوح، صغيرة كانت أم كبيرة.">Editorial templates that load fast and read perfectly, big or small.</p></div></li>
-          <li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></span><div><h4 data-en="The QR never breaks" data-ar="الرمز لا ينكسر">The QR never breaks</h4><p data-en="Print it once. Switch templates, edit forever — the same code keeps working." data-ar="اطبعه مرة. بدّل القوالب وعدّل للأبد — الرمز نفسه يستمر.">Print it once. Switch templates, edit forever — the same code keeps working.</p></div></li>
+          @foreach (__('portal.solution.list') as $i => $item)
+            <li>
+              <span class="ic">{!! $solIcons[$i] !!}</span>
+              <div><h4>{{ $item['title'] }}</h4><p>{{ $item['desc'] }}</p></div>
+            </li>
+          @endforeach
         </ul>
       </div>
     </div>
@@ -103,11 +125,36 @@
   <section class="sec" id="features" style="padding-top:0;">
     <div class="wrap">
       <div class="sec-head reveal">
-        <div class="eyebrow"><span class="bar"></span><span class="mono-label" data-en="Everything inside" data-ar="كل ما تحتاجه">Everything inside</span></div>
-        <h2 class="display"><span data-en="Built to run" data-ar="مصمّمة لإدارة">Built to run</span> <span class="gold-text" data-en="the whole menu." data-ar="القائمة بالكامل.">the whole menu.</span></h2>
-        <p data-en="From AI scanning to live analytics — one calm place to manage how your restaurant looks to every guest." data-ar="من المسح بالذكاء الاصطناعي إلى التحليلات المباشرة — مكان واحد هادئ لإدارة صورة مطعمك أمام كل ضيف.">From AI scanning to live analytics — one calm place to manage how your restaurant looks to every guest.</p>
+        <div class="eyebrow"><span class="bar"></span><span class="mono-label">{{ __('portal.features.eyebrow') }}</span></div>
+        <h2 class="display"><span>{{ __('portal.features.title') }}</span> <span class="gold-text">{{ __('portal.features.title_gold') }}</span></h2>
+        <p>{{ __('portal.features.sub') }}</p>
       </div>
-      <div class="features-wrap" id="featuresBox"></div>
+      <div class="features-wrap" id="featuresBox">
+        <div class="feat-lead reveal">
+          <div class="lead-text">
+            <span class="badge">{{ __('portal.features.lead.badge') }}</span>
+            <h3 class="display">{{ __('portal.features.lead.title') }}</h3>
+            <p>{{ __('portal.features.lead.desc') }}</p>
+          </div>
+          <div class="lead-vis">
+            <div class="scan-demo">
+              <div class="paper"><div class="pl"></div><div class="pl s"></div><div class="pl"></div><div class="pl s"></div></div>
+              <span class="arrow">{!! $ICON['spark'] !!}</span>
+              <div class="digi"><div class="dl"><span>Mezze</span><span class="p">$8</span></div><div class="dl"><span>Tagine</span><span class="p">$22</span></div><div class="dl"><span>Baklava</span><span class="p">$9</span></div></div>
+              <div class="scan-beam"></div>
+            </div>
+          </div>
+        </div>
+        <div class="feat-grid" data-stagger>
+          @foreach (__('portal.features.cells') as $cell)
+            <div class="feat-cell">
+              <div class="c-ic">{!! $ICON[$cell['icon']] !!}</div>
+              <h3>{{ $cell['title'] }}</h3>
+              <p>{{ $cell['desc'] }}</p>
+            </div>
+          @endforeach
+        </div>
+      </div>
     </div>
   </section>
 
@@ -116,11 +163,22 @@
     <div class="pin-wrap">
       <div class="how-track" id="howTrack">
         <div class="how-intro">
-          <span class="mono-label" data-en="How it works" data-ar="كيف يعمل">How it works</span>
-          <h2 class="display"><span data-en="From paper to" data-ar="من الورق إلى">From paper to</span> <span class="gold-text" data-en="QR, in four moves." data-ar="رمز QR، بأربع خطوات.">QR, in four moves.</span></h2>
-          <p data-en="Scroll to follow the journey — sign up, build, get your code, and watch it work." data-ar="مرّر لتتابع الرحلة — سجّل، ابنِ، احصل على رمزك، وراقب النتائج.">Scroll to follow the journey — sign up, build, get your code, and watch it work.</p>
+          <span class="mono-label">{{ __('portal.how.eyebrow') }}</span>
+          <h2 class="display"><span>{{ __('portal.how.title') }}</span> <span class="gold-text">{{ __('portal.how.title_gold') }}</span></h2>
+          <p>{{ __('portal.how.sub') }}</p>
         </div>
-        {{-- steps injected by qayema-app-landing.js --}}
+        @foreach (__('portal.how.steps') as $step)
+          <div class="how-step">
+            <div class="how-card">
+              <div>
+                <div class="idx display">{{ $step['idx'] }}</div>
+                <h3 class="display">{{ $step['title'] }}</h3>
+                <p>{{ $step['desc'] }}</p>
+              </div>
+              <div class="panel"><div class="big-ic">{!! $ICON[$step['icon']] !!}</div></div>
+            </div>
+          </div>
+        @endforeach
       </div>
     </div>
     <div class="how-progress"><i></i></div>
@@ -130,10 +188,12 @@
   <section class="sec" id="stats" style="padding:90px 0;">
     <div class="wrap">
       <div class="stats reveal">
-        <div class="stat"><div class="v"><span class="gold-text" data-count="31" data-suf="s">0s</span></div><div class="k" data-en="Avg. menu build time" data-ar="متوسط زمن بناء القائمة">Avg. menu build time</div></div>
-        <div class="stat"><div class="v"><span data-count="14">0</span></div><div class="k" data-en="Languages supported" data-ar="لغة مدعومة">Languages supported</div></div>
-        <div class="stat"><div class="v"><span data-count="0" data-dec="1">0</span><span class="gold-text" style="font-family:var(--font-display)">×</span></div><div class="k" data-en="Reprints required" data-ar="إعادة طباعة مطلوبة">Reprints required</div></div>
-        <div class="stat"><div class="v"><span data-count="99.9" data-dec="1">0</span><span class="gold-text" style="font-family:var(--font-display)">%</span></div><div class="k" data-en="QR uptime" data-ar="جهوزية الرمز">QR uptime</div></div>
+        @foreach (__('portal.stats') as $stat)
+          <div class="stat">
+            <div class="v"><span class="gold-text" data-count="{{ $stat['value'] }}" data-suf="{{ $stat['suffix'] }}" @if (str_contains((string) $stat['value'], '.')) data-dec="1" @endif>0{{ $stat['suffix'] }}</span></div>
+            <div class="k">{{ $stat['label'] }}</div>
+          </div>
+        @endforeach
       </div>
     </div>
   </section>
@@ -142,40 +202,37 @@
   <section class="sec" id="pricing" style="padding-top:0;">
     <div class="wrap">
       <div class="sec-head reveal" style="text-align:center;max-width:680px;margin-inline:auto;">
-        <div class="eyebrow" style="justify-content:center;"><span class="bar"></span><span class="mono-label" data-en="Pricing" data-ar="الأسعار">Pricing</span></div>
-        <h2 class="display"><span data-en="Templates" data-ar="القوالب">Templates</span> <span class="gold-text" data-en="are the plans." data-ar="هي الباقات.">are the plans.</span></h2>
-        <p style="margin-inline:auto;" data-en="Launch on a free template forever. Subscribe to a premium template only when you want its design — monthly, 6-month, or yearly." data-ar="انطلق بقالب مجاني للأبد. اشترك في قالب مميّز فقط عندما تريد تصميمه — شهرياً أو نصف سنوي أو سنوي.">Launch on a free template forever. Subscribe to a premium template only when you want its design — monthly, 6-month, or yearly.</p>
+        <div class="eyebrow" style="justify-content:center;"><span class="bar"></span><span class="mono-label">{{ __('portal.pricing.eyebrow') }}</span></div>
+        <h2 class="display"><span>{{ __('portal.pricing.title') }}</span> <span class="gold-text">{{ __('portal.pricing.title_gold') }}</span></h2>
+        <p style="margin-inline:auto;">{{ __('portal.pricing.sub') }}</p>
       </div>
 
       <div class="price-grid reveal">
         <div class="plan">
-          <div class="tier" data-en="Free template" data-ar="قالب مجاني">Free template</div>
-          <div class="amt"><span class="big display gold-text" data-en="$0" data-ar="٠">$0</span><span class="per" data-en="forever" data-ar="للأبد">forever</span></div>
-          <p class="pdesc" data-en="Everything you need to take one beautiful menu live." data-ar="كل ما تحتاجه لإطلاق قائمة أنيقة واحدة.">Everything you need to take one beautiful menu live.</p>
+          <div class="tier">{{ __('portal.pricing.free.tier') }}</div>
+          <div class="amt"><span class="big display gold-text">{{ __('portal.pricing.free.price') }}</span><span class="per">{{ __('portal.pricing.free.per') }}</span></div>
+          <p class="pdesc">{{ __('portal.pricing.free.desc') }}</p>
           <ul>
-            <li>__C__<span data-en="A free editorial template" data-ar="قالب أنيق مجاني">A free editorial template</span></li>
-            <li>__C__<span data-en="Custom QR code" data-ar="رمز QR مخصّص">Custom QR code</span></li>
-            <li>__C__<span data-en="Arabic &amp; English" data-ar="عربي وإنجليزي">Arabic &amp; English</span></li>
-            <li>__C__<span data-en="WhatsApp ordering" data-ar="الطلب عبر واتساب">WhatsApp ordering</span></li>
+            @foreach (__('portal.pricing.free.features') as $feature)
+              <li>{!! $ICON['check'] !!}<span>{{ $feature }}</span></li>
+            @endforeach
           </ul>
-          <a class="btn btn-line" data-magnetic href="{{ route('register') }}" data-en="Start free" data-ar="ابدأ مجاناً">Start free</a>
+          <a class="btn btn-line" data-magnetic href="{{ route('register') }}">{{ __('portal.pricing.free.cta') }}</a>
         </div>
 
         <div class="plan hot">
-          <div class="tier" data-en="Premium template" data-ar="قالب مميّز">Premium template</div>
-          <div class="amt"><span class="big display gold-text" data-en="$12" data-ar="٤٥ ر.س">$12</span><span class="per" data-en="/ month · per template" data-ar="شهرياً · لكل قالب">/ month · per template</span></div>
-          <p class="pdesc" data-en="Subscribe to a premium design. Monthly, 6-month or yearly." data-ar="اشترك في تصميم مميّز. شهرياً أو نصف سنوي أو سنوي.">Subscribe to a premium design. Monthly, 6-month or yearly.</p>
+          <div class="tier">{{ __('portal.pricing.premium.tier') }}</div>
+          <div class="amt"><span class="big display gold-text">{{ __('portal.pricing.premium.price') }}</span><span class="per">{{ __('portal.pricing.premium.per') }}</span></div>
+          <p class="pdesc">{{ __('portal.pricing.premium.desc') }}</p>
           <ul>
-            <li>__C__<span data-en="Everything in Free" data-ar="كل مزايا المجاني">Everything in Free</span></li>
-            <li>__C__<span data-en="Premium editorial templates" data-ar="قوالب مميّزة أنيقة">Premium editorial templates</span></li>
-            <li>__C__<span data-en="Live analytics dashboard" data-ar="لوحة تحليلات مباشرة">Live analytics dashboard</span></li>
-            <li>__C__<span data-en="Variants, sizes &amp; ingredients" data-ar="أحجام ومكوّنات وخيارات">Variants, sizes &amp; ingredients</span></li>
-            <li>__C__<span data-en="Switch templates anytime" data-ar="بدّل القوالب متى شئت">Switch templates anytime</span></li>
+            @foreach (__('portal.pricing.premium.features') as $feature)
+              <li>{!! $ICON['check'] !!}<span>{{ $feature }}</span></li>
+            @endforeach
           </ul>
-          <a class="btn btn-gold" data-magnetic href="{{ route('register') }}" data-en="Choose premium" data-ar="اختر المميّز">Choose premium</a>
+          <a class="btn btn-gold" data-magnetic href="{{ route('register') }}">{{ __('portal.pricing.premium.cta') }}</a>
         </div>
       </div>
-      <p class="price-note reveal"><b data-en="Your menu is safe." data-ar="قائمتك بأمان.">Your menu is safe.</b> <span data-en="If a subscription ends, your menu simply pauses — it is never deleted." data-ar="إذا انتهى الاشتراك، تتوقف قائمتك مؤقتاً فقط — ولا تُحذف أبداً.">If a subscription ends, your menu simply pauses — it is never deleted.</span></p>
+      <p class="price-note reveal"><b>{{ __('portal.pricing.note_bold') }}</b> <span>{{ __('portal.pricing.note') }}</span></p>
     </div>
   </section>
 
@@ -183,22 +240,16 @@
   <section class="sec" id="stories" style="padding-top:0;">
     <div class="wrap">
       <div class="sec-head reveal">
-        <div class="eyebrow"><span class="bar"></span><span class="mono-label" data-en="Loved by restaurants" data-ar="مطاعم تحبّها">Loved by restaurants</span></div>
-        <h2 class="display"><span data-en="From paper to" data-ar="من الورق إلى">From paper to</span> <span class="gold-text" data-en="praised, fast." data-ar="الإعجاب، بسرعة.">praised, fast.</span></h2>
+        <div class="eyebrow"><span class="bar"></span><span class="mono-label">{{ __('portal.stories.eyebrow') }}</span></div>
+        <h2 class="display"><span>{{ __('portal.stories.title') }}</span> <span class="gold-text">{{ __('portal.stories.title_gold') }}</span></h2>
       </div>
       <div class="quotes" data-stagger>
-        <div class="quote lead">
-          <div><div class="mk">"</div><p class="qt" data-en="We photographed our menu on a Tuesday and were taking QR orders by dinner. Updates that used to take a week now take ten seconds." data-ar="صوّرنا قائمتنا يوم الثلاثاء وكنّا نستقبل الطلبات بالرمز عند العشاء. تحديثات كانت تأخذ أسبوعاً صارت بعشر ثوانٍ.">We photographed our menu on a Tuesday and were taking QR orders by dinner. Updates that used to take a week now take ten seconds.</p></div>
-          <div class="by"><span class="av display">L</span><div><div class="nm" data-en="Layla Othman" data-ar="ليلى عثمان">Layla Othman</div><div class="rl" data-en="Owner · Maison Aran" data-ar="مالكة · ميزون أران">Owner · Maison Aran</div></div></div>
-        </div>
-        <div class="quote">
-          <div><div class="mk">"</div><p class="qt" data-en="Finally, our Arabic menu looks as good as the English one." data-ar="أخيراً، قائمتنا العربية تبدو بجمال الإنجليزية.">Finally, our Arabic menu looks as good as the English one.</p></div>
-          <div class="by"><span class="av display">R</span><div><div class="nm" data-en="Reem Al-Saud" data-ar="ريم آل سعود">Reem Al-Saud</div><div class="rl" data-en="Concept lead · Sabor" data-ar="مديرة المفهوم · سابور">Concept lead · Sabor</div></div></div>
-        </div>
-        <div class="quote">
-          <div><div class="mk">"</div><p class="qt" data-en="The analytics told us which dishes to push. Revenue followed." data-ar="أخبرتنا التحليلات بالأطباق التي نروّجها. وتبعها الدخل.">The analytics told us which dishes to push. Revenue followed.</p></div>
-          <div class="by"><span class="av display">M</span><div><div class="nm" data-en="Marco Vidale" data-ar="ماركو فيدالي">Marco Vidale</div><div class="rl" data-en="GM · Olea &amp; Co." data-ar="مدير عام · أوليا">GM · Olea &amp; Co.</div></div></div>
-        </div>
+        @foreach (__('portal.stories.quotes') as $i => $quote)
+          <div class="quote {{ $i === 0 ? 'lead' : '' }}">
+            <div><div class="mk">"</div><p class="qt">{{ $quote['quote'] }}</p></div>
+            <div class="by"><span class="av display">{{ $quote['avatar'] }}</span><div><div class="nm">{{ $quote['name'] }}</div><div class="rl">{{ $quote['role'] }}</div></div></div>
+          </div>
+        @endforeach
       </div>
     </div>
   </section>
@@ -207,10 +258,17 @@
   <section class="sec" id="faq" style="padding-top:0;">
     <div class="wrap">
       <div class="sec-head reveal" style="text-align:center;max-width:640px;margin-inline:auto;">
-        <div class="eyebrow" style="justify-content:center;"><span class="bar"></span><span class="mono-label" data-en="Questions" data-ar="أسئلة">Questions</span></div>
-        <h2 class="display"><span data-en="Good to" data-ar="من الجيد أن">Good to</span> <span class="gold-text" data-en="know." data-ar="تعرف.">know.</span></h2>
+        <div class="eyebrow" style="justify-content:center;"><span class="bar"></span><span class="mono-label">{{ __('portal.faq.eyebrow') }}</span></div>
+        <h2 class="display"><span>{{ __('portal.faq.title') }}</span> <span class="gold-text">{{ __('portal.faq.title_gold') }}</span></h2>
       </div>
-      <div class="faq" id="faqList"></div>
+      <div class="faq" id="faqList">
+        @foreach (__('portal.faq.items') as $item)
+          <div class="faq-item">
+            <button class="faq-q" type="button"><span>{{ $item['q'] }}</span><span class="pm"></span></button>
+            <div class="faq-a"><div class="inner">{{ $item['a'] }}</div></div>
+          </div>
+        @endforeach
+      </div>
     </div>
   </section>
 
@@ -219,23 +277,14 @@
     <div class="wrap">
       <div class="final-box reveal">
         <img class="qmark" src="{{ asset('images/logo/q-logo.png') }}" alt="" />
-        <h2 class="display"><span data-en="Turn your menu into a" data-ar="حوّل قائمتك إلى">Turn your menu into a</span> <span class="gold-text" data-en="QR experience today." data-ar="تجربة QR اليوم.">QR experience today.</span></h2>
-        <p data-en="Photograph it, let AI design it, and share one QR your guests will love — in both languages." data-ar="صوّرها، دع الذكاء الاصطناعي يصمّمها، وشارك رمز QR واحداً سيحبّه ضيوفك — باللغتين.">Photograph it, let AI design it, and share one QR your guests will love — in both languages.</p>
+        <h2 class="display"><span>{{ __('portal.final.title') }}</span> <span class="gold-text">{{ __('portal.final.title_gold') }}</span></h2>
+        <p>{{ __('portal.final.sub') }}</p>
         <div class="acts">
-          <a class="btn btn-gold" data-magnetic href="{{ route('register') }}" data-en="Get started free" data-ar="ابدأ مجاناً">Get started free</a>
-          <a class="btn btn-line" href="#how" data-en="See how it works" data-ar="شاهد كيف يعمل">See how it works</a>
+          <a class="btn btn-gold" data-magnetic href="{{ route('register') }}">{{ __('portal.final.cta_primary') }}</a>
+          <a class="btn btn-line" href="#how">{{ __('portal.final.cta_secondary') }}</a>
         </div>
       </div>
     </div>
   </section>
 
 @endsection
-
-@push('scripts')
-<script>
-  // inject check icons into pricing lists (keeps markup tidy)
-  document.querySelectorAll('.plan li').forEach(function (li) {
-    li.innerHTML = li.innerHTML.replace('__C__', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>');
-  });
-</script>
-@endpush

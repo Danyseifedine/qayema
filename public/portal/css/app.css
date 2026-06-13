@@ -5,10 +5,10 @@
    ============================================================ */
 
 :root {
-  --gold:       #C8A85A;
-  --gold-deep:  #A8863C;
-  --gold-soft:  #E4D2A0;
-  --gold-grad:  linear-gradient(105deg, #E4D2A0 0%, #C8A85A 45%, #A8863C 100%);
+  --gold:       #F8D38D;
+  --gold-deep:  #E9BD66;
+  --gold-soft:  #FCE7BC;
+  --gold-grad:  linear-gradient(105deg, #FCE7BC 0%, #F8D38D 45%, #E9BD66 100%);
 
   --font-display: 'Instrument Serif', Georgia, 'Times New Roman', serif;
   --font-sans:    'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
@@ -28,8 +28,8 @@ html[data-theme="light"] {
   --faint:     rgba(20,17,9,.40);
   --line:      rgba(20,17,9,.12);
   --line-2:    rgba(20,17,9,.06);
-  --gold-on:   #9A7A2E;            /* gold legible on light */
-  --glow:      radial-gradient(60% 50% at 50% 0%, rgba(200,168,90,.16), transparent 70%);
+  --gold-on:   #B08A2C;            /* gold legible on light (text/labels) */
+  --glow:      radial-gradient(60% 50% at 50% 0%, rgba(248,211,141,.18), transparent 70%);
   --shadow:    0 40px 90px -50px rgba(20,17,9,.45);
   --noise-op:  .035;
 }
@@ -42,8 +42,8 @@ html[data-theme="dark"] {
   --faint:     rgba(245,241,232,.40);
   --line:      rgba(245,241,232,.12);
   --line-2:    rgba(245,241,232,.06);
-  --gold-on:   #E4D2A0;            /* brighter gold on black */
-  --glow:      radial-gradient(60% 50% at 50% 0%, rgba(200,168,90,.22), transparent 70%);
+  --gold-on:   #F8D38D;            /* the main gold, legible on black */
+  --glow:      radial-gradient(60% 50% at 50% 0%, rgba(248,211,141,.24), transparent 70%);
   --shadow:    0 50px 100px -45px rgba(0,0,0,.85);
   --noise-op:  .05;
 }

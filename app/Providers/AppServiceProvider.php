@@ -39,7 +39,7 @@ class AppServiceProvider extends ServiceProvider
         $this->defineRateLimiter('mutations', fn (): Limit => Limit::perMinute(120));
         $this->defineRateLimiter('uploads', fn (): Limit => Limit::perMinute(20));
         $this->defineRateLimiter('public', fn (): Limit => Limit::perMinute(120));
-        $this->defineRateLimiter('contact', fn (): Limit => Limit::perDay(3));
+        $this->defineRateLimiter('contact', fn (): Limit => Limit::perMinute(10));
     }
 
     /**

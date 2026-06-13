@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\ThirdParty;
 
 use Illuminate\Support\Facades\Http;
 
@@ -28,7 +28,7 @@ class Captcha
         }
 
         try {
-            $response = Http::asForm()->post(self::VERIFY_ENDPOINT, $payload);
+            $response = Http::asForm()->connectTimeout(3)->timeout(5)->post(self::VERIFY_ENDPOINT, $payload);
         } catch (\Throwable) {
             return false;
         }

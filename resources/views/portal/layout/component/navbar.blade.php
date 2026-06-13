@@ -3,6 +3,7 @@
     // On the home page, section links are same-page anchors (Lenis smooth-scrolls
     // them). On any other portal page they jump home first, then to the section.
     $base = request()->is('/') ? '' : '/';
+    $locale = app()->getLocale();
 @endphp
 <nav class="nav">
   <div class="nav-in">
@@ -10,15 +11,16 @@
         <img src="{{ asset('images/logo/logo.svg') }}" alt="Qayema" />
     </a>
     <div class="nav-links">
-      <a href="{{ $base }}#features" data-en="Features" data-ar="المميزات">Features</a>
-      <a href="{{ $base }}#how" data-en="How it works" data-ar="كيف يعمل">How it works</a>
-      <a href="{{ $base }}#pricing" data-en="Pricing" data-ar="الأسعار">Pricing</a>
-      <a href="{{ $base }}#faq" data-en="FAQ" data-ar="الأسئلة">FAQ</a>
+      <a href="{{ $base }}#features">{{ __('portal.nav.features') }}</a>
+      <a href="{{ $base }}#how">{{ __('portal.nav.how') }}</a>
+      <a href="{{ $base }}#pricing">{{ __('portal.nav.pricing') }}</a>
+      <a href="{{ $base }}#faq">{{ __('portal.nav.faq') }}</a>
     </div>
     <div class="nav-right">
+      {{-- language switch: reloads the page in the chosen locale (server-side) --}}
       <div class="seg lang" role="group" aria-label="language">
-        <button data-l="ar">ع</button>
-        <button data-l="en">EN</button>
+        <a href="{{ route('locale.switch', 'ar') }}" class="{{ $locale === 'ar' ? 'on' : '' }}">ع</a>
+        <a href="{{ route('locale.switch', 'en') }}" class="{{ $locale === 'en' ? 'on' : '' }}">EN</a>
       </div>
       <button class="theme-tog" id="themeTog" aria-label="theme">
         <span class="knob">
@@ -26,7 +28,7 @@
           <svg class="moon" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
         </span>
       </button>
-      <a class="btn btn-gold btn-sm" data-magnetic href="{{ route('register') }}" data-en="Get started free" data-ar="ابدأ مجاناً">Get started free</a>
+      <a class="btn btn-gold btn-sm" data-magnetic href="{{ route('register') }}">{{ __('portal.nav.cta') }}</a>
     </div>
   </div>
 </nav>

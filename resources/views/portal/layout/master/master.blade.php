@@ -1,5 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr" data-theme="light">
+@php
+    $locale = app()->getLocale();
+    $isRtl = in_array($locale, config('locales.rtl', []), true);
+@endphp
+<html lang="{{ $locale }}" dir="{{ $isRtl ? 'rtl' : 'ltr' }}" data-theme="light">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -16,12 +20,10 @@
 @stack('styles')
 
 <script>
+  {{-- language + direction are server-rendered (session locale); only theme is client-side --}}
   (function(){ try {
     var t = localStorage.getItem('qayema-theme') || 'light';
     document.documentElement.setAttribute('data-theme', t);
-    var l = localStorage.getItem('qayema-lang') || 'en';
-    document.documentElement.setAttribute('lang', l);
-    document.documentElement.setAttribute('dir', l === 'ar' ? 'rtl' : 'ltr');
   } catch(e){} })();
 </script>
 </head>

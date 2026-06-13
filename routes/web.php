@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('portal.welcome');
-});
+})->middleware('owner.locale');
 
 // Guest-accessible locale switch (persists through login)
 Route::middleware(['owner.locale'])->group(function () {
@@ -123,15 +123,16 @@ Route::middleware(['auth', 'owner.locale', 'throttle:mutations'])->group(functio
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// Legal pages
-Route::get('/privacy-policy', fn () => view('legal.privacy'))->name('privacy');
-Route::get('/terms-of-service', fn () => view('legal.terms'))->name('terms');
-Route::get('/cookie-policy', fn () => view('legal.cookies'))->name('cookies');
-Route::get('/refund-policy', fn () => view('legal.refund'))->name('refund');
+// Legal + contact (public portal pages) — locale resolved from session
+Route::middleware('owner.locale')->group(function () {
+    Route::get('/privacy-policy', fn () => view('legal.privacy'))->name('privacy');
+    Route::get('/terms-of-service', fn () => view('legal.terms'))->name('terms');
+    Route::get('/cookie-policy', fn () => view('legal.cookies'))->name('cookies');
+    Route::get('/refund-policy', fn () => view('legal.refund'))->name('refund');
 
-// Contact page
-Route::get('/contact', [ContactController::class, 'show'])->name('contact');
-Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
+    Route::get('/contact', [ContactController::class, 'show'])->name('contact');
+    Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:contact')->name('contact.store');
+});
 
 // Public restaurant/menu routes. Throttled to curb abuse of the unauthenticated,
 // CSRF-exempt tracking endpoints (see bootstrap/app.php).

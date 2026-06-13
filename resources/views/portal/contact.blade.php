@@ -11,9 +11,9 @@
 
         {{-- Left: info --}}
         <div>
-          <div class="ctc-eyebrow"><span class="bar"></span><span class="mono-label" data-en="Company" data-ar="الشركة">Company</span></div>
-          <h1 class="ctc-headline" data-en="Get in <span class='it'>Touch</span>" data-ar="تواصل <span class='it'>معنا</span>">Get in <span class="it">Touch</span></h1>
-          <p class="ctc-sub" data-en="Have a question, a partnership idea, or just want to say hello? Drop us a message and we'll get back to you." data-ar="هل لديك سؤال أو فكرة شراكة أو تريد فقط أن تقول مرحباً؟ أرسل لنا رسالة وسنردّ عليك.">Have a question, a partnership idea, or just want to say hello? Drop us a message and we'll get back to you.</p>
+          <div class="ctc-eyebrow"><span class="bar"></span><span class="mono-label">{{ __('portal.contact.eyebrow') }}</span></div>
+          <h1 class="ctc-headline">{!! __('portal.contact.headline') !!}</h1>
+          <p class="ctc-sub">{{ __('portal.contact.sub') }}</p>
 
           <div class="ctc-info">
             <div class="ctc-info-item">
@@ -21,7 +21,7 @@
                 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="3.5" width="13" height="9" rx="1.5"/><path d="M1.5 5l6.5 4.5L14.5 5"/></svg>
               </div>
               <div>
-                <p class="ctc-info-label" data-en="Email" data-ar="البريد الإلكتروني">Email</p>
+                <p class="ctc-info-label">{{ __('portal.contact.email_label') }}</p>
                 <p class="ctc-info-value"><a href="mailto:dany.a.seifeddine@gmail.com">dany.a.seifeddine@gmail.com</a></p>
               </div>
             </div>
@@ -30,8 +30,8 @@
                 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5a4.5 4.5 0 0 1 4.5 4.5c0 3-4.5 8.5-4.5 8.5S3.5 9 3.5 6A4.5 4.5 0 0 1 8 1.5Z"/><circle cx="8" cy="6" r="1.5"/></svg>
               </div>
               <div>
-                <p class="ctc-info-label" data-en="Location" data-ar="الموقع">Location</p>
-                <p class="ctc-info-value" data-en="Barja, Lebanon" data-ar="برجا، لبنان">Barja, Lebanon</p>
+                <p class="ctc-info-label">{{ __('portal.contact.location_label') }}</p>
+                <p class="ctc-info-value">{{ __('portal.contact.location_value') }}</p>
               </div>
             </div>
             <div class="ctc-info-item">
@@ -39,8 +39,8 @@
                 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><path d="M8 4.5v3.75l2.5 1.5"/></svg>
               </div>
               <div>
-                <p class="ctc-info-label" data-en="Response time" data-ar="وقت الرد">Response time</p>
-                <p class="ctc-info-value" data-en="Usually within 24 hours" data-ar="عادةً خلال 24 ساعة">Usually within 24 hours</p>
+                <p class="ctc-info-label">{{ __('portal.contact.response_label') }}</p>
+                <p class="ctc-info-value">{{ __('portal.contact.response_value') }}</p>
               </div>
             </div>
           </div>
@@ -50,32 +50,36 @@
         <div class="ctc-form-wrap">
           <div class="ctc-form-card">
 
-            @if (session('success'))
-              <div class="ctc-success">
-                <div class="ctc-success-ring">
-                  <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M6 14l5.5 5.5L22 9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </div>
-                <h3 data-en="Message sent!" data-ar="تم الإرسال!">Message sent!</h3>
-                <p data-en="Thanks for reaching out. We'll get back to you as soon as possible." data-ar="شكرًا للتواصل معنا. سنردّ عليك في أقرب وقت ممكن.">Thanks for reaching out. We'll get back to you as soon as possible.</p>
-                <a href="{{ route('contact') }}" class="ctc-success-back">
-                  <span data-en="Send another message" data-ar="إرسال رسالة أخرى">Send another message</span>
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </a>
+            {{-- Success state: revealed by the server after a no-JS redirect, or by JS after an AJAX submit --}}
+            <div class="ctc-success" id="ctcSuccess" @unless (session('success')) hidden @endunless>
+              <div class="ctc-success-ring">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M6 14l5.5 5.5L22 9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </div>
-            @else
+              <h3>{{ __('portal.contact.success_title') }}</h3>
+              <p>{{ __('portal.contact.success_body') }}</p>
+              <a href="{{ route('contact') }}" class="ctc-success-back">
+                <span>{{ __('portal.contact.success_back') }}</span>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </a>
+            </div>
 
-              <p class="ctc-form-title" data-en="Send us a message" data-ar="أرسل لنا رسالة">Send us a message</p>
-              <p class="ctc-form-sub" data-en="We read every message personally." data-ar="نقرأ كل رسالة شخصياً.">We read every message personally.</p>
+            {{-- Form state --}}
+            <div id="ctcFormState" @if (session('success')) hidden @endif>
+              <p class="ctc-form-title">{{ __('portal.contact.form_title') }}</p>
+              <p class="ctc-form-sub">{{ __('portal.contact.form_sub') }}</p>
 
-              @if ($errors->has('rate_limit'))
-                <div class="ctc-rate-banner">
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M8 5v3.5M8 11h.01"/></svg>
-                  {{ $errors->first('rate_limit') }}
-                </div>
-              @endif
+              <div class="ctc-rate-banner" id="ctcBanner" @unless ($errors->has('rate_limit')) hidden @endunless>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M8 5v3.5M8 11h.01"/></svg>
+                <span class="msg">{{ $errors->first('rate_limit') }}</span>
+              </div>
 
-              <form method="POST" action="{{ route('contact.store') }}" novalidate>
+              <form id="contactForm" method="POST" action="{{ route('contact.store') }}" novalidate>
                 @csrf
+
+                {{-- Honeypot: hidden from real users, bots fill it. Submissions with it set are silently dropped. --}}
+                <div aria-hidden="true" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden">
+                  <label>Website<input type="text" name="website" tabindex="-1" autocomplete="off" value=""></label>
+                </div>
 
                 @if (config('services.recaptcha.enabled'))
                   <input type="hidden" name="g-recaptcha-response" id="g-recaptcha-response">
@@ -84,41 +88,40 @@
                 <div class="ctc-row">
                   {{-- Name --}}
                   <div class="ctc-field">
-                    <label class="ctc-label" for="name" data-en="Name" data-ar="الاسم">Name</label>
+                    <label class="ctc-label" for="name">{{ __('portal.contact.name') }}</label>
                     <input id="name" name="name" type="text" value="{{ old('name') }}" autocomplete="name"
                            class="ctc-input @error('name') is-error @enderror"
-                           data-en-ph="John Smith" data-ar-ph="محمد أحمد" placeholder="John Smith">
-                    @error('name')<p class="ctc-error">{{ $message }}</p>@enderror
+                           placeholder="{{ __('portal.contact.name_placeholder') }}">
+                    <p class="ctc-error" data-error-for="name">@error('name'){{ $message }}@enderror</p>
                   </div>
 
                   {{-- Email --}}
                   <div class="ctc-field">
-                    <label class="ctc-label" for="email" data-en="Email" data-ar="البريد الإلكتروني">Email</label>
+                    <label class="ctc-label" for="email">{{ __('portal.contact.email') }}</label>
                     <input id="email" name="email" type="email" value="{{ old('email') }}" autocomplete="email"
                            class="ctc-input @error('email') is-error @enderror"
-                           data-en-ph="you@example.com" data-ar-ph="you@example.com" placeholder="you@example.com">
-                    @error('email')<p class="ctc-error">{{ $message }}</p>@enderror
+                           placeholder="{{ __('portal.contact.email_placeholder') }}">
+                    <p class="ctc-error" data-error-for="email">@error('email'){{ $message }}@enderror</p>
                   </div>
                 </div>
 
                 {{-- Message --}}
                 <div class="ctc-field">
-                  <label class="ctc-label" for="message" data-en="Message" data-ar="الرسالة">Message</label>
+                  <label class="ctc-label" for="message">{{ __('portal.contact.message') }}</label>
                   <textarea id="message" name="message" maxlength="2000"
                             class="ctc-textarea @error('message') is-error @enderror"
-                            data-en-ph="Tell us what's on your mind..." data-ar-ph="أخبرنا بما يدور في ذهنك...">{{ old('message') }}</textarea>
+                            placeholder="{{ __('portal.contact.message_placeholder') }}">{{ old('message') }}</textarea>
                   <div class="ctc-field-foot">
-                    @error('message')<p class="ctc-error" style="margin:0">{{ $message }}</p>@enderror
+                    <p class="ctc-error" data-error-for="message" style="margin:0">@error('message'){{ $message }}@enderror</p>
                     <span class="ctc-char-count" id="ctcCount">0 / 2000</span>
                   </div>
                 </div>
 
-                <button type="submit" class="ctc-btn">
-                  <span data-en="Send message" data-ar="إرسال الرسالة">Send message</span>
-                  <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 7.5h11M9 3.5l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <button type="submit" class="ctc-btn" id="ctcSubmit">
+                  <span class="label">{{ __('portal.contact.submit') }}</span>
                 </button>
               </form>
-            @endif
+            </div>
           </div>
         </div>
 
@@ -129,18 +132,101 @@
 
 @push('scripts')
 <script>
-  // live character counter (no framework dependency)
-  (function () {
-    var ta = document.getElementById('message'), c = document.getElementById('ctcCount');
-    if (!ta || !c) return;
-    var update = function () {
-      var n = ta.value.length;
-      c.textContent = n + ' / 2000';
-      c.classList.toggle('over', n > 2000);
+(function () {
+  var form = document.getElementById('contactForm');
+  if (!form) return;
+
+  var count   = document.getElementById('ctcCount');
+  var message = document.getElementById('message');
+  var btn     = document.getElementById('ctcSubmit');
+  var btnLbl  = btn.querySelector('.label');
+  var banner  = document.getElementById('ctcBanner');
+  var fields  = ['name', 'email', 'message'];
+
+  // validation + UI strings, rendered server-side in the current locale
+  var MSG = @json(__('portal.contact.js'));
+
+  function input(n) { return form.querySelector('[name="' + n + '"]'); }
+  function errorEl(n) { return form.querySelector('[data-error-for="' + n + '"]'); }
+
+  function validate(n) {
+    var v = (input(n).value || '').trim();
+    if (n === 'name')    { if (!v) return MSG.name_required;    if (v.length > 100) return MSG.name_max; }
+    if (n === 'email')   { if (!v) return MSG.email_required;   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return MSG.email_invalid; }
+    if (n === 'message') { if (!v) return MSG.message_required; if (v.length < 10) return MSG.message_min; if (v.length > 2000) return MSG.message_max; }
+    return null;
+  }
+
+  function showError(n, msg) {
+    errorEl(n).textContent = msg || '';
+    input(n).classList.toggle('is-error', !!msg);
+  }
+
+  fields.forEach(function (n) {
+    input(n).addEventListener('blur', function () { showError(n, validate(n)); });
+    input(n).addEventListener('input', function () { if (errorEl(n).textContent) showError(n, validate(n)); });
+  });
+
+  if (message && count) {
+    var updateCount = function () {
+      var n = message.value.length;
+      count.textContent = n + ' / 2000';
+      count.classList.toggle('over', n > 2000);
     };
-    ta.addEventListener('input', update);
-    update();
-  })();
+    message.addEventListener('input', updateCount);
+    updateCount();
+  }
+
+  function setBanner(msg) {
+    if (!banner) return;
+    banner.querySelector('.msg').textContent = msg;
+    banner.hidden = false;
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    var ok = true;
+    fields.forEach(function (n) { var m = validate(n); showError(n, m); if (m) ok = false; });
+    if (!ok) {
+      var firstBad = form.querySelector('.ctc-input.is-error, .ctc-textarea.is-error');
+      if (firstBad) { firstBad.focus(); }
+      return;
+    }
+
+    if (banner) { banner.hidden = true; }
+    btn.disabled = true;
+    var prev = btnLbl.textContent;
+    btnLbl.textContent = MSG.sending;
+
+    var restore = function () { btn.disabled = false; btnLbl.textContent = prev; };
+
+    fetch(form.action, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+      body: new FormData(form)
+    }).then(function (res) {
+      if (res.ok) {
+        document.getElementById('ctcFormState').hidden = true;
+        document.getElementById('ctcSuccess').hidden = false;
+        return;
+      }
+      return res.json().then(function (data) {
+        restore();
+        var errs = (data && data.errors) || {};
+        fields.forEach(function (n) { if (errs[n]) showError(n, errs[n][0]); });
+        if (errs.rate_limit) { setBanner(errs.rate_limit[0]); }              // server-localized
+        if (errs['g-recaptcha-response']) { setBanner(errs['g-recaptcha-response'][0]); }
+        if (!errs.name && !errs.email && !errs.message && !errs.rate_limit && !errs['g-recaptcha-response']) {
+          setBanner(MSG.fail);
+        }
+      }).catch(function () { restore(); setBanner(MSG.fail); });
+    }).catch(function () {
+      restore();
+      setBanner(MSG.fail);
+    });
+  });
+})();
 </script>
 @if (config('services.recaptcha.enabled'))
 <script src="https://www.google.com/recaptcha/api.js?render={{ config('services.recaptcha.site_key') }}"></script>

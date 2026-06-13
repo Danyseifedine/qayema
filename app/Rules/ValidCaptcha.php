@@ -2,7 +2,7 @@
 
 namespace App\Rules;
 
-use App\Services\Captcha;
+use App\Services\ThirdParty\Captcha;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Support\Facades\Request;
