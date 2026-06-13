@@ -1,0 +1,50 @@
+/* ============================================================
+   QAYEMA — navbar (layout component)
+   Loaded after landing.css, which defines :root tokens + .seg
+   ============================================================ */
+
+/* ===== Nav ===== */
+.nav {
+  position: fixed; top: 0; inset-inline: 0; z-index: 200;
+  transition: background .4s var(--ease), border-color .4s var(--ease), backdrop-filter .4s;
+  border-bottom: 1px solid transparent;
+}
+.nav.scrolled {
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  border-bottom-color: var(--line-2);
+}
+.nav-in { max-width: var(--maxw); margin: 0 auto; padding: 18px 40px; display: flex; align-items: center; justify-content: space-between; gap: 28px; }
+.brand { display: inline-flex; align-items: center; }
+.brand img { height: 50px; width: auto; }
+.nav-links { display: flex; gap: 34px; }
+.nav-links a { font-size: 14px; color: var(--muted); transition: color .25s var(--ease); position: relative; }
+.nav-links a::after { content: ""; position: absolute; inset-inline-start: 0; bottom: -4px; height: 1px; width: 0; background: var(--gold); transition: width .3s var(--ease); }
+.nav-links a:hover { color: var(--text); }
+.nav-links a:hover::after { width: 100%; }
+.nav-right { display: flex; align-items: center; gap: 14px; }
+
+/* theme toggle */
+.theme-tog {
+  width: 58px; height: 32px; border-radius: 100px; border: 1px solid var(--line);
+  background: var(--surface); position: relative; flex-shrink: 0;
+}
+.theme-tog .knob {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  inset-inline-start: 3px; width: 24px; height: 24px; border-radius: 50%;
+  background: var(--gold); display: grid; place-items: center; color: #1A1408;
+  transition: inset-inline-start .4s var(--ease);
+}
+html[data-theme="dark"] .theme-tog .knob { inset-inline-start: 29px; }
+.theme-tog svg { width: 13px; height: 13px; }
+.theme-tog .moon { display: none; } .theme-tog .sun { display: block; }
+html[data-theme="dark"] .theme-tog .moon { display: block; } html[data-theme="dark"] .theme-tog .sun { display: none; }
+
+/* ===== Responsive ===== */
+@media (max-width: 1000px) {
+  .nav-links { display: none; }
+}
+@media (max-width: 600px) {
+  .nav-in { padding-inline: 22px; }
+}

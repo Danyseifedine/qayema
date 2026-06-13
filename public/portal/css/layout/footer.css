@@ -1,0 +1,66 @@
+/* ============================================================
+   QAYEMA — footer (layout component)
+   Loaded after landing.css, which defines :root tokens
+   ============================================================ */
+
+/* ===== Footer ===== */
+footer {
+  position: relative;
+  overflow: hidden;                 /* clip the oversized, drifting wave layers */
+  border-top: 1px solid var(--line-2);
+  /* extra bottom padding lifts the © / social row above the wave band, so the
+     artwork shows BELOW the last line; clamp tracks the wave height by width */
+  padding: 70px 0 clamp(140px, 16vw, 250px);
+}
+
+/* Two copies of the wave art, slightly wider than the footer, drift in opposite
+   directions so the crests appear to lap like water. The extra width means the
+   horizontal motion never exposes an edge. */
+footer::before,
+footer::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: -12%;
+  width: 124%;
+  height: clamp(170px, 22vw, 320px);
+  background: url("../../images/footer_bg.svg") bottom center / 100% auto no-repeat;
+  pointer-events: none;
+  z-index: 0;
+  will-change: transform;
+}
+footer::before { opacity: .5;  animation: footerWaveBack  11s ease-in-out infinite alternate; }
+footer::after  { opacity: 1;   animation: footerWaveFront 7s  ease-in-out infinite alternate; }
+
+@keyframes footerWaveFront {
+  from { transform: translateX(-3.5%) translateY(0); }
+  to   { transform: translateX(3.5%)  translateY(6px); }
+}
+@keyframes footerWaveBack {
+  from { transform: translateX(4%)  translateY(5px) scale(1.05); }
+  to   { transform: translateX(-4%) translateY(0)   scale(1.05); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  footer::before,
+  footer::after { animation: none; }
+}
+
+/* keep footer content above the decorative wave layers */
+footer .wrap { position: relative; z-index: 1; }
+.foot-top { display: grid; grid-template-columns: 1.7fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 60px; }
+.foot-brand img { height: 100px; margin-bottom: 20px; }
+.foot-brand p { margin: 0 0 22px; max-width: 34ch; font-size: 14px; line-height: 1.6; color: var(--muted); }
+.foot-col h5 { margin: 0 0 18px; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--faint); font-weight: 600; }
+.foot-col a { display: block; font-size: 14px; color: var(--muted); padding: 7px 0; transition: color .2s var(--ease); }
+.foot-col a:hover { color: var(--gold-on); }
+.foot-bot { display: flex; align-items: center; justify-content: space-between; padding-top: 30px; border-top: 1px solid var(--line-2); flex-wrap: wrap; gap: 16px; }
+.foot-bot .cp { font-size: 12.5px; color: var(--faint); }
+.foot-soc { display: flex; gap: 10px; }
+.foot-soc a { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; color: var(--muted); transition: all .2s var(--ease); }
+.foot-soc a:hover { border-color: var(--gold); color: var(--gold-on); }
+.foot-soc svg { width: 16px; height: 16px; }
+
+@media (max-width: 600px) {
+  .foot-top { grid-template-columns: 1fr 1fr; gap: 32px; }
+}

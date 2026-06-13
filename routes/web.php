@@ -17,7 +17,7 @@ use App\Http\Controllers\Portal\MenuController as PortalMenuController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    return view('portal.welcome');
 });
 
 // Guest-accessible locale switch (persists through login)

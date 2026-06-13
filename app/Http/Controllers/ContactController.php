@@ -14,7 +14,7 @@ class ContactController extends Controller
 {
     public function show(): View
     {
-        return view('contact');
+        return view('portal.contact');
     }
 
     public function store(ContactRequest $request): RedirectResponse

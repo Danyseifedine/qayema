@@ -1,0 +1,76 @@
+/* ============================================================
+   QAYEMA — contact page
+   Uses the shared design tokens from app.css
+   ============================================================ */
+
+.ctc { padding: 150px 0 110px; }
+.ctc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 72px; align-items: start; }
+
+/* ---- Left: info ---- */
+.ctc-eyebrow { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 24px; }
+.ctc-eyebrow .bar { width: 26px; height: 1px; background: var(--gold); }
+.ctc-headline { margin: 0 0 18px; font-family: var(--font-display); font-weight: 400; font-size: clamp(34px, 4.6vw, 58px); line-height: 1.04; letter-spacing: -0.03em; }
+html[lang="ar"] .ctc-headline { font-family: var(--font-ar); line-height: 1.25; letter-spacing: 0; font-weight: 500; }
+.ctc-headline .it { font-style: italic; color: var(--gold-on); }
+html[lang="ar"] .ctc-headline .it { font-style: normal; }
+.ctc-sub { margin: 0 0 44px; max-width: 40ch; font-size: 16px; line-height: 1.65; color: var(--muted); }
+
+.ctc-info { display: flex; flex-direction: column; gap: 14px; }
+.ctc-info-item { display: flex; align-items: flex-start; gap: 16px; padding: 20px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface); transition: border-color .2s var(--ease), background .2s var(--ease); }
+.ctc-info-item:hover { border-color: color-mix(in srgb, var(--gold) 40%, var(--line)); }
+.ctc-info-icon { width: 40px; height: 40px; border-radius: 11px; border: 1px solid var(--line); display: grid; place-items: center; flex-shrink: 0; color: var(--gold-on); }
+.ctc-info-icon svg { width: 17px; height: 17px; }
+.ctc-info-label { margin: 0 0 4px; font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
+.ctc-info-value { margin: 0; font-size: 14.5px; color: var(--text); line-height: 1.5; }
+.ctc-info-value a { color: var(--text); transition: color .15s var(--ease); }
+.ctc-info-value a:hover { color: var(--gold-on); }
+
+/* ---- Right: form ---- */
+.ctc-form-wrap { position: sticky; top: 100px; }
+.ctc-form-card { background: var(--surface); border: 1px solid var(--line); border-radius: 24px; padding: 40px; box-shadow: var(--shadow); }
+.ctc-form-title { margin: 0 0 6px; font-size: 19px; font-weight: 600; letter-spacing: -0.01em; }
+.ctc-form-sub { margin: 0 0 30px; font-size: 14px; color: var(--muted); }
+.ctc-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.ctc-field { margin-bottom: 18px; }
+.ctc-label { display: block; margin-bottom: 8px; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.ctc-input, .ctc-textarea {
+  width: 100%; box-sizing: border-box; background: var(--bg);
+  border: 1px solid var(--line); border-radius: 12px; padding: 13px 16px;
+  font-size: 14.5px; font-family: inherit; color: var(--text); outline: 0;
+  transition: border-color .18s var(--ease), box-shadow .18s var(--ease), background .18s var(--ease);
+}
+.ctc-input::placeholder, .ctc-textarea::placeholder { color: var(--faint); }
+.ctc-input:focus, .ctc-textarea:focus { border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); box-shadow: 0 0 0 3px rgba(200,168,90,.12); }
+.ctc-input.is-error, .ctc-textarea.is-error { border-color: rgba(226,121,107,.6); box-shadow: 0 0 0 3px rgba(226,121,107,.1); }
+.ctc-textarea { resize: none; height: 142px; line-height: 1.6; }
+.ctc-field-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; min-height: 18px; }
+.ctc-error { margin: 6px 0 0; font-size: 12.5px; color: #E2796B; line-height: 1.4; }
+.ctc-char-count { margin-inline-start: auto; font-size: 11.5px; color: var(--faint); flex-shrink: 0; }
+.ctc-char-count.over { color: #E2796B; }
+.ctc-rate-banner { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 22px; padding: 14px 16px; border-radius: 12px; background: rgba(226,121,107,.08); border: 1px solid rgba(226,121,107,.22); font-size: 13.5px; color: #E2796B; line-height: 1.5; }
+.ctc-rate-banner svg { flex-shrink: 0; margin-top: 2px; }
+.ctc-btn { width: 100%; height: 52px; display: inline-flex; align-items: center; justify-content: center; gap: 9px; margin-top: 8px; border-radius: 100px; background: var(--gold); color: #1A1408; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; transition: background .25s var(--ease), transform .1s var(--ease); }
+.ctc-btn:hover { background: var(--gold-deep); }
+.ctc-btn:active { transform: translateY(1px); }
+html[lang="ar"] .ctc-btn svg { transform: scaleX(-1); }
+
+/* ---- Success ---- */
+.ctc-success { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 40px 16px 32px; }
+.ctc-success-ring { width: 72px; height: 72px; border-radius: 50%; background: color-mix(in srgb, var(--gold) 14%, transparent); border: 1px solid color-mix(in srgb, var(--gold) 30%, var(--line)); display: grid; place-items: center; margin-bottom: 24px; color: var(--gold-on); }
+.ctc-success h3 { margin: 0 0 10px; font-size: 22px; font-weight: 600; }
+.ctc-success p { margin: 0 0 26px; max-width: 32ch; font-size: 14.5px; line-height: 1.6; color: var(--muted); }
+.ctc-success-back { display: inline-flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 600; color: var(--gold-on); transition: gap .15s var(--ease); }
+.ctc-success-back:hover { gap: 11px; }
+html[lang="ar"] .ctc-success-back svg { transform: scaleX(-1); }
+
+/* ---- Responsive ---- */
+@media (max-width: 900px) {
+  .ctc-grid { grid-template-columns: 1fr; gap: 48px; }
+  .ctc-form-wrap { position: static; }
+  .ctc-sub { max-width: 100%; }
+}
+@media (max-width: 600px) {
+  .ctc { padding: 120px 0 72px; }
+  .ctc-row { grid-template-columns: 1fr; gap: 0; }
+  .ctc-form-card { padding: 28px 22px; border-radius: 18px; }
+}
