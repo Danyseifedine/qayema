@@ -5,20 +5,18 @@ namespace App\Services\Portal;
 use App\Exceptions\TooManyContactMessages;
 use App\Mail\ContactMessageReceived;
 use App\Models\ContactMessage;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\RateLimiter;
 
 class ContactService
 {
     private const MAX_PER_DAY = 3;
 
-    // The value 86400 refers to the number of seconds in 24 hours (1 day).
-    private const DECAY_SECONDS = 86400;
-
     public function isThrottled(string $ip): bool
     {
-        return RateLimiter::tooManyAttempts($this->key($ip), self::MAX_PER_DAY);
+        return $this->recentMessages($ip)->count() >= self::MAX_PER_DAY;
     }
 
     public function dailyLimit(): int
@@ -28,13 +26,23 @@ class ContactService
 
     public function availableInHours(string $ip): int
     {
-        return (int) ceil(RateLimiter::availableIn($this->key($ip)) / 3600);
+        $oldest = $this->recentMessages($ip)->min('created_at');
+
+        if ($oldest === null) {
+            return 0;
+        }
+
+        $availableAt = Carbon::parse($oldest)->addDay();
+        $secondsLeft = max(0, $availableAt->getTimestamp() - time());
+
+        return max(1, (int) ceil($secondsLeft / 3600));
     }
 
     /**
-     * Submit a contact message: persist it and notify the recipient — self-guarded
-     * by the daily limit. RateLimiter::attempt() checks and records the hit
-     * atomically, so concurrent requests can't slip past the limit.
+     * Submit a contact message: persist it and notify the recipient, guarded by a
+     * durable per-IP daily limit. The quota is enforced against the contact_messages
+     * table itself — not volatile cache — so it cannot be reset by a deploy, a queue
+     * restart, or `cache:clear`/`optimize:clear`.
      *
      * @param  array{name: string, email: string, message: string}  $data
      *
@@ -42,18 +50,23 @@ class ContactService
      */
     public function submit(array $data, string $ip): ContactMessage
     {
-        $contact = RateLimiter::attempt(
-            $this->key($ip),
-            self::MAX_PER_DAY,
-            fn (): ContactMessage => $this->createAndNotify($data, $ip),
-            self::DECAY_SECONDS,
-        );
-
-        if ($contact === false) {
+        if ($this->isThrottled($ip)) {
             throw new TooManyContactMessages($this->availableInHours($ip));
         }
 
-        return $contact;
+        return $this->createAndNotify($data, $ip);
+    }
+
+    /**
+     * Messages from this IP within the trailing 24 hours — the rows the daily quota counts.
+     *
+     * @return Builder<ContactMessage>
+     */
+    private function recentMessages(string $ip): Builder
+    {
+        return ContactMessage::query()
+            ->where('ip_address', $ip)
+            ->where('created_at', '>=', now()->subDay());
     }
 
     /**
@@ -81,10 +94,5 @@ class ContactService
         }
 
         return $contact;
-    }
-
-    private function key(string $ip): string
-    {
-        return 'contact:'.$ip;
     }
 }

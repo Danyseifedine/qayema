@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Restaurant;
 use App\Models\RestaurantStatistic;
-use App\Services\StatisticsQueryService;
+use App\Services\MenuOwner\StatisticsQueryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

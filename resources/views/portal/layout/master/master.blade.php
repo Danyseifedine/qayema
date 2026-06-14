@@ -2,6 +2,8 @@
 @php
     $locale = app()->getLocale();
     $isRtl = in_array($locale, config('locales.rtl', []), true);
+    // cache-bust static assets by file mtime so CSS/JS edits always take effect
+    $ver = fn (string $path): string => asset($path).'?v='.(@filemtime(public_path($path)) ?: '1');
 @endphp
 <html lang="{{ $locale }}" dir="{{ $isRtl ? 'rtl' : 'ltr' }}" data-theme="light">
 <head>
@@ -12,11 +14,11 @@
     :title="$seoTitle ?? 'Qayema — Your restaurant menu, live with one QR'"
     :description="$seoDescription ?? 'Photograph your menu, let AI rebuild it bilingually in Arabic & English, and go live with one custom QR code. The Arabic-first digital menu platform.'" />
 
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&family=Noto+Kufi+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{{ asset('portal/css/app.css') }}">
-<link rel="stylesheet" href="{{ asset('portal/css/pages/landing.css') }}">
-<link rel="stylesheet" href="{{ asset('portal/css/layout/navbar.css') }}">
-<link rel="stylesheet" href="{{ asset('portal/css/layout/footer.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&family=El+Messiri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ $ver('portal/css/app.css') }}">
+<link rel="stylesheet" href="{{ $ver('portal/css/pages/landing.css') }}">
+<link rel="stylesheet" href="{{ $ver('portal/css/layout/navbar.css') }}">
+<link rel="stylesheet" href="{{ $ver('portal/css/layout/footer.css') }}">
 @stack('styles')
 
 <script>
@@ -39,7 +41,7 @@
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
-  <script src="{{ asset('portal/js/landing.js') }}"></script>
+  <script src="{{ $ver('portal/js/landing.js') }}"></script>
   @stack('scripts')
 </body>
 </html>

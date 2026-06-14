@@ -15,7 +15,7 @@ class ValidCaptcha implements ValidationRule
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         if (! app(Captcha::class)->verify(is_string($value) ? $value : null, Request::ip())) {
-            $fail('The captcha verification failed. Please try again.');
+            $fail(__('auth.captcha'));
         }
     }
 }

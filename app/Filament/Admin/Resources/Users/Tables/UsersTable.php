@@ -4,11 +4,8 @@ namespace App\Filament\Admin\Resources\Users\Tables;
 
 use App\Enums\UserRole;
 use App\Models\User;
-use App\Services\UserCascadeDeletionService;
 use Filament\Actions\Action;
-use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Support\Icons\Heroicon;
@@ -140,25 +137,8 @@ class UsersTable
                     ->modalHeading('Delete user')
                     ->modalDescription('This permanently deletes the user, their restaurant, all categories and dishes (including images), social links, statistics, profile media, and their sessions.')
                     ->action(function (User $record): void {
-                        app(UserCascadeDeletionService::class)->delete($record);
+                        $record->forceDelete();
                     }),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make()
-                        ->requiresConfirmation()
-                        ->modalHeading('Delete selected users')
-                        ->modalDescription('Each selected user will be fully removed along with their restaurant, all dishes, categories, images, and related data.')
-                        ->action(function ($records): void {
-                            $deletion = app(UserCascadeDeletionService::class);
-                            foreach ($records as $record) {
-                                if (! $record instanceof User || ! auth()->user()?->can('delete', $record)) {
-                                    continue;
-                                }
-                                $deletion->delete($record);
-                            }
-                        }),
-                ]),
             ])
             ->defaultSort('created_at', 'desc');
     }

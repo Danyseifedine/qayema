@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\MenuOwner;
 
 use App\Http\Controllers\Controller;
-use App\Services\StatisticsQueryService;
+use App\Services\MenuOwner\StatisticsQueryService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 

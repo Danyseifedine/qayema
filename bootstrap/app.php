@@ -13,10 +13,14 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: env('TRUSTED_PROXIES'));
 
-        $middleware->web(prepend: [
-            \App\Http\Middleware\BlockAbusiveIps::class,
-            \App\Http\Middleware\SecurityHeaders::class,
-        ]);
+        // SecurityHeaders is prepended so it wraps every response. BlockAbusiveIps
+        // is appended so it runs *after* the session starts — that's what lets its
+        // admin bypass see the authenticated user (a prepended copy would run before
+        // StartSession, where auth()->user() is always null and the bypass is dead).
+        $middleware->web(
+            prepend: [\App\Http\Middleware\SecurityHeaders::class],
+            append: [\App\Http\Middleware\BlockAbusiveIps::class],
+        );
 
         // Public, analytics-only tracking endpoints on /{slug}/track-* . They write
         // nothing user-sensitive (visit duration / order counts) and are fired via

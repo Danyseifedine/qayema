@@ -138,7 +138,7 @@ class OnboardingController extends Controller
                     'cover_image_key' => ['nullable', 'string', 'regex:/^[a-f0-9\-]{36}$/'],
                 ]);
 
-                $media = app(\App\Services\MediaSyncService::class);
+                $media = app(\App\Services\Global\MediaService::class);
 
                 foreach (['logo', 'cover_image'] as $key) {
                     $mediaKey = $request->input("{$key}_key");

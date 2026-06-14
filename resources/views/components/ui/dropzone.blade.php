@@ -3,9 +3,9 @@
 
     Flow:
       1. User drops/selects a file → local preview shown instantly
-      2. File is POST'd to /temp-upload → ImageOptimizationService runs → returns key + size stats
+      2. File is POST'd to /temp-upload → MediaService::storeTempUpload() optimizes it → returns key + size stats
       3. Hidden input `{name}_key` carries the temp key on form submit
-      4. Controller: loadFromTempKey($request->input('{name}_key')) → addMedia()->toMediaCollection()
+      4. Controller: MediaService::sync($model, $request->input('{name}_key'), ...) → addMedia()->toMediaCollection()
 
     Props:
       $name         – field name; hidden input becomes "{name}_key"

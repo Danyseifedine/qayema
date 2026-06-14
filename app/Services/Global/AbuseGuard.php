@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\Global;
 
 use App\Models\BlockedIp;
 use DateTimeInterface;
@@ -14,10 +14,18 @@ class AbuseGuard
 
     private const STRIKE_WINDOW = 60;
 
-    private const STRIKE_THRESHOLD = 5;
+    // Ban only on sustained flooding: the IP must break a high-volume limit this
+    // many times within STRIKE_WINDOW. Set high enough that a busy-but-legitimate
+    // shared IP gets headroom, while a real flood (hundreds of strikes/min) still
+    // trips it instantly. The per-request 429 limit throttles everyone regardless.
+    private const STRIKE_THRESHOLD = 20;
 
     public function isBlocked(string $ip): bool
     {
+        if ($this->isTrusted($ip)) {
+            return false;
+        }
+
         try {
             return Cache::remember(
                 $this->blockCacheKey($ip),
@@ -53,6 +61,10 @@ class AbuseGuard
 
     public function recordViolation(string $ip): void
     {
+        if ($this->isTrusted($ip)) {
+            return;
+        }
+
         $key = $this->strikeCacheKey($ip);
 
         Cache::add($key, 0, self::STRIKE_WINDOW);
@@ -62,6 +74,15 @@ class AbuseGuard
             $this->block($ip, 'auto: sustained abuse', now()->addHour());
             Cache::forget($key);
         }
+    }
+
+    /**
+     * Trusted IPs (config/security.php) are never rate-ban'd or blocked, so a
+     * shared NAT can't lock out legitimate users behind it.
+     */
+    private function isTrusted(string $ip): bool
+    {
+        return in_array($ip, (array) config('security.trusted_ips', []), true);
     }
 
     private function forgetBlockCache(string $ip): void

@@ -10,12 +10,15 @@
   --gold-soft:  #FCE7BC;
   --gold-grad:  linear-gradient(105deg, #FCE7BC 0%, #F8D38D 45%, #E9BD66 100%);
 
-  --font-display: 'Instrument Serif', Georgia, 'Times New Roman', serif;
-  --font-sans:    'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-ar:      'Noto Kufi Arabic', 'Geist', system-ui, sans-serif;
+  /* El Messiri is the Arabic fallback in every stack: Latin glyphs use Geist /
+     Instrument Serif, Arabic glyphs (absent from those) resolve to El Messiri. */
+  --font-display: 'Instrument Serif', 'El Messiri', Georgia, 'Times New Roman', serif;
+  --font-sans:    'Geist', 'El Messiri', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-ar:      'El Messiri', 'Geist', system-ui, sans-serif;
 
   --maxw: 1280px;
   --ease: cubic-bezier(.22,.61,.36,1);
+
 }
 
 /* ---- Themes ---- */

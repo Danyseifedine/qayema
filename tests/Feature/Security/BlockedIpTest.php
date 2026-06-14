@@ -5,7 +5,7 @@ namespace Tests\Feature\Security;
 use App\Http\Middleware\BlockAbusiveIps;
 use App\Models\BlockedIp;
 use App\Models\User;
-use App\Services\AbuseGuard;
+use App\Services\Global\AbuseGuard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
@@ -90,7 +90,7 @@ class BlockedIpTest extends TestCase
 
         $this->assertFalse($guard->isBlocked($ip));
 
-        for ($i = 0; $i < 5; $i++) {
+        for ($i = 0; $i < 20; $i++) {
             $guard->recordViolation($ip);
         }
 

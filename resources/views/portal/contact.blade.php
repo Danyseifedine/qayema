@@ -1,7 +1,7 @@
 @extends('portal.layout.master.master')
 
 @push('styles')
-<link rel="stylesheet" href="{{ asset('portal/css/pages/contact.css') }}">
+<link rel="stylesheet" href="{{ asset('portal/css/pages/contact.css') }}?v={{ @filemtime(public_path('portal/css/pages/contact.css')) ?: '1' }}">
 @endpush
 
 @section('content')
@@ -76,9 +76,12 @@
               <form id="contactForm" method="POST" action="{{ route('contact.store') }}" novalidate>
                 @csrf
 
-                {{-- Honeypot: hidden from real users, bots fill it. Submissions with it set are silently dropped. --}}
+                {{-- Honeypot: hidden from real users, bots fill it. Submissions with it set are
+                     silently dropped. The field is named non-semantically and opts out of
+                     password managers so browser autofill can't trip it for real visitors. --}}
                 <div aria-hidden="true" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden">
-                  <label>Website<input type="text" name="website" tabindex="-1" autocomplete="off" value=""></label>
+                  <label>Leave this field empty<input type="text" name="hp_field" tabindex="-1"
+                         autocomplete="off" data-lpignore="true" data-1p-ignore data-form-type="other" value=""></label>
                 </div>
 
                 @if (config('services.recaptcha.enabled'))

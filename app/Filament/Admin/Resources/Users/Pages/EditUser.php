@@ -4,7 +4,6 @@ namespace App\Filament\Admin\Resources\Users\Pages;
 
 use App\Filament\Admin\Resources\Users\UserResource;
 use App\Models\User;
-use App\Services\UserCascadeDeletionService;
 use Filament\Actions\DeleteAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
@@ -23,7 +22,7 @@ class EditUser extends EditRecord
                 ->action(function (): void {
                     $record = $this->record;
                     assert($record instanceof User);
-                    app(UserCascadeDeletionService::class)->delete($record);
+                    $record->forceDelete();
                     Notification::make()
                         ->title('User deleted')
                         ->success()

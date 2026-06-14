@@ -4,6 +4,7 @@ return [
     'failed' => 'These credentials do not match our records.',
     'throttle' => 'Too many login attempts. Please try again in :seconds seconds.',
     'google_only' => 'This account uses Google sign-in. Please use the "Continue with Google" button above.',
+    'captcha' => 'The captcha verification failed. Please try again.',
 
     'login' => [
         'eyebrow' => 'Get Started',

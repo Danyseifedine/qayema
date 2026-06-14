@@ -5,7 +5,7 @@ namespace App\Http\Controllers\MenuOwner;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\RestaurantRequest;
 use App\Models\Restaurant;
-use App\Services\MediaSyncService;
+use App\Services\Global\MediaService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -13,7 +13,7 @@ use Illuminate\View\View;
 
 class RestaurantController extends Controller
 {
-    public function __construct(private readonly MediaSyncService $media) {}
+    public function __construct(private readonly MediaService $media) {}
 
     public function index(Request $request): View
     {

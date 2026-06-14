@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\DishRequest;
 use App\Models\Dish;
 use App\Models\Restaurant;
-use App\Services\MediaSyncService;
+use App\Services\Global\MediaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,7 +14,7 @@ use Illuminate\View\View;
 
 class DishController extends Controller
 {
-    public function __construct(private readonly MediaSyncService $media) {}
+    public function __construct(private readonly MediaService $media) {}
 
     public function index(Request $request): View
     {

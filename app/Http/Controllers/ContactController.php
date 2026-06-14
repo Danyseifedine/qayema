@@ -18,8 +18,8 @@ class ContactController extends Controller
 
     public function store(ContactRequest $request, ContactService $contacts): RedirectResponse|JsonResponse
     {
-        // Honeypot: bots fill the hidden "website" field. Pretend success and drop
-        if (filled($request->input('website'))) {
+        // Honeypot: bots fill the hidden "hp_field" input. Pretend success and drop
+        if (filled($request->input('hp_field'))) {
             return $request->expectsJson()
                 ? $this->success(message: 'Your message has been sent.')
                 : back()->with('success', true);
