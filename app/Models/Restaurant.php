@@ -110,16 +110,6 @@ class Restaurant extends Model implements HasMedia
         return $this->hasMany(RestaurantStatistic::class);
     }
 
-    public function dailyStats(): HasMany
-    {
-        return $this->hasMany(RestaurantDailyStat::class);
-    }
-
-    public function menuScans(): HasMany
-    {
-        return $this->hasMany(MenuScan::class);
-    }
-
     public function subscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class);
@@ -262,18 +252,6 @@ class Restaurant extends Model implements HasMedia
             'month' => $query->whereMonth('viewed_at', now()->month)->whereYear('viewed_at', now()->year)->sum('whatsapp_orders'),
             default => $query->sum('whatsapp_orders'),
         };
-    }
-
-    /**
-     * Template defaults merged with the owner's stored overrides.
-     */
-    public function resolvedTemplateSettings(): array
-    {
-        if (! $this->template) {
-            return $this->template_settings ?? [];
-        }
-
-        return $this->template->resolveSettings($this->template_settings ?? []);
     }
 
     public function registerMediaCollections(): void

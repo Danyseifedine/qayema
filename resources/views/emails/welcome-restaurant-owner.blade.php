@@ -125,14 +125,14 @@
                 <tr>
                   <td>
                     <!--[if mso]>
-                    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{ route('dashboard') }}" style="height:50px;v-text-anchor:middle;width:220px;" arcsize="50%" fillcolor="#0F0F10" stroke="f">
+                    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{ url('/') }}" style="height:50px;v-text-anchor:middle;width:220px;" arcsize="50%" fillcolor="#0F0F10" stroke="f">
                       <w:anchorlock/>
-                      <center style="color:#F6F1E8;font-family:Helvetica,Arial,sans-serif;font-size:15px;font-weight:500;">Open your dashboard  →</center>
+                      <center style="color:#F6F1E8;font-family:Helvetica,Arial,sans-serif;font-size:15px;font-weight:500;">Open Qayema  →</center>
                     </v:roundrect>
                     <![endif]-->
                     <!--[if !mso]><!-->
-                    <a href="{{ route('dashboard') }}" class="btn-primary full-btn" style="display:inline-block; background-color:#0F0F10; color:#F6F1E8; font-family:'Geist',Helvetica,Arial,sans-serif; font-size:15px; font-weight:500; letter-spacing:-0.2px; line-height:50px; padding:0 26px; border-radius:999px;">
-                      Open your dashboard &nbsp;&rarr;
+                    <a href="{{ url('/') }}" class="btn-primary full-btn" style="display:inline-block; background-color:#0F0F10; color:#F6F1E8; font-family:'Geist',Helvetica,Arial,sans-serif; font-size:15px; font-weight:500; letter-spacing:-0.2px; line-height:50px; padding:0 26px; border-radius:999px;">
+                      Open Qayema &nbsp;&rarr;
                     </a>
                     <!--<![endif]-->
                   </td>

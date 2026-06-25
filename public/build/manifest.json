@@ -1,0 +1,44 @@
+{
+  "resources/css/app.css": {
+    "file": "assets/app-CfuVgtAS.css",
+    "src": "resources/css/app.css",
+    "isEntry": true,
+    "name": "app",
+    "names": [
+      "app.css"
+    ]
+  },
+  "resources/css/login.css": {
+    "file": "assets/login-ChWFTGok.css",
+    "src": "resources/css/login.css",
+    "isEntry": true,
+    "name": "login",
+    "names": [
+      "login.css"
+    ]
+  },
+  "resources/css/ui.css": {
+    "file": "assets/ui-54Yupo_T.css",
+    "src": "resources/css/ui.css",
+    "isEntry": true,
+    "name": "ui",
+    "names": [
+      "ui.css"
+    ]
+  },
+  "resources/css/welcome.css": {
+    "file": "assets/welcome-uBY2dmjl.css",
+    "src": "resources/css/welcome.css",
+    "isEntry": true,
+    "name": "welcome",
+    "names": [
+      "welcome.css"
+    ]
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-BxZd2go2.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true
+  }
+}

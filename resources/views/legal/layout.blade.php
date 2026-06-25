@@ -178,7 +178,7 @@
                     <button :class="lang === 'ar' ? 'on' : ''" @click="setLang('ar')">عربي</button>
                 </div>
                 @auth
-                    <a class="btn btn-ink btn-sm nav-cta" href="{{ route('dashboard') }}">
+                    <a class="btn btn-ink btn-sm nav-cta" href="{{ url('/') }}">
                         <span x-text="t.nav.dashboard">Dashboard</span>
                         <svg class="arr" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </a>
@@ -207,7 +207,7 @@
                         <button :class="lang === 'ar' ? 'on' : ''" @click="setLang('ar')">عربي</button>
                     </div>
                     @auth
-                        <a class="btn btn-ink btn-sm nav-mobile-cta" href="{{ route('dashboard') }}" @click="mobileOpen=false">
+                        <a class="btn btn-ink btn-sm nav-mobile-cta" href="{{ url('/') }}" @click="mobileOpen=false">
                             <span x-text="t.nav.dashboard">Dashboard</span>
                         </a>
                     @else

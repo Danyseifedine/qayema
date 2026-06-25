@@ -21,7 +21,7 @@ class OnboardingController extends Controller
     public function show(Request $request): View|\Illuminate\Http\RedirectResponse
     {
         if ($request->user()->hasCompletedOnboarding()) {
-            return redirect()->route('dashboard');
+            return redirect('/');
         }
 
         $restaurant = $request->user()->restaurant?->load('tags');
@@ -212,7 +212,7 @@ class OnboardingController extends Controller
 
                 return response()->json([
                     'completed' => true,
-                    'redirect' => route('dashboard'),
+                    'redirect' => url('/'),
                 ]);
         }
 

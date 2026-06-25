@@ -7,30 +7,6 @@ Alpine.plugin(collapse);
 
 window.Alpine = Alpine;
 
-// Reusable "reorder by swapping two items" grid, shared by the
-// categories and dishes dashboards. Pass the controller reorder URL.
-Alpine.data('reorderGrid', (reorderUrl) => ({
-    selected: null,
-    async swap(targetId) {
-        if (this.selected === null || this.selected === targetId) {
-            return;
-        }
-        const res = await fetch(reorderUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
-                'Accept': 'application/json',
-            },
-            body: JSON.stringify({ a: this.selected, b: targetId }),
-        });
-        if (res.ok) {
-            window.location.reload();
-        }
-        this.selected = null;
-    },
-}));
-
 Alpine.start();
 
 // ── GSAP + ScrollTrigger ──────────────────────────────────────

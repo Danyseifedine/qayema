@@ -1,6 +1,14 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(grep -rln \"x-app-layout\\\\|x-guest-layout\\\\|x-sidebar-layout\" resources/views)",
+      "Bash(grep -rln \"@extends\\('portal\\\\|portal.layout.master\" resources/views)",
+      "Bash(grep -rln \"legal.layout\\\\|@extends\\('legal\" resources/views)",
+      "Bash(node -e ' *)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "laravel-boost"
-  ],
-  "enableAllProjectMcpServers": true
+  ]
 }

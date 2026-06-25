@@ -22,17 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
             append: [\App\Http\Middleware\BlockAbusiveIps::class],
         );
 
-        // Public, analytics-only tracking endpoints on /{slug}/track-* . They write
-        // nothing user-sensitive (visit duration / order counts) and are fired via
-        // navigator.sendBeacon on page exit, which can run after the session/token
-        // has expired — so they are exempt from CSRF rather than throwing 419.
-        $middleware->validateCsrfTokens(except: [
-            '*/track-exit',
-            '*/track-whatsapp-order',
-        ]);
         $middleware->alias([
             'owner.locale' => \App\Http\Middleware\SetMenuOwnerLocale::class,
-            'onboarding.complete' => \App\Http\Middleware\EnsureOnboardingComplete::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

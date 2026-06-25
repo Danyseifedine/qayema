@@ -45,7 +45,6 @@ class AppServiceProvider extends ServiceProvider
         // feeds the abuse auto-ban.
         $this->defineRateLimiter('mutations', fn (): Limit => Limit::perMinute(120));
         $this->defineRateLimiter('uploads', fn (): Limit => Limit::perMinute(20));
-        $this->defineRateLimiter('public', fn (): Limit => Limit::perMinute(120));
     }
 
     /**

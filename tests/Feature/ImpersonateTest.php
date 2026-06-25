@@ -10,14 +10,14 @@ class ImpersonateTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_admin_can_impersonate_menu_owner_and_redirects_to_dashboard(): void
+    public function test_admin_can_impersonate_menu_owner_and_redirects_home(): void
     {
         $admin = User::factory()->admin()->create();
         $menuOwner = User::factory()->create();
 
         $response = $this->actingAs($admin)->get(route('impersonate', $menuOwner->id));
 
-        $response->assertRedirect('/dashboard');
+        $response->assertRedirect('/');
         $this->assertAuthenticatedAs($menuOwner);
     }
 

@@ -42,7 +42,7 @@ class GoogleController extends Controller
 
             Auth::login($socialAccount->user, remember: true);
 
-            return redirect()->intended(route('dashboard'));
+            return redirect()->intended('/');
         }
 
         $user = User::where('email', $googleUser->getEmail())->first();
@@ -55,7 +55,7 @@ class GoogleController extends Controller
             $this->attachSocialAccount($user, $googleUser);
             Auth::login($user, remember: true);
 
-            return redirect()->route('dashboard');
+            return redirect('/');
         }
 
         $user = User::create([
