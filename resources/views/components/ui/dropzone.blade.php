@@ -106,7 +106,7 @@ $keyName  = $name ? $name.'_key' : null;
                  fd.append('context', '{{ $context }}');
                  fd.append('_token',  document.querySelector('meta[name=csrf-token]').content);
 
-                 const res = await fetch('{{ route('menu-owner.temp-upload') }}', {
+                 const res = await fetch('{{ route('temp-upload') }}', {
                      method:  'POST',
                      headers: { 'Accept': 'application/json' },
                      body:    fd,

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\MenuOwner;
+namespace App\Services\Global;
 
 use App\Models\Feature;
 use App\Models\Restaurant;

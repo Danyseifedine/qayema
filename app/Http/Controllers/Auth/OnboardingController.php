@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Mail\WelcomeRestaurantOwner;
 use App\Models\Restaurant;
 use App\Models\Tag;
 use App\Models\Template;
+use App\Services\Portal\OnboardingService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -18,7 +18,7 @@ class OnboardingController extends Controller
 {
     private const TOTAL_STEPS = 6;
 
-    public function show(Request $request): View|\Illuminate\Http\RedirectResponse
+    public function show(Request $request): View|RedirectResponse
     {
         if ($request->user()->hasCompletedOnboarding()) {
             return redirect('/');
@@ -56,7 +56,7 @@ class OnboardingController extends Controller
         }
     }
 
-    public function advance(Request $request): JsonResponse
+    public function advance(Request $request, OnboardingService $onboarding): JsonResponse
     {
         $user = $request->user();
         $dbStep = $user->onboarding_step ?? 0;
@@ -76,8 +76,6 @@ class OnboardingController extends Controller
 
         switch ($current) {
             case 0: // Step 1 — restaurant name + slug + preferred language
-                $restaurant = $user->restaurant;
-
                 // Normalize the slug server-side so spaces/uppercase/special chars
                 // can never reach validation or the database as an invalid value.
                 $request->merge(['slug' => Str::slug((string) $request->input('slug', ''))]);
@@ -87,27 +85,12 @@ class OnboardingController extends Controller
                     'slug' => [
                         'required', 'string', 'min:2', 'max:100',
                         'regex:/^[a-z0-9][a-z0-9-]*[a-z0-9]$/',
-                        Rule::unique('restaurants', 'slug')->ignore($restaurant?->id),
+                        Rule::unique('restaurants', 'slug')->ignore($user->restaurant?->id),
                     ],
                     'default_locale' => ['nullable', 'string', 'in:ar,en'],
                 ]);
 
-                $defaultLocale = $validated['default_locale'] ?? 'ar';
-
-                if ($restaurant) {
-                    $restaurant->update([
-                        'name' => [$defaultLocale => $validated['name']],
-                        'slug' => $validated['slug'],
-                        'default_locale' => $defaultLocale,
-                    ]);
-                } else {
-                    Restaurant::create([
-                        'user_id' => $user->id,
-                        'name' => [$defaultLocale => $validated['name']],
-                        'slug' => $validated['slug'],
-                        'default_locale' => $defaultLocale,
-                    ]);
-                }
+                $onboarding->saveIdentity($user, $validated['name'], $validated['slug'], $validated['default_locale'] ?? null);
                 break;
 
             case 1: // Step 2 — country code + phone + currency
@@ -120,40 +103,19 @@ class OnboardingController extends Controller
                     'currency.in' => 'Please choose a currency from the list.',
                 ]);
 
-                $user->restaurant->update([
-                    'country_code' => $validated['country_code'] ?? null,
-                    'phone' => $validated['phone'] ?? null,
-                    'currency' => $validated['currency'] ?? 'USD',
-                ]);
+                $onboarding->saveContact($user->restaurant, $validated['country_code'] ?? null, $validated['phone'], $validated['currency']);
                 break;
 
             case 2: // Step 3 — branding (logo + cover image)
-                $restaurant = $user->restaurant;
-
                 // Logo is optional during onboarding — owners can add it later in
                 // restaurant settings. This keeps the wizard completable and prevents
                 // the (clamped) step-3 validation from blocking later steps.
-                $request->validate([
+                $validated = $request->validate([
                     'logo_key' => ['nullable', 'string', 'regex:/^[a-f0-9\-]{36}$/'],
                     'cover_image_key' => ['nullable', 'string', 'regex:/^[a-f0-9\-]{36}$/'],
                 ]);
 
-                $media = app(\App\Services\Global\MediaService::class);
-
-                foreach (['logo', 'cover_image'] as $key) {
-                    $mediaKey = $request->input("{$key}_key");
-
-                    if ($mediaKey) {
-                        $path = $media->tempPath($user->id, $mediaKey);
-
-                        if (file_exists($path)) {
-                            $restaurant->clearMediaCollection($key);
-                            $restaurant->addMedia($path)
-                                ->usingName(str_replace('_', '-', $key))
-                                ->toMediaCollection($key);
-                        }
-                    }
-                }
+                $onboarding->saveBranding($user, $user->restaurant, $validated['logo_key'] ?? null, $validated['cover_image_key'] ?? null);
                 break;
 
             case 3: // Step 4 — cuisine + dietary tags
@@ -162,16 +124,7 @@ class OnboardingController extends Controller
                     'tag_ids.*' => ['integer', 'exists:tags,id'],
                 ]);
 
-                $restaurant = $user->restaurant;
-                $categoryIds = Tag::whereIn('category', ['cuisine', 'dietary'])->pluck('id');
-                $restaurant->tags()->detach($categoryIds);
-
-                if (! empty($validated['tag_ids'])) {
-                    $allowed = Tag::whereIn('id', $validated['tag_ids'])
-                        ->whereIn('category', ['cuisine', 'dietary'])
-                        ->pluck('id');
-                    $restaurant->tags()->attach($allowed);
-                }
+                $onboarding->syncTags($user->restaurant, ['cuisine', 'dietary'], $validated['tag_ids'] ?? []);
                 break;
 
             case 4: // Step 5 — vibe + style tags
@@ -180,16 +133,7 @@ class OnboardingController extends Controller
                     'tag_ids.*' => ['integer', 'exists:tags,id'],
                 ]);
 
-                $restaurant = $user->restaurant;
-                $categoryIds = Tag::whereIn('category', ['vibe', 'style'])->pluck('id');
-                $restaurant->tags()->detach($categoryIds);
-
-                if (! empty($validated['tag_ids'])) {
-                    $allowed = Tag::whereIn('id', $validated['tag_ids'])
-                        ->whereIn('category', ['vibe', 'style'])
-                        ->pluck('id');
-                    $restaurant->tags()->attach($allowed);
-                }
+                $onboarding->syncTags($user->restaurant, ['vibe', 'style'], $validated['tag_ids'] ?? []);
                 break;
 
             case 5: // Step 6 — template selection + complete
@@ -197,18 +141,7 @@ class OnboardingController extends Controller
                     'template_id' => ['required', 'integer', 'exists:templates,id,is_active,1'],
                 ]);
 
-                $restaurant = $user->restaurant;
-                $restaurant->update([
-                    'template_id' => $validated['template_id'],
-                    'template_settings' => Template::findOrFail($validated['template_id'])->defaultSettings(),
-                ]);
-
-                $user->update([
-                    'onboarding_step' => 6,
-                    'onboarding_completed_at' => now(),
-                ]);
-
-                Mail::to($user->email)->send(new WelcomeRestaurantOwner($user, $restaurant));
+                $onboarding->complete($user, $user->restaurant, (int) $validated['template_id']);
 
                 return response()->json([
                     'completed' => true,

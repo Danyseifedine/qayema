@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\ContactController;
-use App\Http\Controllers\MenuOwner\TempUploadController;
+use App\Http\Controllers\TempUploadController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -34,7 +34,7 @@ Route::middleware(['auth', 'owner.locale'])->group(function () {
     // (optimize & store for deferred form submission).
     Route::post('/temp-upload', [TempUploadController::class, 'store'])
         ->middleware(['throttle:mutations', 'throttle:uploads'])
-        ->name('menu-owner.temp-upload');
+        ->name('temp-upload');
 });
 
 // Legal + contact (public portal pages) — locale resolved from session

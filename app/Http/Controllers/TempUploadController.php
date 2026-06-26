@@ -1,8 +1,7 @@
 <?php
 
-namespace App\Http\Controllers\MenuOwner;
+namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Http\Requests\TempUploadRequest;
 use App\Services\Global\MediaService;
 use Illuminate\Http\JsonResponse;

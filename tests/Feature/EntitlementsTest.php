@@ -6,7 +6,7 @@ use App\Models\Feature;
 use App\Models\Restaurant;
 use App\Models\Subscription;
 use App\Models\Template;
-use App\Services\MenuOwner\Entitlements;
+use App\Services\Global\Entitlements;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
