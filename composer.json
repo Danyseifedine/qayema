@@ -12,6 +12,7 @@
         "intervention/image": "^3.11",
         "lab404/laravel-impersonate": "^1.7",
         "laravel/framework": "^12.0",
+        "laravel/sanctum": "^4.0",
         "laravel/socialite": "^5.27",
         "laravel/tinker": "^2.10.1",
         "propaganistas/laravel-phone": "^6.0",
@@ -81,7 +82,9 @@
     },
     "extra": {
         "laravel": {
-            "dont-discover": []
+            "dont-discover": [
+                "laravel/telescope"
+            ]
         }
     },
     "config": {

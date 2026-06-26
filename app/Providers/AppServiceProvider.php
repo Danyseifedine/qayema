@@ -17,7 +17,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Telescope is a dev tool: never load it outside local. It's excluded from
+        // package auto-discovery (composer.json dont-discover) and registered here
+        // only in local, so a production (or --no-dev) deploy can never expose
+        // /telescope or record sensitive request/query data, even if env is wrong.
+        if ($this->app->environment('local') && class_exists(\Laravel\Telescope\TelescopeServiceProvider::class)) {
+            $this->app->register(\Laravel\Telescope\TelescopeServiceProvider::class);
+            $this->app->register(TelescopeServiceProvider::class);
+        }
     }
 
     /**
@@ -40,6 +47,11 @@ class AppServiceProvider extends ServiceProvider
         // IP-wide ban — otherwise one busy office NAT could lock everyone out.
         $this->defineRateLimiter('auth', fn (): Limit => Limit::perMinute(5), autoBan: false);
         $this->defineRateLimiter('contact', fn (): Limit => Limit::perMinute(10), autoBan: false);
+
+        // Dashboard SPA endpoints. The SPA polls /api/user on every boot, so the
+        // ceiling is generous; a 429 here is self-inflicted (one session), so it
+        // must not escalate to an IP-wide ban.
+        $this->defineRateLimiter('api', fn (): Limit => Limit::perMinute(60), autoBan: false);
 
         // High-volume endpoints: sustained limit-breaking here is flooding, so it
         // feeds the abuse auto-ban.

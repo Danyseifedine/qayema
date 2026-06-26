@@ -21,10 +21,24 @@ class SecurityHeaders
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
-        $response->headers->set('Content-Security-Policy', "frame-ancestors 'none'");
+
+        // script-src/default-src are intentionally omitted: the app runs standard
+        // Alpine.js (needs eval), Livewire/Filament inline scripts, CDN scripts and
+        // reCAPTCHA — a strict policy (or any default-src, which scripts/styles fall
+        // back to) would break them. The directives below have no default-src
+        // fallback, so they add protection without restricting scripts/styles/images:
+        // base-tag hijacking of relative URLs, plugin/object injection, and
+        // form-action exfiltration, plus the existing anti-framing.
+        $response->headers->set(
+            'Content-Security-Policy',
+            "frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'"
+        );
 
         if ($request->secure()) {
-            $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+            // 2-year max-age + preload: the session cookie is scoped to the whole
+            // registrable domain, so every subdomain must be HTTPS-only. Submit the
+            // apex to hstspreload.org to enforce this on the very first connection.
+            $response->headers->set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
         }
 
         return $response;

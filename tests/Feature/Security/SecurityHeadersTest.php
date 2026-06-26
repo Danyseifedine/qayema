@@ -34,12 +34,12 @@ class SecurityHeadersTest extends TestCase
 
         $response->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->assertHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
-        $response->assertHeader('Content-Security-Policy', "frame-ancestors 'none'");
+        $response->assertHeader('Content-Security-Policy', "frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'");
     }
 
     public function test_hsts_header_is_omitted_on_insecure_requests(): void
     {
-        $response = $this->get('/__headers-test');
+        $response = $this->get('http://localhost/__headers-test');
 
         $this->assertFalse($response->headers->has('Strict-Transport-Security'));
     }
@@ -48,6 +48,6 @@ class SecurityHeadersTest extends TestCase
     {
         $response = $this->get('https://localhost/__headers-test');
 
-        $response->assertHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+        $response->assertHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
     }
 }

@@ -56,6 +56,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Dashboard SPA URL
+    |--------------------------------------------------------------------------
+    |
+    | Absolute URL of the React dashboard served on its own subdomain. Owners
+    | are redirected here after completing onboarding. Falls back to the app
+    | root so the flow still works before the dashboard is deployed.
+    |
+    */
+
+    'dashboard_url' => env('DASHBOARD_URL', env('APP_URL', 'http://localhost')),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

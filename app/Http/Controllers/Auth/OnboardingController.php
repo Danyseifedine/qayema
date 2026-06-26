@@ -145,7 +145,7 @@ class OnboardingController extends Controller
 
                 return response()->json([
                     'completed' => true,
-                    'redirect' => url('/'),
+                    'redirect' => config('app.dashboard_url'),
                 ]);
         }
 
