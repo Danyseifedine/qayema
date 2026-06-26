@@ -26,7 +26,7 @@ class OnboardingController extends Controller
 
         $restaurant = $request->user()->restaurant?->load('tags');
 
-        return view('auth.onboarding', [
+        return view('portal.auth.onboarding', [
             'step' => $request->user()->currentOnboardingStep(),
             'totalSteps' => self::TOTAL_STEPS,
             'tags' => Tag::all()->groupBy('category'),

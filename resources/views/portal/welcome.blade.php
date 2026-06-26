@@ -15,12 +15,6 @@
         'check' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
         'spark' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6z"/></svg>',
     ];
-    // per-item icons for the solution list (fixed, decorative)
-    $solIcons = [
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 6L9 17l-5-5"/></svg>',
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="7" y="2.5" width="10" height="19" rx="3"/></svg>',
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>',
-    ];
 @endphp
 
 @section('content')
@@ -88,35 +82,6 @@
             </div>
           </div>
         @endforeach
-      </div>
-    </div>
-  </section>
-
-  {{-- ===== SOLUTION ===== --}}
-  <section class="sec" id="solution" style="padding-top:0;">
-    <div class="wrap sol">
-      <div class="sol-vis reveal">
-        <div class="sol-ring">
-          <div class="core">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M21 21v-4M17 21h1M14 21h.01"/></svg>
-          </div>
-          <div class="sol-orb" style="top:-6%;left:42%"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="7" y="2.5" width="10" height="19" rx="3"/></svg></div>
-          <div class="sol-orb" style="top:42%;right:-6%"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg></div>
-          <div class="sol-orb" style="bottom:-6%;left:42%"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4v16h16M8 14l3-4 3 2 4-6"/></svg></div>
-          <div class="sol-orb" style="top:42%;left:-6%"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8a2 2 0 0 1 2-2h2l1.5-2h7L17 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="12.5" r="3.5"/></svg></div>
-        </div>
-      </div>
-      <div class="sol-copy reveal">
-        <div class="eyebrow"><span class="bar"></span><span class="mono-label">{{ __('portal.solution.eyebrow') }}</span></div>
-        <h2 class="display" style="font-size:clamp(30px,3.6vw,48px);line-height:1.05;letter-spacing:-0.03em;"><span>{{ __('portal.solution.title') }}</span> <span class="gold-text">{{ __('portal.solution.title_gold') }}</span></h2>
-        <ul class="sol-list">
-          @foreach (__('portal.solution.list') as $i => $item)
-            <li>
-              <span class="ic">{!! $solIcons[$i] !!}</span>
-              <div><h4>{{ $item['title'] }}</h4><p>{{ $item['desc'] }}</p></div>
-            </li>
-          @endforeach
-        </ul>
       </div>
     </div>
   </section>
@@ -268,21 +233,6 @@
             <div class="faq-a"><div class="inner">{{ $item['a'] }}</div></div>
           </div>
         @endforeach
-      </div>
-    </div>
-  </section>
-
-  {{-- ===== FINAL CTA ===== --}}
-  <section class="final">
-    <div class="wrap">
-      <div class="final-box reveal">
-        <img class="qmark" src="{{ asset('images/logo/q-logo.png') }}" alt="" />
-        <h2 class="display"><span>{{ __('portal.final.title') }}</span> <span class="gold-text">{{ __('portal.final.title_gold') }}</span></h2>
-        <p>{{ __('portal.final.sub') }}</p>
-        <div class="acts">
-          <a class="btn btn-gold" data-magnetic href="{{ route('register') }}">{{ __('portal.final.cta_primary') }}</a>
-          <a class="btn btn-line" href="#how">{{ __('portal.final.cta_secondary') }}</a>
-        </div>
       </div>
     </div>
   </section>

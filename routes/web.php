@@ -39,10 +39,10 @@ Route::middleware(['auth', 'owner.locale'])->group(function () {
 
 // Legal + contact (public portal pages) — locale resolved from session
 Route::middleware('owner.locale')->group(function () {
-    Route::get('/privacy-policy', fn () => view('legal.privacy'))->name('privacy');
-    Route::get('/terms-of-service', fn () => view('legal.terms'))->name('terms');
-    Route::get('/cookie-policy', fn () => view('legal.cookies'))->name('cookies');
-    Route::get('/refund-policy', fn () => view('legal.refund'))->name('refund');
+    Route::get('/privacy-policy', fn () => view('portal.legal.privacy'))->name('privacy');
+    Route::get('/terms-of-service', fn () => view('portal.legal.terms'))->name('terms');
+    Route::get('/cookie-policy', fn () => view('portal.legal.cookies'))->name('cookies');
+    Route::get('/refund-policy', fn () => view('portal.legal.refund'))->name('refund');
 
     Route::get('/contact', [ContactController::class, 'show'])->name('contact');
     Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:contact')->name('contact.store');
