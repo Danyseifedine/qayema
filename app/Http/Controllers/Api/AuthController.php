@@ -11,6 +11,21 @@ use Illuminate\Support\Facades\Auth;
 class AuthController extends Controller
 {
     /**
+     * Return the current session's CSRF token in the response body.
+     *
+     * A cross-domain SPA (e.g. a localhost dashboard talking to qayema.test)
+     * cannot read the XSRF-TOKEN cookie because it belongs to another domain, so
+     * it can't echo it back on writes. Handing the token over the body — which
+     * CORS lets the allow-listed origin read — lets the SPA send it as the
+     * X-CSRF-TOKEN header and pass CSRF validation. Same-domain SPAs don't need
+     * this (they read the cookie directly), but it's harmless for them too.
+     */
+    public function csrfToken(Request $request): JsonResponse
+    {
+        return response()->json(['token' => csrf_token()]);
+    }
+
+    /**
      * Return the authenticated SPA user. The dashboard calls this on boot to
      * decide whether to render or bounce the visitor to the Laravel login.
      */

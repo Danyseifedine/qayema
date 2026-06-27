@@ -11,6 +11,7 @@ html[data-theme="dark"] {
   --paper-2: #111111;                  /* match --elevated */
   --ink:     #F5F1E8;                  /* match --text */
   --muted:   rgba(245, 241, 232, .60); /* match portal --muted */
+  --muted-2: rgba(245, 241, 232, .50); /* fainter muted (input prefix, hints) */
   --line:    rgba(245, 241, 232, .12); /* match portal --line */
   --sand:    #1A1A1A;
   --sand-2:  #2A2A2A;
@@ -23,6 +24,7 @@ html[data-theme="dark"] .right {
   --paper-2: #EFE8DA;
   --ink:     #141109;
   --muted:   rgba(15, 15, 16, .58);
+  --muted-2: rgba(20, 17, 9, .40);
   --surface: #FFFFFF;
   --sand:    #E8DCCB;
   --sand-2:  #D9CAB3;
