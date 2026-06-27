@@ -41,7 +41,7 @@
     </script>
 </head>
 
-<body style="font-family: Geist">
+<body style="font-family: var(--font-sans)">
 
     @unless ($bare)
         @include('portal.layout.component.navbar')

@@ -43,6 +43,11 @@ html[data-theme="dark"] .google-btn,
 html[data-theme="dark"] .tag-chip,
 html[data-theme="dark"] .tpl-card { border-color: rgba(255, 255, 255, .12); }
 
+/* The dashed dropzone border is a near-black ink in light mode — invisible on
+   the dark bg. Lift it to a faint light tone so the dashes read (a touch
+   stronger than the solid hairlines above since a dashed line shows less). */
+html[data-theme="dark"] .ui-uploader { border-color: rgba(245, 241, 232, .22); }
+
 /* Primary buttons invert (cream on dark). Their hardcoded light-mode
    "darken on hover" (#1c1c1f) would hide the dark label, so re-point it. */
 html[data-theme="dark"] .ui-btn-primary:hover { background: #E9E3D6; }

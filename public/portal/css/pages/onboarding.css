@@ -1,9 +1,9 @@
 /* Qayema — onboarding wizard (extracted; portal palette) */
 
 :root {
-  --gold: #F8D38D;
-  --gold-deep: #B08A2C;
-  --gold-soft: #FCE7BC;
+  /* Gold palette inherited from app.css (the main brand gold, --gold-deep:#E9BD66).
+     The wizard previously re-declared a darker --gold-deep (#B08A2C) that read as a
+     muddy "old yellow" — especially on the dark theme. */
   --muted-dark: rgba(246,241,232,.62);
   --line-dark: rgba(255,255,255,.10);
 }
@@ -121,6 +121,14 @@ h1.title .it { font-family: var(--font-display); font-style: italic; color: var(
 .btn-ghost:hover:not(:disabled) { background: rgba(20,17,9,.05); }
 .btn .arr-left { transform: scaleX(-1); }
 .btn:hover:not(:disabled) .arr-left { transform: scaleX(-1) translateX(3px); }
+
+/* RTL (Arabic): forward points left and back points right, so mirror both
+   wizard arrows from their LTR direction (the buttons themselves already
+   re-order via flexbox). */
+html[dir="rtl"] .btn-ink .arr { transform: scaleX(-1); }
+html[dir="rtl"] .btn-ink:hover:not(:disabled) .arr { transform: scaleX(-1) translateX(3px); }
+html[dir="rtl"] .btn .arr-left { transform: scaleX(1); }
+html[dir="rtl"] .btn:hover:not(:disabled) .arr-left { transform: scaleX(1) translateX(3px); }
 @keyframes btn-spin { to { transform: rotate(360deg); } }
 .spin { animation: btn-spin .8s linear infinite; }
 

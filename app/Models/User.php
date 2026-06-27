@@ -89,7 +89,7 @@ class User extends Authenticatable implements FilamentUser
 
     public function currentOnboardingStep(): int
     {
-        return min(($this->onboarding_step ?? 0) + 1, 6);
+        return min(($this->onboarding_step ?? 0) + 1, 5);
     }
 
     public function canAccessPanel(\Filament\Panel $panel): bool

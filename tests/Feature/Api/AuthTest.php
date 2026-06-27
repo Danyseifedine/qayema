@@ -43,6 +43,18 @@ class AuthTest extends TestCase
         $this->assertArrayNotHasKey('remember_token', $response->json('data'));
     }
 
+    public function test_csrf_token_endpoint_returns_a_token(): void
+    {
+        // A stateful Origin makes Sanctum start the session, so csrf_token() has
+        // a token to hand back in the body for cross-domain SPAs.
+        config(['sanctum.stateful' => ['dashboard.qayema.test']]);
+
+        $this->withHeader('Origin', 'https://dashboard.qayema.test')
+            ->getJson('/api/csrf-token')
+            ->assertOk()
+            ->assertJsonStructure(['token']);
+    }
+
     public function test_guest_cannot_call_logout(): void
     {
         $this->postJson('/api/logout')->assertUnauthorized();

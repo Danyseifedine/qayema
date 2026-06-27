@@ -13,18 +13,6 @@
 $locales = [
     'en' => ['name' => 'English',    'flag' => '🇬🇧', 'rtl' => false],
     'ar' => ['name' => 'العربية',    'flag' => '🇸🇦', 'rtl' => true],
-    'fr' => ['name' => 'Français',   'flag' => '🇫🇷', 'rtl' => false],
-    'de' => ['name' => 'Deutsch',    'flag' => '🇩🇪', 'rtl' => false],
-    'es' => ['name' => 'Español',    'flag' => '🇪🇸', 'rtl' => false],
-    'it' => ['name' => 'Italiano',   'flag' => '🇮🇹', 'rtl' => false],
-    'pt' => ['name' => 'Português',  'flag' => '🇵🇹', 'rtl' => false],
-    'ru' => ['name' => 'Русский',    'flag' => '🇷🇺', 'rtl' => false],
-    'tr' => ['name' => 'Türkçe',     'flag' => '🇹🇷', 'rtl' => false],
-    'hi' => ['name' => 'हिन्दी',      'flag' => '🇮🇳', 'rtl' => false],
-    'zh' => ['name' => '中文',        'flag' => '🇨🇳', 'rtl' => false],
-    'ja' => ['name' => '日本語',      'flag' => '🇯🇵', 'rtl' => false],
-    'ko' => ['name' => '한국어',      'flag' => '🇰🇷', 'rtl' => false],
-    'nl' => ['name' => 'Nederlands',  'flag' => '🇳🇱', 'rtl' => false],
 ];
 
 return [

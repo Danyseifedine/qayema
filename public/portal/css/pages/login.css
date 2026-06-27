@@ -17,8 +17,10 @@
     --line-dark:    rgba(255,255,255,.10);
     --muted:        rgba(20,17,9,.58);
     --muted-dark:   rgba(246,241,232,.62);
-    --font-sans:    'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
-    --font-display: 'Instrument Serif', 'Times New Roman', serif;
+    /* El Messiri is included so Arabic glyphs (absent from Geist / Instrument
+       Serif) resolve to it — matching the welcome page. */
+    --font-sans:    'Geist', 'El Messiri', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --font-display: 'Instrument Serif', 'El Messiri', 'Times New Roman', serif;
     --font-ar:      'El Messiri', 'Geist', system-ui, sans-serif;
 }
 

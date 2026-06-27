@@ -2,27 +2,106 @@
 
 namespace Tests\Feature\Onboarding;
 
+use App\Mail\WelcomeRestaurantOwner;
 use App\Models\Restaurant;
+use App\Models\Tag;
+use App\Models\Template;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class OnboardingFlowTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_step_three_does_not_require_a_logo(): void
+    public function test_step_three_requires_a_logo(): void
     {
-        // User has completed steps 1 & 2 (onboarding_step = 2) and has a restaurant.
+        // User has completed steps 1 & 2 (onboarding_step = 2) and has a restaurant
+        // with no logo yet.
         $user = User::factory()->create(['onboarding_step' => 2, 'onboarding_completed_at' => null]);
         Restaurant::factory()->create(['user_id' => $user->id]);
 
-        // Advancing step 3 with NO logo must succeed (logo is optional now), not 422.
+        // Advancing step 3 with NO logo must now fail — the logo is required.
         $response = $this->actingAs($user)->postJson(route('onboarding.advance'), ['_step' => 3]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('logo_key');
+        $this->assertSame(2, $user->fresh()->onboarding_step);
+    }
+
+    public function test_step_three_accepts_a_logo(): void
+    {
+        $user = User::factory()->create(['onboarding_step' => 2, 'onboarding_completed_at' => null]);
+        Restaurant::factory()->create(['user_id' => $user->id]);
+
+        // A well-formed temp-upload key satisfies the requirement (the key format is
+        // a 36-char UUID; saveBranding no-ops when the temp file is absent).
+        $response = $this->actingAs($user)->postJson(route('onboarding.advance'), [
+            '_step' => 3,
+            'logo_key' => '11111111-1111-1111-1111-111111111111',
+        ]);
 
         $response->assertOk();
         $response->assertJsonMissingValidationErrors('logo_key');
         $this->assertSame(3, $user->fresh()->onboarding_step);
+    }
+
+    public function test_step_four_requires_a_tag(): void
+    {
+        $user = User::factory()->create(['onboarding_step' => 3, 'onboarding_completed_at' => null]);
+        Restaurant::factory()->create(['user_id' => $user->id]);
+
+        $response = $this->actingAs($user)->postJson(route('onboarding.advance'), ['_step' => 4]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('tag_ids');
+        $this->assertSame(3, $user->fresh()->onboarding_step);
+    }
+
+    public function test_step_four_accepts_a_tag(): void
+    {
+        $user = User::factory()->create(['onboarding_step' => 3, 'onboarding_completed_at' => null]);
+        Restaurant::factory()->create(['user_id' => $user->id]);
+        $tag = Tag::create(['name' => ['en' => 'Italian'], 'slug' => 'italian', 'category' => 'cuisine']);
+
+        $response = $this->actingAs($user)->postJson(route('onboarding.advance'), ['_step' => 4, 'tag_ids' => [$tag->id]]);
+
+        $response->assertOk();
+        $response->assertJsonMissingValidationErrors('tag_ids');
+        $this->assertSame(4, $user->fresh()->onboarding_step);
+    }
+
+    public function test_step_five_requires_a_tag(): void
+    {
+        $user = User::factory()->create(['onboarding_step' => 4, 'onboarding_completed_at' => null]);
+        Restaurant::factory()->create(['user_id' => $user->id]);
+
+        $response = $this->actingAs($user)->postJson(route('onboarding.advance'), ['_step' => 5]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('tag_ids');
+        $this->assertSame(4, $user->fresh()->onboarding_step);
+    }
+
+    public function test_step_five_completes_onboarding(): void
+    {
+        // Step 5 is now the final step: a valid tag completes onboarding, applies a
+        // default template, and sends the welcome email.
+        Mail::fake();
+        $template = Template::factory()->create(['is_active' => true]);
+        $user = User::factory()->create(['onboarding_step' => 4, 'onboarding_completed_at' => null]);
+        Restaurant::factory()->create(['user_id' => $user->id]);
+        $tag = Tag::create(['name' => ['en' => 'Minimal'], 'slug' => 'minimal', 'category' => 'style']);
+
+        $response = $this->actingAs($user)->postJson(route('onboarding.advance'), ['_step' => 5, 'tag_ids' => [$tag->id]]);
+
+        $response->assertOk()->assertJson(['completed' => true]);
+
+        $user->refresh();
+        $this->assertNotNull($user->onboarding_completed_at);
+        $this->assertSame($template->id, $user->restaurant->template_id);
+        Mail::assertSent(WelcomeRestaurantOwner::class);
     }
 
     public function test_slug_taken_by_another_restaurant_is_reported_as_taken(): void

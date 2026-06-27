@@ -20,20 +20,12 @@
     $existingVsTagIds   = $restaurant ? $restaurant->tags->whereIn('category', ['vibe', 'style'])->pluck('id')->values()->all() : [];
     $existingVsTagSlugs = $restaurant ? $restaurant->tags->whereIn('category', ['vibe', 'style'])->pluck('slug')->values()->all() : [];
 
-    $allTemplatesJson = $templates->map(fn ($t) => [
-        'id'        => $t->id,
-        'name'      => $t->name,
-        'thumbnail' => $t->getFirstMediaUrl('thumbnail'),
-        'tagSlugs'  => $t->tags->pluck('slug')->values(),
-    ]);
-
     $stepData = [
         ['key' => __('menu_owner.onboarding.step1_title'), 'short' => __('menu_owner.onboarding.step1_desc'), 'stage' => __('menu_owner.onboarding.step1_stage'), 'tag' => __('menu_owner.onboarding.step1_tag')],
         ['key' => __('menu_owner.onboarding.step2_title'), 'short' => __('menu_owner.onboarding.step2_desc'), 'stage' => __('menu_owner.onboarding.step2_stage'), 'tag' => __('menu_owner.onboarding.step2_tag')],
         ['key' => __('menu_owner.onboarding.step3_title'), 'short' => __('menu_owner.onboarding.step3_desc'), 'stage' => __('menu_owner.onboarding.step3_stage'), 'tag' => __('menu_owner.onboarding.step3_tag')],
         ['key' => __('menu_owner.onboarding.step4_title'), 'short' => __('menu_owner.onboarding.step4_desc'), 'stage' => __('menu_owner.onboarding.step4_stage'), 'tag' => __('menu_owner.onboarding.step4_tag')],
         ['key' => __('menu_owner.onboarding.step5_title'), 'short' => __('menu_owner.onboarding.step5_desc'), 'stage' => __('menu_owner.onboarding.step5_stage'), 'tag' => __('menu_owner.onboarding.step5_tag')],
-        ['key' => __('menu_owner.onboarding.step6_title'), 'short' => __('menu_owner.onboarding.step6_desc'), 'stage' => __('menu_owner.onboarding.step6_stage'), 'tag' => __('menu_owner.onboarding.step6_tag')],
     ];
 @endphp
 
@@ -201,8 +193,7 @@
                 <h1 class="title">{!! __('menu_owner.onboarding.step3_heading', ['em' => '<span class="it">'.__('menu_owner.onboarding.step3_em').'</span>']) !!}</h1>
                 <p class="lead">{{ __('menu_owner.onboarding.step3_desc') }}</p>
                 <div class="fields">
-                    <x-ui.field :label="__('menu_owner.onboarding.logo_label')"
-                                :optional="__('menu_owner.onboarding.optional')">
+                    <x-ui.field :label="__('menu_owner.onboarding.logo_label')" required>
                         <x-ui.dropzone name="logo" context="logo"
                             :value="$restaurant?->getFirstMediaUrl('logo') ?: null"
                             :hint="__('menu_owner.onboarding.logo_hint')" />
@@ -225,6 +216,7 @@
                 <h1 class="title">{!! __('menu_owner.onboarding.step4_heading', ['em' => '<span class="it">'.__('menu_owner.onboarding.step4_em').'</span>']) !!}</h1>
                 <p class="lead">{{ __('menu_owner.onboarding.step4_desc') }}</p>
                 <p class="ui-help" style="margin-bottom:18px">{{ __('menu_owner.onboarding.tags_hint') }}</p>
+                <div class="f-error" x-show="errors.cdTags" x-text="errors.cdTags" x-cloak style="margin-bottom:12px"></div>
                 @foreach(['cuisine', 'dietary'] as $cat)
                 @if(isset($tags[$cat]) && $tags[$cat]->isNotEmpty())
                 <div class="tag-section">
@@ -246,6 +238,7 @@
                 <h1 class="title">{!! __('menu_owner.onboarding.step5_heading', ['em' => '<span class="it">'.__('menu_owner.onboarding.step5_em').'</span>']) !!}</h1>
                 <p class="lead">{{ __('menu_owner.onboarding.step5_desc') }}</p>
                 <p class="ui-help" style="margin-bottom:18px">{{ __('menu_owner.onboarding.vibe_hint') }}</p>
+                <div class="f-error" x-show="errors.vsTags" x-text="errors.vsTags" x-cloak style="margin-bottom:12px"></div>
                 @foreach(['vibe', 'style'] as $cat)
                 @if(isset($tags[$cat]) && $tags[$cat]->isNotEmpty())
                 <div class="tag-section">
@@ -260,52 +253,6 @@
                 </div>
                 @endif
                 @endforeach
-            </div>
-
-            {{-- ── Step 6 — Template picker ── --}}
-            <div x-show="step === 6" x-cloak>
-                <h1 class="title">{!! __('menu_owner.onboarding.step6_heading', ['em' => '<span class="it">'.__('menu_owner.onboarding.step6_em').'</span>']) !!}</h1>
-                <p class="lead">{{ __('menu_owner.onboarding.step6_desc') }}</p>
-                <p class="ui-help" style="margin-bottom:18px">{{ __('menu_owner.onboarding.template_hint') }}</p>
-                <div class="f-error" x-show="errors.template" x-text="errors.template" x-cloak style="margin-bottom:12px"></div>
-
-                <template x-if="recommendedTemplates.length > 0">
-                    <div>
-                        <div class="tpl-section-lbl">{{ __('menu_owner.onboarding.recommended') }}</div>
-                        <div class="tpl-grid">
-                            <template x-for="t in recommendedTemplates" :key="t.id">
-                                <div class="tpl-card" :class="{ on: selectedTemplateId === t.id }" @click="selectedTemplateId = t.id">
-                                    <div class="tpl-thumb">
-                                        <template x-if="t.thumbnail"><img :src="t.thumbnail" :alt="t.name"></template>
-                                        <template x-if="!t.thumbnail"><span>🎨</span></template>
-                                    </div>
-                                    <div class="tpl-name" x-text="t.name"></div>
-                                </div>
-                            </template>
-                        </div>
-                    </div>
-                </template>
-
-                <template x-if="otherTemplates.length > 0">
-                    <div>
-                        <div class="tpl-section-lbl">{{ __('menu_owner.onboarding.all_templates') }}</div>
-                        <div class="tpl-grid">
-                            <template x-for="t in otherTemplates" :key="t.id">
-                                <div class="tpl-card" :class="{ on: selectedTemplateId === t.id }" @click="selectedTemplateId = t.id">
-                                    <div class="tpl-thumb">
-                                        <template x-if="t.thumbnail"><img :src="t.thumbnail" :alt="t.name"></template>
-                                        <template x-if="!t.thumbnail"><span>🎨</span></template>
-                                    </div>
-                                    <div class="tpl-name" x-text="t.name"></div>
-                                </div>
-                            </template>
-                        </div>
-                    </div>
-                </template>
-
-                <template x-if="allTemplates.length === 0">
-                    <p style="color:var(--muted);font-size:13.5px;padding:24px 0;text-align:center">{{ __('menu_owner.onboarding.no_templates') }}</p>
-                </template>
             </div>
 
         </div>{{-- /form-body --}}
@@ -419,7 +366,7 @@
 
                 <span class="annot br">
                     <span class="pulse"></span>
-                    <span x-text="step === 2 ? selectedCurrency : step === 6 && selectedTemplateId ? '{{ __('menu_owner.onboarding.template_selected') }}' : '{{ __('menu_owner.onboarding.pct_complete') }}'.replace(':pct', progress)"></span>
+                    <span x-text="step === 2 ? selectedCurrency : '{{ __('menu_owner.onboarding.pct_complete') }}'.replace(':pct', progress)"></span>
                 </span>
             </div>
 
@@ -451,7 +398,6 @@ window._onb = {
         step:       {{ $step }},
         totalSteps: {{ $totalSteps }},
         stepData:   @json($stepData),
-        templates:  @json($allTemplatesJson),
         currencySymbols: @json($currencySymbols),
         currencyCodes: @json(array_keys(config('currencies', []))),
         locale:     @json($locale),
@@ -471,7 +417,6 @@ window._onb = {
             cdTagSlugs:         @json($existingCdTagSlugs),
             vsTagIds:           @json($existingVsTagIds),
             vsTagSlugs:         @json($existingVsTagSlugs),
-            templateId:         @json($restaurant?->template_id),
             hasLogo:            @json($restaurant?->hasMedia('logo') ?? false),
         },
         i18n: {
@@ -482,7 +427,7 @@ window._onb = {
             currencyRequired: @json(__('menu_owner.onboarding.currency_required')),
             currencyInvalid:  @json(__('menu_owner.onboarding.currency_invalid')),
             logoRequired:     @json(__('menu_owner.onboarding.logo_required')),
-            selectTemplate:   @json(__('menu_owner.onboarding.select_template')),
+            tagsRequired:     @json(__('menu_owner.onboarding.tags_required')),
             uploadError:      @json(__('menu_owner.onboarding.upload_error')),
             somethingWrong:   @json(__('menu_owner.onboarding.something_wrong')),
             slugRequired:     @json(__('menu_owner.onboarding.slug_required')),
@@ -582,6 +527,11 @@ document.addEventListener('alpine:init', () => {
             return n + ' ' + (n === 1 ? _o.i18n.tagsOne : _o.i18n.tagsMany);
         },
 
+        /* Step 3 — a logo already saved on the restaurant satisfies the requirement.
+           The dropzone is a self-contained component, so the wizard tracks this
+           page-load flag separately (a fresh upload is detected via logo_key). */
+        hasLogo: _o.existing.hasLogo,
+
         /* Step 4 */
         cdTagIds: _o.existing.cdTagIds, cdTagSlugs: _o.existing.cdTagSlugs,
         toggleCd(id, slug) {
@@ -597,17 +547,6 @@ document.addEventListener('alpine:init', () => {
             if (i === -1) { this.vsTagIds.push(id); this.vsTagSlugs.push(slug); }
             else { this.vsTagIds.splice(i, 1); this.vsTagSlugs.splice(this.vsTagSlugs.indexOf(slug), 1); }
         },
-
-        /* Step 6 */
-        selectedTemplateId: _o.existing.templateId,
-        allTemplates: _o.templates,
-        get allTagSlugs() { return [...this.cdTagSlugs, ...this.vsTagSlugs]; },
-        get recommendedTemplates() {
-            if (!this.allTagSlugs.length) return [];
-            return this.allTemplates.filter(t => t.tagSlugs.some(s => this.allTagSlugs.includes(s)));
-        },
-        get otherTemplates() { return this.allTemplates; },
-
 
         /* ── Snapshot system ─────────────────────────────────────────
            Captures each step's state when the step becomes active.
@@ -631,9 +570,6 @@ document.addEventListener('alpine:init', () => {
                 case 5:
                     this._snap[5] = [...this.vsTagIds].sort().join(',');
                     break;
-                case 6:
-                    this._snap[6] = String(this.selectedTemplateId ?? '');
-                    break;
             }
         },
 
@@ -644,7 +580,6 @@ document.addEventListener('alpine:init', () => {
                 case 3: return this._snap[3] === `${dom('logo_key')}|${dom('cover_image_key')}`;
                 case 4: return this._snap[4] === [...this.cdTagIds].sort().join(',');
                 case 5: return this._snap[5] === [...this.vsTagIds].sort().join(',');
-                case 6: return this._snap[6] === String(this.selectedTemplateId ?? '');
                 default: return false;
             }
         },
@@ -713,8 +648,11 @@ document.addEventListener('alpine:init', () => {
                 if (!currency) { this.errors.currency = _o.i18n.currencyRequired; return; }
                 if (!(_o.currencyCodes || []).includes(currency)) { this.errors.currency = _o.i18n.currencyInvalid; return; }
             }
-            // Step 3 (branding) — logo is optional; nothing to block on.
-            if (this.step === 6 && !this.selectedTemplateId) { this.errors.template = _o.i18n.selectTemplate; return; }
+            // Step 3 (branding) — a logo is required (an existing one counts).
+            if (this.step === 3 && !this.hasLogo && !dom('logo_key')) { this.errors.logo = _o.i18n.logoRequired; return; }
+            // Steps 4 & 5 — at least one tag must be selected on each.
+            if (this.step === 4 && this.cdTagIds.length === 0) { this.errors.cdTags = _o.i18n.tagsRequired; return; }
+            if (this.step === 5 && this.vsTagIds.length === 0) { this.errors.vsTags = _o.i18n.tagsRequired; return; }
 
             // ── Skip API if nothing changed (never skip the final step — it must complete server-side) ──
             if (this._isUnchanged() && this.step < this.totalSteps) {
@@ -735,8 +673,6 @@ document.addEventListener('alpine:init', () => {
                     body = { ...body, tag_ids: this.cdTagIds };
                 } else if (this.step === 5) {
                     body = { ...body, tag_ids: this.vsTagIds };
-                } else if (this.step === 6) {
-                    body = { ...body, template_id: this.selectedTemplateId };
                 }
 
                 const res = await fetch(_o.routes.advance, {

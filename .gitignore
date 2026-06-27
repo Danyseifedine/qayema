@@ -13,6 +13,8 @@
 /.zed
 /auth.json
 /node_modules
+# The React dashboard is a separate project with its own git repo.
+/qayema-dashboard
 /public/hot
 /public/storage
 /storage/*.key
