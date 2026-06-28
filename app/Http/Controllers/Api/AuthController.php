@@ -22,7 +22,10 @@ class AuthController extends Controller
      */
     public function csrfToken(Request $request): JsonResponse
     {
-        return response()->json(['token' => csrf_token()]);
+        // Never cache the token — a stale token from a proxy/browser cache would
+        // cause CSRF mismatches on writes.
+        return response()->json(['token' => csrf_token()])
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
     }
 
     /**
