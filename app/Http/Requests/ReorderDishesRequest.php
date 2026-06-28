@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class ReorderCategoriesRequest extends FormRequest
+class ReorderDishesRequest extends FormRequest
 {
     /**
      * Authorization is enforced by the policy in the controller; ids that don't
@@ -23,7 +23,7 @@ class ReorderCategoriesRequest extends FormRequest
         return [
             // `max` bounds the payload so a tampered request can't ship a huge
             // array and force an oversized whereIn + per-id update loop. 500 is
-            // comfortably above any plan's category limit.
+            // comfortably above any plan's dish limit.
             'ids' => ['required', 'array', 'min:1', 'max:500'],
             'ids.*' => ['integer', 'distinct'],
         ];

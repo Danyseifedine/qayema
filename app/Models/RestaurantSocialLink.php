@@ -10,6 +10,9 @@ class RestaurantSocialLink extends Model
 {
     use HasFactory;
 
+    /** Platforms whose icon the menu can render. */
+    public const PLATFORMS = ['instagram', 'x', 'facebook', 'tiktok'];
+
     protected $fillable = [
         'restaurant_id',
         'platform',

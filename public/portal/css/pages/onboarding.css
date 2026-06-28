@@ -86,6 +86,7 @@ h1.title .it { font-family: var(--font-display); font-style: italic; color: var(
 /* ── Tag chips ───────────────────────────────────────── */
 .tag-section { margin-bottom: 20px; }
 .tag-cat { font-size: 10.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 9px; }
+.tag-need { margin-inline-start: 6px; font-weight: 600; letter-spacing: normal; text-transform: none; color: #dc2626; }
 .tag-chips { display: flex; flex-wrap: wrap; gap: 7px; }
 .tag-chip {
   border: .5px solid var(--line); background: var(--surface); border-radius: 999px;

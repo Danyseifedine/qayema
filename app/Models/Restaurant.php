@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Services\Global\Entitlements;
+use App\Services\Global\Package;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -65,9 +65,36 @@ class Restaurant extends Model implements HasMedia
 
         static::saved(function (self $restaurant) {
             if ($restaurant->wasChanged('template_id')) {
-                Entitlements::flush($restaurant->id);
+                Package::flush($restaurant->id);
             }
         });
+
+        static::created(function (self $restaurant) {
+            $restaurant->seedDefaultLimits();
+        });
+    }
+
+    /**
+     * Snapshot the current default limits onto the restaurant as its own
+     * `restaurant_features` grants, so each restaurant carries its limits in the
+     * database instead of only inheriting the global floor. No-ops for any limit
+     * feature that isn't seeded yet (e.g. a test database without FeatureSeeder).
+     */
+    public function seedDefaultLimits(): void
+    {
+        $features = Feature::query()
+            ->where('kind', 'limit')
+            ->whereIn('slug', ['dish_limit', 'category_limit', 'social_link_limit'])
+            ->get();
+
+        foreach ($features as $feature) {
+            $this->featureGrants()->create([
+                'feature_id' => $feature->id,
+                'value' => (string) PackageDefault::limit($feature->slug),
+                'source' => 'default',
+                'starts_at' => now(),
+            ]);
+        }
     }
 
     public function user(): BelongsTo
@@ -125,9 +152,9 @@ class Restaurant extends Model implements HasMedia
         return $this->hasMany(Payment::class);
     }
 
-    public function entitlements(): Entitlements
+    public function package(): Package
     {
-        return Entitlements::for($this);
+        return Package::for($this);
     }
 
     public function activeTemplateSubscription(): ?Subscription
@@ -160,17 +187,17 @@ class Restaurant extends Model implements HasMedia
 
     public function getDishLimitAttribute(): int
     {
-        return $this->entitlements()->limit('dish_limit');
+        return $this->package()->limit('dish_limit');
     }
 
     public function getCategoryLimitAttribute(): int
     {
-        return $this->entitlements()->limit('category_limit');
+        return $this->package()->limit('category_limit');
     }
 
     public function getSocialLinkLimitAttribute(): int
     {
-        return $this->entitlements()->limit('social_link_limit');
+        return $this->package()->limit('social_link_limit');
     }
 
     public function hasReachedDishLimit(): bool

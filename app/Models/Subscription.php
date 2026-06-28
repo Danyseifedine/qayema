@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Services\Global\Entitlements;
+use App\Services\Global\Package;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -45,7 +45,7 @@ class Subscription extends Model
 
     protected static function booted(): void
     {
-        $flush = fn (self $subscription) => Entitlements::flush($subscription->restaurant_id);
+        $flush = fn (self $subscription) => Package::flush($subscription->restaurant_id);
 
         static::saved($flush);
         static::deleted($flush);
@@ -67,12 +67,12 @@ class Subscription extends Model
     }
 
     /**
-     * Entitling subscriptions: trialing/active within the period, or past_due
-     * within the configured grace window.
+     * Access-granting subscriptions: trialing/active within the period, or
+     * past_due within the configured grace window.
      */
     public function scopeActive(Builder $query): Builder
     {
-        $grace = (int) config('entitlements.grace_days', 7);
+        $grace = (int) config('package.grace_days', 7);
 
         return $query->where(function (Builder $query) use ($grace) {
             $query->where(function (Builder $query) {
@@ -85,9 +85,9 @@ class Subscription extends Model
         });
     }
 
-    public function isEntitling(): bool
+    public function grantsAccess(): bool
     {
-        $grace = (int) config('entitlements.grace_days', 7);
+        $grace = (int) config('package.grace_days', 7);
 
         return match ($this->status) {
             'trialing', 'active' => $this->current_period_end->isFuture(),

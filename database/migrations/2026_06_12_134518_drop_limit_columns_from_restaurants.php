@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Limits now come from the entitlement engine (limit-kind features on the
+     * Limits now come from the package engine (limit-kind features on the
      * free template, overridable per restaurant) instead of columns.
      */
     public function up(): void

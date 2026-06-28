@@ -3,11 +3,11 @@
 namespace App\Services\Global;
 
 use App\Models\Feature;
+use App\Models\PackageDefault;
 use App\Models\Restaurant;
-use App\Models\Template;
 use Illuminate\Support\Facades\Cache;
 
-class Entitlements
+class Package
 {
     /** @var array<string, bool|int>|null */
     private ?array $resolved = null;
@@ -29,12 +29,12 @@ class Entitlements
         $value = $this->all()[$slug] ?? null;
 
         return $value === null
-            ? (int) config('entitlements.defaults.'.$slug, 0)
+            ? PackageDefault::limit($slug)
             : (int) $value;
     }
 
     /**
-     * Effective entitlements: template bundle (free, or paid with an active
+     * Effective package: template bundle (free, or paid with an active
      * subscription), overlaid by active feature add-on subscriptions, then by
      * valid restaurant_features rows. Booleans merge with OR, limits with MAX.
      *
@@ -48,7 +48,7 @@ class Entitlements
 
         return $this->resolved = Cache::remember(
             self::cacheKey($this->restaurant->id),
-            (int) config('entitlements.cache_ttl', 300),
+            (int) config('package.cache_ttl', 300),
             fn (): array => $this->resolve(),
         );
     }
@@ -60,7 +60,7 @@ class Entitlements
 
     private static function cacheKey(int $restaurantId): string
     {
-        return 'entitlements:'.$restaurantId;
+        return 'package:'.$restaurantId;
     }
 
     /**
@@ -68,13 +68,13 @@ class Entitlements
      */
     private function resolve(): array
     {
-        $entitlements = [];
+        $package = [];
 
         $template = $this->restaurant->template;
 
         if ($template && ($template->isFree() || $this->restaurant->activeTemplateSubscription() !== null)) {
             foreach ($template->features as $feature) {
-                $entitlements = $this->merge($entitlements, $feature->slug, $feature->kind, $feature->pivot->value);
+                $package = $this->merge($package, $feature->slug, $feature->kind, $feature->pivot->value);
             }
         }
 
@@ -87,7 +87,7 @@ class Entitlements
         foreach ($featureSubscriptions as $subscription) {
             if ($subscription->subscribable instanceof Feature) {
                 $feature = $subscription->subscribable;
-                $entitlements = $this->merge($entitlements, $feature->slug, $feature->kind, '1');
+                $package = $this->merge($package, $feature->slug, $feature->kind, '1');
             }
         }
 
@@ -99,25 +99,25 @@ class Entitlements
 
         foreach ($grants as $grant) {
             if ($grant->feature) {
-                $entitlements = $this->merge($entitlements, $grant->feature->slug, $grant->feature->kind, $grant->value);
+                $package = $this->merge($package, $grant->feature->slug, $grant->feature->kind, $grant->value);
             }
         }
 
-        return $entitlements;
+        return $package;
     }
 
     /**
-     * @param  array<string, bool|int>  $entitlements
+     * @param  array<string, bool|int>  $package
      * @return array<string, bool|int>
      */
-    private function merge(array $entitlements, string $slug, string $kind, string $value): array
+    private function merge(array $package, string $slug, string $kind, string $value): array
     {
         if ($kind === 'limit') {
-            $entitlements[$slug] = max((int) ($entitlements[$slug] ?? 0), (int) $value);
+            $package[$slug] = max((int) ($package[$slug] ?? 0), (int) $value);
         } else {
-            $entitlements[$slug] = ((bool) ($entitlements[$slug] ?? false)) || (bool) $value;
+            $package[$slug] = ((bool) ($package[$slug] ?? false)) || (bool) $value;
         }
 
-        return $entitlements;
+        return $package;
     }
 }

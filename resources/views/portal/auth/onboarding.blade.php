@@ -20,6 +20,11 @@
     $existingVsTagIds   = $restaurant ? $restaurant->tags->whereIn('category', ['vibe', 'style'])->pluck('id')->values()->all() : [];
     $existingVsTagSlugs = $restaurant ? $restaurant->tags->whereIn('category', ['vibe', 'style'])->pluck('slug')->values()->all() : [];
 
+    // Tag ids grouped by category — drives the per-category "pick one" rule client-side.
+    $tagIdsByCategory = collect(['cuisine', 'dietary', 'vibe', 'style'])
+        ->mapWithKeys(fn (string $cat): array => [$cat => isset($tags[$cat]) ? $tags[$cat]->pluck('id')->values()->all() : []])
+        ->all();
+
     $stepData = [
         ['key' => __('menu_owner.onboarding.step1_title'), 'short' => __('menu_owner.onboarding.step1_desc'), 'stage' => __('menu_owner.onboarding.step1_stage'), 'tag' => __('menu_owner.onboarding.step1_tag')],
         ['key' => __('menu_owner.onboarding.step2_title'), 'short' => __('menu_owner.onboarding.step2_desc'), 'stage' => __('menu_owner.onboarding.step2_stage'), 'tag' => __('menu_owner.onboarding.step2_tag')],
@@ -220,7 +225,10 @@
                 @foreach(['cuisine', 'dietary'] as $cat)
                 @if(isset($tags[$cat]) && $tags[$cat]->isNotEmpty())
                 <div class="tag-section">
-                    <div class="tag-cat">{{ __('menu_owner.onboarding.tag_'.$cat) }}</div>
+                    <div class="tag-cat">
+                        {{ __('menu_owner.onboarding.tag_'.$cat) }}
+                        <span class="tag-need" x-show="!_hasTagInEach(['{{ $cat }}'], cdTagIds)" x-cloak>· {{ __('menu_owner.onboarding.tags_pick_one') }}</span>
+                    </div>
                     <div class="tag-chips">
                         @foreach($tags[$cat] as $tag)
                         <button type="button" class="tag-chip"
@@ -242,7 +250,10 @@
                 @foreach(['vibe', 'style'] as $cat)
                 @if(isset($tags[$cat]) && $tags[$cat]->isNotEmpty())
                 <div class="tag-section">
-                    <div class="tag-cat">{{ __('menu_owner.onboarding.tag_'.$cat) }}</div>
+                    <div class="tag-cat">
+                        {{ __('menu_owner.onboarding.tag_'.$cat) }}
+                        <span class="tag-need" x-show="!_hasTagInEach(['{{ $cat }}'], vsTagIds)" x-cloak>· {{ __('menu_owner.onboarding.tags_pick_one') }}</span>
+                    </div>
                     <div class="tag-chips">
                         @foreach($tags[$cat] as $tag)
                         <button type="button" class="tag-chip"
@@ -400,6 +411,7 @@ window._onb = {
         stepData:   @json($stepData),
         currencySymbols: @json($currencySymbols),
         currencyCodes: @json(array_keys(config('currencies', []))),
+        tagCats:    @json($tagIdsByCategory),
         locale:     @json($locale),
         routes: {
             advance:    @json(route('onboarding.advance')),
@@ -428,6 +440,7 @@ window._onb = {
             currencyInvalid:  @json(__('menu_owner.onboarding.currency_invalid')),
             logoRequired:     @json(__('menu_owner.onboarding.logo_required')),
             tagsRequired:     @json(__('menu_owner.onboarding.tags_required')),
+            tagsEachCategory: @json(__('menu_owner.onboarding.tags_each_category')),
             uploadError:      @json(__('menu_owner.onboarding.upload_error')),
             somethingWrong:   @json(__('menu_owner.onboarding.something_wrong')),
             slugRequired:     @json(__('menu_owner.onboarding.slug_required')),
@@ -548,6 +561,11 @@ document.addEventListener('alpine:init', () => {
             else { this.vsTagIds.splice(i, 1); this.vsTagSlugs.splice(this.vsTagSlugs.indexOf(slug), 1); }
         },
 
+        /* True only when every named category has at least one selected tag. */
+        _hasTagInEach(categories, selected) {
+            return categories.every(cat => (_o.tagCats[cat] || []).some(id => selected.includes(id)));
+        },
+
         /* ── Snapshot system ─────────────────────────────────────────
            Captures each step's state when the step becomes active.
            advance() skips the API call if nothing changed.           */
@@ -643,16 +661,16 @@ document.addEventListener('alpine:init', () => {
             if (this.step === 2) {
                 const phone = dom('phone').trim();
                 if (!phone) { this.errors.phone = _o.i18n.phoneRequired; return; }
-                if (!/^(?=(?:\D*\d){6,})[0-9+()\s.\-]{6,30}$/.test(phone)) { this.errors.phone = _o.i18n.phoneInvalid; return; }
+                if (!/^(?=(?:\D*\d){6,})[0-9+() .\-]{6,30}$/.test(phone)) { this.errors.phone = _o.i18n.phoneInvalid; return; }
                 const currency = dom('currency');
                 if (!currency) { this.errors.currency = _o.i18n.currencyRequired; return; }
                 if (!(_o.currencyCodes || []).includes(currency)) { this.errors.currency = _o.i18n.currencyInvalid; return; }
             }
             // Step 3 (branding) — a logo is required (an existing one counts).
             if (this.step === 3 && !this.hasLogo && !dom('logo_key')) { this.errors.logo = _o.i18n.logoRequired; return; }
-            // Steps 4 & 5 — at least one tag must be selected on each.
-            if (this.step === 4 && this.cdTagIds.length === 0) { this.errors.cdTags = _o.i18n.tagsRequired; return; }
-            if (this.step === 5 && this.vsTagIds.length === 0) { this.errors.vsTags = _o.i18n.tagsRequired; return; }
+            // Steps 4 & 5 — at least one tag must be selected in EACH category.
+            if (this.step === 4 && !this._hasTagInEach(['cuisine', 'dietary'], this.cdTagIds)) { this.errors.cdTags = _o.i18n.tagsEachCategory; return; }
+            if (this.step === 5 && !this._hasTagInEach(['vibe', 'style'], this.vsTagIds)) { this.errors.vsTags = _o.i18n.tagsEachCategory; return; }
 
             // ── Skip API if nothing changed (never skip the final step — it must complete server-side) ──
             if (this._isUnchanged() && this.step < this.totalSteps) {

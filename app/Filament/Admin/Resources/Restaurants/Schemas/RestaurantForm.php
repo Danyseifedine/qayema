@@ -67,7 +67,7 @@ class RestaurantForm
                     ]),
 
                 Section::make('Template')
-                    ->description('Assign a display template. Limits and feature access come from the template\'s bundled features (entitlements), plus any add-ons or manual grants.')
+                    ->description('Assign a display template. Limits and feature access come from the template\'s bundled features (the package), plus any add-ons or manual grants.')
                     ->schema([
                         Select::make('template_id')
                             ->label('Template')
@@ -76,7 +76,7 @@ class RestaurantForm
                             ->preload()
                             ->nullable()
                             ->placeholder('No template')
-                            ->helperText('Controls the public menu design and the bundled entitlements.'),
+                            ->helperText('Controls the public menu design and the bundled package.'),
                     ]),
 
                 Section::make('Visibility')

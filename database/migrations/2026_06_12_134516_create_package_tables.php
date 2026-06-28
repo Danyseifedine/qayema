@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Monetization & entitlements: templates are the plans, features are the
+     * Monetization & packages: templates are the plans, features are the
      * sellable units (booleans or limits), bundled via template_feature or
      * sold as add-ons; subscriptions/payments support manual billing first.
      */

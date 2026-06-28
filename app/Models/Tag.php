@@ -10,6 +10,9 @@ class Tag extends Model
 {
     use HasTranslations;
 
+    /** Tag categories an owner can pick for their own restaurant. */
+    public const OWNER_CATEGORIES = ['cuisine', 'dietary', 'vibe', 'style'];
+
     /** @var string[] */
     public array $translatable = ['name'];
 

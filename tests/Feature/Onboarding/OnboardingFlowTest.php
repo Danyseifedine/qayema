@@ -63,9 +63,11 @@ class OnboardingFlowTest extends TestCase
     {
         $user = User::factory()->create(['onboarding_step' => 3, 'onboarding_completed_at' => null]);
         Restaurant::factory()->create(['user_id' => $user->id]);
-        $tag = Tag::create(['name' => ['en' => 'Italian'], 'slug' => 'italian', 'category' => 'cuisine']);
+        $cuisine = Tag::create(['name' => ['en' => 'Italian'], 'slug' => 'italian', 'category' => 'cuisine']);
+        $dietary = Tag::create(['name' => ['en' => 'Vegan'], 'slug' => 'vegan', 'category' => 'dietary']);
 
-        $response = $this->actingAs($user)->postJson(route('onboarding.advance'), ['_step' => 4, 'tag_ids' => [$tag->id]]);
+        // Step 4 requires one cuisine AND one dietary tag.
+        $response = $this->actingAs($user)->postJson(route('onboarding.advance'), ['_step' => 4, 'tag_ids' => [$cuisine->id, $dietary->id]]);
 
         $response->assertOk();
         $response->assertJsonMissingValidationErrors('tag_ids');
@@ -92,9 +94,11 @@ class OnboardingFlowTest extends TestCase
         $template = Template::factory()->create(['is_active' => true]);
         $user = User::factory()->create(['onboarding_step' => 4, 'onboarding_completed_at' => null]);
         Restaurant::factory()->create(['user_id' => $user->id]);
-        $tag = Tag::create(['name' => ['en' => 'Minimal'], 'slug' => 'minimal', 'category' => 'style']);
+        $style = Tag::create(['name' => ['en' => 'Minimal'], 'slug' => 'minimal', 'category' => 'style']);
+        $vibe = Tag::create(['name' => ['en' => 'Cozy'], 'slug' => 'cozy', 'category' => 'vibe']);
 
-        $response = $this->actingAs($user)->postJson(route('onboarding.advance'), ['_step' => 5, 'tag_ids' => [$tag->id]]);
+        // Step 5 requires one vibe AND one style tag.
+        $response = $this->actingAs($user)->postJson(route('onboarding.advance'), ['_step' => 5, 'tag_ids' => [$style->id, $vibe->id]]);
 
         $response->assertOk()->assertJson(['completed' => true]);
 

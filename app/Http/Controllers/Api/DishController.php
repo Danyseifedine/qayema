@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ReorderDishesRequest;
 use App\Http\Requests\StoreDishRequest;
 use App\Http\Requests\UpdateDishRequest;
 use App\Http\Resources\DishResource;
 use App\Models\Dish;
 use App\Models\Restaurant;
+use App\Services\Global\MediaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -20,6 +22,8 @@ use Illuminate\Validation\ValidationException;
  */
 class DishController extends Controller
 {
+    public function __construct(private readonly MediaService $media) {}
+
     public function index(Request $request): AnonymousResourceCollection
     {
         $this->authorize('viewAny', Dish::class);
@@ -117,6 +121,39 @@ class DishController extends Controller
         return response()->json(null, 204);
     }
 
+    /**
+     * Persist a new display order. Only ids the restaurant owns are touched;
+     * unknown or foreign ids are silently ignored so a tampered payload can't
+     * reorder another restaurant's dishes.
+     */
+    public function reorder(ReorderDishesRequest $request): AnonymousResourceCollection
+    {
+        $this->authorize('viewAny', Dish::class);
+        $restaurant = $this->restaurant($request);
+
+        /** @var array<int, int> $ids */
+        $ids = $request->validated('ids');
+        $owned = $restaurant->dishes()->whereIn('id', $ids)->pluck('id')->all();
+
+        DB::transaction(function () use ($ids, $owned, $restaurant): void {
+            $position = 1;
+
+            foreach ($ids as $id) {
+                if (in_array($id, $owned, true)) {
+                    $restaurant->dishes()->whereKey($id)->update(['display_order' => $position++]);
+                }
+            }
+        });
+
+        $dishes = $restaurant->dishes()
+            ->with(['media', 'category'])
+            ->orderBy('display_order')
+            ->orderBy('id')
+            ->get();
+
+        return DishResource::collection($dishes);
+    }
+
     private function restaurant(Request $request): Restaurant
     {
         $restaurant = $request->user()->restaurant;
@@ -140,12 +177,21 @@ class DishController extends Controller
         ], static fn (string $value): bool => $value !== '');
     }
 
+    /**
+     * Promote the optimized temp upload (referenced by `image_key`) into the
+     * dish's cover collection, or clear it when `delete_image` is set. The raw
+     * upload is never stored — MediaService optimized it at temp-upload time.
+     * `sync()` clears the (multi-image) collection first, so it stays a single
+     * cover.
+     */
     private function syncImage(Request $request, Dish $dish): void
     {
-        if ($request->hasFile('image')) {
-            // Single cover: replace whatever is in the multi-image collection.
-            $dish->clearMediaCollection('images');
-            $dish->addMediaFromRequest('image')->toMediaCollection('images');
-        }
+        $this->media->sync(
+            $dish,
+            $request->input('image_key'),
+            $request->boolean('delete_image'),
+            'images',
+            'dish',
+        );
     }
 }

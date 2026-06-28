@@ -26,13 +26,15 @@ class OnboardingNavigationTest extends TestCase
         // Step 5 is the final step — a valid tag completes onboarding rather than
         // returning a further step.
         Mail::fake();
-        $tag = Tag::create(['name' => ['en' => 'Cozy'], 'slug' => 'cozy', 'category' => 'vibe']);
+        $vibe = Tag::create(['name' => ['en' => 'Cozy'], 'slug' => 'cozy', 'category' => 'vibe']);
+        $style = Tag::create(['name' => ['en' => 'Minimal'], 'slug' => 'minimal', 'category' => 'style']);
         $user = $this->ownerWithRestaurant(4);
 
+        // Step 5 requires one vibe AND one style tag.
         $this->actingAs($user)
             ->postJson(route('onboarding.advance'), [
                 '_step' => 5,
-                'tag_ids' => [$tag->id],
+                'tag_ids' => [$vibe->id, $style->id],
             ])
             ->assertOk()
             ->assertJson(['completed' => true]);

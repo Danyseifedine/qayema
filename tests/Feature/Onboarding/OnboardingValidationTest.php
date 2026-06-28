@@ -45,6 +45,20 @@ class OnboardingValidationTest extends TestCase
             ->assertJsonValidationErrors('phone');
     }
 
+    public function test_over_long_country_code_is_rejected(): void
+    {
+        // The column is char(2); a longer value must 422, not 500 on save.
+        $this->actingAs($this->ownerOnContactStep())
+            ->postJson(route('onboarding.advance'), [
+                '_step' => 2,
+                'country_code' => 'ABCDE',
+                'phone' => '70123456',
+                'currency' => 'USD',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('country_code');
+    }
+
     public function test_currency_outside_the_list_is_rejected(): void
     {
         $this->actingAs($this->ownerOnContactStep())

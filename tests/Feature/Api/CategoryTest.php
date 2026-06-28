@@ -4,6 +4,7 @@ namespace Tests\Feature\Api;
 
 use App\Models\Category;
 use App\Models\Dish;
+use App\Models\PackageDefault;
 use App\Models\Restaurant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -64,7 +65,7 @@ class CategoryTest extends TestCase
 
     public function test_index_includes_the_plan_limit_meta(): void
     {
-        config(['entitlements.defaults.category_limit' => 10]);
+        PackageDefault::set('category_limit', 10);
         [$user, $restaurant] = $this->owner();
         Category::factory()->create(['restaurant_id' => $restaurant->id]);
 
@@ -149,7 +150,7 @@ class CategoryTest extends TestCase
 
     public function test_store_is_rejected_when_the_category_limit_is_reached(): void
     {
-        config(['entitlements.defaults.category_limit' => 1]);
+        PackageDefault::set('category_limit', 1);
         [$user, $restaurant] = $this->owner();
         Category::factory()->create(['restaurant_id' => $restaurant->id]);
 
@@ -205,6 +206,44 @@ class CategoryTest extends TestCase
             ->postJson(route('api.categories.store'), ['name' => ['en' => 'X'], 'image_key' => 'not-a-uuid'])
             ->assertStatus(422)
             ->assertJsonValidationErrors('image_key');
+    }
+
+    public function test_store_ignores_a_spoofed_restaurant_id(): void
+    {
+        [$user, $restaurant] = $this->owner();
+        $victim = Restaurant::factory()->create();
+
+        // A tampered payload must not be able to plant a category in someone
+        // else's restaurant — restaurant_id is set server-side, not from input.
+        $this->actingAs($user)
+            ->postJson(route('api.categories.store'), ['name' => ['en' => 'Injected'], 'restaurant_id' => $victim->id])
+            ->assertCreated();
+
+        $this->assertDatabaseHas('categories', ['name->en' => 'Injected', 'restaurant_id' => $restaurant->id]);
+        $this->assertDatabaseMissing('categories', ['restaurant_id' => $victim->id]);
+    }
+
+    public function test_reorder_rejects_an_oversized_id_list(): void
+    {
+        [$user] = $this->owner();
+
+        $this->actingAs($user)
+            ->postJson(route('api.categories.reorder'), ['ids' => range(1, 501)])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('ids');
+    }
+
+    public function test_temp_upload_rejects_an_oversized_image(): void
+    {
+        [$user] = $this->owner();
+
+        // A bomb-shaped image (huge dimensions) is rejected before the optimizer
+        // decodes it. 7000px wide exceeds the 6000px cap.
+        $this->actingAs($user)->post(
+            route('api.uploads.temp'),
+            ['file' => UploadedFile::fake()->image('huge.jpg', 7000, 10), 'context' => 'category'],
+            ['Accept' => 'application/json'],
+        )->assertStatus(422)->assertJsonValidationErrors('file');
     }
 
     public function test_update_with_delete_image_clears_the_cover(): void

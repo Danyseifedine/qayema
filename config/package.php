@@ -4,20 +4,16 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Default entitlements
+    | Default package limits
     |--------------------------------------------------------------------------
     |
-    | Floor values used when a restaurant has no explicit entitlement for a
-    | limit (no template assigned yet, mid-onboarding, or an unseeded
-    | database). Boolean features default to false unless granted.
+    | The floor limits applied when a restaurant has no granting package now
+    | live in the database (the `package_defaults` table, read via the
+    | App\Models\PackageDefault model) so they're editable without a deploy.
+    | Per-package values live in `template_feature`; purchased slots overlay via
+    | `restaurant_features`.
     |
     */
-
-    'defaults' => [
-        'dish_limit' => 40,
-        'category_limit' => 10,
-        'social_link_limit' => 4,
-    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -25,7 +21,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | Days after a failed renewal (status past_due) during which the
-    | subscription still counts as entitling before it expires.
+    | subscription still grants access before it expires.
     |
     */
 

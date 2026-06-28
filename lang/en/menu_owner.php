@@ -38,6 +38,8 @@ return [
         'phone_invalid' => 'Please enter a valid phone number using digits only.',
         'logo_required' => 'Please upload a logo to continue.',
         'tags_required' => 'Please select at least one tag to continue.',
+        'tags_each_category' => 'Please pick at least one tag in each category to continue.',
+        'tags_pick_one' => 'pick one',
         'language_label' => 'Dashboard language',
         'step2_title' => 'Contact & currency',
         'step2_desc' => 'How can customers reach you, and what currency do you use?',

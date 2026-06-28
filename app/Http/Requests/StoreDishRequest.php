@@ -28,10 +28,13 @@ class StoreDishRequest extends FormRequest
             'ingredients.en' => ['nullable', 'string', 'max:2000'],
             'ingredients.ar' => ['nullable', 'string', 'max:2000'],
             'price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
-            // A dish may only be filed under a category the restaurant owns.
-            'category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('restaurant_id', $restaurantId)],
+            // A dish must be filed under a category the restaurant owns.
+            'category_id' => ['required', 'integer', Rule::exists('categories', 'id')->where('restaurant_id', $restaurantId)],
             'is_available' => ['nullable', 'boolean'],
-            'image' => ['nullable', 'image', 'max:5120'],
+            // The cover image arrives as a temp-upload key (already optimized by
+            // MediaService), never as a raw file. `delete_image` clears it.
+            'image_key' => ['nullable', 'string', 'regex:/^[a-f0-9\-]{36}$/'],
+            'delete_image' => ['nullable', 'boolean'],
         ];
     }
 

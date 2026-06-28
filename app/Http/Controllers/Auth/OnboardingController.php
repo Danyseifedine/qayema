@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\Restaurant;
 use App\Models\Tag;
+use App\Rules\HasTagInEachCategory;
 use App\Services\Portal\OnboardingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -79,7 +80,9 @@ class OnboardingController extends Controller
                 $request->merge(['slug' => Str::slug((string) $request->input('slug', ''))]);
 
                 $validated = $request->validate([
-                    'name' => ['required', 'string', 'min:2', 'max:255'],
+                    // The /u regex rejects interior control chars and malformed UTF-8
+                    // so a hostile name can't corrupt the JSON column or 500 the save.
+                    'name' => ['required', 'string', 'min:2', 'max:255', 'regex:/^[^\x00-\x1F\x7F]+$/u'],
                     'slug' => [
                         'required', 'string', 'min:2', 'max:100',
                         'regex:/^[a-z0-9][a-z0-9-]*[a-z0-9]$/',
@@ -93,10 +96,14 @@ class OnboardingController extends Controller
 
             case 1: // Step 2 — country code + phone + currency
                 $validated = $request->validate([
-                    'country_code' => ['nullable', 'string', 'max:10'],
-                    'phone' => ['required', 'string', 'max:30', 'regex:/^(?=(?:\D*\d){6,})[0-9+()\s.\-]{6,30}$/'],
+                    // char(2) column → exactly two ASCII letters (ISO-3166-1 alpha-2).
+                    'country_code' => ['nullable', 'string', 'size:2', 'alpha:ascii'],
+                    // Literal space (not \s) so newlines/tabs can't be stored.
+                    'phone' => ['required', 'string', 'max:30', 'regex:/^(?=(?:\D*\d){6,})[0-9+() .\-]{6,30}$/'],
                     'currency' => ['required', 'string', Rule::in(array_keys(config('currencies', [])))],
                 ], [
+                    'country_code.size' => 'Please choose a country from the list.',
+                    'country_code.alpha' => 'Please choose a country from the list.',
                     'phone.regex' => 'Please enter a valid phone number using digits only.',
                     'currency.in' => 'Please choose a currency from the list.',
                 ]);
@@ -120,13 +127,12 @@ class OnboardingController extends Controller
                 $onboarding->saveBranding($user, $user->restaurant, $validated['logo_key'] ?? null, $validated['cover_image_key'] ?? null);
                 break;
 
-            case 3: // Step 4 — cuisine + dietary tags (at least one required)
+            case 3: // Step 4 — cuisine + dietary tags (at least one of each required)
                 $validated = $request->validate([
-                    'tag_ids' => ['required', 'array', 'min:1', 'max:30'],
+                    'tag_ids' => ['required', 'array', 'max:30', new HasTagInEachCategory(['cuisine', 'dietary'], __('menu_owner.onboarding.tags_each_category'))],
                     'tag_ids.*' => ['integer', 'exists:tags,id'],
                 ], [
-                    'tag_ids.required' => __('menu_owner.onboarding.tags_required'),
-                    'tag_ids.min' => __('menu_owner.onboarding.tags_required'),
+                    'tag_ids.required' => __('menu_owner.onboarding.tags_each_category'),
                 ]);
 
                 $onboarding->syncTags($user->restaurant, ['cuisine', 'dietary'], $validated['tag_ids']);
@@ -134,11 +140,10 @@ class OnboardingController extends Controller
 
             case 4: // Step 5 — vibe + style tags (final step → completes onboarding)
                 $validated = $request->validate([
-                    'tag_ids' => ['required', 'array', 'min:1', 'max:30'],
+                    'tag_ids' => ['required', 'array', 'max:30', new HasTagInEachCategory(['vibe', 'style'], __('menu_owner.onboarding.tags_each_category'))],
                     'tag_ids.*' => ['integer', 'exists:tags,id'],
                 ], [
-                    'tag_ids.required' => __('menu_owner.onboarding.tags_required'),
-                    'tag_ids.min' => __('menu_owner.onboarding.tags_required'),
+                    'tag_ids.required' => __('menu_owner.onboarding.tags_each_category'),
                 ]);
 
                 $onboarding->syncTags($user->restaurant, ['vibe', 'style'], $validated['tag_ids']);

@@ -16,7 +16,7 @@ describes an older "MenuX" vision and is superseded by this overview where they 
 3. [Database Schema](#database)
 4. [Routing, Auth & Onboarding](#routing-auth)
 5. [Menu Owner Dashboard](#menuowner-controllers)
-6. [Entitlements & Statistics](#menuowner-services)
+6. [Packages & Statistics](#menuowner-services)
 7. [Public Portal](#portal)
 8. [AI Scanning & Media](#ai-media)
 9. [Filament Admin Panel](#filament)
@@ -150,7 +150,7 @@ A typical request flows as follows:
    - **Owner** (`/dashboard` and the `menu-owner.*` routes): `auth` → `EnsureOnboardingComplete` → `EnsureRestaurantSetupComplete` → `owner.locale`, then `EnsureUserIsMenuOwner` + `throttle:mutations` (uploads/scan additionally `throttle:uploads`).
    - **Admin** (`/admin`): Filament's middleware stack + `Authenticate` + `EnsureUserIsAdmin`.
 5. Rate-limit hits on high-volume limiters feed `AbuseGuard::recordViolation()`, which can auto-ban an IP after sustained flooding (strike threshold 20/min, see AbuseGuard.php:21); blocks are cached and skipped for trusted IPs (`SECURITY_TRUSTED_IPS`).
-6. Cross-cutting services back the controllers: `Services/ThirdParty/GeminiMenuExtractorService` (AI menu scan), `Services/ThirdParty/Captcha` (reCAPTCHA v3, gracefully no-op when keys absent), `Services/MenuOwner/Entitlements` (per-plan dish/category/social-link limits, defaults in `config/entitlements.php`), `Services/MenuOwner/StatisticsQueryService` (owner analytics), `Services/Portal/DeviceDetectionService` + `ContactService`, and `Services/Global/MediaService` + `AbuseGuard`.
+6. Cross-cutting services back the controllers: `Services/ThirdParty/GeminiMenuExtractorService` (AI menu scan), `Services/ThirdParty/Captcha` (reCAPTCHA v3, gracefully no-op when keys absent), `Services/Global/Package` (per-plan dish/category/social-link limits, defaults in `config/package.php`), `Services/MenuOwner/StatisticsQueryService` (owner analytics), `Services/Portal/DeviceDetectionService` + `ContactService`, and `Services/Global/MediaService` + `AbuseGuard`.
 
 ### 1.12 Architecture map
 
@@ -178,7 +178,7 @@ A typical request flows as follows:
                   ▼                                                          ▼
         SERVICES                                                   CROSS-CUTTING CONFIG
    Global\AbuseGuard / MediaService                          locales.php (14 langs, RTL)
-   MenuOwner\Entitlements / StatisticsQueryService           entitlements.php (plan limits)
+   Global\Package / StatisticsQueryService           packages.php (plan limits)
    Portal\ContactService / DeviceDetectionService            security.php, services.php (Gemini,
    ThirdParty\GeminiMenuExtractorService (AI scan)              Google OAuth, Resend, reCAPTCHA)
    ThirdParty\Captcha (reCAPTCHA v3)
@@ -200,7 +200,7 @@ The domain centers on the **`Restaurant`** aggregate root. A `User` (menu owner)
 
 - **Translatable JSON columns** — `spatie/laravel-translatable`'s `HasTranslations` trait stores translated strings as JSON (`{"ar": "...", "en": "..."}`) in the same physical column. Each model declares a public `array $translatable`. The migration `database/migrations/2026_06_12_134515_convert_content_columns_to_translatable_json.php` converted the legacy plain columns to JSON, backfilling restaurant-owned content under the restaurant's `default_locale` and platform-owned content (tags, restaurant types, templates) under `en`.
 - **Media Library** — models implementing `Spatie\MediaLibrary\HasMedia` register collections in `registerMediaCollections()`. Files default to private visibility (Filament v4 default).
-- **Entitlement cache invalidation** — `Restaurant`, `Subscription`, and `RestaurantFeature` flush the per-restaurant entitlements cache on save/delete (and `Restaurant` on `template_id` change) via `App\Services\MenuOwner\Entitlements::flush()`. See `app/Models/Subscription.php:46-52`, `app/Models/RestaurantFeature.php:32-38`, `app/Models/Restaurant.php:66-70`.
+- **Package cache invalidation** — `Restaurant`, `Subscription`, and `RestaurantFeature` flush the per-restaurant packages cache on save/delete (and `Restaurant` on `template_id` change) via `App\Services\Global\Package::flush()`. See `app/Models/Subscription.php:46-52`, `app/Models/RestaurantFeature.php:32-38`, `app/Models/Restaurant.php:66-70`.
 - **Enums** — `App\Enums\UserRole` (`Admin = 'admin'`, `MenuOwner = 'menu_owner'`) and `App\Enums\MenuScanStatus` (`Pending`, `Processing`, `Completed`, `Failed`) are backed string enums cast on their models.
 
 ### 2.2 Relationship overview
@@ -254,11 +254,11 @@ The domain centers on the **`Restaurant`** aggregate root. A `User` (menu owner)
 - **Translatable:** `name`, `description`, `address`.
 - **Casts:** `is_active` → boolean; `template_settings`, `qr_settings` → array (JSON).
 - **Fillable highlights:** `user_id`, `slug`, `country_code`, `phone`, `template_id`, `template_settings`, `qr_settings`, `google_maps_url`, `currency`, `default_locale` (owner content base language, `ar`/`en`, default `ar`), `timezone` (per-restaurant, default `UTC`), `restaurant_type_id`.
-- **Model events (`booted()`):** on `creating`, auto-generates a unique `slug` from the name (falling back to `menu`, then `-2`, `-3`… on collision, app/Models/Restaurant.php:53-64); on `saved`, flushes entitlements when `template_id` changed.
+- **Model events (`booted()`):** on `creating`, auto-generates a unique `slug` from the name (falling back to `menu`, then `-2`, `-3`… on collision, app/Models/Restaurant.php:53-64); on `saved`, flushes packages when `template_id` changed.
 - **Media collections:** `logo` (single file, jpeg/png/webp) and `cover_image` (single file, jpeg/png/webp). Note: an earlier migration re-pointed `logo`/`cover_image` media from `User` to `Restaurant`.
-- **Entitlement helpers (delegating to the cached `Entitlements` service):**
-  - `entitlements()` returns `Entitlements::for($this)`.
-  - Accessors `dish_limit`, `category_limit`, `social_link_limit` resolve numeric limits via `entitlements()->limit(...)` (app/Models/Restaurant.php:171-184).
+- **Package helpers (delegating to the cached `Packages` service):**
+  - `package()` returns `Package::for($this)`.
+  - Accessors `dish_limit`, `category_limit`, `social_link_limit` resolve numeric limits via `package()->limit(...)` (app/Models/Restaurant.php:171-184).
   - `hasReachedDishLimit()`, `getRemainingDishSlots()` and the category/social-link equivalents gate content creation against those limits.
 - **Publishing gate:** `menuIsPubliclyAvailable()` (app/Models/Restaurant.php:162) returns true if there is no template or the template `isFree()`; otherwise requires an `activeTemplateSubscription()`. `activeTemplateSubscription()` (app/Models/Restaurant.php:143) finds the latest `active()` subscription whose `subscribable` is the assigned `Template`. Expiry takes the menu offline without deleting data.
 - **Template settings:** `resolvedTemplateSettings()` merges the template's `default_settings` with the owner's stored `template_settings` overrides (via `Template::resolveSettings()`).
@@ -301,27 +301,27 @@ The domain centers on the **`Restaurant`** aggregate root. A `User` (menu owner)
 
 **RestaurantSocialLink** (`restaurant_social_links`): `platform` + `url` per restaurant (display_order/is_active were removed in a later migration). `restaurant_id` cast to int.
 
-### 2.7 Monetization & entitlements
+### 2.7 Monetization & packages
 
-This cluster implements the documented model: **templates are the plans, features are the sellable units (booleans or limits), bundled via `template_feature` or sold as add-ons; subscriptions/payments support manual billing first** (`2026_06_12_134516_create_entitlement_tables.php`).
+This cluster implements the documented model: **templates are the plans, features are the sellable units (booleans or limits), bundled via `template_feature` or sold as add-ons; subscriptions/payments support manual billing first** (`2026_06_12_134516_create_package_tables.php`).
 
 | Model | Table | Purpose / key fields |
 | --- | --- | --- |
 | Feature | `features` | Sellable unit. Translatable `name`/`description`; `slug` (unique), `kind` (`boolean`\|`limit`), `is_addon`, `is_active`. `isLimit()`/`isLimit` distinguishes numeric limits from on/off flags. |
 | FeaturePrice | `feature_prices` | Price points per feature: `period`, `price` (decimal:2), `currency` (char(3) `USD`), `is_active`. No `HasFactory`. |
-| RestaurantFeature | `restaurant_features` | A granted/purchased feature on a restaurant: `value`, `source` (default `purchase`), time-boxed via `starts_at`/`ends_at` (datetime), optional `payment_id`. Flushes entitlement cache on save/delete. |
-| Subscription | `subscriptions` | Recurring entitlement. Polymorphic `subscribable` (Template or Feature), `period`, `price`, `currency`, `status`, `trial_ends_at`/`starts_at`/`current_period_end`/`canceled_at` (datetime), `provider`/`provider_ref`, `meta` (array). |
+| RestaurantFeature | `restaurant_features` | A granted/purchased feature on a restaurant: `value`, `source` (default `purchase`), time-boxed via `starts_at`/`ends_at` (datetime), optional `payment_id`. Flushes package cache on save/delete. |
+| Subscription | `subscriptions` | Recurring package. Polymorphic `subscribable` (Template or Feature), `period`, `price`, `currency`, `status`, `trial_ends_at`/`starts_at`/`current_period_end`/`canceled_at` (datetime), `provider`/`provider_ref`, `meta` (array). |
 | Payment | `payments` | Polymorphic `payable` (Subscription) on a restaurant: `amount` (decimal:2), `currency`, `status`, `provider` (default `manual`), `provider_ref`, `paid_at`, `meta` (array). |
 
-**Subscription entitlement semantics** (`app/Models/Subscription.php`):
-- `scopeActive()` (line 73) selects subscriptions that are `trialing`/`active` with `current_period_end` in the future, **or** `past_due` within the configured grace window (`config('entitlements.grace_days', 7)`, default 7 days).
-- `isEntitling()` (line 88) is the per-instance equivalent using a `match` on `status`.
+**Subscription package semantics** (`app/Models/Subscription.php`):
+- `scopeActive()` (line 73) selects subscriptions that are `trialing`/`active` with `current_period_end` in the future, **or** `past_due` within the configured grace window (`config('package.grace_days', 7)`, default 7 days).
+- `grantsAccess()` (line 88) is the per-instance equivalent using a `match` on `status`.
 
-**Entitlement resolution** (`app/Services/MenuOwner/Entitlements.php`) — the service that ties these models together:
-- `Entitlements::for($restaurant)` is reachable from `Restaurant::entitlements()`. Results are cached per restaurant (`entitlements:{id}`, TTL `config('entitlements.cache_ttl', 300)`).
+**Package resolution** (`app/Services/Global/Package.php`) — the service that ties these models together:
+- `Package::for($restaurant)` is reachable from `Restaurant::package()`. Results are cached per restaurant (`package:{id}`, TTL `config('package.cache_ttl', 300)`).
 - `resolve()` layers three sources: (1) the assigned **template's** bundled features — but only if the template `isFree()` or has an `activeTemplateSubscription()`; (2) active **feature add-on subscriptions** (`subscribable_type = Feature`); (3) valid **`restaurant_features`** grants within their `starts_at`/`ends_at` window.
-- `merge()` (line 113) combines overlapping entitlements: **limits take MAX, booleans take OR**.
-- `limit($slug)` falls back to `config('entitlements.defaults.*')` (`dish_limit` 40, `category_limit` 10, `social_link_limit` 4) when no entitlement is present; booleans default to `false`.
+- `merge()` (line 113) combines overlapping packages: **limits take MAX, booleans take OR**.
+- `limit($slug)` falls back to the **`package_defaults`** DB table (via `App\Models\PackageDefault`; seeded `dish_limit` 40, `category_limit` 10, `social_link_limit` 4) when no package is present; booleans default to `false`.
 
 ### 2.8 Analytics: RestaurantStatistic, RestaurantDailyStat, MenuScan
 
@@ -346,7 +346,7 @@ This cluster implements the documented model: **templates are the plans, feature
 
 ## 3. Database Schema & Migration History
 
-The database is MySQL (database name `menux`) on the default connection, with Telescope able to use its own connection. The schema reached its current shape through ~60 migrations that fall into four eras: the **original menus/dishes prototype** (Dec 2025 – Jan 2026), the **restaurants & templates restructure** (May 4 2026), a **feature-build-out** (May–Jun 2026), and the **"phase0" hardening batch** (Jun 12 2026) that introduced i18n, entitlements, variants, and analytics rollups. The committed ERD in `docs/database-erd.md` documents a 23-table snapshot taken on 2026-06-09 — it is therefore **pre-phase0** and does not reflect the translatable-JSON conversion, `dish_variants`, the entitlement tables, `menu_sessions`/`restaurant_stats_daily`, or `telescope_entries`. This section reflects the live post-phase0 schema.
+The database is MySQL (database name `menux`) on the default connection, with Telescope able to use its own connection. The schema reached its current shape through ~60 migrations that fall into four eras: the **original menus/dishes prototype** (Dec 2025 – Jan 2026), the **restaurants & templates restructure** (May 4 2026), a **feature-build-out** (May–Jun 2026), and the **"phase0" hardening batch** (Jun 12 2026) that introduced i18n, packages, variants, and analytics rollups. The committed ERD in `docs/database-erd.md` documents a 23-table snapshot taken on 2026-06-09 — it is therefore **pre-phase0** and does not reflect the translatable-JSON conversion, `dish_variants`, the package tables, `menu_sessions`/`restaurant_stats_daily`, or `telescope_entries`. This section reflects the live post-phase0 schema.
 
 ### 3.1 Schema Evolution Narrative
 
@@ -393,7 +393,7 @@ Nine migrations dated `2026_06_12_1345xx` reshape the domain for i18n and moneti
 - **`..._134512_create_dish_variants`**: `dish_variants` (`dish_id`, translatable `name` json, `price`, `is_available`, `display_order`) — multiple priced sizes per dish.
 - **`..._134514_create_dish_tag`**: recreates the curated `dish_tag` pivot, best-effort matching the old free-form `dishes.tags` strings against `tags.slug` (unmatched strings dropped by design), then drops `dishes.tags`.
 - **`..._134515_convert_content_columns_to_translatable_json`**: the i18n keystone. Converts content columns to `spatie/laravel-translatable` JSON (`{"ar":…,"en":…}`) by adding a `*_i18n` column, backfilling in PHP chunks, dropping the original, and renaming. Restaurant-owned content (`restaurants.name/description/address`, `categories.name/description`, `dishes.name/ingredients`) is backfilled under the restaurant's `default_locale`; platform-owned content (`tags.name`, `restaurant_types.name`, `templates.name/description`) under `en`.
-- **`..._134516_create_entitlement_tables`**: the monetization engine — `features`, `feature_prices`, `template_prices`, `template_feature` (pivot with `value`), `subscriptions` (polymorphic `subscribable`), `payments` (polymorphic `payable`, default provider `manual`), and `restaurant_features` (granted entitlements with `source`, validity window, optional `payment_id`). See §3.2.
+- **`..._134516_create_package_tables`**: the monetization engine — `features`, `feature_prices`, `template_prices`, `template_feature` (pivot with `value`), `subscriptions` (polymorphic `subscribable`), `payments` (polymorphic `payable`, default provider `manual`), and `restaurant_features` (granted packages with `source`, validity window, optional `payment_id`). See §3.2.
 - **`..._134518_drop_limit_columns_from_restaurants`**: removes `dish_limit`/`category_limit`/`social_link_limit` — limits now come from limit-kind features on the (free) template, overridable per restaurant.
 - **`..._134519_add_capabilities_and_tier_to_templates`**: collapses the 20 `has_*` flags + direction columns into a single `capabilities` json, converts the old `fields` schema into a precomputed `default_settings` map, and adds `tier` (all existing templates → `free` so no live menu goes dark) + `sort_order`. Drops the flag/direction/`fields` columns.
 - **`..._134520_rename_statistics_to_menu_sessions_and_create_daily_rollup`**: renames `restaurant_statistics`→`menu_sessions` (raw rows, pruned after ~6 months) and creates `restaurant_stats_daily` (nightly rollup dashboards read; unique on `restaurant_id`+`date`).
@@ -422,7 +422,7 @@ Finally, `2026_06_14_105141_create_telescope_entries_table.php` adds Laravel Tel
 | `template_tag` | Template ↔ tag (recommendations) | composite PK | `template_id`, `tag_id` (cascade) | PK |
 | `menu_scans` | AI menu-extraction jobs | `status` (default Pending), `result` json, `error`. Image now stored via media (`scan` collection), not `image_path`. | `restaurant_id`→restaurants (cascade) | index(`restaurant_id`,`status`) |
 
-#### Entitlements / monetization (phase0)
+#### Packages / monetization (phase0)
 
 | Table | Purpose | Key columns | FKs / indexes |
 |---|---|---|---|
@@ -430,7 +430,7 @@ Finally, `2026_06_14_105141_create_telescope_entries_table.php` adds Laravel Tel
 | `feature_prices` | Per-period feature pricing | `period`, `price`, `currency` char(3), `is_active` | `feature_id` (cascade) |
 | `template_prices` | Per-period template (plan) pricing | `period`, `price`, `currency`, `is_active` | `template_id` (cascade) |
 | `template_feature` | Bundle: features a template grants | `value` (default `'1'`), composite PK | `template_id`,`feature_id` (cascade) |
-| `restaurant_features` | Granted entitlements | `value`, `source` (default `purchase`), `starts_at`/`ends_at`, optional `payment_id` | `restaurant_id`,`feature_id` (cascade), `payment_id` (nullOnDelete); index(`restaurant_id`,`feature_id`) |
+| `restaurant_features` | Granted packages | `value`, `source` (default `purchase`), `starts_at`/`ends_at`, optional `payment_id` | `restaurant_id`,`feature_id` (cascade), `payment_id` (nullOnDelete); index(`restaurant_id`,`feature_id`) |
 | `subscriptions` | Recurring plan/add-on | polymorphic `subscribable`, `period`, `price`, `currency`, `status` (default active), `trial_ends_at`, `starts_at`, `current_period_end`, `canceled_at`, `provider`/`provider_ref`, `meta` json | `restaurant_id` (cascade); index(`status`), index(`restaurant_id`,`status`) |
 | `payments` | Charges (manual-billing first) | polymorphic `payable`, `amount`, `currency`, `status` (default pending), `provider` (default `manual`), `provider_ref`, `paid_at`, `meta` json | `restaurant_id` (cascade); index(`status`) |
 
@@ -454,7 +454,7 @@ Finally, `2026_06_14_105141_create_telescope_entries_table.php` adds Laravel Tel
 
 - **Idempotent / driver-portable migrations**: data conversions (token encryption, ingredients json↔text, i18n backfill, dish-tag matching) run in **PHP chunks** (`chunkById`) rather than SQL so they work on both MySQL and the SQLite test database. Index migrations guard with `Schema::hasIndex(...)`, and `2026_05_04_122005` explicitly drops the `ip_address` index before the column because SQLite errors on a dangling index during a fresh test migration.
 - **Translatable content** lives as JSON `{"ar":…,"en":…}` (Spatie translatable) on restaurants, categories, dishes, dish_variants, tags, restaurant_types, templates.
-- **Capabilities/limits are data, not columns**: template behavior moved from 20 `has_*` boolean columns into `templates.capabilities` json, and quota limits moved from `restaurants.*_limit` columns into the feature/entitlement tables.
+- **Capabilities/limits are data, not columns**: template behavior moved from 20 `has_*` boolean columns into `templates.capabilities` json, and quota limits moved from `restaurants.*_limit` columns into the feature/package tables.
 - **Polymorphic ownership**: `media` (Spatie), plus `subscriptions.subscribable` and `payments.payable` use morphs so a charge/subscription can target either a template (plan) or an individual feature (add-on).
 
 ---
@@ -713,7 +713,7 @@ A near-universal pattern across these controllers: `$restaurant = $request->user
 Three services are injected/called throughout:
 
 - **`App\Services\Global\MediaService`** (`app/Services/Global/MediaService.php`) — the deferred-upload + media-promotion pipeline. `storeTempUpload()` optimizes an upload (Intervention Image), writes it to `storage/app/temp/{userId}/{uuid}.jpg`, and returns a UUID `key` plus human-readable size savings. `sync($model, $key, $delete, $collection, $mediaName)` later promotes that temp file into a Spatie Media Library collection on save (or clears the collection when `delete` is set). Injected into Category, Dish, Restaurant, and TempUpload controllers.
-- **`App\Services\MenuOwner\Entitlements`** (`app/Services/MenuOwner/Entitlements.php`) — resolves a restaurant's effective feature flags and numeric limits (template bundle ∪ feature add-on subscriptions ∪ time-boxed `restaurant_features` grants; booleans merge with OR, limits with MAX), cached 5 min per restaurant. Controllers never call it directly — they go through `Restaurant` accessors (`getDishLimitAttribute`, `getCategoryLimitAttribute`, `getSocialLinkLimitAttribute` at `app/Models/Restaurant.php:171-184`) and the `hasReached*Limit()` / `getRemaining*Slots()` helpers (`Restaurant.php:186-214`), which call `entitlements()->limit('dish_limit')` etc.
+- **`App\Services\Global\Package`** (`app/Services/Global/Package.php`) — resolves a restaurant's effective feature flags and numeric limits (template bundle ∪ feature add-on subscriptions ∪ time-boxed `restaurant_features` grants; booleans merge with OR, limits with MAX), cached 5 min per restaurant. Controllers never call it directly — they go through `Restaurant` accessors (`getDishLimitAttribute`, `getCategoryLimitAttribute`, `getSocialLinkLimitAttribute` at `app/Models/Restaurant.php:171-184`) and the `hasReached*Limit()` / `getRemaining*Slots()` helpers (`Restaurant.php:186-214`), which call `package()->limit('dish_limit')` etc.
 - **`App\Services\MenuOwner\StatisticsQueryService`** (`app/Services/MenuOwner/StatisticsQueryService.php`) — builds the entire analytics payload; used only by `StatisticController`.
 
 ### 5.4 Restaurant profile (`RestaurantController`)
@@ -745,7 +745,7 @@ Messages are translation-driven (`__('menu_owner.restaurant.validation.*')`), un
 Standard CRUD plus a JSON `reorder`. Reads/writes the `Category` model scoped to `$request->user()->restaurant`.
 
 - `index()` lists categories ordered by `name->{default_locale}` (a JSON-path order on the translatable name).
-- `create()`/`store()` both bail to restaurant setup if no restaurant, then call `redirectIfCategoryLimitReached()` which consults `Restaurant::hasReachedCategoryLimit()` (entitlement check) and flashes `limit_categories` on overflow (`CategoryController.php:150-156`).
+- `create()`/`store()` both bail to restaurant setup if no restaurant, then call `redirectIfCategoryLimitReached()` which consults `Restaurant::hasReachedCategoryLimit()` (package check) and flashes `limit_categories` on overflow (`CategoryController.php:150-156`).
 - `store()` (`CategoryController.php:52-75`) wraps the name/description strings into the base-locale translation via the private `translateContent()` helper, sets `restaurant_id`, computes `display_order = max(display_order)+1`, creates the row, then `syncImage()` → `MediaService::sync($category, image_key, delete_image, 'image', 'category-image')`.
 - `edit()`/`update()`/`destroy()` each call `$this->authorize(... , $category)` → `CategoryPolicy`. `update()` re-uses `translateContent()` (passing the existing model so the other locale is preserved).
 - `reorder()` (`CategoryController.php:113-129`) is a JSON endpoint: validates two integer ids `a`/`b`, fetches both scoped to the restaurant (`findOrFail`), swaps their `display_order`, flashes `reorder_success`, returns `{success:true}`.
@@ -771,7 +771,7 @@ Mirrors CategoryController but adds tag relations and a category dropdown.
 
 ### 5.8 Social links (`SocialLinkController`)
 
-CRUD over `RestaurantSocialLink`. `index()` lists links ordered by `created_at`. `create`/`store` apply the setup guard and `Restaurant::hasReachedSocialLinkLimit()` (entitlement) → `limit_social` flash. `store()` injects `restaurant_id` and creates; `edit`/`update`/`destroy` authorize via `RestaurantSocialLinkPolicy`. **`SocialLinkRequest`**: `platform` required `in:instagram,x,facebook,tiktok,whatsapp`; `url` required, `url`, max:255, plus `regex:/^https?:\/\//i` (http/https only). Array-style rules, English messages.
+CRUD over `RestaurantSocialLink`. `index()` lists links ordered by `created_at`. `create`/`store` apply the setup guard and `Restaurant::hasReachedSocialLinkLimit()` (package) → `limit_social` flash. `store()` injects `restaurant_id` and creates; `edit`/`update`/`destroy` authorize via `RestaurantSocialLinkPolicy`. **`SocialLinkRequest`**: `platform` required `in:instagram,x,facebook,tiktok,whatsapp`; `url` required, `url`, max:255, plus `regex:/^https?:\/\//i` (http/https only). Array-style rules, English messages.
 
 ### 5.9 AI menu scan (`MenuScanController`)
 
@@ -822,31 +822,31 @@ Sits outside the menu-owner middleware group. `edit()` renders `dashboard/profil
 
 <a id="menuowner-services"></a>
 
-## 6. Entitlements, Subscriptions & Statistics Services
+## 6. Packages, Subscriptions & Statistics Services
 
-This section covers two related back-end subsystems: the **entitlements/monetization layer** (templates as plans, features as sellable units, subscriptions and per-restaurant grants resolved into effective limits and capabilities) and the **statistics pipeline** (raw menu sessions rolled up nightly into a daily table, then aggregated for the owner dashboard and admin widgets).
+This section covers two related back-end subsystems: the **packages/monetization layer** (templates as plans, features as sellable units, subscriptions and per-restaurant grants resolved into effective limits and capabilities) and the **statistics pipeline** (raw menu sessions rolled up nightly into a daily table, then aggregated for the owner dashboard and admin widgets).
 
-### 6.1 Entitlements service
+### 6.1 Package service
 
-`App\Services\MenuOwner\Entitlements` (`app/Services/MenuOwner/Entitlements.php`) is the single source of truth for "what is this restaurant allowed to do, and how much." It wraps one `Restaurant` and exposes three public reads plus a cache-flush helper:
+`App\Services\Global\Package` (`app/Services/Global/Package.php`) is the single source of truth for "what is this restaurant allowed to do, and how much." It wraps one `Restaurant` and exposes three public reads plus a cache-flush helper:
 
 | Method | Returns | Purpose |
 | --- | --- | --- |
-| `Entitlements::for($restaurant)` | `self` | Static factory (used by `Restaurant::entitlements()`). |
+| `Package::for($restaurant)` | `self` | Static factory (used by `Restaurant::package()`). |
 | `can(string $slug)` | `bool` | True if a boolean capability is granted (defaults to `false`). |
-| `limit(string $slug)` | `int` | Effective numeric limit; falls back to `config('entitlements.defaults.{slug}', 0)` when not set (`Entitlements.php:27-34`). |
+| `limit(string $slug)` | `int` | Effective numeric limit; falls back to the `package_defaults` DB table (`PackageDefault::limit($slug)`, default `0`) when not set. |
 | `all()` | `array<string,bool\|int>` | Full resolved map, memoised on the instance and in the cache. |
-| `Entitlements::flush($restaurantId)` (static) | `void` | Forgets the cached map for one restaurant. |
+| `Package::flush($restaurantId)` (static) | `void` | Forgets the cached map for one restaurant. |
 
-#### Resolution algorithm (`resolve()`, `Entitlements.php:69-107`)
+#### Resolution algorithm (`resolve()`, `Package.php:69-107`)
 
-The effective entitlement map is built by layering three sources, in order, and merging each feature in:
+The effective package map is built by layering three sources, in order, and merging each feature in:
 
-1. **Template bundle** — the restaurant's assigned `template->features` (the `template_feature` pivot, each row carrying a `value`). The bundle is only applied if the template `isFree()` **or** the restaurant has an `activeTemplateSubscription()` (`Entitlements.php:75-79`). A paid template with no active subscription contributes nothing.
-2. **Feature add-on subscriptions** — active subscriptions whose `subscribable_type` is `Feature::class`. Each grants its feature with value `'1'` (`Entitlements.php:81-92`).
-3. **Per-restaurant feature grants** (`restaurant_features` rows via `featureGrants()`) that are currently valid: `starts_at <= now()` and (`ends_at` is null or in the future). Each applies its stored `value` (`Entitlements.php:94-104`).
+1. **Template bundle** — the restaurant's assigned `template->features` (the `template_feature` pivot, each row carrying a `value`). The bundle is only applied if the template `isFree()` **or** the restaurant has an `activeTemplateSubscription()` (`Package.php:75-79`). A paid template with no active subscription contributes nothing.
+2. **Feature add-on subscriptions** — active subscriptions whose `subscribable_type` is `Feature::class`. Each grants its feature with value `'1'` (`Package.php:81-92`).
+3. **Per-restaurant feature grants** (`restaurant_features` rows via `featureGrants()`) that are currently valid: `starts_at <= now()` and (`ends_at` is null or in the future). Each applies its stored `value` (`Package.php:94-104`).
 
-Merging is done by `merge()` (`Entitlements.php:113-122`) according to the feature's `kind`:
+Merging is done by `merge()` (`Package.php:113-122`) according to the feature's `kind`:
 - **`limit`** features merge with **MAX** — the highest value across all sources wins.
 - **boolean** features merge with **OR** — granted if any source grants it.
 
@@ -854,35 +854,32 @@ This means add-ons and grants can only ever *raise* a limit or *enable* a capabi
 
 #### Caching
 
-`all()` memoises onto `$this->resolved` and also caches the resolved array under key `entitlements:{restaurantId}` for `config('entitlements.cache_ttl', 300)` seconds (`Entitlements.php:43-54, 61-64`). The cache is invalidated through `Entitlements::flush()`, which is wired into model `booted()` hooks so writes are self-healing:
+`all()` memoises onto `$this->resolved` and also caches the resolved array under key `package:{restaurantId}` for `config('package.cache_ttl', 300)` seconds (`Package.php:43-54, 61-64`). The cache is invalidated through `Package::flush()`, which is wired into model `booted()` hooks so writes are self-healing:
 - `Restaurant` flushes on save **only when `template_id` changed** (`app/Models/Restaurant.php:66-70`).
 - `Subscription` flushes on every `saved`/`deleted` (`app/Models/Subscription.php:46-52`).
 - `RestaurantFeature` flushes on every `saved`/`deleted` (`app/Models/RestaurantFeature.php:32-38`).
 
-`EntitlementsTest` calls `Entitlements::flush()` manually after directly creating grant rows (e.g. `EntitlementsTest.php:115`) because those rows are created through the relationship, confirming the flush-on-write contract.
+`PackageTest` calls `Package::flush()` manually after directly creating grant rows (e.g. `PackageTest.php:115`) because those rows are created through the relationship, confirming the flush-on-write contract.
 
-#### Configuration (`config/entitlements.php`)
+#### Configuration (`config/package.php`)
 
 | Key | Value | Meaning |
 | --- | --- | --- |
-| `defaults.dish_limit` | `40` | Floor dish limit when no template/grant sets it. |
-| `defaults.category_limit` | `10` | Floor category limit. |
-| `defaults.social_link_limit` | `4` | Floor social-link limit. |
-| `grace_days` | `7` | Days a `past_due` subscription keeps entitling after `current_period_end`. |
-| `cache_ttl` | `300` | Seconds the resolved map is cached. |
+| `grace_days` | `7` | Days a `past_due` subscription keeps granting after `current_period_end`. |
+| `cache_ttl` | `300` | Seconds the resolved map (and the `package_defaults` map) is cached. |
 
-The comment in the config notes booleans default to `false` (no `defaults` entry needed) while limits need an explicit floor (`config/entitlements.php:16-20`).
+The floor limits used when no package grants a limit now live in the database — the **`package_defaults`** table (`slug`/`value` rows, seeded `dish_limit=40`, `category_limit=10`, `social_link_limit=4`), read via `App\Models\PackageDefault`. Booleans still default to `false` (no row needed).
 
-#### How the `Restaurant` model exposes entitlements
+#### How the `Restaurant` model exposes packages
 
 `Restaurant` (`app/Models/Restaurant.php`) is the consumer-facing surface. It defines:
-- `entitlements(): Entitlements` (`:138-141`) — returns the service for this restaurant.
-- Magic accessors that read limits: `getDishLimitAttribute()`, `getCategoryLimitAttribute()`, `getSocialLinkLimitAttribute()` map `$restaurant->dish_limit` etc. to `entitlements()->limit(...)` (`:171-184`).
-- Limit-check helpers: `hasReachedDishLimit()`, `getRemainingDishSlots()`, and the category/social-link equivalents compare current counts against the entitlement limit (`:186-214`).
+- `package(): Package` (`:138-141`) — returns the service for this restaurant.
+- Magic accessors that read limits: `getDishLimitAttribute()`, `getCategoryLimitAttribute()`, `getSocialLinkLimitAttribute()` map `$restaurant->dish_limit` etc. to `package()->limit(...)` (`:171-184`).
+- Limit-check helpers: `hasReachedDishLimit()`, `getRemainingDishSlots()`, and the category/social-link equivalents compare current counts against the package limit (`:186-214`).
 - `activeTemplateSubscription()` (`:143-155`) — the latest active subscription whose `subscribable` matches the assigned template, using the `active()` scope.
 - `menuIsPubliclyAvailable()` (`:162-169`) — the gate that takes a menu offline: returns `true` if there is no template or the template is free, otherwise requires an active (or in-grace) template subscription. Expiry takes the menu offline without deleting data.
 
-#### How controllers query entitlements
+#### How controllers query packages
 
 Limit enforcement lives in the menu-owner controllers, not in the Form Requests (which only validate field shape). The pattern is a guard at `create`/`store`:
 
@@ -892,11 +889,11 @@ Limit enforcement lives in the menu-owner controllers, not in the Form Requests 
 | `CategoryController` (`app/Http/Controllers/MenuOwner/CategoryController.php:42-44`) | `redirectIfCategoryLimitReached()` → `hasReachedCategoryLimit()` | redirect with `limit_categories` error |
 | `SocialLinkController` (`app/Http/Controllers/MenuOwner/SocialLinkController.php:54-57`) | `hasReachedSocialLinkLimit()` | redirect with `limit_social` error |
 
-`menuIsPubliclyAvailable()` is the capability-style read used at the public boundary (the menu goes offline when a paid plan lapses). `EntitlementsTest` verifies the full matrix: config fallbacks without a template, free-template bundles, paid-without-subscription (offline + falls back to defaults), paid-with-subscription (online + bundle limits), `past_due` within grace (still online), expired (offline), grant overlay with MAX merge, and expired-grant exclusion (`tests/Feature/EntitlementsTest.php`).
+`menuIsPubliclyAvailable()` is the capability-style read used at the public boundary (the menu goes offline when a paid plan lapses). `PackageTest` verifies the full matrix: config fallbacks without a template, free-template bundles, paid-without-subscription (offline + falls back to defaults), paid-with-subscription (online + bundle limits), `past_due` within grace (still online), expired (offline), grant overlay with MAX merge, and expired-grant exclusion (`tests/Feature/PackageTest.php`).
 
 ### 6.2 Subscription & pricing model
 
-The monetization schema is created in one migration, `database/migrations/2026_06_12_134516_create_entitlement_tables.php`, whose header states the design intent: *templates are the plans, features are the sellable units (booleans or limits), bundled via `template_feature` or sold as add-ons; subscriptions/payments support manual billing first.*
+The monetization schema is created in one migration, `database/migrations/2026_06_12_134516_create_package_tables.php`, whose header states the design intent: *templates are the plans, features are the sellable units (booleans or limits), bundled via `template_feature` or sold as add-ons; subscriptions/payments support manual billing first.*
 
 | Table / Model | Role | Key columns |
 | --- | --- | --- |
@@ -915,13 +912,13 @@ The monetization schema is created in one migration, `database/migrations/2026_0
 - `Feature` (`app/Models/Feature.php`): `prices()` (hasMany `FeaturePrice`), `templates()` (belongsToMany), `isLimit()` (`kind === 'limit'`). Both `Template` and `Feature` are translatable (`name`, `description`).
 - `Subscription` (`app/Models/Subscription.php`): `restaurant()`, `subscribable()` (morphTo, points at a `Template` or `Feature`), `payments()` (morphMany on `payable`).
 
-#### What counts as "active" / entitling
+#### What counts as "active" / granting
 
-The entitling window is defined once and reused. `Subscription::scopeActive()` (`Subscription.php:73-86`) and the per-row `isEntitling()` (`:88-97`) both encode the same rule:
+The granting window is defined once and reused. `Subscription::scopeActive()` (`Subscription.php:73-86`) and the per-row `grantsAccess()` (`:88-97`) both encode the same rule:
 - `trialing` or `active` **and** `current_period_end` is in the future, **or**
 - `past_due` **and** `current_period_end > now()->subDays(grace_days)` (the 7-day grace window from config).
 
-The `subscriptions` table indexes `status` and `(restaurant_id, status)` to keep this scope fast. `Entitlements::resolve()` and `Restaurant::activeTemplateSubscription()` both call `subscriptions()->active()`, so the menu-offline gate and the entitlement map stay consistent.
+The `subscriptions` table indexes `status` and `(restaurant_id, status)` to keep this scope fast. `Package::resolve()` and `Restaurant::activeTemplateSubscription()` both call `subscriptions()->active()`, so the menu-offline gate and the package map stay consistent.
 
 ### 6.3 Statistics pipeline
 
@@ -1266,7 +1263,7 @@ Gemini credentials live in `config/services.php:38-41`: `gemini.api_key` (`GEMIN
 
 ## 9. Filament Admin Panel
 
-The admin panel is the platform operator's control center. It is a single Filament v4 panel mounted at `/admin`, reachable only by users whose role is `admin`. From here the operator manages every tenant (users and their restaurants), the design templates and entitlements catalogue, all menu content, traffic analytics, contact-form submissions, dish tags, and IP blocking — and can impersonate a menu owner to debug their account.
+The admin panel is the platform operator's control center. It is a single Filament v4 panel mounted at `/admin`, reachable only by users whose role is `admin`. From here the operator manages every tenant (users and their restaurants), the design templates and packages catalogue, all menu content, traffic analytics, contact-form submissions, dish tags, and IP blocking — and can impersonate a menu owner to debug their account.
 
 ### 9.1 Panel configuration
 
@@ -1308,7 +1305,7 @@ Ten resources are registered (`AdminPanelProvider.php:43-54`). Resources without
 |---|---|---|---|---|
 | `UserResource` | `User` | OutlinedUser · 1 | List, Create, View, Edit | Full CRUD plus impersonate row action |
 | `RestaurantResource` | `Restaurant` | OutlinedBuildingStorefront · 2 | List, Create, Edit | No View page; rich table analytics |
-| `TemplateResource` | `Template` | OutlinedPaintBrush · 1 | List, Create, Edit | Capabilities/entitlements + pricing repeater |
+| `TemplateResource` | `Template` | OutlinedPaintBrush · 1 | List, Create, Edit | Capabilities/packages + pricing repeater |
 | `CategoryResource` | `Category` | OutlinedTag · 3 | List, Create, Edit | — |
 | `DishResource` | `Dish` | OutlinedShoppingBag · 4 | List, Create, Edit | Restaurant→category dependent select; tags |
 | `RestaurantSocialLinkResource` | `RestaurantSocialLink` | OutlinedLink · 6 | List, Create, Edit | — |
@@ -1323,18 +1320,18 @@ Ten resources are registered (`AdminPanelProvider.php:43-54`). Resources without
 - **Filters**: role select; toggles for setup-complete / setup-pending / joined-today / joined-this-week.
 - **Row actions** (`:126-142`): **Impersonate** (visible only when the target is not the current user and `canBeImpersonated()` is true; links to `route('impersonate', id)`), View, Edit, and a hard **Delete** that calls `$record->forceDelete()` with a warning modal explaining it removes the restaurant, all categories/dishes (and images), social links, statistics, media, and sessions.
 - **Form** (`Users/Schemas/UserForm.php`): one "Account Information" section — name, unique email, password (required only on Create via `$livewire instanceof CreateUser`, dehydrated only when filled so edits can leave it blank, min 8), and a role select defaulting to Menu Owner.
-- **View page** (`Users/Pages/ViewUser.php`) is the richest infolist in the panel: an **Account** section, a **Restaurant** section (name, slug linking to the public `/{slug}`, active status, phone, currency, language, template), a **Traffic & Analytics** section computing total views, unique visitors, QR scans, WhatsApp orders, views today, average time spent, last visit, and top device (via a grouped `device_type` count), and a **Content** section showing dishes/categories/social-links usage against the restaurant's `*_limit` entitlements. The Restaurant/Traffic/Content sections are hidden when the user has no restaurant.
+- **View page** (`Users/Pages/ViewUser.php`) is the richest infolist in the panel: an **Account** section, a **Restaurant** section (name, slug linking to the public `/{slug}`, active status, phone, currency, language, template), a **Traffic & Analytics** section computing total views, unique visitors, QR scans, WhatsApp orders, views today, average time spent, last visit, and top device (via a grouped `device_type` count), and a **Content** section showing dishes/categories/social-links usage against the restaurant's `*_limit` packages. The Restaurant/Traffic/Content sections are hidden when the user has no restaurant.
 
 #### RestaurantResource
 
 - **Table** (`Restaurants/Tables/RestaurantsTable.php`): circular Spatie logo, name (custom JSON search across `name->ar` and `name->en` — `RestaurantsTable.php:32-34`, reflecting translatable names), owner name, template badge, `dishes_count`/`categories_count` (relationship counts), a hidden-by-default `dish_limit` badge, and four computed analytics badges — total views, unique visitors, QR scans, WhatsApp orders. An inline `ToggleColumn` flips `is_active` directly from the list. Sorted `created_at desc`.
 - **Filters**: status (active/inactive), owner (relationship), template (relationship), created-today, created-this-week, and "has visitor traffic" (`whereHas('statistics')`).
 - **Actions**: View, Edit (row); `DeleteBulkAction` in a bulk group. No standalone create-only delete.
-- **Form** (`Restaurants/Schemas/RestaurantForm.php`): Basic Information (owner relationship select; name that auto-slugs on blur; slug that is itself re-slugged via `dehydrateStateUsing`; description), Contact (a `Ysfkaya\FilamentPhoneInput` phone field defaulting to country `LB`, displayed international / stored E.164), Template (nullable relationship select whose help text explains it "controls the public menu design and the bundled entitlements"), Visibility (`is_active` toggle), and Media (Spatie logo + cover_image uploads, max 5 MB each).
+- **Form** (`Restaurants/Schemas/RestaurantForm.php`): Basic Information (owner relationship select; name that auto-slugs on blur; slug that is itself re-slugged via `dehydrateStateUsing`; description), Contact (a `Ysfkaya\FilamentPhoneInput` phone field defaulting to country `LB`, displayed international / stored E.164), Template (nullable relationship select whose help text explains it "controls the public menu design and the bundled packages"), Visibility (`is_active` toggle), and Media (Spatie logo + cover_image uploads, max 5 MB each).
 
 #### TemplateResource
 
-This resource is the entitlements/branding hub. The **form** (`Templates/Schemas/TemplateForm.php`) builds capability toggle sections dynamically from a private `CAPABILITIES` map (`TemplateForm.php:23-50`) grouped into **Restaurant Profile** (logo, cover, description, phone, address, map, schedule, social_links), **Menu Content** (dish images/ingredients/prices/tags, category images/description), and **UI/UX** (search, search_title, order_page_title, final_price_show, share_button, qr_code). Each toggle binds to `capabilities.<key>`. Additional form areas:
+This resource is the packages/branding hub. The **form** (`Templates/Schemas/TemplateForm.php`) builds capability toggle sections dynamically from a private `CAPABILITIES` map (`TemplateForm.php:23-50`) grouped into **Restaurant Profile** (logo, cover, description, phone, address, map, schedule, social_links), **Menu Content** (dish images/ingredients/prices/tags, category images/description), and **UI/UX** (search, search_title, order_page_title, final_price_show, share_button, qr_code). Each toggle binds to `capabilities.<key>`. Additional form areas:
 - **Template Identity**: name (auto-slugs), disabled-but-dehydrated slug, `tier` select (Free/Paid, `live()`), `sort_order`, description, `is_active`.
 - **Pricing**: a `Repeater::make('prices')->relationship()` shown only when tier is Paid (`->hidden(fn (Get $get) => $get('tier') !== 'paid')`), each row capturing period (monthly / semiannual / yearly), price, currency (default USD), and active flag.
 - **Thumbnail**: Spatie `thumbnail` upload.
@@ -1718,7 +1715,7 @@ This section catalogs the application's configuration layer, its testing infrast
 
 ### 12.1 Configuration Reference
 
-The `config/` directory mixes standard Laravel framework files (whose project-relevant deviations from the framework defaults are noted) with five **custom, project-authored** config files (`currencies.php`, `locales.php`, `menu_settings.php`, `entitlements.php`, `image-optimization.php`, `security.php`, plus a tailored `seo.php`). The table below lists each file and the project-specific knobs it exposes.
+The `config/` directory mixes standard Laravel framework files (whose project-relevant deviations from the framework defaults are noted) with five **custom, project-authored** config files (`currencies.php`, `locales.php`, `menu_settings.php`, `packages.php`, `image-optimization.php`, `security.php`, plus a tailored `seo.php`). The table below lists each file and the project-specific knobs it exposes.
 
 | Config file | Project-specific settings / deviations |
 | --- | --- |
@@ -1727,7 +1724,7 @@ The `config/` directory mixes standard Laravel framework files (whose project-re
 | `config/cache.php` | Default store `database` (`config/cache.php:18`). Notable extra store: a custom **`failover`** store that falls back `database → array` (`:94`). |
 | `config/currencies.php` | **Custom.** A flat map of ISO 4217 code → `['name','symbol']` for ~138 currencies, grouped by region (Major/Global, MENA, Asia, etc.). Lebanese Pound (`LBP → L.L.`) is present given the Lebanon focus. This list backs the `in:` currency validation seen in `RestaurantRequest`/onboarding. |
 | `config/database.php` | Default connection **`sqlite`** (`config/database.php:19`) — note `.env.example` overrides this to `mysql`, and `phpunit.xml` forces in-memory sqlite. SQLite `transaction_mode` is `DEFERRED`. Redis split across `default`/`cache` DBs (0/1). |
-| `config/entitlements.php` | **Custom.** Floor limits used when a restaurant has no entitling template: `dish_limit=40`, `category_limit=10`, `social_link_limit=4` (`:16`). `grace_days=7` (days a `past_due` subscription keeps entitling, `:32`). `cache_ttl=300` for the resolved-entitlements cache (`:40`). Consumed by `App\Services\MenuOwner\Entitlements`. |
+| `config/package.php` | **Custom.** `grace_days=7` (days a `past_due` subscription keeps granting access). `cache_ttl=300` for the resolved-packages cache. Floor limits moved to the `package_defaults` DB table (`App\Models\PackageDefault`). Consumed by `App\Services\Global\Package`. |
 | `config/filament.php` | Default Filament disk = `FILESYSTEM_DISK` (`local`); `livewire_loading_delay` `default`; system route prefix `filament`; component cache at `bootstrap/cache/filament`. |
 | `config/filesystems.php` | Default disk `local` rooted at `storage/app/private` with `serve=true`; `public` disk URL = `APP_URL/storage`; standard `s3` disk. |
 | `config/image-optimization.php` | **Custom.** Per-context image presets consumed by `App\Services\Global\MediaService::optimize()`. Each preset sets `fit` (`cover`=crop, `contain`=scale-down), dimensions, and either fixed `quality` or a `max_kb` size ceiling. Presets: `logo` (contain 300×300, 50KB), `cover_image` (cover 1920×600, q80), `dish` (cover 800×600, 50KB), `category` (contain 500×500, 50KB), `generic` (contain 1200×1200, 200KB). |
@@ -1762,7 +1759,7 @@ Several security tests register **throwaway routes in `setUp()`** to isolate mid
 | MenuOwner | `MenuOwner/DishAuthorizationTest`, `DishFormTest`, `MenuScanControllerTest`, `RestaurantRequestValidationTest` | Cross-owner dish update via the update endpoint is `403`; dish edit page renders the full form (expected element ids); AI menu-scan: scan accepted → `202` + `ProcessMenuScan` job pushed, daily limit (3 scans) → `429` + nothing pushed, import creates categories/dishes (translatable `name->en`), import is idempotent (second import `422`), and a non-owner cannot view/import another owner's scan (`404`). `RestaurantRequestValidationTest` unit-checks `RestaurantRequest` rules (phone letters fail, unknown currency fails, valid payload passes). |
 | Portal (public menu) | `Portal/MenuControllerTest`, `MenuOfflineTest` | Active restaurant menu renders (`200`) and records a `menu_sessions` statistic row; inactive restaurant, unknown slug, and numeric slug all `404`. Offline logic: paid template **without** subscription serves `portal.menu.unavailable` (`200`, no session recorded); paid template **with** active subscription and any free template serve `portal.menu.designs.default`. |
 | Security | `Security/BlockedIpTest`, `CaptchaRuleTest`, `RateLimitTest`, `SecurityHeadersTest`, `SocialLinkUrlTest` | `BlockAbusiveIps` forbids blocked IPs but exempts admins and ignores expired blocks; `AbuseGuard::block/unblock/isBlocked` round-trips, and 20 `recordViolation()` strikes auto-ban (reason `auto: sustained abuse`) while 2 do not. Captcha is a graceful no-op when disabled. Limiters return `429` when hammered and real login throttles after repeated failures. `SecurityHeaders` sets `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, Referrer-Policy, Permissions-Policy, CSP `frame-ancestors 'none'`, and HSTS only on HTTPS. Social-link URLs reject `javascript:`/`data:` schemes, require a URL, and accept normal `https://`. |
-| Entitlements & Statistics | `EntitlementsTest`, `StatisticsQueryServiceTest` | Limits fall back to config defaults without a template; free-template bundle grants limits; paid template gates the menu (offline without sub, online with active/within-grace sub, offline when expired); feature **grants overlay and merge with `max()`**, and expired grants don't apply (`Entitlements::flush()` clears the cache). `StatisticsQueryService::build()` aggregates totalViews/uniqueVisitors/qrVisits/whatsappOrders/device breakdown; `emptyPayload()` is fully zeroed. |
+| Packages & Statistics | `PackageTest`, `StatisticsQueryServiceTest` | Limits fall back to config defaults without a template; free-template bundle grants limits; paid template gates the menu (offline without sub, online with active/within-grace sub, offline when expired); feature **grants overlay and merge with `max()`**, and expired grants don't apply (`Package::flush()` clears the cache). `StatisticsQueryService::build()` aggregates totalViews/uniqueVisitors/qrVisits/whatsappOrders/device breakdown; `emptyPayload()` is fully zeroed. |
 | Policies | `PolicyOwnershipTest` | Owners can update/delete only their own Dish/Category/SocialLink; another owner is denied; admins can update any restaurant's dish. |
 | Profile | `ProfileTest` | Profile page renders; updating info resets `email_verified_at` only when email changes; account deletion requires the correct password. |
 | Media | `MediaSyncServiceTest`, `ImpersonateTest` | `MediaService` temp paths are scoped per-user (`temp/{id}/{key}.jpg`); `sync()` attaches a temp image for the owning user, **ignores** a key belonging to another user, and clears the collection on deletion. `ImpersonateTest` covers admin→owner impersonation (redirect `/dashboard`), self/non-admin denial (`403`), guest redirect to login, and leaving impersonation (back to original admin, redirect `/`). |
