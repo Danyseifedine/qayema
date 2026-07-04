@@ -1,0 +1,45 @@
+<?php
+
+namespace Tests\Feature\Portal;
+
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class LandingCtaTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_guest_sees_the_sign_up_cta(): void
+    {
+        $response = $this->get('/');
+
+        $response->assertOk();
+        $response->assertSee(route('register'), false);
+    }
+
+    public function test_authenticated_owner_mid_onboarding_is_pointed_to_onboarding(): void
+    {
+        // A logged-in owner must never see the guest-only sign-up link (it bounces
+        // them back here); mid-onboarding they are sent to continue setup.
+        $user = User::factory()->create(['onboarding_completed_at' => null]);
+
+        $response = $this->actingAs($user)->get('/');
+
+        $response->assertOk();
+        $response->assertSee(route('onboarding'), false);
+        $response->assertDontSee(route('register'), false);
+    }
+
+    public function test_onboarded_owner_is_pointed_to_the_dashboard(): void
+    {
+        config(['app.dashboard_url' => 'https://dash.qayema.test']);
+        $user = User::factory()->create(['onboarding_completed_at' => now()]);
+
+        $response = $this->actingAs($user)->get('/');
+
+        $response->assertOk();
+        $response->assertSee('https://dash.qayema.test', false);
+        $response->assertDontSee(route('register'), false);
+    }
+}

@@ -87,6 +87,18 @@ class User extends Authenticatable implements FilamentUser
         return $this->onboarding_completed_at !== null;
     }
 
+    /**
+     * Where to send this owner right after they authenticate: their dashboard once
+     * onboarding is done, otherwise the onboarding flow. Never the public landing
+     * page, which offers a signed-in owner no way into the app.
+     */
+    public function afterLoginUrl(): string
+    {
+        return $this->hasCompletedOnboarding()
+            ? (string) config('app.dashboard_url')
+            : route('onboarding');
+    }
+
     public function currentOnboardingStep(): int
     {
         return min(($this->onboarding_step ?? 0) + 1, 5);

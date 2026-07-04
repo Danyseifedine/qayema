@@ -8,6 +8,8 @@ return [
         'pricing' => 'Pricing',
         'faq' => 'FAQ',
         'cta' => 'Get started free',
+        'cta_dashboard' => 'My dashboard',
+        'cta_continue' => 'Continue setup',
     ],
 
     'hero' => [

@@ -42,7 +42,7 @@ class GoogleController extends Controller
 
             Auth::login($socialAccount->user, remember: true);
 
-            return redirect()->intended('/');
+            return redirect()->intended($socialAccount->user->afterLoginUrl());
         }
 
         $user = User::where('email', $googleUser->getEmail())->first();
@@ -55,7 +55,7 @@ class GoogleController extends Controller
             $this->attachSocialAccount($user, $googleUser);
             Auth::login($user, remember: true);
 
-            return redirect('/');
+            return redirect()->intended($user->afterLoginUrl());
         }
 
         $user = User::create([
@@ -71,7 +71,7 @@ class GoogleController extends Controller
         $this->attachSocialAccount($user, $googleUser);
         Auth::login($user, remember: true);
 
-        return redirect()->route('onboarding');
+        return redirect($user->afterLoginUrl());
     }
 
     private function attachSocialAccount(User $user, \Laravel\Socialite\Contracts\User $googleUser): void

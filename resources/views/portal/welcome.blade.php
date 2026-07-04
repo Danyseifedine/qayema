@@ -15,6 +15,16 @@
         'check' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
         'spark' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6z"/></svg>',
     ];
+
+    // A logged-in owner must be sent into the app, never the guest sign-up funnel:
+    // the register/login routes are guest-only and bounce an authed user back here.
+    $owner = auth()->user();
+    $ctaAuthedHref = $owner
+        ? ($owner->hasCompletedOnboarding() ? config('app.dashboard_url') : route('onboarding'))
+        : null;
+    $ctaAuthedLabel = $owner
+        ? ($owner->hasCompletedOnboarding() ? __('portal.nav.cta_dashboard') : __('portal.nav.cta_continue'))
+        : null;
 @endphp
 
 @section('content')
@@ -29,10 +39,16 @@
       <h1 class="display">{!! __('portal.hero.title') !!}</h1>
       <p class="hero-sub">{{ __('portal.hero.sub') }}</p>
 
-      <form class="hero-form" action="{{ route('register') }}" method="GET">
-        <input type="email" placeholder="{{ __('portal.hero.email_placeholder') }}" />
-        <button type="submit">{{ __('portal.hero.cta') }}</button>
-      </form>
+      @auth
+        <div class="hero-form hero-form-authed">
+          <a class="btn btn-gold" data-magnetic href="{{ $ctaAuthedHref }}">{{ $ctaAuthedLabel }}</a>
+        </div>
+      @else
+        <form class="hero-form" action="{{ route('register') }}" method="GET">
+          <input type="email" placeholder="{{ __('portal.hero.email_placeholder') }}" />
+          <button type="submit">{{ __('portal.hero.cta') }}</button>
+        </form>
+      @endauth
 
       <div class="hero-rating">
         <span class="hero-stars">
@@ -182,7 +198,7 @@
               <li>{!! $ICON['check'] !!}<span>{{ $feature }}</span></li>
             @endforeach
           </ul>
-          <a class="btn btn-line" data-magnetic href="{{ route('register') }}">{{ __('portal.pricing.free.cta') }}</a>
+          <a class="btn btn-line" data-magnetic href="{{ $ctaAuthedHref ?? route('register') }}">{{ $ctaAuthedLabel ?? __('portal.pricing.free.cta') }}</a>
         </div>
 
         <div class="plan hot">
@@ -194,7 +210,7 @@
               <li>{!! $ICON['check'] !!}<span>{{ $feature }}</span></li>
             @endforeach
           </ul>
-          <a class="btn btn-gold" data-magnetic href="{{ route('register') }}">{{ __('portal.pricing.premium.cta') }}</a>
+          <a class="btn btn-gold" data-magnetic href="{{ $ctaAuthedHref ?? route('register') }}">{{ $ctaAuthedLabel ?? __('portal.pricing.premium.cta') }}</a>
         </div>
       </div>
       <p class="price-note reveal"><b>{{ __('portal.pricing.note_bold') }}</b> <span>{{ __('portal.pricing.note') }}</span></p>

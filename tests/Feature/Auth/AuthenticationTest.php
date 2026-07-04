@@ -19,7 +19,9 @@ class AuthenticationTest extends TestCase
 
     public function test_users_can_authenticate_using_the_login_screen(): void
     {
-        $user = User::factory()->create();
+        // A user who has not finished onboarding is taken to the onboarding flow,
+        // never back to the public landing page.
+        $user = User::factory()->create(['onboarding_completed_at' => null]);
 
         $response = $this->post('/get-started', [
             'email' => $user->email,
@@ -27,7 +29,21 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect('/');
+        $response->assertRedirect(route('onboarding'));
+    }
+
+    public function test_onboarded_users_are_sent_to_the_dashboard_after_login(): void
+    {
+        config(['app.dashboard_url' => 'https://dash.qayema.test']);
+        $user = User::factory()->create(['onboarding_completed_at' => now()]);
+
+        $response = $this->post('/get-started', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect('https://dash.qayema.test');
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void
