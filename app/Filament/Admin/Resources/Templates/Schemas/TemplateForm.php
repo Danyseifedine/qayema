@@ -3,14 +3,12 @@
 namespace App\Filament\Admin\Resources\Templates\Schemas;
 
 use Filament\Forms\Components\KeyValue;
-use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 
 class TemplateForm
@@ -92,8 +90,7 @@ class TemplateForm
                             ->options(['free' => 'Free', 'paid' => 'Paid'])
                             ->default('free')
                             ->required()
-                            ->live()
-                            ->helperText('Paid templates require an active subscription; expired menus go offline.'),
+                            ->helperText('Free templates are available to everyone; paid templates are billed through Paddle.'),
                         TextInput::make('sort_order')
                             ->numeric()
                             ->default(0)
@@ -106,36 +103,6 @@ class TemplateForm
                         Toggle::make('is_active')
                             ->label('Template is active (available to assign to restaurants)')
                             ->default(true),
-                    ]),
-
-                Section::make('Pricing')
-                    ->description('Subscription prices per billing period. Only used when the tier is Paid; USD is the platform base currency.')
-                    ->hidden(fn (Get $get): bool => $get('tier') !== 'paid')
-                    ->schema([
-                        Repeater::make('prices')
-                            ->relationship()
-                            ->label('')
-                            ->schema([
-                                Select::make('period')
-                                    ->options([
-                                        'monthly' => 'Monthly',
-                                        'semiannual' => 'Every 6 months',
-                                        'yearly' => 'Yearly',
-                                    ])
-                                    ->required(),
-                                TextInput::make('price')
-                                    ->numeric()
-                                    ->required()
-                                    ->minValue(0),
-                                TextInput::make('currency')
-                                    ->default('USD')
-                                    ->required()
-                                    ->maxLength(3),
-                                Toggle::make('is_active')
-                                    ->default(true),
-                            ])
-                            ->columns(4)
-                            ->addActionLabel('+ Add Price'),
                     ]),
 
                 Section::make('Thumbnail')

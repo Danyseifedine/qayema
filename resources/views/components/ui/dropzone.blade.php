@@ -25,7 +25,7 @@
 
     Controller side:
       if ($request->filled('logo_key')) {
-          $path = storage_path('app/temp/' . $request->input('logo_key') . '.jpg');
+          $path = storage_path('app/temp/' . $request->input('logo_key') . '.webp');
           if (file_exists($path)) {
               $restaurant->clearMediaCollection('logo');
               $restaurant->addMedia($path)->usingName('logo')->toMediaCollection('logo');

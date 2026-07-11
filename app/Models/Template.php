@@ -53,16 +53,6 @@ class Template extends Model implements HasMedia
         return $this->belongsToMany(Feature::class, 'template_feature')->withPivot('value');
     }
 
-    public function prices(): HasMany
-    {
-        return $this->hasMany(TemplatePrice::class);
-    }
-
-    public function subscriptions(): \Illuminate\Database\Eloquent\Relations\MorphMany
-    {
-        return $this->morphMany(Subscription::class, 'subscribable');
-    }
-
     public function isFree(): bool
     {
         return ($this->tier ?? 'free') !== 'paid';

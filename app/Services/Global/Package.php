@@ -2,7 +2,6 @@
 
 namespace App\Services\Global;
 
-use App\Models\Feature;
 use App\Models\PackageDefault;
 use App\Models\Restaurant;
 use Illuminate\Support\Facades\Cache;
@@ -34,9 +33,8 @@ class Package
     }
 
     /**
-     * Effective package: template bundle (free, or paid with an active
-     * subscription), overlaid by active feature add-on subscriptions, then by
-     * valid restaurant_features rows. Booleans merge with OR, limits with MAX.
+     * Effective package: the assigned template's bundled features overlaid by
+     * valid restaurant_features grants. Booleans merge with OR, limits with MAX.
      *
      * @return array<string, bool|int>
      */
@@ -72,22 +70,9 @@ class Package
 
         $template = $this->restaurant->template;
 
-        if ($template && ($template->isFree() || $this->restaurant->activeTemplateSubscription() !== null)) {
+        if ($template) {
             foreach ($template->features as $feature) {
                 $package = $this->merge($package, $feature->slug, $feature->kind, $feature->pivot->value);
-            }
-        }
-
-        $featureSubscriptions = $this->restaurant->subscriptions()
-            ->active()
-            ->where('subscribable_type', Feature::class)
-            ->with('subscribable')
-            ->get();
-
-        foreach ($featureSubscriptions as $subscription) {
-            if ($subscription->subscribable instanceof Feature) {
-                $feature = $subscription->subscribable;
-                $package = $this->merge($package, $feature->slug, $feature->kind, '1');
             }
         }
 

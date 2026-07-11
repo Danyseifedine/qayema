@@ -5,7 +5,6 @@ namespace Tests\Feature\Onboarding;
 use App\Mail\WelcomeRestaurantOwner;
 use App\Models\Restaurant;
 use App\Models\Tag;
-use App\Models\Template;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
@@ -88,10 +87,10 @@ class OnboardingFlowTest extends TestCase
 
     public function test_step_five_completes_onboarding(): void
     {
-        // Step 5 is now the final step: a valid tag completes onboarding, applies a
-        // default template, and sends the welcome email.
+        // Step 5 is the final step: valid tags complete onboarding and send the
+        // welcome email. No template is assigned — the owner picks one from the
+        // dashboard, which stays locked until they do.
         Mail::fake();
-        $template = Template::factory()->create(['is_active' => true]);
         $user = User::factory()->create(['onboarding_step' => 4, 'onboarding_completed_at' => null]);
         Restaurant::factory()->create(['user_id' => $user->id]);
         $style = Tag::create(['name' => ['en' => 'Minimal'], 'slug' => 'minimal', 'category' => 'style']);
@@ -104,7 +103,7 @@ class OnboardingFlowTest extends TestCase
 
         $user->refresh();
         $this->assertNotNull($user->onboarding_completed_at);
-        $this->assertSame($template->id, $user->restaurant->template_id);
+        $this->assertNull($user->restaurant->template_id);
         Mail::assertSent(WelcomeRestaurantOwner::class);
     }
 

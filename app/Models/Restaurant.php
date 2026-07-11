@@ -137,52 +137,14 @@ class Restaurant extends Model implements HasMedia
         return $this->hasMany(RestaurantStatistic::class);
     }
 
-    public function subscriptions(): HasMany
-    {
-        return $this->hasMany(Subscription::class);
-    }
-
     public function featureGrants(): HasMany
     {
         return $this->hasMany(RestaurantFeature::class);
     }
 
-    public function payments(): HasMany
-    {
-        return $this->hasMany(Payment::class);
-    }
-
     public function package(): Package
     {
         return Package::for($this);
-    }
-
-    public function activeTemplateSubscription(): ?Subscription
-    {
-        if ($this->template_id === null) {
-            return null;
-        }
-
-        return $this->subscriptions()
-            ->active()
-            ->where('subscribable_type', Template::class)
-            ->where('subscribable_id', $this->template_id)
-            ->latest('current_period_end')
-            ->first();
-    }
-
-    /**
-     * The public menu is served only when the assigned template is free or
-     * carries an active (or in-grace) subscription. Expiry takes the menu
-     * offline without touching any data.
-     */
-    public function menuIsPubliclyAvailable(): bool
-    {
-        if (! $this->template || $this->template->isFree()) {
-            return true;
-        }
-
-        return $this->activeTemplateSubscription() !== null;
     }
 
     public function getDishLimitAttribute(): int

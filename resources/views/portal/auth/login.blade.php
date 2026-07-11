@@ -181,7 +181,7 @@
 
     {{-- ── Right: cover image ───────────────────────────── --}}
     <aside class="brand-col">
-        <img class="brand-image" src="{{ asset('portal/images/login.jpg') }}" alt="" onerror="this.style.display='none'">
+        <img class="brand-image" src="{{ asset('images/auth.png') }}" alt="" onerror="this.style.display='none'">
     </aside>
 
 </div>

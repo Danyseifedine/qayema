@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\DishController;
 use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\SocialLinkController;
+use App\Http\Controllers\Api\TemplateController;
 use App\Http\Controllers\TempUploadController;
 use Illuminate\Support\Facades\Route;
 
@@ -56,6 +57,11 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // editable logo/banner/tags). A singleton, so no {id}.
     Route::get('/settings', [SettingsController::class, 'show'])->name('api.settings.show');
     Route::match(['put', 'patch'], '/settings', [SettingsController::class, 'update'])->name('api.settings.update');
+
+    // Menu templates — the owner picks the layout their restaurant uses. A new
+    // restaurant has none and must choose before the dashboard unlocks.
+    Route::get('/templates', [TemplateController::class, 'index'])->name('api.templates.index');
+    Route::post('/templates/select', [TemplateController::class, 'select'])->name('api.templates.select');
 
     // Social links (scoped to the authenticated user's restaurant).
     Route::get('/social-links', [SocialLinkController::class, 'index'])->name('api.social-links.index');

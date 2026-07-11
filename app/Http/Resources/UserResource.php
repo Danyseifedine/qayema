@@ -27,7 +27,13 @@ class UserResource extends JsonResource
             'role' => $this->role->value,
             'has_completed_onboarding' => $this->hasCompletedOnboarding(),
             'restaurant' => $this->whenLoaded('restaurant', fn () => $this->restaurant
-                ? ['id' => $this->restaurant->id, 'slug' => $this->restaurant->slug]
+                ? [
+                    'id' => $this->restaurant->id,
+                    'slug' => $this->restaurant->slug,
+                    // null until the owner picks a template — the dashboard stays
+                    // locked to the Templates tab while this is null.
+                    'template_id' => $this->restaurant->template_id,
+                ]
                 : null),
         ];
     }

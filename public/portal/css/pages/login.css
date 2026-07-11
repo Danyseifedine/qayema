@@ -238,7 +238,7 @@ h1.title .it {
     margin-top: 6px;
     height: 50px;
     border: .5px solid var(--gold);
-    border-radius: 999px;
+    border-radius: 10px;
     background: var(--gold);
     color: #141109;
     font-size: 14.5px;
@@ -294,6 +294,7 @@ h1.title .it {
 }
 .form-col .ui-input-wrap {
     background: var(--surface);
+    border-radius: 10px;
 }
 .form-col .ui-input-wrap:focus-within {
     box-shadow: 0 0 0 3px rgba(248,211,141,.14);

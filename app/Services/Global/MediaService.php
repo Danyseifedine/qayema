@@ -93,7 +93,7 @@ class MediaService
 
     public function tempPath(int $userId, string $key): string
     {
-        return $this->tempDir($userId).'/'.$key.'.jpg';
+        return $this->tempDir($userId).'/'.$key.'.webp';
     }
 
     /* ---------------------------------------------------------------------
@@ -101,11 +101,12 @@ class MediaService
      * ------------------------------------------------------------------- */
 
     /**
-     * Optimize an upload to a preset and return the path to the temp JPEG.
+     * Optimize an upload to a preset and return the path to the temp WebP.
      *
      * 'fit' is 'cover' (crop to fill the box) or 'contain' (scale down within
-     * the box, never upscaling). Pass 'quality' for a fixed JPEG quality, or
-     * 'max_kb' to step quality down until the file fits that ceiling.
+     * the box, never upscaling). Pass 'quality' for a fixed WebP quality, or
+     * 'max_kb' to step quality down until the file fits that ceiling. WebP keeps
+     * transparency (so logos don't lose their alpha) and is smaller than JPEG.
      *
      * @param  array{fit?: string, width: int, height: int, quality?: int, max_kb?: int}  $preset
      */
@@ -122,7 +123,7 @@ class MediaService
         $path = $this->scratchPath($label);
 
         if (isset($preset['quality'])) {
-            $image->toJpeg($preset['quality'])->save($path);
+            $image->toWebp($preset['quality'])->save($path);
         } else {
             $this->saveCompressed($image, $path, ((int) ($preset['max_kb'] ?? 50)) * 1024);
         }
@@ -151,7 +152,7 @@ class MediaService
      * ------------------------------------------------------------------- */
 
     /**
-     * Save as JPEG, reducing quality until it fits within $maxBytes.
+     * Save as WebP, reducing quality until it fits within $maxBytes.
      * Stops at quality 30 to avoid unacceptable degradation.
      */
     private function saveCompressed(Image $image, string $path, int $maxBytes = self::DEFAULT_MAX_BYTES): void
@@ -159,7 +160,7 @@ class MediaService
         $quality = 90;
 
         do {
-            $image->toJpeg($quality)->save($path);
+            $image->toWebp($quality)->save($path);
 
             if (filesize($path) <= $maxBytes || $quality <= 30) {
                 break;
@@ -170,14 +171,14 @@ class MediaService
     }
 
     /**
-     * A unique path in the shared scratch dir for an optimizer's intermediate JPEG.
+     * A unique path in the shared scratch dir for an optimizer's intermediate WebP.
      */
     private function scratchPath(string $prefix): string
     {
         $dir = storage_path('app/temp');
         $this->ensureDir($dir);
 
-        return $dir.'/'.$prefix.'_'.uniqid().'.jpg';
+        return $dir.'/'.$prefix.'_'.uniqid().'.webp';
     }
 
     /**
@@ -195,7 +196,7 @@ class MediaService
 
         $cutoff = time() - self::TEMP_TTL_SECONDS;
 
-        foreach (glob($base.'/{*.jpg,*/*.jpg}', GLOB_BRACE) as $file) {
+        foreach (glob($base.'/{*.webp,*/*.webp,*.jpg,*/*.jpg}', GLOB_BRACE) as $file) {
             if (filemtime($file) < $cutoff) {
                 @unlink($file);
             }

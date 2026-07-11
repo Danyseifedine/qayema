@@ -5,7 +5,6 @@ namespace App\Services\Portal;
 use App\Mail\WelcomeRestaurantOwner;
 use App\Models\Restaurant;
 use App\Models\Tag;
-use App\Models\Template;
 use App\Models\User;
 use App\Services\Global\MediaService;
 use Illuminate\Support\Facades\Mail;
@@ -92,27 +91,12 @@ class OnboardingService
     }
 
     /**
-     * Final step — assign a starter template, mark onboarding complete and send
-     * the welcome email. Onboarding no longer asks the owner to pick a template,
-     * so the first active template is applied as a sensible default (the owner can
-     * change it later). If no active template exists, the restaurant is left
-     * without one (template_id is nullable).
+     * Final step — mark onboarding complete and send the welcome email. The
+     * restaurant is intentionally left WITHOUT a template: the owner chooses one
+     * from the dashboard (which stays locked until they do).
      */
     public function complete(User $user, Restaurant $restaurant): void
     {
-        $template = Template::query()
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->orderBy('id')
-            ->first();
-
-        if ($template) {
-            $restaurant->update([
-                'template_id' => $template->id,
-                'template_settings' => $template->defaultSettings(),
-            ]);
-        }
-
         $user->update([
             'onboarding_step' => 5,
             'onboarding_completed_at' => now(),

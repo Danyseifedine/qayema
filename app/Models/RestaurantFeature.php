@@ -18,7 +18,6 @@ class RestaurantFeature extends Model
         'source',
         'starts_at',
         'ends_at',
-        'payment_id',
     ];
 
     protected function casts(): array
@@ -45,10 +44,5 @@ class RestaurantFeature extends Model
     public function feature(): BelongsTo
     {
         return $this->belongsTo(Feature::class);
-    }
-
-    public function payment(): BelongsTo
-    {
-        return $this->belongsTo(Payment::class);
     }
 }

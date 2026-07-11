@@ -30,7 +30,7 @@ class MediaSyncServiceTest extends TestCase
         $service = app(MediaService::class);
 
         $this->assertStringContainsString('temp/7', $service->tempDir(7));
-        $this->assertStringEndsWith('7/abc.jpg', $service->tempPath(7, 'abc'));
+        $this->assertStringEndsWith('7/abc.webp', $service->tempPath(7, 'abc'));
     }
 
     public function test_sync_attaches_temp_image_for_the_owning_user(): void
