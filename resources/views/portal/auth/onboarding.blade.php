@@ -26,11 +26,11 @@
         ->all();
 
     $stepData = [
-        ['key' => __('menu_owner.onboarding.step1_title'), 'short' => __('menu_owner.onboarding.step1_desc'), 'stage' => __('menu_owner.onboarding.step1_stage'), 'tag' => __('menu_owner.onboarding.step1_tag')],
-        ['key' => __('menu_owner.onboarding.step2_title'), 'short' => __('menu_owner.onboarding.step2_desc'), 'stage' => __('menu_owner.onboarding.step2_stage'), 'tag' => __('menu_owner.onboarding.step2_tag')],
-        ['key' => __('menu_owner.onboarding.step3_title'), 'short' => __('menu_owner.onboarding.step3_desc'), 'stage' => __('menu_owner.onboarding.step3_stage'), 'tag' => __('menu_owner.onboarding.step3_tag')],
-        ['key' => __('menu_owner.onboarding.step4_title'), 'short' => __('menu_owner.onboarding.step4_desc'), 'stage' => __('menu_owner.onboarding.step4_stage'), 'tag' => __('menu_owner.onboarding.step4_tag')],
-        ['key' => __('menu_owner.onboarding.step5_title'), 'short' => __('menu_owner.onboarding.step5_desc'), 'stage' => __('menu_owner.onboarding.step5_stage'), 'tag' => __('menu_owner.onboarding.step5_tag')],
+        ['key' => __('owner.onboarding.step1_title'), 'short' => __('owner.onboarding.step1_desc'), 'stage' => __('owner.onboarding.step1_stage'), 'tag' => __('owner.onboarding.step1_tag')],
+        ['key' => __('owner.onboarding.step2_title'), 'short' => __('owner.onboarding.step2_desc'), 'stage' => __('owner.onboarding.step2_stage'), 'tag' => __('owner.onboarding.step2_tag')],
+        ['key' => __('owner.onboarding.step3_title'), 'short' => __('owner.onboarding.step3_desc'), 'stage' => __('owner.onboarding.step3_stage'), 'tag' => __('owner.onboarding.step3_tag')],
+        ['key' => __('owner.onboarding.step4_title'), 'short' => __('owner.onboarding.step4_desc'), 'stage' => __('owner.onboarding.step4_stage'), 'tag' => __('owner.onboarding.step4_tag')],
+        ['key' => __('owner.onboarding.step5_title'), 'short' => __('owner.onboarding.step5_desc'), 'stage' => __('owner.onboarding.step5_stage'), 'tag' => __('owner.onboarding.step5_tag')],
     ];
 @endphp
 
@@ -89,7 +89,7 @@
                 </div>
                 <a href="{{ route('logout') }}"
                    onclick="event.preventDefault(); document.getElementById('onb-logout').submit();">
-                    {{ __('menu_owner.nav.log_out') }}
+                    {{ __('owner.nav.log_out') }}
                 </a>
                 <form id="onb-logout" method="POST" action="{{ route('logout') }}" style="display:none">@csrf</form>
             </div>
@@ -115,20 +115,20 @@
 
             {{-- ── Step 1 — Restaurant name + language ── --}}
             <div x-show="step === 1" x-cloak>
-                <h1 class="title">{!! __('menu_owner.onboarding.step1_heading', ['em' => '<span class="it">'.__('menu_owner.onboarding.step1_em').'</span>']) !!}</h1>
-                <p class="lead">{{ __('menu_owner.onboarding.step1_desc') }}</p>
+                <h1 class="title">{!! __('owner.onboarding.step1_heading', ['em' => '<span class="it">'.__('owner.onboarding.step1_em').'</span>']) !!}</h1>
+                <p class="lead">{{ __('owner.onboarding.step1_desc') }}</p>
                 <div class="fields">
-                    <x-ui.field name="name" :label="__('menu_owner.onboarding.name_label')" required>
+                    <x-ui.field name="name" :label="__('owner.onboarding.name_label')" required>
                         <x-ui.input name="name" x-model="s1.name"
-                            :placeholder="__('menu_owner.onboarding.name_placeholder')"
+                            :placeholder="__('owner.onboarding.name_placeholder')"
                             @input="onNameInput()"
                             autofocus required />
                         <div class="ui-help error" x-show="errors.name" x-text="errors.name" x-cloak></div>
-                        <p class="ui-help" x-show="!errors.name" x-cloak>{{ __('menu_owner.onboarding.name_hint') }}</p>
+                        <p class="ui-help" x-show="!errors.name" x-cloak>{{ __('owner.onboarding.name_hint') }}</p>
                     </x-ui.field>
 
                     {{-- Menu link (slug) --}}
-                    <x-ui.field name="slug" :label="__('menu_owner.onboarding.slug_label')" required>
+                    <x-ui.field name="slug" :label="__('owner.onboarding.slug_label')" required>
                         <div :class="{
                             'slug-state-ok':  slugStatus === 'available',
                             'slug-state-bad': slugStatus === 'taken'
@@ -156,9 +156,9 @@
                         </div>
                         <div class="ui-help error" x-show="errors.slug" x-text="errors.slug" x-cloak></div>
                         <div x-show="!errors.slug" x-cloak>
-                            <p class="ui-help" x-show="slugStatus === 'idle' || slugStatus === 'checking'">{{ __('menu_owner.onboarding.slug_hint') }}</p>
-                            <p class="ui-help" style="color:#16a34a" x-show="slugStatus === 'available'">{{ __('menu_owner.onboarding.slug_available') }}</p>
-                            <p class="ui-help" style="color:#dc2626" x-show="slugStatus === 'taken'">{{ __('menu_owner.onboarding.slug_taken_hint') }}</p>
+                            <p class="ui-help" x-show="slugStatus === 'idle' || slugStatus === 'checking'">{{ __('owner.onboarding.slug_hint') }}</p>
+                            <p class="ui-help" style="color:#16a34a" x-show="slugStatus === 'available'">{{ __('owner.onboarding.slug_available') }}</p>
+                            <p class="ui-help" style="color:#dc2626" x-show="slugStatus === 'taken'">{{ __('owner.onboarding.slug_taken_hint') }}</p>
                         </div>
                     </x-ui.field>
 
@@ -170,64 +170,64 @@
                  @change="onContactChange($event)"
                  @combo-change="onCurrencyChange($event)"
                  @input="errors.phone = ''">
-                <h1 class="title">{!! __('menu_owner.onboarding.step2_heading', ['em' => '<span class="it">'.__('menu_owner.onboarding.step2_em').'</span>']) !!}</h1>
-                <p class="lead">{{ __('menu_owner.onboarding.step2_desc') }}</p>
+                <h1 class="title">{!! __('owner.onboarding.step2_heading', ['em' => '<span class="it">'.__('owner.onboarding.step2_em').'</span>']) !!}</h1>
+                <p class="lead">{{ __('owner.onboarding.step2_desc') }}</p>
                 <div class="fields">
-                    <x-ui.field :label="__('menu_owner.onboarding.phone_label')" required>
+                    <x-ui.field :label="__('owner.onboarding.phone_label')" required>
                         <x-ui.phone name="phone" cc-name="country_code"
                             :value="$restaurant?->phone"
                             :cc-value="$restaurant?->country_code ?? 'LB'" />
                         <div class="ui-help error" x-show="errors.phone" x-text="errors.phone" x-cloak></div>
-                        <p class="ui-help" x-show="!errors.phone" x-cloak>{{ __('menu_owner.onboarding.phone_hint') }}</p>
+                        <p class="ui-help" x-show="!errors.phone" x-cloak>{{ __('owner.onboarding.phone_hint') }}</p>
                     </x-ui.field>
 
-                    <x-ui.field name="currency" :label="__('menu_owner.onboarding.currency_label')" required>
+                    <x-ui.field name="currency" :label="__('owner.onboarding.currency_label')" required>
                         <x-ui.combo name="currency"
                             :options="$currencyOptions"
                             :value="$restaurant?->currency ?? 'USD'"
-                            :placeholder="__('menu_owner.restaurant.currency_placeholder')"
+                            :placeholder="__('owner.restaurant.currency_placeholder')"
                             :up="true" />
                         <div class="ui-help error" x-show="errors.currency" x-text="errors.currency" x-cloak></div>
-                        <p class="ui-help" x-show="!errors.currency" x-cloak>{{ __('menu_owner.onboarding.currency_hint') }}</p>
+                        <p class="ui-help" x-show="!errors.currency" x-cloak>{{ __('owner.onboarding.currency_hint') }}</p>
                     </x-ui.field>
                 </div>
             </div>
 
             {{-- ── Step 3 — Branding ── --}}
             <div x-show="step === 3" x-cloak>
-                <h1 class="title">{!! __('menu_owner.onboarding.step3_heading', ['em' => '<span class="it">'.__('menu_owner.onboarding.step3_em').'</span>']) !!}</h1>
-                <p class="lead">{{ __('menu_owner.onboarding.step3_desc') }}</p>
+                <h1 class="title">{!! __('owner.onboarding.step3_heading', ['em' => '<span class="it">'.__('owner.onboarding.step3_em').'</span>']) !!}</h1>
+                <p class="lead">{{ __('owner.onboarding.step3_desc') }}</p>
                 <div class="fields">
-                    <x-ui.field :label="__('menu_owner.onboarding.logo_label')" required>
+                    <x-ui.field :label="__('owner.onboarding.logo_label')" required>
                         <x-ui.dropzone name="logo" context="logo"
                             :value="$restaurant?->getFirstMediaUrl('logo') ?: null"
-                            :hint="__('menu_owner.onboarding.logo_hint')" />
+                            :hint="__('owner.onboarding.logo_hint')" />
                         <div class="ui-help error" x-show="errors.logo" x-text="errors.logo" x-cloak></div>
-                        <p class="ui-help" x-show="!errors.logo" x-cloak>{{ __('menu_owner.onboarding.logo_field_hint') }}</p>
+                        <p class="ui-help" x-show="!errors.logo" x-cloak>{{ __('owner.onboarding.logo_field_hint') }}</p>
                     </x-ui.field>
 
-                    <x-ui.field :label="__('menu_owner.onboarding.cover_label')"
-                                :optional="__('menu_owner.onboarding.optional')">
+                    <x-ui.field :label="__('owner.onboarding.cover_label')"
+                                :optional="__('owner.onboarding.optional')">
                         <x-ui.dropzone name="cover_image" context="cover_image"
                             :value="$restaurant?->getFirstMediaUrl('cover_image') ?: null"
-                            :hint="__('menu_owner.onboarding.cover_hint')" />
-                        <p class="ui-help">{{ __('menu_owner.onboarding.cover_field_hint') }}</p>
+                            :hint="__('owner.onboarding.cover_hint')" />
+                        <p class="ui-help">{{ __('owner.onboarding.cover_field_hint') }}</p>
                     </x-ui.field>
                 </div>
             </div>
 
             {{-- ── Step 4 — Cuisine + Dietary tags ── --}}
             <div x-show="step === 4" x-cloak>
-                <h1 class="title">{!! __('menu_owner.onboarding.step4_heading', ['em' => '<span class="it">'.__('menu_owner.onboarding.step4_em').'</span>']) !!}</h1>
-                <p class="lead">{{ __('menu_owner.onboarding.step4_desc') }}</p>
-                <p class="ui-help" style="margin-bottom:18px">{{ __('menu_owner.onboarding.tags_hint') }}</p>
+                <h1 class="title">{!! __('owner.onboarding.step4_heading', ['em' => '<span class="it">'.__('owner.onboarding.step4_em').'</span>']) !!}</h1>
+                <p class="lead">{{ __('owner.onboarding.step4_desc') }}</p>
+                <p class="ui-help" style="margin-bottom:18px">{{ __('owner.onboarding.tags_hint') }}</p>
                 <div class="f-error" x-show="errors.cdTags" x-text="errors.cdTags" x-cloak style="margin-bottom:12px"></div>
                 @foreach(['cuisine', 'dietary'] as $cat)
                 @if(isset($tags[$cat]) && $tags[$cat]->isNotEmpty())
                 <div class="tag-section">
                     <div class="tag-cat">
-                        {{ __('menu_owner.onboarding.tag_'.$cat) }}
-                        <span class="tag-need" x-show="!_hasTagInEach(['{{ $cat }}'], cdTagIds)" x-cloak>· {{ __('menu_owner.onboarding.tags_pick_one') }}</span>
+                        {{ __('owner.onboarding.tag_'.$cat) }}
+                        <span class="tag-need" x-show="!_hasTagInEach(['{{ $cat }}'], cdTagIds)" x-cloak>· {{ __('owner.onboarding.tags_pick_one') }}</span>
                     </div>
                     <div class="tag-chips">
                         @foreach($tags[$cat] as $tag)
@@ -243,16 +243,16 @@
 
             {{-- ── Step 5 — Vibe + Style tags ── --}}
             <div x-show="step === 5" x-cloak>
-                <h1 class="title">{!! __('menu_owner.onboarding.step5_heading', ['em' => '<span class="it">'.__('menu_owner.onboarding.step5_em').'</span>']) !!}</h1>
-                <p class="lead">{{ __('menu_owner.onboarding.step5_desc') }}</p>
-                <p class="ui-help" style="margin-bottom:18px">{{ __('menu_owner.onboarding.vibe_hint') }}</p>
+                <h1 class="title">{!! __('owner.onboarding.step5_heading', ['em' => '<span class="it">'.__('owner.onboarding.step5_em').'</span>']) !!}</h1>
+                <p class="lead">{{ __('owner.onboarding.step5_desc') }}</p>
+                <p class="ui-help" style="margin-bottom:18px">{{ __('owner.onboarding.vibe_hint') }}</p>
                 <div class="f-error" x-show="errors.vsTags" x-text="errors.vsTags" x-cloak style="margin-bottom:12px"></div>
                 @foreach(['vibe', 'style'] as $cat)
                 @if(isset($tags[$cat]) && $tags[$cat]->isNotEmpty())
                 <div class="tag-section">
                     <div class="tag-cat">
-                        {{ __('menu_owner.onboarding.tag_'.$cat) }}
-                        <span class="tag-need" x-show="!_hasTagInEach(['{{ $cat }}'], vsTagIds)" x-cloak>· {{ __('menu_owner.onboarding.tags_pick_one') }}</span>
+                        {{ __('owner.onboarding.tag_'.$cat) }}
+                        <span class="tag-need" x-show="!_hasTagInEach(['{{ $cat }}'], vsTagIds)" x-cloak>· {{ __('owner.onboarding.tags_pick_one') }}</span>
                     </div>
                     <div class="tag-chips">
                         @foreach($tags[$cat] as $tag)
@@ -274,12 +274,12 @@
                 <div class="meter-track">
                     <div class="meter-fill" :style="`width: ${progress}%`"></div>
                 </div>
-                <span x-text="'{{ __('menu_owner.onboarding.pct_complete') }}'.replace(':pct', progress)"></span>
+                <span x-text="'{{ __('owner.onboarding.pct_complete') }}'.replace(':pct', progress)"></span>
             </div>
             <div style="display:flex;gap:8px">
                 <button type="button" class="btn btn-ghost" x-show="step > 1" @click="back()" x-cloak>
                     <svg class="arr-left" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-                    {{ __('menu_owner.onboarding.back') }}
+                    {{ __('owner.onboarding.back') }}
                 </button>
                 <button type="button" class="btn btn-ink" @click="advance()"
                         :disabled="loading">
@@ -287,10 +287,10 @@
                         <svg class="spin" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" d="M21 12a9 9 0 11-6.219-8.56"/></svg>
                     </template>
                     <template x-if="!loading">
-                        <span x-text="step === totalSteps ? '{{ __('menu_owner.onboarding.finish') }}' : '{{ __('menu_owner.onboarding.continue') }}'"></span>
+                        <span x-text="step === totalSteps ? '{{ __('owner.onboarding.finish') }}' : '{{ __('owner.onboarding.continue') }}'"></span>
                     </template>
                     <template x-if="loading">
-                        <span>{{ __('menu_owner.onboarding.please_wait') }}</span>
+                        <span>{{ __('owner.onboarding.please_wait') }}</span>
                     </template>
                     <template x-if="!loading">
                         <svg class="arr" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
@@ -308,7 +308,7 @@
         <div class="right-rail">
             <div class="rail-eyebrow">
                 <span class="dash"></span>
-                {{ __('menu_owner.onboarding.onboarding_label') }}
+                {{ __('owner.onboarding.onboarding_label') }}
             </div>
             <div class="dots">
                 @for($i = 1; $i <= $totalSteps; $i++)
@@ -336,7 +336,7 @@
                 <h2 class="stage-title" x-text="cur.stage"></h2>
                 <span class="stage-tag">
                     <span class="pip"></span>
-                    <span x-text="`{{ __('menu_owner.onboarding.step_label') }} ${String(step).padStart(2,'0')}`"></span>
+                    <span x-text="`{{ __('owner.onboarding.step_label') }} ${String(step).padStart(2,'0')}`"></span>
                 </span>
             </div>
 
@@ -344,7 +344,7 @@
             <div class="phone-wrap">
                 <span class="annot tl">
                     <span class="pulse"></span>
-                    <span x-text="step === 1 ? s1.name || '{{ $appName }}' : step === 2 ? '{{ __('menu_owner.onboarding.step2_title') }}' : step === 3 ? '{{ __('menu_owner.onboarding.logo_label') }}' : step === 4 ? tagsLabel(cdTagIds.length) : step === 5 ? tagsLabel(vsTagIds.length) : '{{ __('menu_owner.onboarding.stat_stage') }}'"></span>
+                    <span x-text="step === 1 ? s1.name || '{{ $appName }}' : step === 2 ? '{{ __('owner.onboarding.step2_title') }}' : step === 3 ? '{{ __('owner.onboarding.logo_label') }}' : step === 4 ? tagsLabel(cdTagIds.length) : step === 5 ? tagsLabel(vsTagIds.length) : '{{ __('owner.onboarding.stat_stage') }}'"></span>
                 </span>
 
                 <div class="phone">
@@ -377,22 +377,22 @@
 
                 <span class="annot br">
                     <span class="pulse"></span>
-                    <span x-text="step === 2 ? selectedCurrency : '{{ __('menu_owner.onboarding.pct_complete') }}'.replace(':pct', progress)"></span>
+                    <span x-text="step === 2 ? selectedCurrency : '{{ __('owner.onboarding.pct_complete') }}'.replace(':pct', progress)"></span>
                 </span>
             </div>
 
             {{-- Stat strip --}}
             <div class="stage-foot">
                 <div style="padding: 5px;">
-                    <div class="k">{{ __('menu_owner.onboarding.stat_setup') }}</div>
+                    <div class="k">{{ __('owner.onboarding.stat_setup') }}</div>
                     <div class="v"><span class="it" x-text="progress"></span><span class="u">%</span></div>
                 </div>
                 <div style="padding: 5px;">
-                    <div class="k">{{ __('menu_owner.onboarding.stat_time_left') }}</div>
+                    <div class="k">{{ __('owner.onboarding.stat_time_left') }}</div>
                     <div class="v"><span class="it" x-text="totalSteps - step + 1"></span><span class="u">min</span></div>
                 </div>
                 <div style="padding: 5px;">
-                    <div class="k">{{ __('menu_owner.onboarding.stat_stage') }}</div>
+                    <div class="k">{{ __('owner.onboarding.stat_stage') }}</div>
                     <div class="v" style="font-family:var(--font-display);font-style:italic;color:var(--gold-soft);font-size:16px" x-text="cur.tag"></div>
                 </div>
             </div>
@@ -432,22 +432,22 @@ window._onb = {
             hasLogo:            @json($restaurant?->hasMedia('logo') ?? false),
         },
         i18n: {
-            nameRequired:     @json(__('menu_owner.onboarding.name_required')),
-            nameMin:          @json(__('menu_owner.onboarding.name_min')),
-            phoneRequired:    @json(__('menu_owner.onboarding.phone_required')),
-            phoneInvalid:     @json(__('menu_owner.onboarding.phone_invalid')),
-            currencyRequired: @json(__('menu_owner.onboarding.currency_required')),
-            currencyInvalid:  @json(__('menu_owner.onboarding.currency_invalid')),
-            logoRequired:     @json(__('menu_owner.onboarding.logo_required')),
-            tagsRequired:     @json(__('menu_owner.onboarding.tags_required')),
-            tagsEachCategory: @json(__('menu_owner.onboarding.tags_each_category')),
-            uploadError:      @json(__('menu_owner.onboarding.upload_error')),
-            somethingWrong:   @json(__('menu_owner.onboarding.something_wrong')),
-            slugRequired:     @json(__('menu_owner.onboarding.slug_required')),
-            slugTaken:        @json(__('menu_owner.onboarding.slug_taken')),
-            slugChecking:     @json(__('menu_owner.onboarding.slug_checking')),
-            tagsOne:          @json(__('menu_owner.onboarding.tags_count_one')),
-            tagsMany:         @json(__('menu_owner.onboarding.tags_count')),
+            nameRequired:     @json(__('owner.onboarding.name_required')),
+            nameMin:          @json(__('owner.onboarding.name_min')),
+            phoneRequired:    @json(__('owner.onboarding.phone_required')),
+            phoneInvalid:     @json(__('owner.onboarding.phone_invalid')),
+            currencyRequired: @json(__('owner.onboarding.currency_required')),
+            currencyInvalid:  @json(__('owner.onboarding.currency_invalid')),
+            logoRequired:     @json(__('owner.onboarding.logo_required')),
+            tagsRequired:     @json(__('owner.onboarding.tags_required')),
+            tagsEachCategory: @json(__('owner.onboarding.tags_each_category')),
+            uploadError:      @json(__('owner.onboarding.upload_error')),
+            somethingWrong:   @json(__('owner.onboarding.something_wrong')),
+            slugRequired:     @json(__('owner.onboarding.slug_required')),
+            slugTaken:        @json(__('owner.onboarding.slug_taken')),
+            slugChecking:     @json(__('owner.onboarding.slug_checking')),
+            tagsOne:          @json(__('owner.onboarding.tags_count_one')),
+            tagsMany:         @json(__('owner.onboarding.tags_count')),
         },
     };
 </script>

@@ -4,7 +4,7 @@
 //
 // To add a new language to the entire project:
 //   1. Add an entry to the $locales array below
-//   2. Create  lang/{code}/auth.php  and  lang/{code}/menu_owner.php
+//   2. Create  lang/{code}/auth.php  and  lang/{code}/owner.php
 //
 // Everything else (supported list, RTL detection, all language pickers in the
 // dashboard and onboarding) updates automatically — nothing else to touch.

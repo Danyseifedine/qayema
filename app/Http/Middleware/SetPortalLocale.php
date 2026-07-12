@@ -6,10 +6,11 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class SetMenuOwnerLocale
+class SetPortalLocale
 {
     /**
-     * Handle an incoming request.
+     * Apply the visitor's chosen locale (persisted in the session by the
+     * locale.switch route) to public portal pages, auth, and onboarding.
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */

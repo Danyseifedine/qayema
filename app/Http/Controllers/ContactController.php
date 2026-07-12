@@ -28,7 +28,7 @@ class ContactController extends Controller
         try {
             $contacts->submit($request->safe()->only(['name', 'email', 'message']), (string) $request->ip());
         } catch (TooManyContactMessages $e) {
-            // Locale is resolved server-side (owner.locale middleware), so the
+            // Locale is resolved server-side (portal.locale middleware), so the
             // message comes back already translated for both AJAX and no-JS paths.
             $message = __('portal.contact.js.rate_limit', ['hours' => $e->retryAfterHours]);
 

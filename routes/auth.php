@@ -6,7 +6,7 @@ use App\Http\Controllers\Auth\OnboardingController;
 use App\Http\Controllers\Auth\PasswordController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['guest', 'owner.locale'])->group(function () {
+Route::middleware(['guest', 'portal.locale'])->group(function () {
     Route::get('register', fn () => redirect()->route('login'))->name('register');
 
     Route::get('get-started', [AuthenticatedSessionController::class, 'create'])->name('login');
@@ -21,7 +21,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });
 
-Route::middleware(['auth', 'owner.locale'])->group(function () {
+Route::middleware(['auth', 'portal.locale'])->group(function () {
     Route::get('/onboarding', [OnboardingController::class, 'show'])->name('onboarding');
     Route::post('/onboarding/advance', [OnboardingController::class, 'advance'])->middleware('throttle:mutations')->name('onboarding.advance');
     Route::get('/onboarding/check-slug', [OnboardingController::class, 'checkSlug'])->name('onboarding.check-slug');

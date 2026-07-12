@@ -16,6 +16,7 @@ class RestaurantFeature extends Model
         'feature_id',
         'value',
         'source',
+        'reference',
         'starts_at',
         'ends_at',
     ];

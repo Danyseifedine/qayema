@@ -428,3 +428,29 @@ Forms\Components\Select::make('user_id')
 - Table filters: `Tables/Filters/`
 - Actions: `Actions/`
 </laravel-boost-guidelines>
+
+# Qayema — Project Architecture (current)
+
+Bilingual (en/ar) restaurant-menu SaaS. Two codebases in this repo folder:
+
+## Surfaces
+- **Laravel app (this repo)** — public portal (landing `/`, legal pages, contact), auth (Google OAuth + email via `/get-started`), the onboarding wizard, the JSON API for the SPA (`routes/api.php`), and the Filament v4 admin panel (`/admin`).
+- **`qayema-dashboard/` (separate React SPA)** — the owner dashboard. React 19 + Vite + TS + Tailwind v3 + shadcn/ui + zustand + react-i18next. Feature folders under `src/features/*` (page + `api/` + `hooks/` + `components/` + `types.ts` + barrel `index.ts`). Talks to the API with Sanctum **session cookies** (stateful, no tokens); CSRF token fetched from `GET /api/csrf-token` body (cross-domain).
+- The old Blade owner dashboard, public QR menu page, and MenuScan/Gemini pipeline were **removed** — do not reintroduce references.
+
+## Billing (Laravel Cashier Paddle)
+- `User` is the Billable. One-time purchases only (no subscriptions).
+- Catalog source of truth: `config/paddle.php` (cart id → Paddle `price_id` + feature slug + step/max). SPA `features/upgrade/catalog.ts` only mirrors it for display.
+- Flow: SPA cart → `POST /api/checkout` (validates, `createAsCustomer()`, translates packs → units) → Paddle.js overlay → Paddle webhook `POST /paddle/webhook` → `TransactionCompleted` → `GrantPurchasedFeatures` listener → `FeatureFulfillment` writes `restaurant_features` grants (idempotent via `reference` = Paddle transaction id).
+
+## Limits / entitlements
+- `Package` service (`app/Services/Global/Package.php`): effective package = template's bundled features (`template_feature`) overlaid by valid `restaurant_features` grants. Booleans merge OR, plan limits merge MAX, purchased limit grants (`source='purchase'`) stack **additively** on top.
+- Floor defaults live in DB (`package_defaults`, editable in admin). Cached per restaurant (`package:{id}`, TTL 300s); flushed by `RestaurantFeature` saved/deleted hooks and on `template_id` change.
+- New restaurants snapshot the defaults as `source='default'` grants and have **no template** until the owner picks one — the SPA locks all tabs except Templates until then.
+
+## Conventions & gotchas
+- Media: Spatie medialibrary on Cloudflare R2 (`s3` disk). Temp-upload flow: SPA/onboarding POSTs an image → optimized to WebP → parked per-user → promoted by key on the next create/update.
+- Translatable columns via Spatie translatable (`{en, ar}` JSON).
+- Rate limiters in `AppServiceProvider` (`api`/`mutations`/`uploads`/`auth`/`contact`); high-volume ones feed the abuse auto-ban.
+- Session lifetime is intentionally 1 year (SPA rides it; owners must not be logged out on idle).
+- Locale middleware alias is `portal.locale` (`SetPortalLocale`); session key stays `owner_locale`.

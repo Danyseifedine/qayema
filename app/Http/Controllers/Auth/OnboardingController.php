@@ -121,7 +121,7 @@ class OnboardingController extends Controller
                     'logo_key' => [$logoRule, 'string', 'regex:/^[a-f0-9\-]{36}$/'],
                     'cover_image_key' => ['nullable', 'string', 'regex:/^[a-f0-9\-]{36}$/'],
                 ], [
-                    'logo_key.required' => __('menu_owner.onboarding.logo_required'),
+                    'logo_key.required' => __('owner.onboarding.logo_required'),
                 ]);
 
                 $onboarding->saveBranding($user, $user->restaurant, $validated['logo_key'] ?? null, $validated['cover_image_key'] ?? null);
@@ -129,10 +129,10 @@ class OnboardingController extends Controller
 
             case 3: // Step 4 — cuisine + dietary tags (at least one of each required)
                 $validated = $request->validate([
-                    'tag_ids' => ['required', 'array', 'max:30', new HasTagInEachCategory(['cuisine', 'dietary'], __('menu_owner.onboarding.tags_each_category'))],
+                    'tag_ids' => ['required', 'array', 'max:30', new HasTagInEachCategory(['cuisine', 'dietary'], __('owner.onboarding.tags_each_category'))],
                     'tag_ids.*' => ['integer', 'exists:tags,id'],
                 ], [
-                    'tag_ids.required' => __('menu_owner.onboarding.tags_each_category'),
+                    'tag_ids.required' => __('owner.onboarding.tags_each_category'),
                 ]);
 
                 $onboarding->syncTags($user->restaurant, ['cuisine', 'dietary'], $validated['tag_ids']);
@@ -140,10 +140,10 @@ class OnboardingController extends Controller
 
             case 4: // Step 5 — vibe + style tags (final step → completes onboarding)
                 $validated = $request->validate([
-                    'tag_ids' => ['required', 'array', 'max:30', new HasTagInEachCategory(['vibe', 'style'], __('menu_owner.onboarding.tags_each_category'))],
+                    'tag_ids' => ['required', 'array', 'max:30', new HasTagInEachCategory(['vibe', 'style'], __('owner.onboarding.tags_each_category'))],
                     'tag_ids.*' => ['integer', 'exists:tags,id'],
                 ], [
-                    'tag_ids.required' => __('menu_owner.onboarding.tags_each_category'),
+                    'tag_ids.required' => __('owner.onboarding.tags_each_category'),
                 ]);
 
                 $onboarding->syncTags($user->restaurant, ['vibe', 'style'], $validated['tag_ids']);

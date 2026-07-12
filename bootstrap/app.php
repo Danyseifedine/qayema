@@ -32,7 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->api(prepend: [\App\Http\Middleware\SecurityHeaders::class]);
 
         $middleware->alias([
-            'owner.locale' => \App\Http\Middleware\SetMenuOwnerLocale::class,
+            'portal.locale' => \App\Http\Middleware\SetPortalLocale::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -34,7 +34,8 @@ class Package
 
     /**
      * Effective package: the assigned template's bundled features overlaid by
-     * valid restaurant_features grants. Booleans merge with OR, limits with MAX.
+     * valid restaurant_features grants. Booleans merge with OR, plan limits with
+     * MAX, and purchased limit slots stack additively on top of that base.
      *
      * @return array<string, bool|int>
      */
@@ -82,10 +83,26 @@ class Package
             ->with('feature')
             ->get();
 
+        // Purchased limit slots stack on top of the plan's base limit, so they
+        // are summed and applied after the MAX/OR merge of every other source.
+        $purchasedLimits = [];
+
         foreach ($grants as $grant) {
-            if ($grant->feature) {
-                $package = $this->merge($package, $grant->feature->slug, $grant->feature->kind, $grant->value);
+            if (! $grant->feature) {
+                continue;
             }
+
+            if ($grant->source === 'purchase' && $grant->feature->kind === 'limit') {
+                $purchasedLimits[$grant->feature->slug] = ($purchasedLimits[$grant->feature->slug] ?? 0) + (int) $grant->value;
+
+                continue;
+            }
+
+            $package = $this->merge($package, $grant->feature->slug, $grant->feature->kind, $grant->value);
+        }
+
+        foreach ($purchasedLimits as $slug => $bonus) {
+            $package[$slug] = (int) ($package[$slug] ?? PackageDefault::limit($slug)) + $bonus;
         }
 
         return $package;

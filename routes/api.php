@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\DishController;
 use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\SocialLinkController;
@@ -62,6 +63,12 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // restaurant has none and must choose before the dashboard unlocks.
     Route::get('/templates', [TemplateController::class, 'index'])->name('api.templates.index');
     Route::post('/templates/select', [TemplateController::class, 'select'])->name('api.templates.select');
+
+    // Feature store — prepare a Paddle overlay checkout for purchasable add-ons
+    // (e.g. extra dish slots). Fulfillment is server-side via the Paddle webhook.
+    Route::post('/checkout', [CheckoutController::class, 'store'])
+        ->middleware('throttle:mutations')
+        ->name('api.checkout');
 
     // Social links (scoped to the authenticated user's restaurant).
     Route::get('/social-links', [SocialLinkController::class, 'index'])->name('api.social-links.index');

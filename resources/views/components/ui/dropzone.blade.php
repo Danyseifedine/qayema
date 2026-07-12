@@ -79,7 +79,7 @@ $keyName  = $name ? $name.'_key' : null;
              const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
              if (!allowed.includes(file.type)) {
                  this.status   = 'error';
-                 this.errorMsg = '{{ __('menu_owner.dropzone.invalid_type') }}';
+                 this.errorMsg = '{{ __('owner.dropzone.invalid_type') }}';
                  this.preview  = null;
                  return;
              }
@@ -125,7 +125,7 @@ $keyName  = $name ? $name.'_key' : null;
 
              } catch (e) {
                  this.status   = 'error';
-                 this.errorMsg = e.message ?? '{{ __('menu_owner.dropzone.upload_error') }}';
+                 this.errorMsg = e.message ?? '{{ __('owner.dropzone.upload_error') }}';
                  this.preview  = null;
                  this.dispName = null;
                  console.error('[dropzone]', e);
@@ -162,7 +162,7 @@ $keyName  = $name ? $name.'_key' : null;
                         <path d="M12 15V3M7 8l5-5 5 5M5 17v3a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3"/>
                     </svg>
                 </div>
-                <div class="up-title">{{ __('menu_owner.dropzone.title') }}</div>
+                <div class="up-title">{{ __('owner.dropzone.title') }}</div>
                 <div class="up-meta">{{ $hint }}</div>
             </div>
         </template>
@@ -171,7 +171,7 @@ $keyName  = $name ? $name.'_key' : null;
         <template x-if="status === 'uploading'">
             <div style="display:contents">
                 <div class="up-spinner"></div>
-                <div class="up-title" style="color:var(--olive-deep)">{{ __('menu_owner.dropzone.optimizing') }}</div>
+                <div class="up-title" style="color:var(--olive-deep)">{{ __('owner.dropzone.optimizing') }}</div>
                 <div class="up-meta" x-text="'Original: ' + (origSize ?? '—')"></div>
             </div>
         </template>
@@ -186,7 +186,7 @@ $keyName  = $name ? $name.'_key' : null;
                     </svg>
                 </div>
                 <div class="up-title" style="color:var(--danger)" x-text="errorMsg"></div>
-                <div class="up-meta">{{ __('menu_owner.dropzone.retry') }}</div>
+                <div class="up-meta">{{ __('owner.dropzone.retry') }}</div>
             </div>
         </template>
 
@@ -219,12 +219,12 @@ $keyName  = $name ? $name.'_key' : null;
                             <span x-show="origSize" x-text="origSize"
                                   style="text-decoration:line-through;color:var(--muted-2)"></span>
                             <span x-show="origSize" class="dot-sep"></span>
-                            <span x-text="isExisting ? '{{ __('menu_owner.dropzone.uploaded') }}' : (optSize ?? '')"></span>
+                            <span x-text="isExisting ? '{{ __('owner.dropzone.uploaded') }}' : (optSize ?? '')"></span>
                             <template x-if="savedPct > 0">
                                 <span class="dot-sep"></span>
                             </template>
                             <template x-if="savedPct > 0">
-                                <span class="pv-savings">↓ <span x-text="savedPct + '%'"></span> {{ __('menu_owner.dropzone.smaller') }}</span>
+                                <span class="pv-savings">↓ <span x-text="savedPct + '%'"></span> {{ __('owner.dropzone.smaller') }}</span>
                             </template>
                         </span>
                     </template>
@@ -241,7 +241,7 @@ $keyName  = $name ? $name.'_key' : null;
                          stroke-linecap="round" stroke-linejoin="round">
                         <path d="M12 15V3M7 8l5-5 5 5M5 17v3a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3"/>
                     </svg>
-                    {{ __('menu_owner.dropzone.replace') }}
+                    {{ __('owner.dropzone.replace') }}
                     <input type="file" accept="{{ $accept }}" style="display:none"
                            @change="handleFile($event.target.files[0])">
                 </label>
@@ -250,7 +250,7 @@ $keyName  = $name ? $name.'_key' : null;
                          stroke-linecap="round" stroke-linejoin="round">
                         <path d="M4 7h16M9 7V4h6v3M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13M10 11v6M14 11v6"/>
                     </svg>
-                    {{ __('menu_owner.dropzone.remove') }}
+                    {{ __('owner.dropzone.remove') }}
                 </button>
             </div>
         </div>

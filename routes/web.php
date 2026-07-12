@@ -6,10 +6,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('portal.welcome');
-})->middleware('owner.locale');
+})->middleware('portal.locale');
 
 // Guest-accessible locale switch (persists through login)
-Route::middleware(['owner.locale'])->group(function () {
+Route::middleware(['portal.locale'])->group(function () {
     Route::get('/locale/{locale}', function (string $locale) {
         if (in_array($locale, config('locales.supported', ['en']), true)) {
             session()->put('owner_locale', $locale);
@@ -26,7 +26,7 @@ Route::middleware(['owner.locale'])->group(function () {
 require __DIR__.'/auth.php';
 
 // Authenticated owner endpoints retained after the dashboard removal.
-Route::middleware(['auth', 'owner.locale'])->group(function () {
+Route::middleware(['auth', 'portal.locale'])->group(function () {
     // Impersonation (admin → owner), driven from the Filament admin panel.
     Route::impersonate();
 
@@ -38,7 +38,7 @@ Route::middleware(['auth', 'owner.locale'])->group(function () {
 });
 
 // Legal + contact (public portal pages) — locale resolved from session
-Route::middleware('owner.locale')->group(function () {
+Route::middleware('portal.locale')->group(function () {
     Route::get('/privacy-policy', fn () => view('portal.legal.privacy'))->name('privacy');
     Route::get('/terms-of-service', fn () => view('portal.legal.terms'))->name('terms');
     Route::get('/cookie-policy', fn () => view('portal.legal.cookies'))->name('cookies');

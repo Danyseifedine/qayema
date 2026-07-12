@@ -216,17 +216,6 @@ erDiagram
         timestamp updated_at
     }
 
-    menu_scans {
-        bigint id PK
-        bigint restaurant_id FK "cascade delete"
-        varchar status "pending, processing, completed, failed"
-        varchar image_path "nullable"
-        json result "nullable, AI-extracted menu"
-        text error "nullable"
-        timestamp created_at
-        timestamp updated_at
-    }
-
     templates |o--o{ restaurants : "styles (nullable)"
     restaurant_types |o--o{ restaurants : "classifies (nullable)"
     restaurants ||--o{ restaurant_tag : "tagged"
@@ -234,7 +223,6 @@ erDiagram
     templates ||--o{ template_tag : "recommended by"
     tags ||--o{ template_tag : ""
     restaurants ||--o{ restaurant_statistics : "tracks visits"
-    restaurants ||--o{ menu_scans : "AI scans"
 ```
 
 ## 3. Security & framework tables
