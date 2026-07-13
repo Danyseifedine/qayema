@@ -43,6 +43,28 @@ return [
             'max' => 1000,
         ],
 
+        'social' => [
+            'price_id' => [
+                'sandbox' => 'pri_01kxbq0t0tcytsf2mtn12k41dt',
+                'production' => null,
+            ],
+            'slug' => 'social_link_limit',
+            'kind' => 'limit',
+            'step' => 2,
+            'max' => 2,
+        ],
+
+        'qr' => [
+            'price_id' => [
+                'sandbox' => 'pri_01kxc3vk9c27xnsbmhg2mthb90',
+                'production' => null,
+            ],
+            'slug' => 'qr_studio',
+            'kind' => 'boolean',
+            'step' => 1,
+            'max' => 1,
+        ],
+
     ],
 
 ];

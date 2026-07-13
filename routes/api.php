@@ -1,9 +1,12 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CatalogController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\DishController;
+use App\Http\Controllers\Api\PurchaseController;
+use App\Http\Controllers\Api\QrController;
 use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\SocialLinkController;
 use App\Http\Controllers\Api\TemplateController;
@@ -64,11 +67,24 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::get('/templates', [TemplateController::class, 'index'])->name('api.templates.index');
     Route::post('/templates/select', [TemplateController::class, 'select'])->name('api.templates.select');
 
-    // Feature store — prepare a Paddle overlay checkout for purchasable add-ons
-    // (e.g. extra dish slots). Fulfillment is server-side via the Paddle webhook.
+    // Feature store — the purchasable add-on catalog with live Paddle amounts,
+    // and the checkout that prepares a Paddle overlay. Fulfillment is
+    // server-side via the Paddle webhook.
+    Route::get('/catalog', [CatalogController::class, 'index'])->name('api.catalog');
     Route::post('/checkout', [CheckoutController::class, 'store'])
         ->middleware('throttle:mutations')
         ->name('api.checkout');
+
+    // Purchase history — Paddle transactions with the grants they delivered,
+    // plus short-lived invoice PDF links fetched from Paddle on demand.
+    Route::get('/purchases', [PurchaseController::class, 'index'])->name('api.purchases.index');
+    Route::get('/purchases/{transaction}/invoice', [PurchaseController::class, 'invoice'])->name('api.purchases.invoice');
+
+    // QR studio — the menu link's QR design (persisted look) + scan analytics.
+    Route::get('/qr', [QrController::class, 'show'])->name('api.qr.show');
+    Route::put('/qr', [QrController::class, 'update'])
+        ->middleware('throttle:mutations')
+        ->name('api.qr.update');
 
     // Social links (scoped to the authenticated user's restaurant).
     Route::get('/social-links', [SocialLinkController::class, 'index'])->name('api.social-links.index');

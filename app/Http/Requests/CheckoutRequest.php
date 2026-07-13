@@ -42,13 +42,16 @@ class CheckoutRequest extends FormRequest
     }
 
     /**
-     * Reject a cart whose translated unit quantity would exceed the Paddle
-     * price's maximum, so we fail fast with a 422 instead of a Paddle 400.
+     * Reject a cart whose translated unit quantity would exceed the add-on's
+     * remaining lifetime allowance (its cap minus what this restaurant already
+     * bought), so we fail fast with a 422 instead of over-granting or a Paddle
+     * 400 — even across repeat purchases.
      */
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
             $catalog = app(FeatureCatalog::class);
+            $restaurant = $this->user()?->restaurant;
 
             foreach ((array) $this->input('items', []) as $index => $line) {
                 $entry = $catalog->find($line['id'] ?? '');
@@ -57,7 +60,9 @@ class CheckoutRequest extends FormRequest
                     continue;
                 }
 
-                if ((int) ($line['quantity'] ?? 0) * $entry['step'] > $entry['max']) {
+                $remaining = $entry['max'] - ($restaurant?->purchasedFeatureAmount($entry['slug']) ?? 0);
+
+                if ((int) ($line['quantity'] ?? 0) * $entry['step'] > $remaining) {
                     $validator->errors()->add(
                         "items.{$index}.quantity",
                         __('That quantity exceeds the maximum available for this add-on.'),

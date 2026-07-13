@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\QrCardController;
 use App\Http\Controllers\TempUploadController;
 use Illuminate\Support\Facades\Route;
 
@@ -47,3 +48,6 @@ Route::middleware('portal.locale')->group(function () {
     Route::get('/contact', [ContactController::class, 'show'])->name('contact');
     Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:contact')->name('contact.store');
 });
+
+// Public, shareable QR table card (qr_studio owners only — 404 otherwise).
+Route::get('/{restaurant:slug}/qr', [QrCardController::class, 'show'])->name('public.qr');

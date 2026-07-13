@@ -26,8 +26,8 @@ return new class extends Migration
 
         DB::table('package_defaults')->insert([
             ['slug' => 'dish_limit', 'value' => 40, 'created_at' => $now, 'updated_at' => $now],
-            ['slug' => 'category_limit', 'value' => 10, 'created_at' => $now, 'updated_at' => $now],
-            ['slug' => 'social_link_limit', 'value' => 4, 'created_at' => $now, 'updated_at' => $now],
+            ['slug' => 'category_limit', 'value' => 50, 'created_at' => $now, 'updated_at' => $now],
+            ['slug' => 'social_link_limit', 'value' => 2, 'created_at' => $now, 'updated_at' => $now],
         ]);
     }
 

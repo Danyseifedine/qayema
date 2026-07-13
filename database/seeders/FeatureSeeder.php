@@ -21,6 +21,7 @@ class FeatureSeeder extends Seeder
             ['slug' => 'social_link_limit', 'name' => ['en' => 'Social link limit', 'ar' => 'حد روابط التواصل'], 'kind' => 'limit', 'is_addon' => false],
             ['slug' => 'ordering', 'name' => ['en' => 'Ordering', 'ar' => 'استقبال الطلبات'], 'kind' => 'boolean', 'is_addon' => true],
             ['slug' => 'remove_branding', 'name' => ['en' => 'Remove branding', 'ar' => 'إزالة العلامة التجارية'], 'kind' => 'boolean', 'is_addon' => true],
+            ['slug' => 'qr_studio', 'name' => ['en' => 'QR Studio', 'ar' => 'استوديو QR'], 'kind' => 'boolean', 'is_addon' => true],
         ];
 
         foreach ($features as $data) {
@@ -33,8 +34,8 @@ class FeatureSeeder extends Seeder
         if ($basic) {
             $values = [
                 'dish_limit' => '40',
-                'category_limit' => '10',
-                'social_link_limit' => '4',
+                'category_limit' => '50',
+                'social_link_limit' => '2',
             ];
 
             foreach ($values as $slug => $value) {

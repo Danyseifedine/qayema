@@ -143,9 +143,29 @@ class FeaturePurchaseTest extends TestCase
     {
         [$user] = $this->ownerWithSellableDishSlot();
 
-        // 21 packs × 50 = 1050 dishes, over the Paddle price maximum of 1000.
+        // 21 packs × 50 = 1050 dishes, over the lifetime cap of 1000.
         $this->actingAs($user)
             ->postJson(route('api.checkout'), ['items' => [['id' => 'dish', 'quantity' => 21]]])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('items.0.quantity');
+    }
+
+    public function test_checkout_rejects_a_quantity_beyond_the_remaining_lifetime_allowance(): void
+    {
+        [$user, $restaurant] = $this->ownerWithSellableDishSlot();
+
+        // Already bought 1000 dishes across earlier transactions — the cap is
+        // exhausted, so even one more pack must be rejected.
+        $restaurant->featureGrants()->create([
+            'feature_id' => Feature::where('slug', 'dish_limit')->first()->id,
+            'value' => '1000',
+            'source' => 'purchase',
+            'reference' => 'txn_prev',
+            'starts_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->postJson(route('api.checkout'), ['items' => [['id' => 'dish', 'quantity' => 1]]])
             ->assertStatus(422)
             ->assertJsonValidationErrors('items.0.quantity');
     }

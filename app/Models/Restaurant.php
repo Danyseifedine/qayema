@@ -142,9 +142,61 @@ class Restaurant extends Model implements HasMedia
         return $this->hasMany(RestaurantFeature::class);
     }
 
+    /**
+     * Total units of a limit feature this restaurant has already purchased —
+     * used to enforce a catalog entry's lifetime purchase cap across checkouts.
+     */
+    public function purchasedFeatureAmount(string $slug): int
+    {
+        return (int) $this->featureGrants()
+            ->where('source', 'purchase')
+            ->whereHas('feature', fn ($query) => $query->where('slug', $slug))
+            ->sum('value');
+    }
+
     public function package(): Package
     {
         return Package::for($this);
+    }
+
+    /**
+     * The QR card's default design.
+     *
+     * @return array<string, mixed>
+     */
+    public function qrDefaultDesign(): array
+    {
+        return [
+            'bg' => 'cream',
+            'dot' => '#15120a',
+            'eye' => '#15120a',
+            'dot_style' => 'square',
+            'corner' => 'round',
+            'logo' => 'none',
+            'show_url' => true,
+            'name' => $this->name,
+            'tagline' => null,
+            'cta' => null,
+        ];
+    }
+
+    /**
+     * The saved QR design merged over the defaults, shared by the dashboard
+     * studio and the public card page so both render the exact same card.
+     *
+     * @return array<string, mixed>
+     */
+    public function qrDesign(): array
+    {
+        $saved = array_filter((array) $this->qr_settings, fn ($value) => $value !== null);
+
+        // The centre logo is now none|image only — the old boolean/`mark` Q
+        // monogram is gone, so drop any legacy value and let the default apply.
+        if (! in_array($saved['logo'] ?? null, ['none', 'image'], true)) {
+            unset($saved['logo']);
+        }
+
+        return array_merge($this->qrDefaultDesign(), $saved);
     }
 
     public function getDishLimitAttribute(): int

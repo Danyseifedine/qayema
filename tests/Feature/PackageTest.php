@@ -20,8 +20,8 @@ class PackageTest extends TestCase
 
         // The seeded package_defaults rows (migration) are the floor.
         $this->assertSame(40, $restaurant->dish_limit);
-        $this->assertSame(10, $restaurant->category_limit);
-        $this->assertSame(4, $restaurant->social_link_limit);
+        $this->assertSame(50, $restaurant->category_limit);
+        $this->assertSame(2, $restaurant->social_link_limit);
         $this->assertFalse($restaurant->package()->can('ordering'));
     }
 
