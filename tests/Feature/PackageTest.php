@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\Feature;
 use App\Models\PackageDefault;
 use App\Models\Restaurant;
-use App\Models\Template;
 use App\Services\Global\Package;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -51,17 +50,6 @@ class PackageTest extends TestCase
             'value' => '12',
         ]);
         $this->assertSame(12, $restaurant->category_limit);
-    }
-
-    public function test_free_template_bundle_provides_package(): void
-    {
-        $template = Template::factory()->create(['tier' => 'free']);
-        $dishLimit = Feature::factory()->limit()->create(['slug' => 'dish_limit']);
-        $template->features()->attach($dishLimit->id, ['value' => '100']);
-
-        $restaurant = Restaurant::factory()->create(['template_id' => $template->id]);
-
-        $this->assertSame(100, $restaurant->dish_limit);
     }
 
     public function test_feature_grant_overlays_and_merges_with_max(): void

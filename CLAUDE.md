@@ -444,9 +444,9 @@ Bilingual (en/ar) restaurant-menu SaaS. Two codebases in this repo folder:
 - Flow: SPA cart → `POST /api/checkout` (validates, `createAsCustomer()`, translates packs → units) → Paddle.js overlay → Paddle webhook `POST /paddle/webhook` → `TransactionCompleted` → `GrantPurchasedFeatures` listener → `FeatureFulfillment` writes `restaurant_features` grants (idempotent via `reference` = Paddle transaction id).
 
 ## Limits / entitlements
-- `Package` service (`app/Services/Global/Package.php`): effective package = template's bundled features (`template_feature`) overlaid by valid `restaurant_features` grants. Booleans merge OR, plan limits merge MAX, purchased limit grants (`source='purchase'`) stack **additively** on top.
-- Floor defaults live in DB (`package_defaults`, editable in admin). Cached per restaurant (`package:{id}`, TTL 300s); flushed by `RestaurantFeature` saved/deleted hooks and on `template_id` change.
-- New restaurants snapshot the defaults as `source='default'` grants and have **no template** until the owner picks one — the SPA locks all tabs except Templates until then.
+- `Package` service (`app/Services/Global/Package.php`): effective package = the restaurant's valid `restaurant_features` grants only. Booleans merge OR, plan limits merge MAX, purchased limit grants (`source='purchase'`) stack **additively** on top. **Templates are pure design and bundle no features** — the `template_feature` pivot was removed.
+- Floor defaults live in DB (`package_defaults`, editable in admin), and `PackageDefault::limit()` is the ultimate fallback. Cached per restaurant (`package:{id}`, TTL 300s); flushed by `RestaurantFeature` saved/deleted hooks and on `template_id` change.
+- New restaurants snapshot the defaults as `source='default'` grants on creation (`Restaurant::seedDefaultLimits()`) and have **no template** until the owner picks one — the SPA locks all tabs except Templates until then.
 
 ## Conventions & gotchas
 - Media: Spatie medialibrary on Cloudflare R2 (`s3` disk). Temp-upload flow: SPA/onboarding POSTs an image → optimized to WebP → parked per-user → promoted by key on the next create/update.

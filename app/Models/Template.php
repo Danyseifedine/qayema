@@ -48,11 +48,6 @@ class Template extends Model implements HasMedia
         return $this->belongsToMany(Tag::class, 'template_tag');
     }
 
-    public function features(): BelongsToMany
-    {
-        return $this->belongsToMany(Feature::class, 'template_feature')->withPivot('value');
-    }
-
     public function isFree(): bool
     {
         return ($this->tier ?? 'free') !== 'paid';

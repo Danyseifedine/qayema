@@ -336,3 +336,41 @@ html.no-gsap .reveal { opacity: 1; transform: none; }
   .feat-lead .lead-text { padding: 32px 26px; }
   .feat-lead .lead-vis { padding: 32px; }
 }
+
+/* ===== Payments (logo marquee) ===== */
+.pay-rows { display: flex; flex-direction: column; gap: 16px; margin-top: 60px; }
+.pay-row {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+}
+.pay-strip {
+  display: inline-flex; width: max-content; direction: ltr;
+  /* translateZ promotes the strip to its own GPU layer so the marquee is a pure
+     compositor transform — the logos rasterize once and never repaint. */
+  transform: translateZ(0); backface-visibility: hidden; will-change: transform;
+  animation: pay-marquee 78s linear infinite;
+}
+.pay-strip.rev { animation-direction: reverse; animation-duration: 64s; }
+.pay-row:nth-child(3) .pay-strip { animation-duration: 92s; }
+.pay-row:hover .pay-strip { animation-play-state: paused; }
+/* Each chip owns its trailing gap (margin, not flex gap) so the duplicated set
+   tiles exactly at translateX(-50%) — seamless with no per-loop jump. */
+.pay-chip {
+  flex: 0 0 auto; height: 62px; min-width: 118px; margin-inline-end: 16px;
+  display: grid; place-items: center; padding: 0 26px;
+  background: #fff; border: 1px solid var(--line); border-radius: 16px;
+  box-shadow: 0 14px 34px -24px rgba(0,0,0,.55);
+}
+.pay-chip img { height: auto; width: auto; max-height: 30px; max-width: 108px; }
+@keyframes pay-marquee { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-50%, 0, 0); } }
+@media (prefers-reduced-motion: reduce) {
+  .pay-strip { animation: none; flex-wrap: wrap; justify-content: center; width: auto; row-gap: 16px; }
+  .pay-row { -webkit-mask-image: none; mask-image: none; }
+  /* No scroll to hide the seam, so drop the duplicate half. */
+  .pay-chip[aria-hidden="true"] { display: none; }
+}
+@media (max-width: 640px) {
+  .pay-chip { height: 54px; min-width: 100px; padding: 0 20px; }
+  .pay-chip img { max-height: 26px; max-width: 92px; }
+}

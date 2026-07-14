@@ -235,6 +235,46 @@
     </div>
   </section>
 
+  {{-- ===== PAYMENTS ===== --}}
+  @php
+    // Payment methods Paddle supports for owner billing. All render in each of
+    // three marquee rows (rotated per row for variety, duplicated for a seamless
+    // loop). toss/blik shipped as 446KB/70KB base64-raster SVGs, which the
+    // browser re-rasterizes during the transform animation and stutters — they
+    // are served as tiny rasterized WebP instead so the marquee stays smooth.
+    $payLogos = [
+      ['paypal.svg', 'PayPal'], ['apple-pay.svg', 'Apple Pay'], ['google_pay.svg', 'Google Pay'], ['ideal.svg', 'iDEAL'],
+      ['Bancontact.svg', 'Bancontact'], ['blik.webp', 'BLIK'], ['mbway.svg', 'MB WAY'], ['pix.svg', 'Pix'],
+      ['upi.svg', 'UPI'], ['wechat_pay.png', 'WeChat Pay'], ['kakao_pay.svg', 'Kakao Pay'], ['naver_pay.svg', 'Naver Pay'],
+      ['samsung_pay.svg', 'Samsung Pay'], ['payco.svg', 'PAYCO'], ['toss.webp', 'Toss'], ['kb.svg', 'KB'],
+      ['hana.svg', 'Hana'], ['woori.svg', 'Woori'], ['lotte.svg', 'Lotte'], ['shishan_bank.svg', 'Shinhan'],
+      ['Hyundai_Card.svg', 'Hyundai Card'],
+    ];
+  @endphp
+  <section class="sec" id="payments" style="padding-top:0;">
+    <div class="wrap">
+      <div class="sec-head reveal" style="max-width:620px;">
+        <div class="eyebrow"><span class="bar"></span><span class="mono-label">{{ __('portal.payments.eyebrow') }}</span></div>
+        <h2 class="display"><span>{{ __('portal.payments.title') }}</span> <span class="gold-text">{{ __('portal.payments.title_gold') }}</span></h2>
+        <p>{{ __('portal.payments.subtitle') }}</p>
+      </div>
+    </div>
+    <div class="pay-rows reveal">
+      @foreach ([0, 7, 14] as $ri => $offset)
+        @php $row = array_merge(array_slice($payLogos, $offset), array_slice($payLogos, 0, $offset)); @endphp
+        <div class="pay-row">
+          <div class="pay-strip {{ $ri === 1 ? 'rev' : '' }}">
+            @foreach (array_merge($row, $row) as $i => $logo)
+              <span class="pay-chip" @if ($i >= count($row)) aria-hidden="true" @endif>
+                <img src="{{ asset('images/payment-logos/'.$logo[0]) }}" alt="{{ $logo[1] }}" loading="lazy" decoding="async" />
+              </span>
+            @endforeach
+          </div>
+        </div>
+      @endforeach
+    </div>
+  </section>
+
   {{-- ===== FAQ ===== --}}
   <section class="sec" id="faq" style="padding-top:0;">
     <div class="wrap">

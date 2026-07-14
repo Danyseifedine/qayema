@@ -3,15 +3,15 @@
 namespace Database\Seeders;
 
 use App\Models\Feature;
-use App\Models\Template;
 use Illuminate\Database\Seeder;
 
 class FeatureSeeder extends Seeder
 {
     /**
      * Sellable units per the v2 spec: limit features replace the old
-     * restaurants.*_limit columns and are bundled on the free template;
-     * boolean add-ons are purchasable separately.
+     * restaurants.*_limit columns and seed the per-restaurant default snapshot;
+     * boolean add-ons are purchasable separately. Features are no longer bundled
+     * on templates — the floor lives in package_defaults.
      */
     public function run(): void
     {
@@ -26,25 +26,6 @@ class FeatureSeeder extends Seeder
 
         foreach ($features as $data) {
             Feature::query()->updateOrCreate(['slug' => $data['slug']], $data);
-        }
-
-        // The free "default" template carries the baseline limits.
-        $basic = Template::where('slug', 'default')->first();
-
-        if ($basic) {
-            $values = [
-                'dish_limit' => '40',
-                'category_limit' => '50',
-                'social_link_limit' => '2',
-            ];
-
-            foreach ($values as $slug => $value) {
-                $feature = Feature::where('slug', $slug)->first();
-
-                if ($feature) {
-                    $basic->features()->syncWithoutDetaching([$feature->id => ['value' => $value]]);
-                }
-            }
         }
     }
 }

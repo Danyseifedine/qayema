@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Spatie\Translatable\HasTranslations;
 
 class Feature extends Model
@@ -29,11 +28,6 @@ class Feature extends Model
             'is_addon' => 'boolean',
             'is_active' => 'boolean',
         ];
-    }
-
-    public function templates(): BelongsToMany
-    {
-        return $this->belongsToMany(Template::class, 'template_feature')->withPivot('value');
     }
 
     public function isLimit(): bool

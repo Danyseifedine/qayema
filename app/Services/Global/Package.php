@@ -33,9 +33,10 @@ class Package
     }
 
     /**
-     * Effective package: the assigned template's bundled features overlaid by
-     * valid restaurant_features grants. Booleans merge with OR, plan limits with
-     * MAX, and purchased limit slots stack additively on top of that base.
+     * Effective package: the restaurant's valid restaurant_features grants (the
+     * default-limit snapshot plus any granted or purchased add-ons). Booleans
+     * merge with OR, plan limits with MAX, and purchased limit slots stack
+     * additively on top of that base.
      *
      * @return array<string, bool|int>
      */
@@ -68,14 +69,6 @@ class Package
     private function resolve(): array
     {
         $package = [];
-
-        $template = $this->restaurant->template;
-
-        if ($template) {
-            foreach ($template->features as $feature) {
-                $package = $this->merge($package, $feature->slug, $feature->kind, $feature->pivot->value);
-            }
-        }
 
         $grants = $this->restaurant->featureGrants()
             ->where('starts_at', '<=', now())
