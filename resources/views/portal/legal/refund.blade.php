@@ -69,7 +69,7 @@
 
 <h2 id="contact">Contact</h2>
 
-<p>If you have questions about this Refund Policy, please contact us at <a href="mailto:dany.a.seifeddine@gmail.com">dany.a.seifeddine@gmail.com</a>.</p>
+<p>If you have questions about this Refund Policy, please contact us at <a href="mailto:{{ config('seo.organization.contact.email') }}">{{ config('seo.organization.contact.email') }}</a>.</p>
 
 @endunless
 
@@ -107,7 +107,7 @@
 
 <h2 id="contact-ar">تواصل معنا</h2>
 
-<p>إذا كانت لديك أسئلة حول سياسة الاسترداد هذه، يرجى التواصل معنا على <a href="mailto:dany.a.seifeddine@gmail.com">dany.a.seifeddine@gmail.com</a>.</p>
+<p>إذا كانت لديك أسئلة حول سياسة الاسترداد هذه، يرجى التواصل معنا على <a href="mailto:{{ config('seo.organization.contact.email') }}">{{ config('seo.organization.contact.email') }}</a>.</p>
 
 @endif
 

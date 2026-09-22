@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\PublicMenuController;
 use App\Http\Controllers\QrCardController;
 use App\Http\Controllers\TempUploadController;
 use Illuminate\Support\Facades\Route;
@@ -51,3 +52,10 @@ Route::middleware('portal.locale')->group(function () {
 
 // Public, shareable QR table card (qr_studio owners only — 404 otherwise).
 Route::get('/{restaurant:slug}/qr', [QrCardController::class, 'show'])->name('public.qr');
+
+// The public menu — what the QR code points at. Declared last because the slug
+// would otherwise swallow every other path, and constrained to the shape a slug
+// can actually take so reserved prefixes can never be captured.
+Route::get('/{restaurant:slug}', [PublicMenuController::class, 'show'])
+    ->where('restaurant', '(?!(?:'.implode('|', array_map('preg_quote', \App\Models\Restaurant::RESERVED_SLUGS)).')$)[a-z0-9][a-z0-9-]*')
+    ->name('public.menu');

@@ -149,7 +149,7 @@
 
 <h2 id="contact">Contact</h2>
 
-<p>If you have questions about our use of cookies, please contact us at <a href="mailto:dany.a.seifeddine@gmail.com">dany.a.seifeddine@gmail.com</a>.</p>
+<p>If you have questions about our use of cookies, please contact us at <a href="mailto:{{ config('seo.organization.contact.email') }}">{{ config('seo.organization.contact.email') }}</a>.</p>
 
 @endunless
 
@@ -263,7 +263,7 @@
 
 <h2 id="contact-ar">تواصل معنا</h2>
 
-<p>إذا كانت لديك أسئلة حول استخدامنا لملفات تعريف الارتباط، يرجى التواصل معنا على <a href="mailto:dany.a.seifeddine@gmail.com">dany.a.seifeddine@gmail.com</a>.</p>
+<p>إذا كانت لديك أسئلة حول استخدامنا لملفات تعريف الارتباط، يرجى التواصل معنا على <a href="mailto:{{ config('seo.organization.contact.email') }}">{{ config('seo.organization.contact.email') }}</a>.</p>
 
 @endif
 

@@ -18,8 +18,8 @@ class DishesTable
     {
         return $table
             ->columns([
-                SpatieMediaLibraryImageColumn::make('images')
-                    ->collection('images')
+                SpatieMediaLibraryImageColumn::make('image')
+                    ->collection('image')
                     ->label('Image')
                     ->circular()
                     ->limit(3)

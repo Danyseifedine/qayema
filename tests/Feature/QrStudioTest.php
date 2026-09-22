@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\Feature;
+use App\Enums\Feature;
 use App\Models\Restaurant;
 use App\Models\User;
 use App\Services\Global\Package;
@@ -13,17 +13,14 @@ class QrStudioTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** Grant the purchased qr_studio add-on to a restaurant. */
+    /** Unlock the QR studio add-on for a restaurant. */
     private function unlock(Restaurant $restaurant): void
     {
-        $feature = Feature::factory()->addon()->create(['slug' => 'qr_studio']);
-
         $restaurant->featureGrants()->create([
-            'feature_id' => $feature->id,
-            'value' => '1',
+            'feature' => Feature::QrStudio,
+            'value' => 1,
             'source' => 'purchase',
             'reference' => 'txn_qr',
-            'starts_at' => now(),
         ]);
 
         Package::flush($restaurant->id);
@@ -150,22 +147,6 @@ class QrStudioTest extends TestCase
         $this->actingAs($restaurant->user)
             ->getJson(route('api.qr.show'))
             ->assertJsonPath('data.settings.corner', 'pill');
-    }
-
-    public function test_legacy_logo_setting_falls_back_to_none(): void
-    {
-        $restaurant = Restaurant::factory()->create(['template_id' => null]);
-        $this->unlock($restaurant);
-
-        // The retired Q-mark values (boolean true, or the 'mark' string) are no
-        // longer valid — they normalize to 'none'.
-        foreach ([true, 'mark'] as $legacy) {
-            $restaurant->update(['qr_settings' => ['bg' => 'ink', 'logo' => $legacy]]);
-
-            $this->actingAs($restaurant->user)
-                ->getJson(route('api.qr.show'))
-                ->assertJsonPath('data.settings.logo', 'none');
-        }
     }
 
     public function test_unlocked_update_rejects_invalid_values(): void

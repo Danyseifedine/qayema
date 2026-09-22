@@ -37,8 +37,8 @@ class TemplateTest extends TestCase
         $response = $this->actingAs($user)->getJson(route('api.templates.index'))->assertOk();
 
         $response->assertJsonStructure([
-            'data' => [['id', 'slug', 'tier', 'name' => ['en', 'ar'], 'description' => ['en', 'ar']]],
-            'meta' => ['current'],
+            'data' => [['id', 'slug', 'price', 'is_free', 'owned', 'settings_schema', 'name' => ['en', 'ar'], 'description' => ['en', 'ar']]],
+            'meta' => ['current', 'settings'],
         ]);
 
         // Only active templates are offered, and nothing is selected yet.
@@ -89,6 +89,69 @@ class TemplateTest extends TestCase
             ->postJson(route('api.templates.select'), [])
             ->assertStatus(422)
             ->assertJsonValidationErrors('template_id');
+    }
+
+    public function test_selecting_a_template_seeds_its_default_settings(): void
+    {
+        [$user, $restaurant] = $this->owner();
+        $template = Template::factory()->withSettings([
+            ['key' => 'primary_color', 'type' => 'color', 'default' => '#C8A85A'],
+        ])->create(['slug' => 'styled']);
+
+        $this->actingAs($user)
+            ->postJson(route('api.templates.select'), ['template_id' => $template->id])
+            ->assertOk()
+            ->assertJsonPath('meta.settings.primary_color', '#C8A85A');
+
+        $this->assertSame(['primary_color' => '#C8A85A'], $restaurant->fresh()->template_settings);
+    }
+
+    public function test_a_paid_template_cannot_be_selected_until_it_is_unlocked(): void
+    {
+        [$user, $restaurant] = $this->owner();
+        $template = Template::factory()->paid()->create(['slug' => 'premium']);
+
+        $this->actingAs($user)
+            ->postJson(route('api.templates.select'), ['template_id' => $template->id])
+            ->assertForbidden();
+
+        $this->assertNull($restaurant->fresh()->template_id);
+    }
+
+    public function test_an_unlocked_paid_template_can_be_selected(): void
+    {
+        [$user, $restaurant] = $this->owner();
+        $template = Template::factory()->paid()->create(['slug' => 'owned-premium']);
+
+        $restaurant->templatePurchases()->create([
+            'template_id' => $template->id,
+            'price_paid' => $template->price,
+        ]);
+
+        $this->actingAs($user)
+            ->postJson(route('api.templates.select'), ['template_id' => $template->id])
+            ->assertOk()
+            ->assertJsonPath('meta.current', $template->id);
+    }
+
+    public function test_index_reports_which_templates_are_owned(): void
+    {
+        [$user, $restaurant] = $this->owner();
+        $free = Template::factory()->create(['slug' => 'free-one', 'sort_order' => 0]);
+        $locked = Template::factory()->paid()->create(['slug' => 'locked-one', 'sort_order' => 1]);
+        $bought = Template::factory()->paid()->create(['slug' => 'bought-one', 'sort_order' => 2]);
+
+        $restaurant->templatePurchases()->create([
+            'template_id' => $bought->id,
+            'price_paid' => $bought->price,
+        ]);
+
+        $owned = collect($this->actingAs($user)->getJson(route('api.templates.index'))->json('data'))
+            ->pluck('owned', 'slug');
+
+        $this->assertTrue($owned[$free->slug]);
+        $this->assertFalse($owned[$locked->slug]);
+        $this->assertTrue($owned[$bought->slug]);
     }
 
     public function test_a_user_without_a_restaurant_is_forbidden(): void

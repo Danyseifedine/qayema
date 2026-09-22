@@ -6,21 +6,21 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Spatie\MediaLibrary\HasMedia;
-use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\Translatable\HasTranslations;
 
-class Category extends Model implements HasMedia
+/**
+ * A menu section: a name and a position. No image, no description.
+ */
+class Category extends Model
 {
-    use HasFactory, HasTranslations, InteractsWithMedia;
+    use HasFactory, HasTranslations;
 
     /** @var string[] */
-    public array $translatable = ['name', 'description'];
+    public array $translatable = ['name'];
 
     protected $fillable = [
         'restaurant_id',
         'name',
-        'description',
         'display_order',
     ];
 
@@ -40,11 +40,5 @@ class Category extends Model implements HasMedia
     public function dishes(): HasMany
     {
         return $this->hasMany(Dish::class)->orderBy('display_order');
-    }
-
-    public function registerMediaCollections(): void
-    {
-        $this->addMediaCollection('image')
-            ->singleFile();
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Feature;
 use App\Models\Restaurant;
 use Illuminate\View\View;
 
@@ -14,7 +15,7 @@ class QrCardController extends Controller
      */
     public function show(Restaurant $restaurant): View
     {
-        abort_unless($restaurant->is_active && $restaurant->package()->can('qr_studio'), 404);
+        abort_unless($restaurant->is_active && $restaurant->package()->can(Feature::QrStudio), 404);
 
         $base = rtrim((string) config('app.url'), '/');
         $host = (string) (parse_url($base, PHP_URL_HOST) ?: $base);

@@ -1,59 +1,72 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Qayema
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Bilingual (Arabic/English) digital menus for restaurants. Owners build a menu,
+pick a design, and share it as a QR code; guests open it at `qayema.com/{slug}`.
 
-## About Laravel
+- **This repo** — Laravel 12 API, public portal, public menu and Filament v4 admin.
+- **`../qayema-dashboard`** — the owner dashboard SPA (React 19 + Vite).
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+New here? Read [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) first, then
+[docs/database-erd.md](docs/database-erd.md).
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Requirements
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+PHP 8.2+, Composer, MySQL 8, Node (for the separate dashboard repo only — this
+app ships static CSS and has no build step).
 
-## Learning Laravel
+## Setup
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate --seed
+php artisan serve
+```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+The seed creates an admin (`admin@admin.com` / `password`), the free `classic`
+template, and three coin packs. Feature defaults (dish/category/social-link
+limits) are seeded by their migration.
 
-## Laravel Sponsors
+Sign in to the admin panel at `/admin`.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## How it fits together
 
-### Premium Partners
+| Concept | Where it lives |
+|---|---|
+| What a plan allows | `App\Enums\Feature` + `feature_defaults` + `restaurant_features` |
+| Resolving a limit | `App\Services\Global\Package` — default + Σ grants |
+| Coins | `App\Services\Global\Wallet` — append-only ledger + cached balance |
+| Buying a template | `App\Services\Global\TemplateStore` |
+| A menu design | a `templates` row + `resources/views/menu/templates/{slug}.blade.php` |
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## Common tasks
 
-## Contributing
+```bash
+php artisan test                              # ~650 tests, unit + feature
+php artisan test --testsuite=Feature --filter=WalletTest
+vendor/bin/pint --dirty                       # format before committing
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+php artisan make:menu-template midnight --price=650   # scaffold a design
+php artisan stats:rollup                      # prune old menu_sessions
+```
 
-## Code of Conduct
+Unit tests live in `tests/Unit`, feature/journey tests in `tests/Feature`.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Going live — the checklist
 
-## Security Vulnerabilities
+1. `APP_ENV=production`, `APP_DEBUG=false`, and set `APP_NAME=Qayema` (it still
+   reads `Laravel`, which shows in the public menu footer).
+2. Create the coin pack products in Paddle and paste their **production** price
+   ids into each pack in `/admin → Coin Packs`. Until then nothing is sellable.
+3. Set `CORS_ALLOWED_ORIGINS` and `SANCTUM_STATEFUL_DOMAINS` to the dashboard's
+   subdomain, and `SESSION_DOMAIN` to the shared registrable domain
+   (e.g. `.qayema.com`) so the session cookie is shared.
+4. Point the R2 (`s3`) disk at the production bucket.
+5. Schedule the task runner so `stats:rollup` runs nightly.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Status
 
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+The API is complete and tested. The dashboard SPA is not: it currently contains
+only an auth bootstrap, so owners can sign up and onboard but have no UI to
+build their menu with yet. Only the free `classic` design exists.

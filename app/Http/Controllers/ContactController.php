@@ -21,7 +21,7 @@ class ContactController extends Controller
         // Honeypot: bots fill the hidden "hp_field" input. Pretend success and drop
         if (filled($request->input('hp_field'))) {
             return $request->expectsJson()
-                ? $this->success(message: 'Your message has been sent.')
+                ? response()->json(['message' => __('portal.contact.js.sent')])
                 : back()->with('success', true);
         }
 
@@ -33,12 +33,12 @@ class ContactController extends Controller
             $message = __('portal.contact.js.rate_limit', ['hours' => $e->retryAfterHours]);
 
             return $request->expectsJson()
-                ? $this->error($message, ['rate_limit' => [$message]], 429)
+                ? response()->json(['message' => $message, 'code' => 'too_many_requests', 'errors' => ['rate_limit' => [$message]]], 429)
                 : back()->withInput()->withErrors(['rate_limit' => $message]);
         }
 
         return $request->expectsJson()
-            ? $this->success(message: 'Your message has been sent.')
+            ? response()->json(['message' => __('portal.contact.js.sent')])
             : back()->with('success', true);
     }
 }

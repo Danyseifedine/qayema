@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources\Restaurants;
 use App\Filament\Admin\Resources\Restaurants\Pages\CreateRestaurant;
 use App\Filament\Admin\Resources\Restaurants\Pages\EditRestaurant;
 use App\Filament\Admin\Resources\Restaurants\Pages\ListRestaurants;
+use App\Filament\Admin\Resources\Restaurants\RelationManagers\FeatureGrantsRelationManager;
 use App\Filament\Admin\Resources\Restaurants\Schemas\RestaurantForm;
 use App\Filament\Admin\Resources\Restaurants\Tables\RestaurantsTable;
 use App\Models\Restaurant;
@@ -38,7 +39,9 @@ class RestaurantResource extends Resource
 
     public static function getRelations(): array
     {
-        return [];
+        return [
+            FeatureGrantsRelationManager::class,
+        ];
     }
 
     public static function getPages(): array

@@ -133,7 +133,7 @@
 
 <h2 id="contact">Contact</h2>
 
-<p>For questions about these Terms, contact us at <a href="mailto:dany.a.seifeddine@gmail.com">dany.a.seifeddine@gmail.com</a>.</p>
+<p>For questions about these Terms, contact us at <a href="mailto:{{ config('seo.organization.contact.email') }}">{{ config('seo.organization.contact.email') }}</a>.</p>
 
 @endunless
 
@@ -225,7 +225,7 @@
 
 <h2 id="contact-ar">تواصل معنا</h2>
 
-<p>للاستفسار عن هذه الشروط، تواصل معنا على <a href="mailto:dany.a.seifeddine@gmail.com">dany.a.seifeddine@gmail.com</a>.</p>
+<p>للاستفسار عن هذه الشروط، تواصل معنا على <a href="mailto:{{ config('seo.organization.contact.email') }}">{{ config('seo.organization.contact.email') }}</a>.</p>
 
 @endif
 

@@ -1,8 +1,17 @@
 <?php
 
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
+use Illuminate\Http\Request;
+use Illuminate\Session\TokenMismatchException;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -36,5 +45,95 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Every `api/*` error is JSON — never a redirect to the login page or an
+        // HTML error — so the SPA can rely on one shape: {message, code} plus
+        // `errors` on 422 and `retry_after` on 429.
+        $exceptions->shouldRenderJsonWhen(
+            fn (Request $request): bool => $request->is('api/*') || $request->expectsJson()
+        );
+
+        $exceptions->render(function (Throwable $e, Request $request): ?Response {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            // A response thrown as an exception (e.g. a rate limiter's custom
+            // 429) already is the answer — pass it through untouched.
+            if ($e instanceof HttpResponseException) {
+                return $e->getResponse();
+            }
+
+            if ($e instanceof ValidationException) {
+                return response()->json([
+                    'message' => $e->getMessage(),
+                    'code' => 'validation_failed',
+                    'errors' => $e->errors(),
+                ], $e->status);
+            }
+
+            if ($e instanceof AuthenticationException) {
+                return response()->json(['message' => __('Unauthenticated.'), 'code' => 'unauthenticated'], 401);
+            }
+
+            if ($e instanceof TokenMismatchException) {
+                // The SPA re-primes its token from /api/csrf-token on this code.
+                return response()->json([
+                    'message' => __('Your session has expired. Please refresh and try again.'),
+                    'code' => 'csrf_expired',
+                ], 419);
+            }
+
+            if ($e instanceof ThrottleRequestsException) {
+                $headers = $e->getHeaders();
+
+                return response()->json([
+                    'message' => __('Too many requests. Please slow down.'),
+                    'code' => 'too_many_requests',
+                    'retry_after' => isset($headers['Retry-After']) ? (int) $headers['Retry-After'] : null,
+                ], 429, $headers);
+            }
+
+            if ($e instanceof HttpExceptionInterface) {
+                $status = $e->getStatusCode();
+                // The framework wraps some exceptions before we see them (a
+                // missing model becomes a 404, a stale CSRF token a 419); the
+                // original rides along as `previous`.
+                $previous = $e->getPrevious();
+
+                if ($status === 419 || $previous instanceof TokenMismatchException) {
+                    return response()->json([
+                        'message' => __('Your session has expired. Please refresh and try again.'),
+                        'code' => 'csrf_expired',
+                    ], 419);
+                }
+
+                $code = match ($status) {
+                    402 => 'payment_required',
+                    403 => 'forbidden',
+                    404 => 'not_found',
+                    405 => 'method_not_allowed',
+                    default => 'http_error',
+                };
+
+                $fallback = match ($status) {
+                    403 => __('This action is not allowed.'),
+                    404 => __('Not found.'),
+                    405 => __('Method not allowed.'),
+                    default => Response::$statusTexts[$status] ?? __('Request failed.'),
+                };
+
+                // Never echo "No query results for model [App\\Models\\X]".
+                $message = ($previous instanceof ModelNotFoundException || $e->getMessage() === '')
+                    ? $fallback
+                    : $e->getMessage();
+
+                return response()->json(['message' => $message, 'code' => $code], $status, $e->getHeaders());
+            }
+
+            // Anything else is a bug. Hide the detail unless debugging.
+            return response()->json([
+                'message' => config('app.debug') ? $e->getMessage() : __('Something went wrong on our side.'),
+                'code' => 'server_error',
+            ], 500);
+        });
     })->create();

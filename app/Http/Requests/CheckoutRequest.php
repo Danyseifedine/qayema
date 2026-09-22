@@ -2,32 +2,27 @@
 
 namespace App\Http\Requests;
 
-use App\Services\Global\FeatureCatalog;
-use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class CheckoutRequest extends FormRequest
 {
-    /**
-     * Restricted to the authenticated owner's own restaurant in the controller.
-     */
     public function authorize(): bool
     {
-        return true;
+        return $this->user() !== null;
     }
 
     /**
-     * @return array<string, mixed>
+     * @return array<string, array<int, mixed>>
      */
     public function rules(): array
     {
-        $sellableIds = array_keys(app(FeatureCatalog::class)->all());
-
         return [
-            'items' => ['required', 'array', 'min:1'],
-            'items.*.id' => ['required', 'string', Rule::in($sellableIds)],
-            'items.*.quantity' => ['required', 'integer', 'min:1', 'max:99'],
+            // Only a pack that is active AND has a price for this Paddle
+            // environment can be bought; the amount of coins comes from the row,
+            // never from the request.
+            'pack_id' => ['required', 'integer', Rule::exists('coin_packs', 'id')->where('is_active', true)],
+            'quantity' => ['nullable', 'integer', 'min:1', 'max:20'],
         ];
     }
 
@@ -37,38 +32,7 @@ class CheckoutRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'items.*.id.in' => __('That add-on is not available for purchase.'),
+            'pack_id.exists' => __('That coin pack is not available.'),
         ];
-    }
-
-    /**
-     * Reject a cart whose translated unit quantity would exceed the add-on's
-     * remaining lifetime allowance (its cap minus what this restaurant already
-     * bought), so we fail fast with a 422 instead of over-granting or a Paddle
-     * 400 — even across repeat purchases.
-     */
-    public function withValidator(Validator $validator): void
-    {
-        $validator->after(function (Validator $validator): void {
-            $catalog = app(FeatureCatalog::class);
-            $restaurant = $this->user()?->restaurant;
-
-            foreach ((array) $this->input('items', []) as $index => $line) {
-                $entry = $catalog->find($line['id'] ?? '');
-
-                if ($entry === null || ! isset($entry['max'])) {
-                    continue;
-                }
-
-                $remaining = $entry['max'] - ($restaurant?->purchasedFeatureAmount($entry['slug']) ?? 0);
-
-                if ((int) ($line['quantity'] ?? 0) * $entry['step'] > $remaining) {
-                    $validator->errors()->add(
-                        "items.{$index}.quantity",
-                        __('That quantity exceeds the maximum available for this add-on.'),
-                    );
-                }
-            }
-        });
     }
 }

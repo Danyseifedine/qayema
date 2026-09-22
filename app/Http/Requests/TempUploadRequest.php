@@ -22,7 +22,7 @@ class TempUploadRequest extends FormRequest
             // before the optimizer ever loads it into memory. 6000px is far above
             // what any preset needs (the widest is a 1920px cover).
             'file' => ['required', 'file', 'image', 'mimes:jpeg,jpg,png,webp', 'max:10240', 'dimensions:max_width=6000,max_height=6000'],
-            'context' => ['nullable', 'string', 'in:logo,cover_image,dish,category,generic'],
+            'context' => ['nullable', 'string', 'in:logo,cover_image,dish,generic'],
         ];
     }
 

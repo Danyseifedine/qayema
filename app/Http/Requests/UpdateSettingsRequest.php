@@ -2,34 +2,30 @@
 
 namespace App\Http\Requests;
 
-use App\Models\Tag;
-use App\Rules\HasTagInEachCategory;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class UpdateSettingsRequest extends FormRequest
 {
-    /**
-     * Scoped to the user's own restaurant in the controller, so the request only
-     * validates shape. Slug is intentionally absent — it's read-only; the display
-     * name can be edited.
-     */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->restaurant !== null;
     }
 
     /**
-     * @return array<string, mixed>
+     * @return array<string, array<int, mixed>>
      */
     public function rules(): array
     {
         return [
-            // Display name (written to the restaurant's default locale). Slug stays
-            // immutable, so it is intentionally not accepted here. The regex (with
-            // the /u flag) rejects interior control characters and malformed UTF-8,
-            // so a hostile name can't corrupt the JSON column or 500 the save.
+            // Written to the restaurant's default locale. The slug is immutable,
+            // so it is intentionally not accepted here. The /u regex rejects
+            // interior control characters and malformed UTF-8, so a hostile name
+            // can't corrupt the JSON column or 500 the save.
             'name' => ['required', 'string', 'min:2', 'max:255', 'regex:/^[^\x00-\x1F\x7F]+$/u'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'address' => ['nullable', 'string', 'max:500'],
+            'google_maps_url' => ['nullable', 'url:http,https', 'max:2048'],
 
             // The logo is mandatory: it can be replaced (a temp-upload key) but
             // never cleared, so there is no delete flag for it.
@@ -43,11 +39,6 @@ class UpdateSettingsRequest extends FormRequest
             // Literal space (not \s) so newlines/tabs can't be stored in the phone.
             'phone' => ['required', 'string', 'max:30', 'regex:/^(?=(?:\D*\d){6,})[0-9+() .\-]{6,30}$/'],
             'currency' => ['required', 'string', Rule::in(array_keys(config('currencies', [])))],
-
-            // At least one tag is required in every category (cuisine, dietary,
-            // vibe, style).
-            'tag_ids' => ['required', 'array', 'max:50', new HasTagInEachCategory(Tag::OWNER_CATEGORIES)],
-            'tag_ids.*' => ['integer', 'distinct', Rule::exists('tags', 'id')->whereIn('category', Tag::OWNER_CATEGORIES)],
         ];
     }
 
@@ -57,14 +48,10 @@ class UpdateSettingsRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.required' => __('The restaurant name is required.'),
-            'name.min' => __('The restaurant name must be at least :min characters.'),
-            'name.regex' => __('The restaurant name contains invalid characters.'),
             'country_code.size' => __('Please choose a country from the list.'),
             'country_code.alpha' => __('Please choose a country from the list.'),
             'phone.regex' => __('Please enter a valid phone number using digits only.'),
             'currency.in' => __('Please choose a currency from the list.'),
-            'tag_ids.required' => __('Pick at least one tag in each category.'),
         ];
     }
 }

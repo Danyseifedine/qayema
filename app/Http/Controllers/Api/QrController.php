@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\Feature;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\QrSettingsRequest;
 use App\Models\Restaurant;
@@ -35,7 +36,7 @@ class QrController extends Controller
         $restaurant = $request->user()->restaurant;
 
         abort_if($restaurant === null, 403, __('Create your restaurant before designing a QR code.'));
-        abort_unless($restaurant->package()->can('qr_studio'), 403, __('QR Studio is a paid add-on.'));
+        abort_unless($restaurant->package()->can(Feature::QrStudio), 403, __('QR Studio is a paid add-on.'));
 
         $restaurant->update(['qr_settings' => $request->validated()]);
 
@@ -47,7 +48,7 @@ class QrController extends Controller
      */
     private function payload(Restaurant $restaurant): array
     {
-        $unlocked = $restaurant->package()->can('qr_studio');
+        $unlocked = $restaurant->package()->can(Feature::QrStudio);
 
         $base = rtrim((string) config('app.url'), '/');
         $host = (string) (parse_url($base, PHP_URL_HOST) ?: $base);

@@ -23,7 +23,6 @@ return [
         // Dishes are the hero content — a larger box + higher ceiling keeps food
         // photography sharp when a QR menu is viewed full-width on a phone.
         'dish' => ['fit' => 'cover', 'width' => 1200, 'height' => 900, 'max_kb' => 150],
-        'category' => ['fit' => 'contain', 'width' => 500, 'height' => 500, 'max_kb' => 50],
         'generic' => ['fit' => 'contain', 'width' => 1200, 'height' => 1200, 'max_kb' => 200],
     ],
 

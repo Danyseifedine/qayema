@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
+use App\Enums\Feature;
 use App\Services\Global\Package;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 use Spatie\MediaLibrary\HasMedia;
@@ -17,26 +17,37 @@ class Restaurant extends Model implements HasMedia
 {
     use HasFactory, HasTranslations, InteractsWithMedia;
 
+    /**
+     * Slugs that would shadow a real route. The public menu route excludes
+     * them, so an owner must never be allowed to pick one.
+     *
+     * @var string[]
+     */
+    public const RESERVED_SLUGS = [
+        'admin', 'api', 'livewire', 'storage', 'up', 'paddle', 'sanctum', 'telescope',
+        'contact', 'privacy-policy', 'terms-of-service', 'cookie-policy', 'refund-policy',
+        'get-started', 'register', 'login', 'logout', 'onboarding', 'auth', 'locale',
+        'password', 'forgot-password', 'reset-password', 'temp-upload', 'impersonate',
+    ];
+
     /** @var string[] */
     public array $translatable = ['name', 'description', 'address'];
 
     protected $fillable = [
         'user_id',
+        'template_id',
         'name',
         'description',
         'slug',
-        'country_code',
-        'phone',
-        'is_active',
-        'template_id',
-        'template_settings',
-        'qr_settings',
         'address',
         'google_maps_url',
+        'country_code',
+        'phone',
         'currency',
         'default_locale',
-        'timezone',
-        'restaurant_type_id',
+        'is_active',
+        'template_settings',
+        'qr_settings',
     ];
 
     protected function casts(): array
@@ -62,39 +73,6 @@ class Restaurant extends Model implements HasMedia
                 $restaurant->slug = $slug;
             }
         });
-
-        static::saved(function (self $restaurant) {
-            if ($restaurant->wasChanged('template_id')) {
-                Package::flush($restaurant->id);
-            }
-        });
-
-        static::created(function (self $restaurant) {
-            $restaurant->seedDefaultLimits();
-        });
-    }
-
-    /**
-     * Snapshot the current default limits onto the restaurant as its own
-     * `restaurant_features` grants, so each restaurant carries its limits in the
-     * database instead of only inheriting the global floor. No-ops for any limit
-     * feature that isn't seeded yet (e.g. a test database without FeatureSeeder).
-     */
-    public function seedDefaultLimits(): void
-    {
-        $features = Feature::query()
-            ->where('kind', 'limit')
-            ->whereIn('slug', ['dish_limit', 'category_limit', 'social_link_limit'])
-            ->get();
-
-        foreach ($features as $feature) {
-            $this->featureGrants()->create([
-                'feature_id' => $feature->id,
-                'value' => (string) PackageDefault::limit($feature->slug),
-                'source' => 'default',
-                'starts_at' => now(),
-            ]);
-        }
     }
 
     public function user(): BelongsTo
@@ -105,16 +83,6 @@ class Restaurant extends Model implements HasMedia
     public function template(): BelongsTo
     {
         return $this->belongsTo(Template::class);
-    }
-
-    public function restaurantType(): BelongsTo
-    {
-        return $this->belongsTo(RestaurantType::class);
-    }
-
-    public function tags(): BelongsToMany
-    {
-        return $this->belongsToMany(Tag::class);
     }
 
     public function categories(): HasMany
@@ -142,21 +110,33 @@ class Restaurant extends Model implements HasMedia
         return $this->hasMany(RestaurantFeature::class);
     }
 
-    /**
-     * Total units of a limit feature this restaurant has already purchased —
-     * used to enforce a catalog entry's lifetime purchase cap across checkouts.
-     */
-    public function purchasedFeatureAmount(string $slug): int
+    public function templatePurchases(): HasMany
     {
-        return (int) $this->featureGrants()
-            ->where('source', 'purchase')
-            ->whereHas('feature', fn ($query) => $query->where('slug', $slug))
-            ->sum('value');
+        return $this->hasMany(TemplatePurchase::class);
     }
 
     public function package(): Package
     {
         return Package::for($this);
+    }
+
+    /**
+     * Whether this restaurant may use a template: free ones are open to
+     * everyone, paid ones only once bought.
+     */
+    public function owns(Template $template): bool
+    {
+        if ($template->isFree()) {
+            return true;
+        }
+
+        // Answer from the loaded relation when the caller eager-loaded it, so
+        // listing every template stays a single query.
+        if ($this->relationLoaded('templatePurchases')) {
+            return $this->templatePurchases->contains('template_id', $template->id);
+        }
+
+        return $this->templatePurchases()->where('template_id', $template->id)->exists();
     }
 
     /**
@@ -190,28 +170,22 @@ class Restaurant extends Model implements HasMedia
     {
         $saved = array_filter((array) $this->qr_settings, fn ($value) => $value !== null);
 
-        // The centre logo is now none|image only — the old boolean/`mark` Q
-        // monogram is gone, so drop any legacy value and let the default apply.
-        if (! in_array($saved['logo'] ?? null, ['none', 'image'], true)) {
-            unset($saved['logo']);
-        }
-
         return array_merge($this->qrDefaultDesign(), $saved);
     }
 
     public function getDishLimitAttribute(): int
     {
-        return $this->package()->limit('dish_limit');
+        return $this->package()->limit(Feature::DishLimit);
     }
 
     public function getCategoryLimitAttribute(): int
     {
-        return $this->package()->limit('category_limit');
+        return $this->package()->limit(Feature::CategoryLimit);
     }
 
     public function getSocialLinkLimitAttribute(): int
     {
-        return $this->package()->limit('social_link_limit');
+        return $this->package()->limit(Feature::SocialLinkLimit);
     }
 
     public function hasReachedDishLimit(): bool
@@ -219,19 +193,9 @@ class Restaurant extends Model implements HasMedia
         return $this->dishes()->count() >= $this->dish_limit;
     }
 
-    public function getRemainingDishSlots(): int
-    {
-        return max(0, $this->dish_limit - $this->dishes()->count());
-    }
-
     public function hasReachedCategoryLimit(): bool
     {
         return $this->categories()->count() >= $this->category_limit;
-    }
-
-    public function getRemainingCategorySlots(): int
-    {
-        return max(0, $this->category_limit - $this->categories()->count());
     }
 
     public function hasReachedSocialLinkLimit(): bool
@@ -239,29 +203,9 @@ class Restaurant extends Model implements HasMedia
         return $this->socialLinks()->count() >= $this->social_link_limit;
     }
 
-    public function getRemainingSocialLinkSlots(): int
-    {
-        return max(0, $this->social_link_limit - $this->socialLinks()->count());
-    }
-
     public function getTotalViews(): int
     {
         return $this->statistics()->count();
-    }
-
-    public function getUniqueVisitors(): int
-    {
-        return $this->statistics()->distinct('session_id')->count('session_id');
-    }
-
-    public function getAverageTimeSpent(): float
-    {
-        $avg = $this->statistics()
-            ->whereNotNull('time_spent')
-            ->where('time_spent', '>', 0)
-            ->avg('time_spent');
-
-        return $avg ? (float) $avg : 0.0;
     }
 
     public function getQrScanCount(string $period = 'all'): int
@@ -273,25 +217,6 @@ class Restaurant extends Model implements HasMedia
             'week' => $query->whereBetween('viewed_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
             'month' => $query->whereMonth('viewed_at', now()->month)->whereYear('viewed_at', now()->year)->count(),
             default => $query->count(),
-        };
-    }
-
-    public function getTotalTimeSpent(): int
-    {
-        return $this->statistics()
-            ->whereNotNull('time_spent')
-            ->sum('time_spent') ?? 0;
-    }
-
-    public function getWhatsAppOrderCount(string $period = 'all'): int
-    {
-        $query = $this->statistics()->where('whatsapp_orders', '>', 0);
-
-        return match ($period) {
-            'today' => $query->whereDate('viewed_at', today())->sum('whatsapp_orders'),
-            'week' => $query->whereBetween('viewed_at', [now()->startOfWeek(), now()->endOfWeek()])->sum('whatsapp_orders'),
-            'month' => $query->whereMonth('viewed_at', now()->month)->whereYear('viewed_at', now()->year)->sum('whatsapp_orders'),
-            default => $query->sum('whatsapp_orders'),
         };
     }
 

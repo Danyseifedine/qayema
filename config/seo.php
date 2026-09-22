@@ -33,12 +33,12 @@ return [
         'url' => env('APP_URL', 'http://localhost'),
         'logo' => env('APP_URL', 'http://localhost').'/images/logo/logo.png',
         'description' => [
-            'en' => 'Lebify Group builds MenuX: create beautiful digital menus for your restaurant. Free to start, easy to use. Based in Lebanon.',
+            'en' => 'Lebify Group builds Qayema: bilingual digital menus for restaurants, shared as a QR code. Free to start, easy to use. Based in Lebanon.',
         ],
         'contact' => [
             '@type' => 'ContactPoint',
             'telephone' => '+96103004699',
-            'email' => 'dany.a.seifeddine@gmail.com',
+            'email' => env('CONTACT_PUBLIC_EMAIL', 'dany.a.seifeddine@gmail.com'),
             'contactType' => 'Customer Service',
             'areaServed' => 'LB',
             'address' => [

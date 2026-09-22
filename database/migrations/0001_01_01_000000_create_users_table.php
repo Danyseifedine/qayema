@@ -6,18 +6,23 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
+            // Nullable: Google-only accounts never set a password.
+            $table->string('password')->nullable();
+            $table->string('role', 16)->default('menu_owner');
+            // Qayema coins. The signed ledger in `coin_transactions` is the source
+            // of truth; this is the cached balance kept in step inside the same
+            // transaction as every ledger write.
+            $table->unsignedInteger('coin_balance')->default(0);
+            $table->unsignedTinyInteger('onboarding_step')->default(0);
+            $table->timestamp('onboarding_completed_at')->nullable();
             $table->rememberToken();
+            $table->softDeletes();
             $table->timestamps();
         });
 
@@ -37,13 +42,10 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('users');
-        Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('users');
     }
 };

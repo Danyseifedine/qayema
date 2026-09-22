@@ -36,7 +36,7 @@ class DishResource extends JsonResource
                     'ar' => $this->category->getTranslation('name', 'ar', false) ?: null,
                 ],
             ] : null),
-            'image_url' => $this->getFirstMediaUrl('images') ?: null,
+            'image_url' => $this->getFirstMediaUrl('image') ?: null,
         ];
     }
 }

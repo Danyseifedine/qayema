@@ -23,20 +23,14 @@ class RestaurantStatistic extends Model
         'browser',
         'os',
         'viewed_at',
-        'time_spent',
-        'page_views',
         'via_qr',
-        'whatsapp_orders',
     ];
 
     protected function casts(): array
     {
         return [
             'viewed_at' => 'datetime',
-            'time_spent' => 'integer',
-            'page_views' => 'integer',
             'via_qr' => 'boolean',
-            'whatsapp_orders' => 'integer',
         ];
     }
 

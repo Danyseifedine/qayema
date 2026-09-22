@@ -1,0 +1,254 @@
+<?php
+
+namespace Tests\Feature\Journeys;
+
+use App\Enums\Feature;
+use App\Filament\Admin\Resources\Restaurants\Pages\EditRestaurant;
+use App\Filament\Admin\Resources\Restaurants\RelationManagers\FeatureGrantsRelationManager;
+use App\Models\FeatureDefault;
+use App\Models\Restaurant;
+use App\Models\Template;
+use App\Models\User;
+use Filament\Actions\Testing\TestAction;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
+use Laravel\Socialite\Contracts\Provider;
+use Laravel\Socialite\Contracts\User as SocialiteUser;
+use Laravel\Socialite\Facades\Socialite;
+use Livewire\Livewire;
+use Mockery;
+use Tests\Concerns\CreatesOwners;
+use Tests\Concerns\FakesPaddle;
+use Tests\TestCase;
+
+/**
+ * Whole flows across many endpoints, the way a real owner would go through
+ * them. These are slower and broader than the per-endpoint tests on purpose.
+ */
+class OwnerJourneyTest extends TestCase
+{
+    use CreatesOwners, FakesPaddle, RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Mail::fake();
+        $this->fakePaddle();
+        Template::factory()->withSettings([['key' => 'primary_color', 'type' => 'color', 'default' => '#C8A85A']])->create(['slug' => 'classic', 'sort_order' => 0]);
+    }
+
+    private function signUpWithGoogle(string $email): User
+    {
+        $googleUser = Mockery::mock(SocialiteUser::class);
+        $googleUser->shouldReceive('getId')->andReturn('g-'.md5($email));
+        $googleUser->shouldReceive('getEmail')->andReturn($email);
+        $googleUser->shouldReceive('getName')->andReturn('Journey Owner');
+        $googleUser->shouldReceive('getAvatar')->andReturn(null);
+        $googleUser->token = 't';
+        $googleUser->refreshToken = null;
+        $googleUser->expiresIn = null;
+        $provider = Mockery::mock(Provider::class);
+        $provider->shouldReceive('user')->andReturn($googleUser);
+        Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
+
+        $this->get(route('auth.google.callback'))->assertRedirect(route('onboarding'));
+
+        return User::firstWhere('email', $email);
+    }
+
+    private function onboard(User $user, string $slug): Restaurant
+    {
+        $this->actingAs($user)->postJson(route('onboarding.advance'), ['_step' => 1, 'name' => 'Journey Diner', 'slug' => $slug, 'default_locale' => 'en'])->assertOk();
+        $this->actingAs($user)->postJson(route('onboarding.advance'), ['_step' => 2, 'phone' => '+96170123456', 'currency' => 'USD'])->assertOk();
+        $this->actingAs($user)->postJson(route('onboarding.advance'), ['_step' => 3, 'logo_key' => '11111111-1111-1111-1111-111111111111'])->assertOk()->assertJson(['completed' => true]);
+
+        return $user->fresh()->restaurant;
+    }
+
+    public function test_signup_onboard_pick_template_build_menu_hit_limit_get_more_go_live(): void
+    {
+        FeatureDefault::set(Feature::DishLimit, 3);
+        $user = $this->signUpWithGoogle('journey@example.com');
+        $restaurant = $this->onboard($user, 'journey');
+
+        // The shell says: no template yet, dashboard locked.
+        $this->actingAs($user)->getJson(route('api.user'))->assertJsonPath('data.restaurant.template_id', null);
+        $this->get('/journey')->assertNotFound();
+
+        // Pick the free template.
+        $classic = Template::firstWhere('slug', 'classic');
+        $this->actingAs($user)->postJson(route('api.templates.select'), ['template_id' => $classic->id])->assertOk();
+
+        // Build the menu up to the limit.
+        $category = $this->actingAs($user)->postJson(route('api.categories.store'), ['name' => ['en' => 'Mezze']])->assertCreated()->json('data.id');
+        foreach (['Hummus', 'Tabbouleh', 'Fattoush'] as $dish) {
+            $this->actingAs($user)->postJson(route('api.dishes.store'), ['name' => ['en' => $dish], 'price' => 5, 'category_id' => $category])->assertCreated();
+        }
+        $this->actingAs($user)->postJson(route('api.dishes.store'), ['name' => ['en' => 'Fourth'], 'price' => 5, 'category_id' => $category])->assertStatus(422);
+
+        // The admin grants two more slots.
+        $this->actingAs($this->admin());
+        Livewire::test(FeatureGrantsRelationManager::class, ['ownerRecord' => $restaurant, 'pageClass' => EditRestaurant::class])
+            ->callAction(TestAction::make('create')->table(), data: ['feature' => Feature::DishLimit->value, 'value' => 2, 'source' => 'admin']);
+
+        $this->actingAs($user)->postJson(route('api.dishes.store'), ['name' => ['en' => 'Fourth'], 'price' => 5, 'category_id' => $category])->assertCreated();
+        $this->actingAs($user)->getJson(route('api.user'))->assertJsonPath('data.restaurant.limits.dishes', ['used' => 4, 'limit' => 5]);
+
+        // Guests see all four; the visit is counted.
+        $this->get('/journey?qr=1')->assertOk()->assertSee('Hummus')->assertSee('Fourth');
+        $this->actingAs($user)->getJson(route('api.stats'))->assertJsonPath('data.totals.qr_scans', 1);
+        Mail::assertQueued(\App\Mail\WelcomeRestaurantOwner::class);
+    }
+
+    public function test_buy_coins_unlock_a_paid_design_customise_it_and_switch_freely(): void
+    {
+        $owner = $this->owner(['default_locale' => 'en', 'slug' => 'designer']);
+        $premium = Template::factory()->paid(650)->withSettings([['key' => 'primary_color', 'type' => 'color', 'default' => '#ABCDEF']])->create(['slug' => 'midnight', 'sort_order' => 1]);
+        $this->coinPack(1000, 'pri_1000');
+
+        // Can't afford it, can't select it, but can preview it.
+        $this->actingAs($owner->user)->postJson(route('api.templates.unlock'), ['template_id' => $premium->id])->assertStatus(402)->assertJsonPath('shortfall', 650);
+        $this->actingAs($owner->user)->postJson(route('api.templates.select'), ['template_id' => $premium->id])->assertForbidden();
+        $this->actingAs($owner->user)->get('/designer?preview='.$premium->id)->assertOk()->assertSee('--accent: #ABCDEF', false);
+
+        // Buy a pack: checkout, then the webhook lands.
+        $this->actingAs($owner->user)->postJson(route('api.checkout'), ['pack_id' => \App\Models\CoinPack::first()->id])->assertOk();
+        $this->completePaddleTransaction($owner->user, 'txn_j1', 'pri_1000');
+        $this->actingAs($owner->user)->getJson(route('api.wallet'))->assertJsonPath('data.balance', 1000);
+
+        // Unlock, select, recolour.
+        $this->actingAs($owner->user)->postJson(route('api.templates.unlock'), ['template_id' => $premium->id])->assertOk()->assertJsonPath('meta.balance', 350);
+        $this->actingAs($owner->user)->postJson(route('api.templates.select'), ['template_id' => $premium->id])->assertOk();
+        $this->actingAs($owner->user)->putJson(route('api.template-settings.update'), ['settings' => ['primary_color' => '#112233']])->assertOk();
+        $this->get('/designer')->assertOk()->assertSee('--accent: #112233', false);
+
+        // Switch to free and back: no further charge, settings reset to defaults on each switch.
+        $classic = Template::firstWhere('slug', 'classic');
+        $this->actingAs($owner->user)->postJson(route('api.templates.select'), ['template_id' => $classic->id])->assertOk();
+        $this->actingAs($owner->user)->postJson(route('api.templates.select'), ['template_id' => $premium->id])->assertOk()->assertJsonPath('meta.balance', 350)->assertJsonPath('meta.settings.primary_color', '#ABCDEF');
+    }
+
+    public function test_a_refund_after_spending_floors_at_zero_and_keeps_the_template(): void
+    {
+        $owner = $this->owner();
+        $premium = Template::factory()->paid(800)->create();
+        $this->coinPack(1000, 'pri_1000');
+        $this->completePaddleTransaction($owner->user, 'txn_r', 'pri_1000');
+        $this->actingAs($owner->user)->postJson(route('api.templates.unlock'), ['template_id' => $premium->id])->assertOk();
+
+        $this->refundPaddleTransaction('txn_r');
+
+        $this->actingAs($owner->user)->getJson(route('api.wallet'))->assertJsonPath('data.balance', 0);
+        $this->assertTrue($owner->fresh()->owns($premium), 'What was bought stays bought; the shortfall is flagged for a human.');
+        $this->assertSame(800, $owner->user->coinTransactions()->where('type', 'refund')->first()->meta['shortfall']);
+    }
+
+    public function test_a_replayed_webhook_never_double_credits_across_the_whole_flow(): void
+    {
+        $owner = $this->owner();
+        $this->coinPack(500, 'pri_500');
+
+        for ($i = 0; $i < 3; $i++) {
+            $this->completePaddleTransaction($owner->user, 'txn_same', 'pri_500');
+        }
+
+        $this->actingAs($owner->user)->getJson(route('api.wallet'))->assertJsonPath('data.balance', 500)->assertJsonPath('meta.total', 1);
+    }
+
+    public function test_flooding_gets_the_ip_banned_and_the_ban_lifts_after_an_hour(): void
+    {
+        // The admin bypass while banned is covered in BlockedIpTest; switching
+        // acting users mid-test trips Filament's session hash check.
+        $owner = $this->owner();
+
+        // Hammer a strike-feeding endpoint (uploads: 20/min, then every 429 is
+        // a strike; 20 strikes in a minute is a ban).
+        for ($i = 0; $i < 45; $i++) {
+            $this->actingAs($owner->user)->post(
+                route('api.uploads.temp'),
+                ['file' => \Illuminate\Http\UploadedFile::fake()->image("f{$i}.jpg", 10, 10), 'context' => 'dish'],
+                ['Accept' => 'application/json'],
+            );
+        }
+
+        $this->assertDatabaseHas('blocked_ips', ['ip' => '127.0.0.1']);
+        $this->get('/')->assertForbidden();
+        $this->actingAs($owner->user)->getJson(route('api.user'))->assertOk('The API group does not run the ban middleware; the web surface does.');
+
+        $this->travel(61)->minutes();
+        \Illuminate\Support\Facades\Cache::flush();
+        $this->get('/')->assertOk();
+    }
+
+    public function test_lowering_a_default_below_usage_blocks_new_rows_and_raising_it_unblocks(): void
+    {
+        $owner = $this->owner();
+        $category = \App\Models\Category::factory()->create(['restaurant_id' => $owner->id]);
+        \App\Models\Dish::factory()->count(5)->create(['restaurant_id' => $owner->id, 'category_id' => $category->id]);
+        $this->actingAs($this->admin());
+
+        Livewire::test(\App\Filament\Admin\Pages\ManageFeatureDefaults::class)
+            ->fillForm(['defaults.dish_limit' => 3, 'defaults.category_limit' => 10, 'defaults.social_link_limit' => 2, 'defaults.qr_studio' => false])
+            ->call('save');
+        $this->actingAs($owner->user)->postJson(route('api.dishes.store'), ['name' => ['en' => 'x'], 'price' => 1, 'category_id' => $category->id])->assertStatus(422);
+        $this->assertSame(5, $owner->dishes()->count());
+
+        $this->actingAs($this->admin());
+        Livewire::test(\App\Filament\Admin\Pages\ManageFeatureDefaults::class)
+            ->fillForm(['defaults.dish_limit' => 10, 'defaults.category_limit' => 10, 'defaults.social_link_limit' => 2, 'defaults.qr_studio' => false])
+            ->call('save');
+        $this->actingAs($owner->user)->postJson(route('api.dishes.store'), ['name' => ['en' => 'x'], 'price' => 1, 'category_id' => $category->id])->assertCreated();
+    }
+
+    public function test_deleting_a_restaurant_cascades_content_but_keeps_the_user_and_their_coins(): void
+    {
+        $owner = $this->ownerWithCoins(300);
+        $category = \App\Models\Category::factory()->create(['restaurant_id' => $owner->id]);
+        $dish = \App\Models\Dish::factory()->create(['restaurant_id' => $owner->id, 'category_id' => $category->id]);
+        $owner->socialLinks()->create(['platform' => 'instagram', 'url' => 'https://instagram.com/x']);
+        $owner->featureGrants()->create(['feature' => Feature::DishLimit, 'value' => 5, 'source' => 'admin']);
+        $premium = Template::factory()->paid(100)->create();
+        $owner->templatePurchases()->create(['template_id' => $premium->id, 'price_paid' => 100]);
+        $owner->statistics()->create(['session_id' => 's', 'viewed_at' => now()]);
+        $userId = $owner->user_id;
+
+        $owner->delete();
+
+        foreach (['categories', 'dishes', 'restaurant_social_links', 'restaurant_features', 'template_purchases', 'menu_sessions'] as $table) {
+            $this->assertDatabaseCount($table, 0);
+        }
+        $this->assertDatabaseHas('users', ['id' => $userId]);
+        $this->assertSame(300, (int) User::find($userId)->coin_balance);
+        $this->assertDatabaseHas('templates', ['id' => $premium->id]);
+    }
+
+    public function test_password_reset_end_to_end_for_a_google_only_owner(): void
+    {
+        \Illuminate\Support\Facades\Notification::fake();
+        $user = User::factory()->create(['password' => null]);
+
+        // Can't log in with a password yet.
+        $this->post(route('login'), ['email' => $user->email, 'password' => 'anything'])->assertSessionHasErrors('email');
+
+        $this->post(route('password.email'), ['email' => $user->email]);
+        $token = null;
+        \Illuminate\Support\Facades\Notification::assertSentTo($user, \Illuminate\Auth\Notifications\ResetPassword::class, function ($n) use (&$token) {
+            $token = $n->token;
+
+            return true;
+        });
+        $this->post(route('password.store'), ['token' => $token, 'email' => $user->email, 'password' => 'a-real-password-1', 'password_confirmation' => 'a-real-password-1'])->assertRedirect(route('login'));
+
+        $this->post(route('login'), ['email' => $user->email, 'password' => 'a-real-password-1'])->assertRedirect();
+        $this->assertAuthenticatedAs($user);
+        $this->actingAs($user->fresh())->getJson(route('api.user'))->assertJsonPath('data.has_password', true);
+    }
+
+    public function test_a_reserved_word_can_never_become_a_menu_address(): void
+    {
+        $user = User::factory()->create(['onboarding_step' => 0, 'onboarding_completed_at' => null]);
+
+        $this->actingAs($user)->postJson(route('onboarding.advance'), ['_step' => 1, 'name' => 'Admin Cafe', 'slug' => 'admin'])->assertStatus(422);
+        $this->actingAs($user)->postJson(route('onboarding.advance'), ['_step' => 1, 'name' => 'Admin Cafe', 'slug' => 'admin-cafe'])->assertOk();
+    }
+}

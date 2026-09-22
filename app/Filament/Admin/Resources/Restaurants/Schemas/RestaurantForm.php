@@ -28,6 +28,8 @@ class RestaurantForm
                             ->searchable()
                             ->preload()
                             ->required()
+                            ->unique(ignoreRecord: true)
+                            ->validationMessages(['unique' => 'This owner already has a restaurant.'])
                             ->helperText('The user account that owns this restaurant.'),
                         TextInput::make('name')
                             ->placeholder('e.g. The Golden Spoon')
@@ -67,7 +69,7 @@ class RestaurantForm
                     ]),
 
                 Section::make('Template')
-                    ->description('Assign a display template. Limits and feature access come from the template\'s bundled features (the package), plus any add-ons or manual grants.')
+                    ->description('The public menu design. Templates are pure design — limits and feature access come from the feature defaults plus this restaurant\'s grants.')
                     ->schema([
                         Select::make('template_id')
                             ->label('Template')
@@ -76,7 +78,7 @@ class RestaurantForm
                             ->preload()
                             ->nullable()
                             ->placeholder('No template')
-                            ->helperText('Controls the public menu design and the bundled package.'),
+                            ->helperText('Paid templates normally require coins; assigning one here grants it directly.'),
                     ]),
 
                 Section::make('Visibility')

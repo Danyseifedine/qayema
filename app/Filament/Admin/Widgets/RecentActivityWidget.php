@@ -37,14 +37,6 @@ class RecentActivityWidget extends TableWidget
                     ->label('Visited At')
                     ->dateTime('M j, Y H:i')
                     ->sortable(),
-                TextColumn::make('page_views')
-                    ->label('Page Views')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('time_spent')
-                    ->label('Time Spent')
-                    ->formatStateUsing(fn ($state) => $state ? $this->formatTime((int) $state) : '—')
-                    ->sortable(),
                 TextColumn::make('device_type')
                     ->label('Device')
                     ->badge()
@@ -65,24 +57,5 @@ class RecentActivityWidget extends TableWidget
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('viewed_at', 'desc');
-    }
-
-    protected function formatTime(int $seconds): string
-    {
-        if ($seconds < 60) {
-            return $seconds.'s';
-        }
-
-        $minutes = (int) floor($seconds / 60);
-        $remainingSeconds = $seconds % 60;
-
-        if ($minutes < 60) {
-            return $remainingSeconds > 0 ? "{$minutes}m {$remainingSeconds}s" : "{$minutes}m";
-        }
-
-        $hours = (int) floor($minutes / 60);
-        $remainingMinutes = $minutes % 60;
-
-        return $remainingMinutes > 0 ? "{$hours}h {$remainingMinutes}m" : "{$hours}h";
     }
 }

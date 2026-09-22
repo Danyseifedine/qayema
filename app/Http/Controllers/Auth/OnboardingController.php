@@ -4,8 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\Restaurant;
-use App\Models\Tag;
-use App\Rules\HasTagInEachCategory;
+use App\Models\User;
 use App\Services\Portal\OnboardingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -16,7 +15,7 @@ use Illuminate\View\View;
 
 class OnboardingController extends Controller
 {
-    private const TOTAL_STEPS = 5;
+    private const TOTAL_STEPS = User::ONBOARDING_STEPS;
 
     public function show(Request $request): View|RedirectResponse
     {
@@ -24,12 +23,11 @@ class OnboardingController extends Controller
             return redirect('/');
         }
 
-        $restaurant = $request->user()->restaurant?->load('tags');
+        $restaurant = $request->user()->restaurant;
 
         return view('portal.auth.onboarding', [
             'step' => $request->user()->currentOnboardingStep(),
             'totalSteps' => self::TOTAL_STEPS,
-            'tags' => Tag::all()->groupBy('category'),
             'restaurant' => $restaurant,
         ]);
     }
@@ -57,7 +55,7 @@ class OnboardingController extends Controller
 
     public function advance(Request $request, OnboardingService $onboarding): JsonResponse
     {
-        $user = $request->user();
+        $user = $request->user()->load('restaurant');
         $dbStep = $user->onboarding_step ?? 0;
 
         // Frontend sends the 1-based visual step; convert to 0-based and clamp to a
@@ -86,6 +84,7 @@ class OnboardingController extends Controller
                     'slug' => [
                         'required', 'string', 'min:2', 'max:100',
                         'regex:/^[a-z0-9][a-z0-9-]*[a-z0-9]$/',
+                        Rule::notIn(Restaurant::RESERVED_SLUGS),
                         Rule::unique('restaurants', 'slug')->ignore($user->restaurant?->id),
                     ],
                     'default_locale' => ['nullable', 'string', 'in:ar,en'],
@@ -125,34 +124,13 @@ class OnboardingController extends Controller
                 ]);
 
                 $onboarding->saveBranding($user, $user->restaurant, $validated['logo_key'] ?? null, $validated['cover_image_key'] ?? null);
-                break;
-
-            case 3: // Step 4 — cuisine + dietary tags (at least one of each required)
-                $validated = $request->validate([
-                    'tag_ids' => ['required', 'array', 'max:30', new HasTagInEachCategory(['cuisine', 'dietary'], __('owner.onboarding.tags_each_category'))],
-                    'tag_ids.*' => ['integer', 'exists:tags,id'],
-                ], [
-                    'tag_ids.required' => __('owner.onboarding.tags_each_category'),
-                ]);
-
-                $onboarding->syncTags($user->restaurant, ['cuisine', 'dietary'], $validated['tag_ids']);
-                break;
-
-            case 4: // Step 5 — vibe + style tags (final step → completes onboarding)
-                $validated = $request->validate([
-                    'tag_ids' => ['required', 'array', 'max:30', new HasTagInEachCategory(['vibe', 'style'], __('owner.onboarding.tags_each_category'))],
-                    'tag_ids.*' => ['integer', 'exists:tags,id'],
-                ], [
-                    'tag_ids.required' => __('owner.onboarding.tags_each_category'),
-                ]);
-
-                $onboarding->syncTags($user->restaurant, ['vibe', 'style'], $validated['tag_ids']);
                 $onboarding->complete($user, $user->restaurant);
 
                 return response()->json([
                     'completed' => true,
                     'redirect' => config('app.dashboard_url'),
                 ]);
+
         }
 
         // Track the furthest step reached; never move the saved pointer backwards.

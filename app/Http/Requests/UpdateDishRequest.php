@@ -21,7 +21,8 @@ class UpdateDishRequest extends FormRequest
         $restaurantId = $this->user()?->restaurant?->id ?? 0;
 
         return [
-            'name' => ['required', 'array'],
+            // Partial updates are the norm: a name is required only when sent.
+            'name' => ['sometimes', 'required', 'array'],
             'name.en' => ['nullable', 'string', 'max:255'],
             'name.ar' => ['nullable', 'string', 'max:255'],
             'ingredients' => ['nullable', 'array'],
@@ -42,6 +43,10 @@ class UpdateDishRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
+            if (! $this->has('name')) {
+                return;
+            }
+
             $name = (array) $this->input('name', []);
 
             if (blank($name['en'] ?? null) && blank($name['ar'] ?? null)) {

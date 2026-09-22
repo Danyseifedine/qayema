@@ -3,9 +3,26 @@
 return [
     'failed' => 'These credentials do not match our records.',
     'throttle' => 'Too many login attempts. Please try again in :seconds seconds.',
+    'google_no_email' => 'Google did not share an email address for this account, so we cannot sign you in with it.',
     'google_only' => 'This account uses Google sign-in. Please use the "Continue with Google" button above.',
     'captcha' => 'The captcha verification failed. Please try again.',
-
+    'passwords' => [
+        'eyebrow' => 'Account recovery',
+        'forgot_link' => 'Forgot password?',
+        'forgot_title' => 'Reset your password.',
+        'forgot_subtitle' => 'Enter the email you signed up with and we will send you a link to choose a new password.',
+        'send_link' => 'Email me a reset link',
+        'back_to_login' => 'Back to sign in',
+        'sent' => 'If that address has an account, a reset link is on its way. Check your inbox.',
+        'throttled' => 'A reset link was sent recently. Please check your inbox before requesting another.',
+        'reset_title' => 'Choose a new password.',
+        'reset_subtitle' => 'Pick something you have not used elsewhere.',
+        'new_password' => 'New password',
+        'confirm_password' => 'Confirm new password',
+        'reset_submit' => 'Save new password',
+        'reset_done' => 'Your password has been changed. Sign in with it now.',
+        'invalid_token' => 'This reset link is invalid or has expired. Please request a new one.',
+    ],
     'login' => [
         'eyebrow' => 'Get Started',
         'title' => 'Welcome to :name.',
@@ -19,15 +36,5 @@ return [
         'terms' => 'Terms',
         'google_btn' => 'Continue with Google',
         'divider' => 'or sign in with email',
-    ],
-    'brand' => [
-        'session_meta' => 'Tonight · 184 guests served',
-        'live_label' => 'Live update',
-        'live_body' => 'Lamb shank <strong>86\'d at 8:14 pm</strong> — pulled from 18 tables in 200ms.',
-        'scan_label' => 'Avg. scan-to-order',
-        'quote' => 'It felt like the restaurant <span class="accent">cared about us</span> before we even ordered. The menu just <em>knew</em>.',
-        'restaurants' => 'Restaurants',
-        'languages' => 'Languages',
-        'uptime' => 'Uptime',
     ],
 ];

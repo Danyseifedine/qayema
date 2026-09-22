@@ -39,7 +39,7 @@ class DishForm
                     ]),
 
                 Section::make('Dish Details')
-                    ->description('Name, price, description and ingredients.')
+                    ->description('Name, price and ingredients.')
                     ->columns(2)
                     ->schema([
                         TextInput::make('name')
@@ -54,28 +54,12 @@ class DishForm
                             ->step(0.01)
                             ->minValue(0)
                             ->helperText('Leave empty to hide the price.'),
-                        Textarea::make('description')
-                            ->placeholder('A short description of the dish…')
-                            ->rows(3)
-                            ->helperText('Optional. Shown below the dish name.')
-                            ->columnSpanFull(),
                         Textarea::make('ingredients')
                             ->label('Ingredients')
                             ->placeholder('e.g. Salmon, lemon, garlic, olive oil…')
                             ->rows(3)
-                            ->helperText('Optional. Shown when "Show ingredients" is enabled.')
+                            ->helperText('Optional. Shown under the dish name on the menu.')
                             ->columnSpanFull(),
-                    ]),
-
-                Section::make('Tags')
-                    ->description('Assign dietary, cuisine, vibe or style tags to this dish.')
-                    ->schema([
-                        Select::make('tags')
-                            ->relationship('tags', 'name')
-                            ->getOptionLabelFromRecordUsing(fn ($record): string => (string) $record->name)
-                            ->multiple()
-                            ->preload()
-                            ->helperText('Tags help customers filter dishes. Managed under System → Tags.'),
                     ]),
 
                 Section::make('Display & Availability')
@@ -94,18 +78,17 @@ class DishForm
                             ->helperText('Uncheck to hide this dish without deleting it.'),
                     ]),
 
-                Section::make('Images')
-                    ->description('Photos shown on the public menu. First image is the main one.')
+                Section::make('Image')
+                    ->description('Photo shown on the public menu.')
                     ->schema([
-                        SpatieMediaLibraryFileUpload::make('images')
-                            ->label('Dish Images')
-                            ->collection('images')
-                            ->multiple()
+                        SpatieMediaLibraryFileUpload::make('image')
+                            ->label('Dish Image')
+                            ->collection('image')
                             ->image()
                             ->maxSize(5120)
                             ->imageEditor()
                             ->imageEditorAspectRatioOptions([null, '16:9', '4:3', '1:1'])
-                            ->helperText('Upload one or more images. Max 5 MB each. Optimised automatically.'),
+                            ->helperText('Max 5 MB. Optimised automatically.'),
                     ]),
             ]);
     }

@@ -12,15 +12,13 @@ class VisitorStatsWidget extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        $totalViews = (int) RestaurantStatistic::sum('page_views');
+        $totalViews = RestaurantStatistic::count();
         $uniqueVisitors = RestaurantStatistic::distinct('session_id')->count('session_id');
-        $todayViews = (int) RestaurantStatistic::whereDate('viewed_at', today())->sum('page_views');
-        $avgTimeSpent = (float) (RestaurantStatistic::whereNotNull('time_spent')
-            ->where('time_spent', '>', 0)
-            ->avg('time_spent') ?? 0);
+        $todayViews = RestaurantStatistic::whereDate('viewed_at', today())->count();
+        $qrScans = RestaurantStatistic::where('via_qr', true)->count();
 
         $last7Days = RestaurantStatistic::query()
-            ->selectRaw('DATE(viewed_at) as date, SUM(page_views) as total')
+            ->selectRaw('DATE(viewed_at) as date, COUNT(*) as total')
             ->where('viewed_at', '>=', now()->subDays(6))
             ->groupBy('date')
             ->orderBy('date')
@@ -47,29 +45,10 @@ class VisitorStatsWidget extends StatsOverviewWidget
                 ->descriptionIcon('heroicon-o-calendar-days')
                 ->color('info'),
 
-            Stat::make('Avg. Time Spent', $this->formatTime((int) round($avgTimeSpent)))
-                ->description('Per session with recorded exit')
-                ->descriptionIcon('heroicon-o-clock')
+            Stat::make('QR Scans', number_format($qrScans))
+                ->description('Visits that came from a QR code')
+                ->descriptionIcon('heroicon-o-qr-code')
                 ->color('warning'),
         ];
-    }
-
-    protected function formatTime(int $seconds): string
-    {
-        if ($seconds < 60) {
-            return $seconds.'s';
-        }
-
-        $minutes = (int) floor($seconds / 60);
-        $remainingSeconds = $seconds % 60;
-
-        if ($minutes < 60) {
-            return $remainingSeconds > 0 ? "{$minutes}m {$remainingSeconds}s" : "{$minutes}m";
-        }
-
-        $hours = (int) floor($minutes / 60);
-        $remainingMinutes = $minutes % 60;
-
-        return $remainingMinutes > 0 ? "{$hours}h {$remainingMinutes}m" : "{$hours}h";
     }
 }

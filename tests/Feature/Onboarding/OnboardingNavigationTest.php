@@ -3,7 +3,6 @@
 namespace Tests\Feature\Onboarding;
 
 use App\Models\Restaurant;
-use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
@@ -23,18 +22,15 @@ class OnboardingNavigationTest extends TestCase
 
     public function test_final_step_completes_onboarding(): void
     {
-        // Step 5 is the final step — a valid tag completes onboarding rather than
-        // returning a further step.
+        // Step 3 (branding) is the final step — a logo completes onboarding
+        // rather than returning a further step.
         Mail::fake();
-        $vibe = Tag::create(['name' => ['en' => 'Cozy'], 'slug' => 'cozy', 'category' => 'vibe']);
-        $style = Tag::create(['name' => ['en' => 'Minimal'], 'slug' => 'minimal', 'category' => 'style']);
-        $user = $this->ownerWithRestaurant(4);
+        $user = $this->ownerWithRestaurant(2);
 
-        // Step 5 requires one vibe AND one style tag.
         $this->actingAs($user)
             ->postJson(route('onboarding.advance'), [
-                '_step' => 5,
-                'tag_ids' => [$vibe->id, $style->id],
+                '_step' => 3,
+                'logo_key' => '11111111-1111-1111-1111-111111111111',
             ])
             ->assertOk()
             ->assertJson(['completed' => true]);
@@ -44,14 +40,14 @@ class OnboardingNavigationTest extends TestCase
 
     public function test_overshooting_step_is_clamped_to_final_step(): void
     {
-        // A wildly out-of-range step must collapse onto the final step (tag
-        // selection) instead of returning 8, 9, … to infinity.
-        $this->actingAs($this->ownerWithRestaurant(5))
+        // A wildly out-of-range step must collapse onto the final step (branding)
+        // instead of returning 8, 9, … to infinity.
+        $this->actingAs($this->ownerWithRestaurant(3))
             ->postJson(route('onboarding.advance'), [
                 '_step' => 12,
             ])
             ->assertStatus(422)
-            ->assertJsonValidationErrors('tag_ids');
+            ->assertJsonValidationErrors('logo_key');
     }
 
     public function test_later_step_without_restaurant_is_sent_back_to_step_one(): void
@@ -60,8 +56,7 @@ class OnboardingNavigationTest extends TestCase
 
         $this->actingAs($user)
             ->postJson(route('onboarding.advance'), [
-                '_step' => 4,
-                'tag_ids' => [],
+                '_step' => 3,
             ])
             ->assertOk()
             ->assertJson(['step' => 1]);

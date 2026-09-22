@@ -84,13 +84,6 @@ class RestaurantsTable
                     ->color('warning')
                     ->toggleable(),
 
-                TextColumn::make('whatsapp_orders')
-                    ->label('WhatsApp Orders')
-                    ->getStateUsing(fn (Restaurant $record): int => (int) $record->statistics()->sum('whatsapp_orders'))
-                    ->badge()
-                    ->color('primary')
-                    ->toggleable(),
-
                 ToggleColumn::make('is_active')
                     ->label('Active'),
 

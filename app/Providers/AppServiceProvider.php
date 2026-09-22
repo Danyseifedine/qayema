@@ -2,16 +2,18 @@
 
 namespace App\Providers;
 
-use App\Listeners\GrantPurchasedFeatures;
+use App\Listeners\CreditPurchasedCoins;
+use App\Listeners\ReverseRefundedCoins;
 use App\Services\Global\AbuseGuard;
 use Closure;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Paddle\Events\TransactionCompleted;
+use Laravel\Paddle\Events\WebhookReceived;
+use Symfony\Component\HttpFoundation\Response;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -37,7 +39,8 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureRateLimiters();
 
-        Event::listen(TransactionCompleted::class, GrantPurchasedFeatures::class);
+        Event::listen(TransactionCompleted::class, CreditPurchasedCoins::class);
+        Event::listen(WebhookReceived::class, ReverseRefundedCoins::class);
     }
 
     /**
@@ -51,6 +54,10 @@ class AppServiceProvider extends ServiceProvider
         // a double-submit) and is already throttled, so it must NOT escalate to an
         // IP-wide ban — otherwise one busy office NAT could lock everyone out.
         $this->defineRateLimiter('auth', fn (): Limit => Limit::perMinute(5), autoBan: false);
+        // The login form has its own per-account lockout (5 wrong passwords,
+        // LoginRequest). This ceiling only has to stop floods, so it sits well
+        // above that — otherwise the raw 429 fires before the friendly lockout.
+        $this->defineRateLimiter('login', fn (): Limit => Limit::perMinute(20), autoBan: false);
         $this->defineRateLimiter('contact', fn (): Limit => Limit::perMinute(10), autoBan: false);
 
         // Dashboard SPA endpoints. The SPA polls /api/user on every boot, so the
@@ -75,6 +82,14 @@ class AppServiceProvider extends ServiceProvider
                 ->response(function (Request $request, array $headers) use ($autoBan): Response {
                     if ($autoBan) {
                         app(AbuseGuard::class)->recordViolation($request->ip());
+                    }
+
+                    if ($request->is('api/*') || $request->expectsJson()) {
+                        return response()->json([
+                            'message' => __('Too many requests. Please slow down.'),
+                            'code' => 'too_many_requests',
+                            'retry_after' => isset($headers['Retry-After']) ? (int) $headers['Retry-After'] : null,
+                        ], 429, $headers);
                     }
 
                     return response('Too many requests.', 429, $headers);

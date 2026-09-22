@@ -24,8 +24,7 @@ class PopularRestaurantsWidget extends TableWidget
             ->query(
                 Restaurant::query()
                     ->withCount('statistics')
-                    ->withSum('statistics', 'page_views')
-                    ->orderByDesc('statistics_sum_page_views')
+                    ->orderByDesc('statistics_count')
                     ->limit(10)
             )
             ->columns([
@@ -38,13 +37,8 @@ class PopularRestaurantsWidget extends TableWidget
                     ->label('Owner')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('statistics_sum_page_views')
-                    ->label('Page Views')
-                    ->numeric()
-                    ->sortable()
-                    ->default(0),
                 TextColumn::make('statistics_count')
-                    ->label('Sessions')
+                    ->label('Views')
                     ->numeric()
                     ->sortable()
                     ->default(0),
@@ -64,6 +58,6 @@ class PopularRestaurantsWidget extends TableWidget
                     ->formatStateUsing(fn ($state) => $state ? 'Active' : 'Inactive')
                     ->color(fn ($state) => $state ? 'success' : 'danger'),
             ])
-            ->defaultSort('statistics_sum_page_views', 'desc');
+            ->defaultSort('statistics_count', 'desc');
     }
 }

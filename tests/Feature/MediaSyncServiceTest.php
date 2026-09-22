@@ -44,9 +44,9 @@ class MediaSyncServiceTest extends TestCase
         $service = app(MediaService::class);
         $this->writeTempImage($service, $user->id, 'key-1');
 
-        $service->sync($dish, 'key-1', false, 'images', 'dish-image');
+        $service->sync($dish, 'key-1', false, 'image', 'dish-image');
 
-        $this->assertCount(1, $dish->fresh()->getMedia('images'));
+        $this->assertCount(1, $dish->fresh()->getMedia('image'));
     }
 
     public function test_sync_ignores_a_key_that_belongs_to_another_user(): void
@@ -63,9 +63,9 @@ class MediaSyncServiceTest extends TestCase
         $dish = Dish::factory()->create(['restaurant_id' => $restaurantB->id]);
 
         // ownerB references ownerA's key — the per-user path means it is not found.
-        $service->sync($dish, 'shared-key', false, 'images', 'dish-image');
+        $service->sync($dish, 'shared-key', false, 'image', 'dish-image');
 
-        $this->assertCount(0, $dish->fresh()->getMedia('images'));
+        $this->assertCount(0, $dish->fresh()->getMedia('image'));
     }
 
     public function test_sync_clears_collection_when_deletion_requested(): void
@@ -78,11 +78,11 @@ class MediaSyncServiceTest extends TestCase
 
         $service = app(MediaService::class);
         $this->writeTempImage($service, $user->id, 'key-2');
-        $service->sync($dish, 'key-2', false, 'images', 'dish-image');
-        $this->assertCount(1, $dish->fresh()->getMedia('images'));
+        $service->sync($dish, 'key-2', false, 'image', 'dish-image');
+        $this->assertCount(1, $dish->fresh()->getMedia('image'));
 
-        $service->sync($dish, null, true, 'images', 'dish-image');
+        $service->sync($dish, null, true, 'image', 'dish-image');
 
-        $this->assertCount(0, $dish->fresh()->getMedia('images'));
+        $this->assertCount(0, $dish->fresh()->getMedia('image'));
     }
 }

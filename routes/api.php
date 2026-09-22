@@ -1,7 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\CatalogController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\DishController;
@@ -9,7 +9,9 @@ use App\Http\Controllers\Api\PurchaseController;
 use App\Http\Controllers\Api\QrController;
 use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\SocialLinkController;
+use App\Http\Controllers\Api\StatsController;
 use App\Http\Controllers\Api\TemplateController;
+use App\Http\Controllers\Api\WalletController;
 use App\Http\Controllers\TempUploadController;
 use Illuminate\Support\Facades\Route;
 
@@ -28,6 +30,17 @@ Route::get('/csrf-token', [AuthController::class, 'csrfToken'])
 Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::get('/user', [AuthController::class, 'user'])->name('api.user');
     Route::post('/logout', [AuthController::class, 'logout'])->name('api.logout');
+
+    // The owner's own account. Email is read-only (accounts come from Google).
+    Route::match(['put', 'patch'], '/account', [AccountController::class, 'update'])
+        ->middleware('throttle:mutations')
+        ->name('api.account.update');
+    Route::put('/password', [AccountController::class, 'updatePassword'])
+        ->middleware('throttle:auth')
+        ->name('api.password.update');
+
+    // Dashboard-home analytics from menu_sessions.
+    Route::get('/stats', [StatsController::class, 'show'])->name('api.stats');
 
     // Temp image upload: the SPA POSTs a file here, it's optimized and parked in
     // the user's temp area, and the returned key rides along on the next
@@ -54,6 +67,8 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::post('/dishes', [DishController::class, 'store'])->name('api.dishes.store');
     Route::post('/dishes/reorder', [DishController::class, 'reorder'])->name('api.dishes.reorder');
     Route::get('/dishes/{dish}', [DishController::class, 'show'])->name('api.dishes.show');
+    Route::patch('/dishes/{dish}/availability', [DishController::class, 'updateAvailability'])->name('api.dishes.availability');
+    Route::post('/dishes/{dish}/move', [DishController::class, 'move'])->name('api.dishes.move');
     Route::match(['put', 'patch'], '/dishes/{dish}', [DishController::class, 'update'])->name('api.dishes.update');
     Route::delete('/dishes/{dish}', [DishController::class, 'destroy'])->name('api.dishes.destroy');
 
@@ -62,22 +77,28 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::get('/settings', [SettingsController::class, 'show'])->name('api.settings.show');
     Route::match(['put', 'patch'], '/settings', [SettingsController::class, 'update'])->name('api.settings.update');
 
-    // Menu templates — the owner picks the layout their restaurant uses. A new
-    // restaurant has none and must choose before the dashboard unlocks.
+    // Menu templates — the store. A new restaurant has none and must choose
+    // before the dashboard unlocks. Paid templates are unlocked with coins
+    // (a separate call, so selecting can never spend by accident) and are owned
+    // for good once bought.
     Route::get('/templates', [TemplateController::class, 'index'])->name('api.templates.index');
     Route::post('/templates/select', [TemplateController::class, 'select'])->name('api.templates.select');
+    Route::post('/templates/unlock', [TemplateController::class, 'unlock'])
+        ->middleware('throttle:mutations')
+        ->name('api.templates.unlock');
+    Route::match(['put', 'patch'], '/template-settings', [TemplateController::class, 'updateSettings'])
+        ->name('api.template-settings.update');
 
-    // Feature store — the purchasable add-on catalog with live Paddle amounts,
-    // and the checkout that prepares a Paddle overlay. Fulfillment is
-    // server-side via the Paddle webhook.
-    Route::get('/catalog', [CatalogController::class, 'index'])->name('api.catalog');
+    // Coins — the balance and ledger, the packs that top it up, and the
+    // checkout that opens a Paddle overlay for one. Coins are credited
+    // server-side when the Paddle webhook confirms payment.
+    Route::get('/wallet', [WalletController::class, 'show'])->name('api.wallet');
+    Route::get('/coin-packs', [WalletController::class, 'packs'])->name('api.coin-packs');
     Route::post('/checkout', [CheckoutController::class, 'store'])
         ->middleware('throttle:mutations')
         ->name('api.checkout');
 
-    // Purchase history — Paddle transactions with the grants they delivered,
-    // plus short-lived invoice PDF links fetched from Paddle on demand.
-    Route::get('/purchases', [PurchaseController::class, 'index'])->name('api.purchases.index');
+    // Short-lived invoice PDF links, fetched from Paddle on demand.
     Route::get('/purchases/{transaction}/invoice', [PurchaseController::class, 'invoice'])->name('api.purchases.invoice');
 
     // QR studio — the menu link's QR design (persisted look) + scan analytics.

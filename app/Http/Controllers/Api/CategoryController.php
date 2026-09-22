@@ -9,7 +9,6 @@ use App\Http\Requests\UpdateCategoryRequest;
 use App\Http\Resources\CategoryResource;
 use App\Models\Category;
 use App\Models\Restaurant;
-use App\Services\Global\MediaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -22,15 +21,12 @@ use Illuminate\Validation\ValidationException;
  */
 class CategoryController extends Controller
 {
-    public function __construct(private readonly MediaService $media) {}
-
     public function index(Request $request): AnonymousResourceCollection
     {
         $this->authorize('viewAny', Category::class);
         $restaurant = $this->restaurant($request);
 
         $categories = $restaurant->categories()
-            ->with('media')
             ->withCount('dishes')
             ->orderBy('display_order')
             ->orderBy('id')
@@ -62,7 +58,6 @@ class CategoryController extends Controller
 
             $category = new Category([
                 'name' => $this->localeMap($request->validated('name')),
-                'description' => $this->localeMap($request->validated('description')),
                 'display_order' => (int) $locked->categories()->max('display_order') + 1,
             ]);
             $category->restaurant()->associate($locked);
@@ -71,9 +66,7 @@ class CategoryController extends Controller
             return $category;
         });
 
-        $this->syncImage($request, $category);
-
-        return (new CategoryResource($category->load('media')->loadCount('dishes')))
+        return (new CategoryResource($category->loadCount('dishes')))
             ->response()
             ->setStatusCode(201);
     }
@@ -82,26 +75,21 @@ class CategoryController extends Controller
     {
         $this->authorize('view', $category);
 
-        return new CategoryResource($category->load('media')->loadCount('dishes'));
+        return new CategoryResource($category->loadCount('dishes'));
     }
 
     public function update(UpdateCategoryRequest $request, Category $category): CategoryResource
     {
         $this->authorize('update', $category);
 
-        // Only replace a translatable field when the client actually sent it —
-        // otherwise an empty map would wipe every locale of the omitted field.
+        // Only replace the name when the client actually sent it — otherwise an
+        // empty map would wipe every locale.
         if ($request->has('name')) {
             $category->name = $this->localeMap($request->validated('name'));
+            $category->save();
         }
-        if ($request->has('description')) {
-            $category->description = $this->localeMap($request->validated('description'));
-        }
-        $category->save();
 
-        $this->syncImage($request, $category);
-
-        return new CategoryResource($category->load('media')->loadCount('dishes'));
+        return new CategoryResource($category->loadCount('dishes'));
     }
 
     public function destroy(Request $request, Category $category): JsonResponse
@@ -138,7 +126,6 @@ class CategoryController extends Controller
         });
 
         $categories = $restaurant->categories()
-            ->with('media')
             ->withCount('dishes')
             ->orderBy('display_order')
             ->orderBy('id')
@@ -171,21 +158,5 @@ class CategoryController extends Controller
             'en' => trim((string) ($input['en'] ?? '')),
             'ar' => trim((string) ($input['ar'] ?? '')),
         ], static fn (string $value): bool => $value !== '');
-    }
-
-    /**
-     * Promote the optimized temp upload (referenced by `image_key`) into the
-     * category's cover collection, or clear it when `delete_image` is set. The
-     * raw upload is never stored — MediaService optimized it at temp-upload time.
-     */
-    private function syncImage(Request $request, Category $category): void
-    {
-        $this->media->sync(
-            $category,
-            $request->input('image_key'),
-            $request->boolean('delete_image'),
-            'image',
-            'category',
-        );
     }
 }

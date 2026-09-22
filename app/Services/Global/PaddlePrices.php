@@ -2,24 +2,26 @@
 
 namespace App\Services\Global;
 
+use App\Models\CoinPack;
 use Illuminate\Support\Facades\Cache;
 use InvalidArgumentException;
 use Laravel\Paddle\Cashier;
 
+/**
+ * Live Paddle amounts for the coin packs. Paddle stays the billing source of
+ * truth — we read what it will actually charge rather than storing a second
+ * copy of the price that could drift.
+ */
 class PaddlePrices
 {
-    private const CACHE_KEY = 'paddle:prices';
-
-    public function __construct(private readonly FeatureCatalog $catalog) {}
+    private const CACHE_KEY = 'paddle:coin-pack-prices';
 
     /**
-     * Live Paddle amounts for every sellable catalog entry, keyed by cart id:
-     * ['dish' => ['unit_amount' => 10, 'currency' => 'USD']]. Amounts are in the
-     * currency's smallest unit (cents). Cached briefly so the dashboard and SPA
-     * don't hammer Paddle; returns [] when Paddle is unreachable so callers
-     * degrade to "price unavailable" instead of erroring.
+     * Amounts keyed by pack slug: ['starter' => ['amount' => 500, 'currency' => 'USD']].
+     * Amounts are in the currency's smallest unit (cents). Returns [] when
+     * Paddle is unreachable so callers degrade to "price unavailable".
      *
-     * @return array<string, array{unit_amount: int, currency: string}>
+     * @return array<string, array{amount: int, currency: string}>
      */
     public function amounts(): array
     {
@@ -35,20 +37,20 @@ class PaddlePrices
     }
 
     /**
-     * Push a new unit price to Paddle for a catalog entry, then flush the cache
-     * so every surface shows the new amount immediately.
+     * Push a new price to Paddle for a pack, then flush so every surface shows
+     * the new amount immediately.
      */
-    public function update(string $cartId, int $unitAmountCents, string $currency = 'USD'): void
+    public function update(CoinPack $pack, int $amountCents, string $currency = 'USD'): void
     {
-        $entry = $this->catalog->find($cartId);
+        $priceId = $pack->paddlePriceId();
 
-        if ($entry === null) {
-            throw new InvalidArgumentException("Unknown or unsellable catalog entry [{$cartId}].");
+        if ($priceId === null) {
+            throw new InvalidArgumentException("Coin pack [{$pack->slug}] has no Paddle price for this environment.");
         }
 
-        Cashier::api('PATCH', 'prices/'.$entry['price_id'], [
+        Cashier::api('PATCH', 'prices/'.$priceId, [
             'unit_price' => [
-                'amount' => (string) $unitAmountCents,
+                'amount' => (string) $amountCents,
                 'currency_code' => $currency,
             ],
         ]);
@@ -62,30 +64,33 @@ class PaddlePrices
     }
 
     /**
-     * @return array<string, array{unit_amount: int, currency: string}>
+     * @return array<string, array{amount: int, currency: string}>
      */
     private function fetch(): array
     {
-        $entries = $this->catalog->all();
+        $packs = CoinPack::query()->sellable()->get();
 
-        if ($entries === []) {
+        if ($packs->isEmpty()) {
             return [];
         }
 
-        $ids = array_values(array_unique(array_column($entries, 'price_id')));
+        $ids = $packs->map(fn (CoinPack $pack): ?string => $pack->paddlePriceId())
+            ->filter()
+            ->unique()
+            ->values();
 
-        $response = Cashier::api('GET', 'prices', ['id' => implode(',', $ids)]);
+        $response = Cashier::api('GET', 'prices', ['id' => $ids->implode(',')]);
 
         $prices = collect($response['data'] ?? [])->keyBy('id');
 
         $amounts = [];
 
-        foreach ($entries as $id => $entry) {
-            $price = $prices->get($entry['price_id']);
+        foreach ($packs as $pack) {
+            $price = $prices->get($pack->paddlePriceId());
 
             if ($price !== null && isset($price['unit_price']['amount'])) {
-                $amounts[$id] = [
-                    'unit_amount' => (int) $price['unit_price']['amount'],
+                $amounts[$pack->slug] = [
+                    'amount' => (int) $price['unit_price']['amount'],
                     'currency' => $price['unit_price']['currency_code'] ?? 'USD',
                 ];
             }

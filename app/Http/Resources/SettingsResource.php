@@ -2,14 +2,10 @@
 
 namespace App\Http\Resources;
 
-use App\Models\Restaurant;
-use App\Models\Tag;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/**
- * @mixin Restaurant
- */
+/** @mixin \App\Models\Restaurant */
 class SettingsResource extends JsonResource
 {
     /**
@@ -18,27 +14,30 @@ class SettingsResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            // The display name is editable; the slug is read-only. `default_locale`
-            // tells the SPA which name translation the owner actually manages.
-            'name' => [
-                'en' => $this->getTranslation('name', 'en', false),
-                'ar' => $this->getTranslation('name', 'ar', false),
-            ],
+            // Editable everywhere except the slug, which is immutable once set.
+            // `default_locale` tells the SPA which translation the owner manages.
+            'name' => $this->translations('name'),
+            'description' => $this->translations('description'),
+            'address' => $this->translations('address'),
             'default_locale' => $this->default_locale ?: 'ar',
             'slug' => $this->slug,
+            'google_maps_url' => $this->google_maps_url,
             'phone' => $this->phone,
             'country_code' => $this->country_code,
             'currency' => $this->currency,
             'logo_url' => $this->getFirstMediaUrl('logo') ?: null,
             'cover_url' => $this->getFirstMediaUrl('cover_image') ?: null,
-            // Only the owner-selectable (cuisine/dietary) tags — matching the
-            // picker and the update rules, so the SPA can safely resubmit them.
-            // (Onboarding also attaches vibe/style tags the owner can't edit.)
-            'tag_ids' => $this->whenLoaded(
-                'tags',
-                fn () => $this->tags->whereIn('category', Tag::OWNER_CATEGORIES)->pluck('id')->values()->all(),
-                [],
-            ),
+        ];
+    }
+
+    /**
+     * @return array<string, string|null>
+     */
+    private function translations(string $attribute): array
+    {
+        return [
+            'en' => $this->getTranslation($attribute, 'en', false) ?: null,
+            'ar' => $this->getTranslation($attribute, 'ar', false) ?: null,
         ];
     }
 }

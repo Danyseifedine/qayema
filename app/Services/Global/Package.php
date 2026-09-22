@@ -2,13 +2,21 @@
 
 namespace App\Services\Global;
 
-use App\Models\PackageDefault;
+use App\Enums\Feature;
+use App\Models\FeatureDefault;
 use App\Models\Restaurant;
 use Illuminate\Support\Facades\Cache;
 
+/**
+ * What a restaurant is entitled to.
+ *
+ * The rule is one line: **effective value = the admin-set default + every
+ * active grant**. Limits add up, flags switch on. Nothing else participates —
+ * templates are pure design and carry no entitlements.
+ */
 class Package
 {
-    /** @var array<string, bool|int>|null */
+    /** @var array<string, int>|null */
     private ?array $resolved = null;
 
     public function __construct(private readonly Restaurant $restaurant) {}
@@ -18,27 +26,20 @@ class Package
         return new self($restaurant);
     }
 
-    public function can(string $slug): bool
+    public function limit(Feature $feature): int
     {
-        return (bool) ($this->all()[$slug] ?? false);
+        return $this->all()[$feature->value] ?? FeatureDefault::for($feature);
     }
 
-    public function limit(string $slug): int
+    public function can(Feature $feature): bool
     {
-        $value = $this->all()[$slug] ?? null;
-
-        return $value === null
-            ? PackageDefault::limit($slug)
-            : (int) $value;
+        return ($this->all()[$feature->value] ?? 0) > 0;
     }
 
     /**
-     * Effective package: the restaurant's valid restaurant_features grants (the
-     * default-limit snapshot plus any granted or purchased add-ons). Booleans
-     * merge with OR, plan limits with MAX, and purchased limit slots stack
-     * additively on top of that base.
+     * Every feature resolved for this restaurant, keyed by slug.
      *
-     * @return array<string, bool|int>
+     * @return array<string, int>
      */
     public function all(): array
     {
@@ -64,53 +65,30 @@ class Package
     }
 
     /**
-     * @return array<string, bool|int>
+     * @return array<string, int>
      */
     private function resolve(): array
     {
         $package = [];
 
+        foreach (Feature::cases() as $feature) {
+            $package[$feature->value] = FeatureDefault::for($feature);
+        }
+
         $grants = $this->restaurant->featureGrants()
-            ->where('starts_at', '<=', now())
             ->where(fn ($query) => $query->whereNull('ends_at')->orWhere('ends_at', '>', now()))
-            ->with('feature')
             ->get();
 
-        // Purchased limit slots stack on top of the plan's base limit, so they
-        // are summed and applied after the MAX/OR merge of every other source.
-        $purchasedLimits = [];
-
         foreach ($grants as $grant) {
-            if (! $grant->feature) {
+            $feature = $grant->feature;
+
+            if ($feature === null) {
                 continue;
             }
 
-            if ($grant->source === 'purchase' && $grant->feature->kind === 'limit') {
-                $purchasedLimits[$grant->feature->slug] = ($purchasedLimits[$grant->feature->slug] ?? 0) + (int) $grant->value;
-
-                continue;
-            }
-
-            $package = $this->merge($package, $grant->feature->slug, $grant->feature->kind, $grant->value);
-        }
-
-        foreach ($purchasedLimits as $slug => $bonus) {
-            $package[$slug] = (int) ($package[$slug] ?? PackageDefault::limit($slug)) + $bonus;
-        }
-
-        return $package;
-    }
-
-    /**
-     * @param  array<string, bool|int>  $package
-     * @return array<string, bool|int>
-     */
-    private function merge(array $package, string $slug, string $kind, string $value): array
-    {
-        if ($kind === 'limit') {
-            $package[$slug] = max((int) ($package[$slug] ?? 0), (int) $value);
-        } else {
-            $package[$slug] = ((bool) ($package[$slug] ?? false)) || (bool) $value;
+            $package[$feature->value] = $feature->isLimit()
+                ? $package[$feature->value] + (int) $grant->value
+                : max($package[$feature->value], (int) $grant->value);
         }
 
         return $package;

@@ -85,7 +85,13 @@ class ContactService
         // Guard the dispatch anyway: the message is already saved, so a queue
         // hiccup must not fail the submission — just record it.
         try {
-            Mail::to(config('services.contact.recipient'))->send(new ContactMessageReceived($contact));
+            $recipient = config('services.contact.recipient');
+
+            if (filled($recipient)) {
+                Mail::to($recipient)->send(new ContactMessageReceived($contact));
+            } else {
+                Log::warning('Contact message stored but CONTACT_RECIPIENT_EMAIL is not set; nobody was notified.', ['id' => $contact->id]);
+            }
         } catch (\Throwable $e) {
             Log::error('Failed to queue contact notification email.', [
                 'contact_message_id' => $contact->id,

@@ -22,7 +22,7 @@
               </div>
               <div>
                 <p class="ctc-info-label">{{ __('portal.contact.email_label') }}</p>
-                <p class="ctc-info-value"><a href="mailto:dany.a.seifeddine@gmail.com">dany.a.seifeddine@gmail.com</a></p>
+                <p class="ctc-info-value"><a href="mailto:{{ config('seo.organization.contact.email') }}">{{ config('seo.organization.contact.email') }}</a></p>
               </div>
             </div>
             <div class="ctc-info-item">

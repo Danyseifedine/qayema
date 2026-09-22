@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\MoveDishRequest;
 use App\Http\Requests\ReorderDishesRequest;
 use App\Http\Requests\StoreDishRequest;
 use App\Http\Requests\UpdateDishRequest;
@@ -154,6 +155,58 @@ class DishController extends Controller
         return DishResource::collection($dishes);
     }
 
+    /**
+     * Flip availability alone — the single most frequent edit, so it gets a
+     * call that needs nothing but the flag.
+     */
+    public function updateAvailability(Request $request, Dish $dish): DishResource
+    {
+        $this->authorize('update', $dish);
+
+        $request->validate(['is_available' => ['required', 'boolean']]);
+
+        $dish->update(['is_available' => $request->boolean('is_available')]);
+
+        return new DishResource($dish->load(['media', 'category']));
+    }
+
+    /**
+     * Move a dish into a category at a position, in one call, so dragging
+     * across categories can't race two separate reorder requests. Siblings in
+     * the destination are renumbered around it.
+     */
+    public function move(MoveDishRequest $request, Dish $dish): DishResource
+    {
+        $this->authorize('update', $dish);
+
+        $categoryId = (int) $request->validated('category_id');
+        $position = $request->validated('position');
+
+        DB::transaction(function () use ($dish, $categoryId, $position): void {
+            $siblings = Dish::query()
+                ->where('restaurant_id', $dish->restaurant_id)
+                ->where('category_id', $categoryId)
+                ->whereKeyNot($dish->id)
+                ->orderBy('display_order')
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->pluck('id')
+                ->all();
+
+            $index = $position === null ? count($siblings) : min((int) $position - 1, count($siblings));
+            array_splice($siblings, $index, 0, [$dish->id]);
+
+            foreach ($siblings as $order => $id) {
+                Dish::query()->whereKey($id)->update([
+                    'display_order' => $order + 1,
+                    'category_id' => $categoryId,
+                ]);
+            }
+        });
+
+        return new DishResource($dish->fresh()->load(['media', 'category']));
+    }
+
     private function restaurant(Request $request): Restaurant
     {
         $restaurant = $request->user()->restaurant;
@@ -179,10 +232,8 @@ class DishController extends Controller
 
     /**
      * Promote the optimized temp upload (referenced by `image_key`) into the
-     * dish's cover collection, or clear it when `delete_image` is set. The raw
+     * dish's image collection, or clear it when `delete_image` is set. The raw
      * upload is never stored — MediaService optimized it at temp-upload time.
-     * `sync()` clears the (multi-image) collection first, so it stays a single
-     * cover.
      */
     private function syncImage(Request $request, Dish $dish): void
     {
@@ -190,7 +241,7 @@ class DishController extends Controller
             $dish,
             $request->input('image_key'),
             $request->boolean('delete_image'),
-            'images',
+            'image',
             'dish',
         );
     }

@@ -129,26 +129,11 @@ class ViewUser extends ViewRecord
                         ->badge()
                         ->color('warning'),
 
-                    TextEntry::make('stat_whatsapp_orders')
-                        ->label('WhatsApp Orders')
-                        ->getStateUsing(fn () => number_format((int) ($restaurant?->statistics()->sum('whatsapp_orders') ?? 0)))
-                        ->badge()
-                        ->color('primary'),
-
                     TextEntry::make('stat_views_today')
                         ->label('Views Today')
                         ->getStateUsing(fn () => number_format($restaurant?->statistics()->whereDate('viewed_at', today())->count() ?? 0))
                         ->badge()
                         ->color('info'),
-
-                    TextEntry::make('stat_avg_time')
-                        ->label('Avg. Time Spent')
-                        ->getStateUsing(function () use ($restaurant): string {
-                            $avg = $restaurant?->statistics()->whereNotNull('time_spent')->where('time_spent', '>', 0)->avg('time_spent') ?? 0;
-                            $avg = (int) $avg;
-
-                            return $avg > 0 ? gmdate('i\m s\s', $avg) : '—';
-                        }),
 
                     TextEntry::make('stat_last_visit')
                         ->label('Last Visit')

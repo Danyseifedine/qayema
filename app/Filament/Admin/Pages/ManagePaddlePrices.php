@@ -2,7 +2,7 @@
 
 namespace App\Filament\Admin\Pages;
 
-use App\Services\Global\FeatureCatalog;
+use App\Models\CoinPack;
 use App\Services\Global\PaddlePrices;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -14,14 +14,13 @@ use Filament\Schemas\Components\Form;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Support\Str;
 use UnitEnum;
 
 /**
- * Manage the Paddle prices behind the purchasable add-on catalog. Paddle stays
- * the billing source of truth; this page reads the live amounts and pushes
- * edits back through the Paddle API, so the SPA (which displays via
- * GET /api/catalog) can never drift from what checkout charges.
+ * What each coin pack costs in real money. Paddle stays the billing source of
+ * truth: this page reads the live amounts and pushes edits back through the
+ * Paddle API, so checkout can never charge something different from what the
+ * dashboard advertises.
  *
  * @property-read Schema $form
  */
@@ -31,11 +30,11 @@ class ManagePaddlePrices extends Page
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCurrencyDollar;
 
-    protected static ?string $navigationLabel = 'Add-on Prices';
+    protected static ?string $navigationLabel = 'Coin Pack Prices';
 
     protected static UnitEnum|string|null $navigationGroup = 'System';
 
-    protected static ?string $title = 'Add-on Prices';
+    protected static ?string $title = 'Coin Pack Prices';
 
     /** @var array<string, mixed>|null */
     public ?array $data = [];
@@ -47,19 +46,15 @@ class ManagePaddlePrices extends Page
         return "Prices are stored on Paddle ({$environment} environment). Saving pushes the change to Paddle and it applies everywhere immediately.";
     }
 
-    public function mount(FeatureCatalog $catalog, PaddlePrices $prices): void
+    public function mount(PaddlePrices $prices): void
     {
         $amounts = $prices->amounts();
 
         $values = [];
 
-        foreach ($catalog->all() as $id => $entry) {
-            // Admins edit what the customer actually pays: the PACK price
-            // (unit amount × step). Converted back to per-unit cents on save.
-            $step = (int) ($entry['step'] ?? 1);
-
-            $values[$id] = isset($amounts[$id])
-                ? number_format($amounts[$id]['unit_amount'] * $step / 100, 2, '.', '')
+        foreach ($this->packs() as $pack) {
+            $values[$pack->slug] = isset($amounts[$pack->slug])
+                ? number_format($amounts[$pack->slug]['amount'] / 100, 2, '.', '')
                 : null;
         }
 
@@ -68,42 +63,35 @@ class ManagePaddlePrices extends Page
 
     public function form(Schema $schema): Schema
     {
-        $catalog = app(FeatureCatalog::class);
         $amounts = app(PaddlePrices::class)->amounts();
 
         $inputs = [];
 
-        foreach ($catalog->all() as $id => $entry) {
-            $step = (int) ($entry['step'] ?? 1);
-            $currency = $amounts[$id]['currency'] ?? 'USD';
+        foreach ($this->packs() as $pack) {
+            $currency = $amounts[$pack->slug]['currency'] ?? 'USD';
 
-            // Not required: an entry whose live amount couldn't be fetched mounts
-            // as null, and a hard requirement would then block saving the others.
-            // Null values are simply skipped on save.
-            $inputs[] = TextInput::make("prices.{$id}")
-                ->label(Str::headline($id).' — '.$entry['slug'])
+            // Not required: a pack whose live amount couldn't be fetched mounts
+            // as null, and a hard requirement would block saving the others.
+            $inputs[] = TextInput::make("prices.{$pack->slug}")
+                ->label($pack->name.' — '.$pack->coins.' coins')
                 ->numeric()
                 ->minValue(0.01)
                 ->step(0.01)
                 ->prefix($currency)
-                ->helperText(
-                    $entry['kind'] === 'limit'
-                        ? "What the customer pays for one pack of {$step}."
-                        : 'One-time price for this add-on.'
-                );
+                ->helperText("What the customer pays for {$pack->coins} coins.");
         }
 
         if ($inputs === []) {
             $inputs[] = TextInput::make('prices.none')
-                ->label('No sellable add-ons')
+                ->label('No sellable coin packs')
                 ->disabled()
-                ->helperText('No catalog entry has a Paddle price id for this environment yet (config/paddle.php).');
+                ->helperText('No active pack has a Paddle price id for this environment yet.');
         }
 
         return $schema
             ->components([
                 Form::make([
-                    Section::make('Unit prices')
+                    Section::make('Pack prices')
                         ->description('Amounts in the price currency. Changes are pushed straight to Paddle.')
                         ->columns(2)
                         ->schema($inputs),
@@ -121,29 +109,27 @@ class ManagePaddlePrices extends Page
             ->statePath('data');
     }
 
-    public function save(FeatureCatalog $catalog, PaddlePrices $prices): void
+    public function save(PaddlePrices $prices): void
     {
         $state = $this->form->getState();
         $amounts = $prices->amounts();
 
         $updated = 0;
 
-        foreach ($state['prices'] ?? [] as $id => $dollars) {
-            $entry = $catalog->find($id);
+        foreach ($this->packs() as $pack) {
+            $dollars = $state['prices'][$pack->slug] ?? null;
 
-            if ($dollars === null || $entry === null) {
+            if ($dollars === null) {
                 continue;
             }
 
-            // The admin typed the pack price; Paddle stores per-unit cents.
-            $step = (int) ($entry['step'] ?? 1);
-            $cents = (int) round(((float) $dollars) * 100 / $step);
+            $cents = (int) round(((float) $dollars) * 100);
 
-            if ($cents === ($amounts[$id]['unit_amount'] ?? null)) {
+            if ($cents === ($amounts[$pack->slug]['amount'] ?? null)) {
                 continue;
             }
 
-            $prices->update($id, $cents, $amounts[$id]['currency'] ?? 'USD');
+            $prices->update($pack, $cents, $amounts[$pack->slug]['currency'] ?? 'USD');
             $updated++;
         }
 
@@ -151,5 +137,13 @@ class ManagePaddlePrices extends Page
             ->success()
             ->title($updated > 0 ? "Updated {$updated} price(s) on Paddle" : 'Nothing to update')
             ->send();
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Collection<int, CoinPack>
+     */
+    private function packs(): \Illuminate\Database\Eloquent\Collection
+    {
+        return CoinPack::query()->sellable()->get();
     }
 }

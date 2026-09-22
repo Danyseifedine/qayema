@@ -20,8 +20,7 @@ class CategoryFactory extends Factory
     {
         return [
             'restaurant_id' => Restaurant::factory(),
-            'name' => fake()->unique()->words(2, true),
-            'description' => fake()->sentence(),
+            'name' => ['en' => fake()->unique()->words(2, true)],
             'display_order' => 0,
         ];
     }

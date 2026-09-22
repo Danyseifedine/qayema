@@ -1,0 +1,49 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * One restaurant per owner (unique user_id). `name`, `description` and
+     * `address` are spatie/translatable JSON ({"ar": ..., "en": ...}); the owner
+     * only ever edits the locale in `default_locale`.
+     *
+     * A new restaurant starts with template_id = null — the dashboard stays
+     * locked until the owner picks one.
+     */
+    public function up(): void
+    {
+        Schema::create('restaurants', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->unique()->constrained()->cascadeOnDelete();
+            $table->foreignId('template_id')->nullable()->constrained()->nullOnDelete();
+
+            $table->json('name');
+            $table->json('description')->nullable();
+            $table->string('slug')->unique();
+
+            $table->json('address')->nullable();
+            $table->string('google_maps_url')->nullable();
+            $table->char('country_code', 2)->nullable();
+            $table->string('phone', 30)->nullable();
+
+            $table->char('currency', 3)->default('USD');
+            $table->char('default_locale', 2)->default('ar');
+            $table->boolean('is_active')->default(true);
+
+            // Owner-chosen values for the active template's settings_schema.
+            $table->json('template_settings')->nullable();
+            $table->json('qr_settings')->nullable();
+
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('restaurants');
+    }
+};

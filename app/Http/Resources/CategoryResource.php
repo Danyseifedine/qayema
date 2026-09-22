@@ -25,13 +25,8 @@ class CategoryResource extends JsonResource
                 'en' => $this->getTranslation('name', 'en', false) ?: null,
                 'ar' => $this->getTranslation('name', 'ar', false) ?: null,
             ],
-            'description' => [
-                'en' => $this->getTranslation('description', 'en', false) ?: null,
-                'ar' => $this->getTranslation('description', 'ar', false) ?: null,
-            ],
             'display_order' => $this->display_order,
             'dishes_count' => $this->whenCounted('dishes'),
-            'image_url' => $this->getFirstMediaUrl('image') ?: null,
         ];
     }
 }

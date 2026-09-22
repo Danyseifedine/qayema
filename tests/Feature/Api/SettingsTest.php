@@ -3,7 +3,6 @@
 namespace Tests\Feature\Api;
 
 use App\Models\Restaurant;
-use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -25,33 +24,18 @@ class SettingsTest extends TestCase
         return [$user, $restaurant];
     }
 
-    private function tag(string $category, string $slug): Tag
-    {
-        return Tag::create(['name' => ['en' => ucfirst($slug)], 'slug' => $slug, 'category' => $category]);
-    }
-
     /**
-     * A valid update body. Name, phone, currency and at least one tag per category
-     * are required.
+     * A valid update body — name, phone and currency are the required fields.
      *
      * @param  array<string, mixed>  $overrides
      * @return array<string, mixed>
      */
     private function basePayload(array $overrides = []): array
     {
-        // One tag per category — the update requires at least one of each.
-        $tagIds = collect(Tag::OWNER_CATEGORIES)
-            ->map(fn (string $category): int => Tag::firstOrCreate(
-                ['slug' => "base-{$category}"],
-                ['name' => ['en' => ucfirst($category)], 'category' => $category],
-            )->id)
-            ->all();
-
         return array_merge([
             'name' => 'My Restaurant',
             'phone' => '+961 70 123 456',
             'currency' => 'USD',
-            'tag_ids' => $tagIds,
         ], $overrides);
     }
 
@@ -69,53 +53,54 @@ class SettingsTest extends TestCase
         $this->getJson(route('api.settings.show'))->assertUnauthorized();
     }
 
-    public function test_show_returns_the_settings_tags_and_currencies(): void
+    public function test_show_returns_the_profile_and_currencies(): void
     {
         [$user, $restaurant] = $this->owner();
-        $lebanese = $this->tag('cuisine', 'lebanese');
-        $vegan = $this->tag('dietary', 'vegan');
-        $rooftop = $this->tag('vibe', 'rooftop');
-        $dark = $this->tag('style', 'dark');
-        $restaurant->tags()->attach([$lebanese->id, $rooftop->id]);
-
-        $response = $this->actingAs($user)->getJson(route('api.settings.show'))->assertOk();
-
-        $response->assertJsonStructure([
-            'data' => ['name' => ['en', 'ar'], 'default_locale', 'slug', 'phone', 'country_code', 'currency', 'logo_url', 'cover_url', 'tag_ids'],
-            'meta' => [
-                'tags' => [['id', 'slug', 'category', 'name' => ['en', 'ar']]],
-                'currencies' => [['code', 'name', 'symbol']],
-            ],
-        ]);
-        $response->assertJsonPath('data.slug', $restaurant->slug);
-
-        // All four categories are selectable.
-        $offered = array_column($response->json('meta.tags'), 'id');
-        foreach ([$lebanese, $vegan, $rooftop, $dark] as $tag) {
-            $this->assertContains($tag->id, $offered);
-        }
-
-        // tag_ids carries every owner-category tag attached to the restaurant.
-        $this->assertEqualsCanonicalizing([$lebanese->id, $rooftop->id], $response->json('data.tag_ids'));
-    }
-
-    public function test_resubmitting_what_show_returns_does_not_fail(): void
-    {
-        // The SPA seeds its picker from data.tag_ids and resubmits it on save — that
-        // round-trip must never 422. An onboarded restaurant has one tag per category.
-        [$user, $restaurant] = $this->owner();
-        $ids = collect(['cuisine', 'dietary', 'vibe', 'style'])
-            ->map(fn (string $category): int => $this->tag($category, "rt-{$category}")->id)
-            ->all();
-        $restaurant->tags()->attach($ids);
-
-        $tagIds = $this->actingAs($user)->getJson(route('api.settings.show'))->assertOk()->json('data.tag_ids');
 
         $this->actingAs($user)
-            ->putJson(route('api.settings.update'), $this->basePayload(['tag_ids' => $tagIds]))
-            ->assertOk();
+            ->getJson(route('api.settings.show'))
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    'name' => ['en', 'ar'],
+                    'description' => ['en', 'ar'],
+                    'address' => ['en', 'ar'],
+                    'default_locale', 'slug', 'google_maps_url', 'phone',
+                    'country_code', 'currency', 'logo_url', 'cover_url',
+                ],
+                'meta' => ['currencies' => [['code', 'name', 'symbol']]],
+            ])
+            ->assertJsonPath('data.slug', $restaurant->slug);
+    }
 
-        $this->assertEqualsCanonicalizing($ids, $restaurant->tags()->pluck('tags.id')->all());
+    public function test_update_saves_the_description_address_and_map_url(): void
+    {
+        [$user, $restaurant] = $this->owner();
+
+        $this->actingAs($user)
+            ->putJson(route('api.settings.update'), $this->basePayload([
+                'description' => 'Best mezze in town',
+                'address' => 'Hamra Street, Beirut',
+                'google_maps_url' => 'https://maps.google.com/?q=beirut',
+            ]))
+            ->assertOk()
+            ->assertJsonPath('data.google_maps_url', 'https://maps.google.com/?q=beirut');
+
+        $restaurant->refresh();
+        $locale = $restaurant->default_locale;
+
+        $this->assertSame('Best mezze in town', $restaurant->getTranslation('description', $locale));
+        $this->assertSame('Hamra Street, Beirut', $restaurant->getTranslation('address', $locale));
+    }
+
+    public function test_update_rejects_a_malformed_map_url(): void
+    {
+        [$user] = $this->owner();
+
+        $this->actingAs($user)
+            ->putJson(route('api.settings.update'), $this->basePayload(['google_maps_url' => 'not-a-url']))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('google_maps_url');
     }
 
     public function test_update_changes_phone_country_code_and_currency(): void
@@ -156,56 +141,6 @@ class SettingsTest extends TestCase
             ->putJson(route('api.settings.update'), $this->basePayload(['currency' => 'NOPE']))
             ->assertStatus(422)
             ->assertJsonValidationErrors('currency');
-    }
-
-    public function test_update_requires_at_least_one_tag(): void
-    {
-        [$user] = $this->owner();
-
-        $this->actingAs($user)
-            ->putJson(route('api.settings.update'), $this->basePayload(['tag_ids' => []]))
-            ->assertStatus(422)
-            ->assertJsonValidationErrors('tag_ids');
-    }
-
-    public function test_update_requires_a_tag_in_each_category(): void
-    {
-        [$user] = $this->owner();
-        $cuisine = $this->tag('cuisine', 'lebanese');
-
-        // Only a cuisine tag — missing dietary, vibe and style.
-        $this->actingAs($user)
-            ->putJson(route('api.settings.update'), $this->basePayload(['tag_ids' => [$cuisine->id]]))
-            ->assertStatus(422)
-            ->assertJsonValidationErrors('tag_ids');
-    }
-
-    public function test_update_syncs_owner_tags_across_all_categories(): void
-    {
-        [$user, $restaurant] = $this->owner();
-        $lebanese = $this->tag('cuisine', 'lebanese');
-        $vegan = $this->tag('dietary', 'vegan');
-        $rooftop = $this->tag('vibe', 'rooftop');
-        $dark = $this->tag('style', 'dark');
-
-        $this->actingAs($user)
-            ->putJson(route('api.settings.update'), $this->basePayload(['tag_ids' => [$lebanese->id, $vegan->id, $rooftop->id, $dark->id]]))
-            ->assertOk();
-
-        $this->assertEqualsCanonicalizing(
-            [$lebanese->id, $vegan->id, $rooftop->id, $dark->id],
-            $restaurant->tags()->pluck('tags.id')->all(),
-        );
-    }
-
-    public function test_update_rejects_an_unknown_tag(): void
-    {
-        [$user] = $this->owner();
-
-        $this->actingAs($user)
-            ->putJson(route('api.settings.update'), $this->basePayload(['tag_ids' => [999999]]))
-            ->assertStatus(422)
-            ->assertJsonValidationErrors('tag_ids.0');
     }
 
     public function test_update_changes_the_display_name(): void

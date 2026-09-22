@@ -111,7 +111,7 @@
     <li><strong>Restriction:</strong> Request that we limit how we use your data.</li>
 </ul>
 
-<p>To exercise any of these rights, contact us at <a href="mailto:dany.a.seifeddine@gmail.com">dany.a.seifeddine@gmail.com</a>. We will respond within 30 days.</p>
+<p>To exercise any of these rights, contact us at <a href="mailto:{{ config('seo.organization.contact.email') }}">{{ config('seo.organization.contact.email') }}</a>. We will respond within 30 days.</p>
 
 <h2 id="children">Children's privacy</h2>
 
@@ -125,7 +125,7 @@
 
 <p>If you have questions or concerns about this Privacy Policy or our data practices, please contact us:</p>
 <ul>
-    <li><strong>Email:</strong> <a href="mailto:dany.a.seifeddine@gmail.com">dany.a.seifeddine@gmail.com</a></li>
+    <li><strong>Email:</strong> <a href="mailto:{{ config('seo.organization.contact.email') }}">{{ config('seo.organization.contact.email') }}</a></li>
     <li><strong>Company:</strong> Lebify Group</li>
     <li><strong>Location:</strong> Barja, Lebanon</li>
 </ul>
@@ -204,7 +204,7 @@
     <li><strong>التقييد:</strong> طلب تحديد كيفية استخدامنا لبياناتك.</li>
 </ul>
 
-<p>لممارسة أي من هذه الحقوق، تواصل معنا على <a href="mailto:dany.a.seifeddine@gmail.com">dany.a.seifeddine@gmail.com</a>. سنردّ خلال 30 يومًا.</p>
+<p>لممارسة أي من هذه الحقوق، تواصل معنا على <a href="mailto:{{ config('seo.organization.contact.email') }}">{{ config('seo.organization.contact.email') }}</a>. سنردّ خلال 30 يومًا.</p>
 
 <h2 id="children-ar">خصوصية الأطفال</h2>
 
@@ -218,7 +218,7 @@
 
 <p>إذا كانت لديك أسئلة أو مخاوف بشأن سياسة الخصوصية هذه أو ممارساتنا المتعلقة بالبيانات، يرجى التواصل معنا:</p>
 <ul>
-    <li><strong>البريد الإلكتروني:</strong> <a href="mailto:dany.a.seifeddine@gmail.com">dany.a.seifeddine@gmail.com</a></li>
+    <li><strong>البريد الإلكتروني:</strong> <a href="mailto:{{ config('seo.organization.contact.email') }}">{{ config('seo.organization.contact.email') }}</a></li>
     <li><strong>الشركة:</strong> مجموعة ليبيفاي</li>
     <li><strong>الموقع:</strong> برجا، لبنان</li>
 </ul>

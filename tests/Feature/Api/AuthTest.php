@@ -27,7 +27,7 @@ class AuthTest extends TestCase
             ->assertJsonPath('data.email', $user->email)
             ->assertJsonPath('data.has_completed_onboarding', false)
             ->assertJsonStructure([
-                'data' => ['id', 'name', 'email', 'role', 'has_completed_onboarding', 'restaurant'],
+                'data' => ['id', 'name', 'email', 'role', 'has_completed_onboarding', 'coin_balance', 'has_password', 'restaurant'],
             ]);
     }
 
@@ -77,5 +77,39 @@ class AuthTest extends TestCase
         // `sanctum` the default guard and caches its user for the request, so a
         // bare assertGuest() would read that stale per-request cache.)
         $this->assertGuest('web');
+    }
+
+    public function test_the_shell_payload_carries_the_restaurant_limits_features_and_urls(): void
+    {
+        $restaurant = \App\Models\Restaurant::factory()->create(['slug' => 'shell-test', 'template_id' => null]);
+        \App\Models\Dish::factory()->count(3)->create(['restaurant_id' => $restaurant->id]);
+        $restaurant->user->wallet()->credit(120, \App\Enums\CoinTransactionType::AdminGrant);
+
+        $data = $this->actingAs($restaurant->user)->getJson(route('api.user'))->assertOk()->json('data');
+
+        $this->assertSame(120, $data['coin_balance']);
+        $this->assertTrue($data['has_password']);
+        $this->assertSame('shell-test', $data['restaurant']['slug']);
+        $this->assertNull($data['restaurant']['template_id']);
+        $this->assertSame(['used' => 3, 'limit' => 40], $data['restaurant']['limits']['dishes']);
+        $this->assertSame(['used' => 0, 'limit' => 10], $data['restaurant']['limits']['categories']);
+        $this->assertFalse($data['restaurant']['features']['qr_studio']);
+        $this->assertStringEndsWith('/shell-test', $data['restaurant']['public_url']);
+        $this->assertStringEndsWith('/shell-test?qr=1', $data['restaurant']['qr_url']);
+    }
+
+    public function test_a_google_only_account_reports_no_password(): void
+    {
+        $user = \App\Models\User::factory()->create(['password' => null]);
+
+        $this->actingAs($user)->getJson(route('api.user'))->assertOk()->assertJsonPath('data.has_password', false);
+    }
+
+    public function test_a_user_without_a_restaurant_gets_a_null_restaurant(): void
+    {
+        $this->actingAs(\App\Models\User::factory()->create())
+            ->getJson(route('api.user'))
+            ->assertOk()
+            ->assertJsonPath('data.restaurant', null);
     }
 }

@@ -2,14 +2,14 @@
 
 namespace Tests\Feature\Api;
 
+use App\Enums\Feature;
 use App\Models\Category;
 use App\Models\Dish;
-use App\Models\PackageDefault;
+use App\Models\FeatureDefault;
 use App\Models\Restaurant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class CategoryTest extends TestCase
@@ -31,7 +31,7 @@ class CategoryTest extends TestCase
      * Run the real temp-upload pipeline (optimize + park under the user's temp
      * area) and return the key, as the SPA does before submitting the form.
      */
-    private function uploadTempImage(User $user, string $context = 'category'): string
+    private function uploadTempImage(User $user, string $context = 'dish'): string
     {
         return $this->actingAs($user)->post(
             route('api.uploads.temp'),
@@ -59,13 +59,13 @@ class CategoryTest extends TestCase
         $response->assertJsonCount(2, 'data');
         $this->assertSame([$first->id, $second->id], array_column($response->json('data'), 'id'));
         $response->assertJsonStructure([
-            'data' => [['id', 'name' => ['en', 'ar'], 'description' => ['en', 'ar'], 'display_order', 'dishes_count', 'image_url']],
+            'data' => [['id', 'name' => ['en', 'ar'], 'display_order', 'dishes_count']],
         ]);
     }
 
     public function test_index_includes_the_plan_limit_meta(): void
     {
-        PackageDefault::set('category_limit', 10);
+        FeatureDefault::set(Feature::CategoryLimit, 10);
         [$user, $restaurant] = $this->owner();
         Category::factory()->create(['restaurant_id' => $restaurant->id]);
 
@@ -95,7 +95,6 @@ class CategoryTest extends TestCase
         $this->actingAs($user)
             ->postJson(route('api.categories.store'), [
                 'name' => ['en' => 'Mains', 'ar' => 'أطباق رئيسية'],
-                'description' => ['en' => 'Signature plates'],
             ])
             ->assertCreated()
             ->assertJsonPath('data.name.en', 'Mains')
@@ -150,7 +149,7 @@ class CategoryTest extends TestCase
 
     public function test_store_is_rejected_when_the_category_limit_is_reached(): void
     {
-        PackageDefault::set('category_limit', 1);
+        FeatureDefault::set(Feature::CategoryLimit, 1);
         [$user, $restaurant] = $this->owner();
         Category::factory()->create(['restaurant_id' => $restaurant->id]);
 
@@ -168,7 +167,7 @@ class CategoryTest extends TestCase
 
         $response = $this->actingAs($user)->post(
             route('api.uploads.temp'),
-            ['file' => UploadedFile::fake()->image('cover.jpg', 1200, 1200), 'context' => 'category'],
+            ['file' => UploadedFile::fake()->image('cover.jpg', 1200, 1200), 'context' => 'dish'],
             ['Accept' => 'application/json'],
         );
 
@@ -178,34 +177,6 @@ class CategoryTest extends TestCase
         $path = storage_path('app/temp/'.$user->id.'/'.$response->json('key').'.webp');
         $this->assertFileExists($path);
         @unlink($path);
-    }
-
-    public function test_store_attaches_a_temp_uploaded_cover_image(): void
-    {
-        Storage::fake(config('media-library.disk_name'));
-        [$user, $restaurant] = $this->owner();
-        $key = $this->uploadTempImage($user);
-
-        $response = $this->actingAs($user)->postJson(route('api.categories.store'), [
-            'name' => ['en' => 'Grills'],
-            'image_key' => $key,
-        ]);
-
-        $response->assertCreated();
-        $this->assertNotNull($response->json('data.image_url'));
-
-        $category = Category::query()->where('restaurant_id', $restaurant->id)->firstOrFail();
-        $this->assertSame(1, $category->getMedia('image')->count());
-    }
-
-    public function test_store_rejects_a_malformed_image_key(): void
-    {
-        [$user] = $this->owner();
-
-        $this->actingAs($user)
-            ->postJson(route('api.categories.store'), ['name' => ['en' => 'X'], 'image_key' => 'not-a-uuid'])
-            ->assertStatus(422)
-            ->assertJsonValidationErrors('image_key');
     }
 
     public function test_store_ignores_a_spoofed_restaurant_id(): void
@@ -241,41 +212,9 @@ class CategoryTest extends TestCase
         // decodes it. 7000px wide exceeds the 6000px cap.
         $this->actingAs($user)->post(
             route('api.uploads.temp'),
-            ['file' => UploadedFile::fake()->image('huge.jpg', 7000, 10), 'context' => 'category'],
+            ['file' => UploadedFile::fake()->image('huge.jpg', 7000, 10), 'context' => 'dish'],
             ['Accept' => 'application/json'],
         )->assertStatus(422)->assertJsonValidationErrors('file');
-    }
-
-    public function test_update_with_delete_image_clears_the_cover(): void
-    {
-        Storage::fake(config('media-library.disk_name'));
-        [$user, $restaurant] = $this->owner();
-        $category = Category::factory()->create(['restaurant_id' => $restaurant->id]);
-        $category->addMedia(UploadedFile::fake()->image('existing.jpg'))->toMediaCollection('image');
-        $this->assertSame(1, $category->getMedia('image')->count());
-
-        $this->actingAs($user)
-            ->putJson(route('api.categories.update', $category), ['name' => ['en' => 'Same'], 'delete_image' => true])
-            ->assertOk();
-
-        $this->assertSame(0, $category->refresh()->getMedia('image')->count());
-    }
-
-    public function test_update_replaces_the_cover_with_a_new_temp_upload(): void
-    {
-        Storage::fake(config('media-library.disk_name'));
-        [$user, $restaurant] = $this->owner();
-        $category = Category::factory()->create(['restaurant_id' => $restaurant->id]);
-        $category->addMedia(UploadedFile::fake()->image('old.jpg'))->toMediaCollection('image');
-
-        $key = $this->uploadTempImage($user);
-
-        $this->actingAs($user)
-            ->putJson(route('api.categories.update', $category), ['name' => ['en' => 'Same'], 'image_key' => $key])
-            ->assertOk();
-
-        // singleFile collection: still exactly one cover after replacement.
-        $this->assertSame(1, $category->refresh()->getMedia('image')->count());
     }
 
     public function test_a_user_without_a_restaurant_is_forbidden(): void
@@ -322,23 +261,6 @@ class CategoryTest extends TestCase
             ->assertJsonPath('data.name.en', 'Renamed');
 
         $this->assertSame('Renamed', $category->refresh()->getTranslation('name', 'en'));
-    }
-
-    public function test_updating_only_the_name_preserves_the_existing_description(): void
-    {
-        [$user, $restaurant] = $this->owner();
-        $category = Category::factory()->create(['restaurant_id' => $restaurant->id]);
-        $category->setTranslation('description', 'en', 'Keep me');
-        $category->setTranslation('description', 'ar', 'احتفظ بي');
-        $category->save();
-
-        $this->actingAs($user)
-            ->putJson(route('api.categories.update', $category), ['name' => ['en' => 'Renamed']])
-            ->assertOk();
-
-        $category->refresh();
-        $this->assertSame('Keep me', $category->getTranslation('description', 'en'));
-        $this->assertSame('احتفظ بي', $category->getTranslation('description', 'ar'));
     }
 
     public function test_a_user_cannot_update_another_restaurants_category(): void

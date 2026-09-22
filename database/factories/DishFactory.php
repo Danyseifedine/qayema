@@ -21,9 +21,9 @@ class DishFactory extends Factory
         return [
             'restaurant_id' => Restaurant::factory(),
             'category_id' => null,
-            'name' => fake()->unique()->words(2, true),
+            'name' => ['en' => fake()->unique()->words(2, true)],
             'price' => fake()->randomFloat(2, 1, 100),
-            'ingredients' => fake()->sentence(),
+            'ingredients' => ['en' => fake()->sentence()],
             'is_available' => true,
             'display_order' => 0,
         ];

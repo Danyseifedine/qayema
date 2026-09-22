@@ -30,28 +30,6 @@ class RestaurantStatisticsTable
                     ->sortable()
                     ->since()
                     ->description(fn ($record) => $record->viewed_at?->format('M d, Y H:i')),
-                TextColumn::make('time_spent')
-                    ->label('Time Spent')
-                    ->placeholder('N/A')
-                    ->formatStateUsing(function ($state) {
-                        if (! $state) {
-                            return 'N/A';
-                        }
-                        $minutes = floor($state / 60);
-                        $seconds = $state % 60;
-
-                        return $minutes > 0 ? "{$minutes}m {$seconds}s" : "{$seconds}s";
-                    })
-                    ->sortable()
-                    ->badge()
-                    ->color(fn ($state) => $state > 60 ? 'success' : ($state > 30 ? 'warning' : 'gray')),
-                TextColumn::make('page_views')
-                    ->label('Page Views')
-                    ->placeholder('N/A')
-                    ->numeric()
-                    ->sortable()
-                    ->badge()
-                    ->color('info'),
                 TextColumn::make('device_type')
                     ->label('Device')
                     ->placeholder('N/A')
@@ -90,9 +68,6 @@ class RestaurantStatisticsTable
                         ->when($data['viewed_from'], fn ($q, $d) => $q->whereDate('viewed_at', '>=', $d))
                         ->when($data['viewed_until'], fn ($q, $d) => $q->whereDate('viewed_at', '<=', $d))
                     ),
-                Filter::make('has_time_spent')
-                    ->label('Has Time Spent')
-                    ->query(fn (Builder $query): Builder => $query->whereNotNull('time_spent')),
             ])
             ->recordActions([ViewAction::make()])
             ->toolbarActions([BulkActionGroup::make([DeleteBulkAction::make()])])

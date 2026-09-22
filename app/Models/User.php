@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\UserRole;
+use App\Services\Global\Wallet;
 use Filament\Models\Contracts\FilamentUser;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -15,6 +16,9 @@ use Laravel\Paddle\Billable;
 
 class User extends Authenticatable implements FilamentUser
 {
+    /** How many steps the onboarding wizard has. */
+    public const ONBOARDING_STEPS = 3;
+
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use Billable, HasFactory, Impersonate, Notifiable, SoftDeletes;
 
@@ -45,11 +49,11 @@ class User extends Authenticatable implements FilamentUser
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
             'onboarding_step' => 'integer',
             'onboarding_completed_at' => 'datetime',
+            'coin_balance' => 'integer',
         ];
     }
 
@@ -63,6 +67,16 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(SocialAccount::class);
     }
 
+    public function coinTransactions(): HasMany
+    {
+        return $this->hasMany(CoinTransaction::class);
+    }
+
+    public function wallet(): Wallet
+    {
+        return Wallet::for($this);
+    }
+
     public function isAdmin(): bool
     {
         return $this->role === UserRole::Admin;
@@ -71,16 +85,6 @@ class User extends Authenticatable implements FilamentUser
     public function isMenuOwner(): bool
     {
         return $this->role === UserRole::MenuOwner;
-    }
-
-    public function isRestaurantSetupComplete(): bool
-    {
-        return $this->restaurant !== null;
-    }
-
-    public function isProfileComplete(): bool
-    {
-        return $this->isRestaurantSetupComplete();
     }
 
     public function hasCompletedOnboarding(): bool
@@ -102,7 +106,7 @@ class User extends Authenticatable implements FilamentUser
 
     public function currentOnboardingStep(): int
     {
-        return min(($this->onboarding_step ?? 0) + 1, 5);
+        return min(($this->onboarding_step ?? 0) + 1, self::ONBOARDING_STEPS);
     }
 
     public function canAccessPanel(\Filament\Panel $panel): bool

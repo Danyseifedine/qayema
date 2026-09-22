@@ -4,7 +4,6 @@ namespace App\Services\Portal;
 
 use App\Mail\WelcomeRestaurantOwner;
 use App\Models\Restaurant;
-use App\Models\Tag;
 use App\Models\User;
 use App\Services\Global\MediaService;
 use Illuminate\Support\Facades\Mail;
@@ -70,38 +69,23 @@ class OnboardingService
     }
 
     /**
-     * Steps 4 & 5 — replace the restaurant's tags within the given categories.
-     *
-     * @param  array<int, string>  $categories
-     * @param  array<int, int>  $tagIds
-     */
-    public function syncTags(Restaurant $restaurant, array $categories, array $tagIds): void
-    {
-        $restaurant->tags()->detach(Tag::whereIn('category', $categories)->pluck('id'));
-
-        if ($tagIds === []) {
-            return;
-        }
-
-        $allowed = Tag::whereIn('id', $tagIds)
-            ->whereIn('category', $categories)
-            ->pluck('id');
-
-        $restaurant->tags()->attach($allowed);
-    }
-
-    /**
      * Final step — mark onboarding complete and send the welcome email. The
      * restaurant is intentionally left WITHOUT a template: the owner chooses one
      * from the dashboard (which stays locked until they do).
      */
     public function complete(User $user, Restaurant $restaurant): void
     {
+        $alreadyDone = $user->onboarding_completed_at !== null;
+
         $user->update([
-            'onboarding_step' => 5,
-            'onboarding_completed_at' => now(),
+            'onboarding_step' => User::ONBOARDING_STEPS,
+            'onboarding_completed_at' => $user->onboarding_completed_at ?? now(),
         ]);
 
-        Mail::to($user->email)->send(new WelcomeRestaurantOwner($user, $restaurant));
+        // Re-submitting the last step (a refresh, a retry) must not welcome
+        // the owner twice.
+        if (! $alreadyDone) {
+            Mail::to($user->email)->send(new WelcomeRestaurantOwner($user, $restaurant));
+        }
     }
 }

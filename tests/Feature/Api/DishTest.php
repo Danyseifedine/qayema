@@ -2,9 +2,10 @@
 
 namespace Tests\Feature\Api;
 
+use App\Enums\Feature;
 use App\Models\Category;
 use App\Models\Dish;
-use App\Models\PackageDefault;
+use App\Models\FeatureDefault;
 use App\Models\Restaurant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -146,7 +147,7 @@ class DishTest extends TestCase
 
     public function test_store_is_rejected_when_the_dish_limit_is_reached(): void
     {
-        PackageDefault::set('dish_limit', 1);
+        FeatureDefault::set(Feature::DishLimit, 1);
         [$user, $restaurant] = $this->owner();
         $category = Category::factory()->create(['restaurant_id' => $restaurant->id]);
         Dish::factory()->create(['restaurant_id' => $restaurant->id]);
@@ -176,7 +177,7 @@ class DishTest extends TestCase
         $this->assertNotNull($response->json('data.image_url'));
 
         $dish = Dish::query()->where('restaurant_id', $restaurant->id)->firstOrFail();
-        $this->assertSame(1, $dish->getMedia('images')->count());
+        $this->assertSame(1, $dish->getMedia('image')->count());
     }
 
     public function test_store_rejects_a_malformed_image_key(): void
@@ -194,7 +195,7 @@ class DishTest extends TestCase
         Storage::fake(config('media-library.disk_name'));
         [$user, $restaurant] = $this->owner();
         $dish = Dish::factory()->create(['restaurant_id' => $restaurant->id]);
-        $dish->addMedia(UploadedFile::fake()->image('first.jpg'))->toMediaCollection('images');
+        $dish->addMedia(UploadedFile::fake()->image('first.jpg'))->toMediaCollection('image');
 
         $key = $this->uploadTempImage($user);
 
@@ -203,7 +204,7 @@ class DishTest extends TestCase
             ->assertOk();
 
         // The multi-image collection must not accumulate: still exactly one cover.
-        $this->assertSame(1, $dish->refresh()->getMedia('images')->count());
+        $this->assertSame(1, $dish->refresh()->getMedia('image')->count());
     }
 
     public function test_update_with_delete_image_clears_the_cover(): void
@@ -211,14 +212,14 @@ class DishTest extends TestCase
         Storage::fake(config('media-library.disk_name'));
         [$user, $restaurant] = $this->owner();
         $dish = Dish::factory()->create(['restaurant_id' => $restaurant->id]);
-        $dish->addMedia(UploadedFile::fake()->image('cover.jpg'))->toMediaCollection('images');
-        $this->assertSame(1, $dish->getMedia('images')->count());
+        $dish->addMedia(UploadedFile::fake()->image('cover.jpg'))->toMediaCollection('image');
+        $this->assertSame(1, $dish->getMedia('image')->count());
 
         $this->actingAs($user)
             ->putJson(route('api.dishes.update', $dish), ['name' => ['en' => 'Same'], 'delete_image' => true])
             ->assertOk();
 
-        $this->assertSame(0, $dish->refresh()->getMedia('images')->count());
+        $this->assertSame(0, $dish->refresh()->getMedia('image')->count());
     }
 
     public function test_store_ignores_a_spoofed_restaurant_id(): void

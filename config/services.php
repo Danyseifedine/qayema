@@ -35,7 +35,7 @@ return [
     ],
 
     'contact' => [
-        'recipient' => env('CONTACT_RECIPIENT_EMAIL', 'dany.a.seifeddine@gmail.com'),
+        'recipient' => env('CONTACT_RECIPIENT_EMAIL'),
     ],
 
     'recaptcha' => [

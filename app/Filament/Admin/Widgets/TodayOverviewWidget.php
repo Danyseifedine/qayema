@@ -50,11 +50,6 @@ class TodayOverviewWidget extends StatsOverviewWidget
                 ->descriptionIcon('heroicon-o-qr-code')
                 ->color('primary'),
 
-            Stat::make('WhatsApp Orders Today', number_format(RestaurantStatistic::whereDate('viewed_at', $today)->sum('whatsapp_orders')))
-                ->description('All-time orders: '.number_format(RestaurantStatistic::sum('whatsapp_orders')))
-                ->descriptionIcon('heroicon-o-chat-bubble-left-ellipsis')
-                ->color('success'),
-
             Stat::make('Contact Messages Today', ContactMessage::whereDate('created_at', $today)->count())
                 ->description('Total messages: '.number_format(ContactMessage::count()))
                 ->descriptionIcon('heroicon-o-envelope')

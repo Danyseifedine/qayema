@@ -25,13 +25,6 @@ class StoreCategoryRequest extends FormRequest
             'name' => ['required', 'array'],
             'name.en' => ['nullable', 'string', 'max:255'],
             'name.ar' => ['nullable', 'string', 'max:255'],
-            'description' => ['nullable', 'array'],
-            'description.en' => ['nullable', 'string', 'max:2000'],
-            'description.ar' => ['nullable', 'string', 'max:2000'],
-            // The cover image arrives as a temp-upload key (already optimized by
-            // MediaService), never as a raw file. `delete_image` clears it.
-            'image_key' => ['nullable', 'string', 'regex:/^[a-f0-9\-]{36}$/'],
-            'delete_image' => ['nullable', 'boolean'],
         ];
     }
 

@@ -429,28 +429,133 @@ Forms\Components\Select::make('user_id')
 - Actions: `Actions/`
 </laravel-boost-guidelines>
 
-# Qayema — Project Architecture (current)
+# Working Rules
 
-Bilingual (en/ar) restaurant-menu SaaS. Two codebases in this repo folder:
+1. **Never commit.** Never run `git commit`, `git push`, `git add`, `git stash`,
+   `git reset`, or any command that changes git state. The user does every
+   commit. If a step would normally end with a commit, stop and say the tree is
+   ready to commit.
+2. **Never leave code unused.** Every Blade component, Livewire component,
+   Filament resource/action/widget, service, job, enum case or helper you create
+   must be used in the same task. If it ends up unused, delete it or wire it
+   in — never leave it.
+3. **Always use the component.** Before writing Blade markup, look in
+   `resources/views/components/` (especially `components/ui/`) and the Filament
+   component set. If a component exists for the job, use it. Never re-implement
+   a button, card, field, modal or layout inline. If the existing component does
+   not fit, extend it — do not fork it.
+4. **Always tell the truth.** Report what actually happened: if `php artisan test`
+   failed, a test was skipped, a step was not done, or you are guessing — say it
+   plainly in the first sentence. No softening, no reassurance, no claiming
+   something works without having run it. The user does not need feelings
+   managed; they need accurate status.
 
-## Surfaces
-- **Laravel app (this repo)** — public portal (landing `/`, legal pages, contact), auth (Google OAuth + email via `/get-started`), the onboarding wizard, the JSON API for the SPA (`routes/api.php`), and the Filament v4 admin panel (`/admin`).
-- **`qayema-dashboard/` (separate React SPA)** — the owner dashboard. React 19 + Vite + TS + Tailwind v3 + shadcn/ui + zustand + react-i18next. Feature folders under `src/features/*` (page + `api/` + `hooks/` + `components/` + `types.ts` + barrel `index.ts`). Talks to the API with Sanctum **session cookies** (stateful, no tokens); CSRF token fetched from `GET /api/csrf-token` body (cross-domain).
-- The old Blade owner dashboard, public QR menu page, and MenuScan/Gemini pipeline were **removed** — do not reintroduce references.
+# Qayema — Project Architecture
 
-## Billing (Laravel Cashier Paddle)
-- `User` is the Billable. One-time purchases only (no subscriptions).
-- Catalog source of truth: `config/paddle.php` (cart id → Paddle `price_id` + feature slug + step/max). SPA `features/upgrade/catalog.ts` only mirrors it for display.
-- Flow: SPA cart → `POST /api/checkout` (validates, `createAsCustomer()`, translates packs → units) → Paddle.js overlay → Paddle webhook `POST /paddle/webhook` → `TransactionCompleted` → `GrantPurchasedFeatures` listener → `FeatureFulfillment` writes `restaurant_features` grants (idempotent via `reference` = Paddle transaction id).
+Bilingual (ar/en) restaurant-menu SaaS. Two codebases in this folder:
+
+- **Laravel app (this repo)** — the public portal (landing, legal, contact), auth
+  (Google OAuth + email via `/get-started`), a 3-step onboarding wizard, the
+  **public menu at `/{slug}`**, the JSON API for the dashboard SPA
+  (`routes/api.php`), and the Filament v4 admin panel (`/admin`).
+- **`qayema-dashboard/` (separate repo)** — the owner dashboard SPA. React 19 +
+  Vite + TS, Sanctum **session-cookie** auth (no tokens), CSRF primed from
+  `GET /api/csrf-token` (the body, because a cross-subdomain SPA can't read the
+  cookie). **Currently only an auth bootstrap — the UI is unbuilt.**
+
+## The money model
+
+**Paddle sells exactly one thing: coin packs.** Everything else is priced in
+coins, in-app, as an integer on a row. Adding something purchasable therefore
+never touches the billing pipeline.
+
+```
+Paddle checkout (coin_packs) → transaction.completed → CreditPurchasedCoins
+    → Wallet::credit()  [ledger + cached balance, one transaction]
+Owner spends coins → TemplateStore::unlock() → Wallet::debit() + template_purchases
+```
+
+- `App\Services\Global\Wallet` is the only way coins move. `coin_transactions`
+  is append-only and is the source of truth; `users.coin_balance` is a cached
+  total written in the same DB transaction under `lockForUpdate()`, so the two
+  cannot drift and concurrent spends can't both pass one balance check.
+- Idempotency is the unique `(type, reference)` index. A re-delivered Paddle
+  webhook credits nothing the second time; `credit()` returns null rather than
+  throwing.
+- Coin amounts always come from the `coin_packs` row resolved by the price that
+  was paid — never from the webhook payload.
+- Templates: `unlock` (spends coins) and `select` (switches) are **separate**
+  endpoints so choosing a design can never spend money by accident. Ownership is
+  permanent, so switching between owned templates is free. Can't-afford is a
+  **402** carrying `balance`, `needed` and `shortfall`.
 
 ## Limits / entitlements
-- `Package` service (`app/Services/Global/Package.php`): effective package = the restaurant's valid `restaurant_features` grants only. Booleans merge OR, plan limits merge MAX, purchased limit grants (`source='purchase'`) stack **additively** on top. **Templates are pure design and bundle no features** — the `template_feature` pivot was removed.
-- Floor defaults live in DB (`package_defaults`, editable in admin), and `PackageDefault::limit()` is the ultimate fallback. Cached per restaurant (`package:{id}`, TTL 300s); flushed by `RestaurantFeature` saved/deleted hooks and on `template_id` change.
-- New restaurants snapshot the defaults as `source='default'` grants on creation (`Restaurant::seedDefaultLimits()`) and have **no template** until the owner picks one — the SPA locks all tabs except Templates until then.
+
+One rule: **effective value = admin-set default + Σ active grants** (limits add,
+flags OR). Resolved by `App\Services\Global\Package`, cached `package:{id}` 300s.
+
+- `App\Enums\Feature` is the registry — adding a limit is one enum case. The
+  defaults table seeds itself from `Feature::cases()`.
+- `feature_defaults` = the floor for everyone, edited at **/admin → Plan Limits**.
+  Changing one flushes every restaurant's cache.
+- `restaurant_features` = per-restaurant grants, managed on the restaurant's
+  "Extra slots & add-ons" tab.
+- **Templates grant nothing.** They are pure design plus a coin price.
+
+## Templates
+
+A template is a row + a Blade view of the same slug
+(`resources/views/menu/templates/{slug}.blade.php`). Scaffold both with:
+
+```bash
+php artisan make:menu-template midnight --price=650
+```
+
+`templates.settings_schema` declares what the owner may change
+(`[{key, type, default, options?}]`, types: color/text/boolean/select).
+`UpdateTemplateSettingsRequest` builds its validation from that schema at request
+time and **rejects any key the template doesn't declare**, so "the free template
+can change colours, paid ones are fixed" is data, not code. An empty schema = a
+fixed design.
+
+The public menu controller falls back to `classic` when a template row exists
+without its Blade file, so a half-finished template never 500s a guest.
 
 ## Conventions & gotchas
-- Media: Spatie medialibrary on Cloudflare R2 (`s3` disk). Temp-upload flow: SPA/onboarding POSTs an image → optimized to WebP → parked per-user → promoted by key on the next create/update.
-- Translatable columns via Spatie translatable (`{en, ar}` JSON).
-- Rate limiters in `AppServiceProvider` (`api`/`mutations`/`uploads`/`auth`/`contact`); high-volume ones feed the abuse auto-ban.
-- Session lifetime is intentionally 1 year (SPA rides it; owners must not be logged out on idle).
-- Locale middleware alias is `portal.locale` (`SetPortalLocale`); session key stays `owner_locale`.
+
+- **Content:** category = name + order only. Dish = name, price, ingredients, one
+  image, availability, order. No descriptions, no category images, no tags.
+- **Translatable** columns are spatie `{en, ar}` JSON; the owner only edits the
+  locale in `restaurants.default_locale`.
+- **Media:** Spatie medialibrary on Cloudflare R2 (`s3`). Temp-upload flow: POST
+  an image → optimized to WebP → parked per-user → promoted by key on the next
+  create/update. The raw upload is never stored.
+- **The `/{slug}` route is a catch-all** declared last in `routes/web.php` and
+  constrained against reserved prefixes (`admin`, `api`, `up`, …). Adding a new
+  top-level page means adding it *before* that route.
+- **Analytics:** every menu render writes a `menu_sessions` row; `via_qr` comes
+  from the `?qr=1` the QR codes encode. `stats:rollup` prunes after 6 months.
+- Rate limiters in `AppServiceProvider` (`api`/`mutations`/`uploads`/`auth`/
+  `contact`); the high-volume ones feed the `AbuseGuard` auto-ban.
+- Session lifetime is intentionally 1 year (the SPA rides it).
+- Locale middleware alias is `portal.locale`; the session key stays `owner_locale`.
+- Filament v4 testing: table **header** actions need
+  `callAction(TestAction::make('create')->table())`, not `callAction('create')`.
+- `Restaurant::RESERVED_SLUGS` is the single list behind both the public menu
+  route constraint and onboarding's slug validation — add new top-level pages there.
+- Every `api/*` error is `{message, code}` JSON (see `bootstrap/app.php`); a
+  rate limiter's custom response arrives as `HttpResponseException` and must pass through.
+
+## Not yet built
+
+- The dashboard SPA itself (the API it consumes is complete and tested).
+- Paid template designs — only the free `classic` view exists.
+- Production Paddle price ids on the seeded coin packs, so nothing is sellable
+  live until those are filled in from the admin panel.
+
+## Testing
+
+PHPUnit: pure logic in `tests/Unit`, HTTP/admin/journey tests in `tests/Feature`
+(~650 tests). Shared fixtures: `Tests\Concerns\CreatesOwners`, `Tests\Concerns\FakesPaddle`.
+Run `php artisan test`; format with `vendor/bin/pint --dirty`. Switching `actingAs()`
+users inside one test trips Filament's session-hash check — use separate tests.

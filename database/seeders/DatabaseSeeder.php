@@ -13,18 +13,16 @@ class DatabaseSeeder extends Seeder
     use WithoutModelEvents;
 
     /**
-     * Seed the application's database.
+     * Feature defaults are seeded by their migration (from App\Enums\Feature),
+     * so a fresh database already has working limits before this runs.
      */
     public function run(): void
     {
-        $this->call(RestaurantTypeSeeder::class);
-        $this->call(TagSeeder::class);
         $this->call(TemplateSeeder::class);
-        $this->call(TemplateTagSeeder::class);
-        $this->call(FeatureSeeder::class);
-        User::create([
+        $this->call(CoinPackSeeder::class);
+
+        User::updateOrCreate(['email' => 'admin@admin.com'], [
             'name' => 'Admin',
-            'email' => 'admin@admin.com',
             'password' => Hash::make('password'),
             'role' => UserRole::Admin,
         ]);

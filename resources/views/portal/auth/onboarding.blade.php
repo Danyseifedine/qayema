@@ -14,23 +14,10 @@
 
     $currencySymbols = collect(config('currencies', []))->map(fn ($c) => $c['symbol'] ?? '$')->all();
 
-    // Pre-fill existing restaurant data for back-navigation
-    $existingCdTagIds   = $restaurant ? $restaurant->tags->whereIn('category', ['cuisine', 'dietary'])->pluck('id')->values()->all() : [];
-    $existingCdTagSlugs = $restaurant ? $restaurant->tags->whereIn('category', ['cuisine', 'dietary'])->pluck('slug')->values()->all() : [];
-    $existingVsTagIds   = $restaurant ? $restaurant->tags->whereIn('category', ['vibe', 'style'])->pluck('id')->values()->all() : [];
-    $existingVsTagSlugs = $restaurant ? $restaurant->tags->whereIn('category', ['vibe', 'style'])->pluck('slug')->values()->all() : [];
-
-    // Tag ids grouped by category — drives the per-category "pick one" rule client-side.
-    $tagIdsByCategory = collect(['cuisine', 'dietary', 'vibe', 'style'])
-        ->mapWithKeys(fn (string $cat): array => [$cat => isset($tags[$cat]) ? $tags[$cat]->pluck('id')->values()->all() : []])
-        ->all();
-
     $stepData = [
         ['key' => __('owner.onboarding.step1_title'), 'short' => __('owner.onboarding.step1_desc'), 'stage' => __('owner.onboarding.step1_stage'), 'tag' => __('owner.onboarding.step1_tag')],
         ['key' => __('owner.onboarding.step2_title'), 'short' => __('owner.onboarding.step2_desc'), 'stage' => __('owner.onboarding.step2_stage'), 'tag' => __('owner.onboarding.step2_tag')],
         ['key' => __('owner.onboarding.step3_title'), 'short' => __('owner.onboarding.step3_desc'), 'stage' => __('owner.onboarding.step3_stage'), 'tag' => __('owner.onboarding.step3_tag')],
-        ['key' => __('owner.onboarding.step4_title'), 'short' => __('owner.onboarding.step4_desc'), 'stage' => __('owner.onboarding.step4_stage'), 'tag' => __('owner.onboarding.step4_tag')],
-        ['key' => __('owner.onboarding.step5_title'), 'short' => __('owner.onboarding.step5_desc'), 'stage' => __('owner.onboarding.step5_stage'), 'tag' => __('owner.onboarding.step5_tag')],
     ];
 @endphp
 
@@ -216,56 +203,6 @@
                 </div>
             </div>
 
-            {{-- ── Step 4 — Cuisine + Dietary tags ── --}}
-            <div x-show="step === 4" x-cloak>
-                <h1 class="title">{!! __('owner.onboarding.step4_heading', ['em' => '<span class="it">'.__('owner.onboarding.step4_em').'</span>']) !!}</h1>
-                <p class="lead">{{ __('owner.onboarding.step4_desc') }}</p>
-                <p class="ui-help" style="margin-bottom:18px">{{ __('owner.onboarding.tags_hint') }}</p>
-                <div class="f-error" x-show="errors.cdTags" x-text="errors.cdTags" x-cloak style="margin-bottom:12px"></div>
-                @foreach(['cuisine', 'dietary'] as $cat)
-                @if(isset($tags[$cat]) && $tags[$cat]->isNotEmpty())
-                <div class="tag-section">
-                    <div class="tag-cat">
-                        {{ __('owner.onboarding.tag_'.$cat) }}
-                        <span class="tag-need" x-show="!_hasTagInEach(['{{ $cat }}'], cdTagIds)" x-cloak>· {{ __('owner.onboarding.tags_pick_one') }}</span>
-                    </div>
-                    <div class="tag-chips">
-                        @foreach($tags[$cat] as $tag)
-                        <button type="button" class="tag-chip"
-                                :class="{ on: cdTagIds.includes({{ $tag->id }}) }"
-                                @click="toggleCd({{ $tag->id }}, '{{ $tag->slug }}')">{{ $tag->name }}</button>
-                        @endforeach
-                    </div>
-                </div>
-                @endif
-                @endforeach
-            </div>
-
-            {{-- ── Step 5 — Vibe + Style tags ── --}}
-            <div x-show="step === 5" x-cloak>
-                <h1 class="title">{!! __('owner.onboarding.step5_heading', ['em' => '<span class="it">'.__('owner.onboarding.step5_em').'</span>']) !!}</h1>
-                <p class="lead">{{ __('owner.onboarding.step5_desc') }}</p>
-                <p class="ui-help" style="margin-bottom:18px">{{ __('owner.onboarding.vibe_hint') }}</p>
-                <div class="f-error" x-show="errors.vsTags" x-text="errors.vsTags" x-cloak style="margin-bottom:12px"></div>
-                @foreach(['vibe', 'style'] as $cat)
-                @if(isset($tags[$cat]) && $tags[$cat]->isNotEmpty())
-                <div class="tag-section">
-                    <div class="tag-cat">
-                        {{ __('owner.onboarding.tag_'.$cat) }}
-                        <span class="tag-need" x-show="!_hasTagInEach(['{{ $cat }}'], vsTagIds)" x-cloak>· {{ __('owner.onboarding.tags_pick_one') }}</span>
-                    </div>
-                    <div class="tag-chips">
-                        @foreach($tags[$cat] as $tag)
-                        <button type="button" class="tag-chip"
-                                :class="{ on: vsTagIds.includes({{ $tag->id }}) }"
-                                @click="toggleVs({{ $tag->id }}, '{{ $tag->slug }}')">{{ $tag->name }}</button>
-                        @endforeach
-                    </div>
-                </div>
-                @endif
-                @endforeach
-            </div>
-
         </div>{{-- /form-body --}}
 
         {{-- Footer --}}
@@ -344,7 +281,7 @@
             <div class="phone-wrap">
                 <span class="annot tl">
                     <span class="pulse"></span>
-                    <span x-text="step === 1 ? s1.name || '{{ $appName }}' : step === 2 ? '{{ __('owner.onboarding.step2_title') }}' : step === 3 ? '{{ __('owner.onboarding.logo_label') }}' : step === 4 ? tagsLabel(cdTagIds.length) : step === 5 ? tagsLabel(vsTagIds.length) : '{{ __('owner.onboarding.stat_stage') }}'"></span>
+                    <span x-text="step === 1 ? s1.name || '{{ $appName }}' : step === 2 ? '{{ __('owner.onboarding.step2_title') }}' : step === 3 ? '{{ __('owner.onboarding.logo_label') }}' : '{{ __('owner.onboarding.stat_stage') }}'"></span>
                 </span>
 
                 <div class="phone">
@@ -411,7 +348,6 @@ window._onb = {
         stepData:   @json($stepData),
         currencySymbols: @json($currencySymbols),
         currencyCodes: @json(array_keys(config('currencies', []))),
-        tagCats:    @json($tagIdsByCategory),
         locale:     @json($locale),
         routes: {
             advance:    @json(route('onboarding.advance')),
@@ -425,10 +361,6 @@ window._onb = {
             country_code:       @json($restaurant?->country_code ?? ''),
             phone:              @json($restaurant?->phone ?? ''),
             currency:           @json($restaurant?->currency ?? 'USD'),
-            cdTagIds:           @json($existingCdTagIds),
-            cdTagSlugs:         @json($existingCdTagSlugs),
-            vsTagIds:           @json($existingVsTagIds),
-            vsTagSlugs:         @json($existingVsTagSlugs),
             hasLogo:            @json($restaurant?->hasMedia('logo') ?? false),
         },
         i18n: {
@@ -536,35 +468,10 @@ document.addEventListener('alpine:init', () => {
             this.selectedCurrency = (e.detail && e.detail.value) || 'USD';
             this.errors.currency = '';
         },
-        tagsLabel(n) {
-            return n + ' ' + (n === 1 ? _o.i18n.tagsOne : _o.i18n.tagsMany);
-        },
-
         /* Step 3 — a logo already saved on the restaurant satisfies the requirement.
            The dropzone is a self-contained component, so the wizard tracks this
            page-load flag separately (a fresh upload is detected via logo_key). */
         hasLogo: _o.existing.hasLogo,
-
-        /* Step 4 */
-        cdTagIds: _o.existing.cdTagIds, cdTagSlugs: _o.existing.cdTagSlugs,
-        toggleCd(id, slug) {
-            const i = this.cdTagIds.indexOf(id);
-            if (i === -1) { this.cdTagIds.push(id); this.cdTagSlugs.push(slug); }
-            else { this.cdTagIds.splice(i, 1); this.cdTagSlugs.splice(this.cdTagSlugs.indexOf(slug), 1); }
-        },
-
-        /* Step 5 */
-        vsTagIds: _o.existing.vsTagIds, vsTagSlugs: _o.existing.vsTagSlugs,
-        toggleVs(id, slug) {
-            const i = this.vsTagIds.indexOf(id);
-            if (i === -1) { this.vsTagIds.push(id); this.vsTagSlugs.push(slug); }
-            else { this.vsTagIds.splice(i, 1); this.vsTagSlugs.splice(this.vsTagSlugs.indexOf(slug), 1); }
-        },
-
-        /* True only when every named category has at least one selected tag. */
-        _hasTagInEach(categories, selected) {
-            return categories.every(cat => (_o.tagCats[cat] || []).some(id => selected.includes(id)));
-        },
 
         /* ── Snapshot system ─────────────────────────────────────────
            Captures each step's state when the step becomes active.
@@ -582,12 +489,6 @@ document.addEventListener('alpine:init', () => {
                 case 3:
                     this._snap[3] = `${dom('logo_key')}|${dom('cover_image_key')}`;
                     break;
-                case 4:
-                    this._snap[4] = [...this.cdTagIds].sort().join(',');
-                    break;
-                case 5:
-                    this._snap[5] = [...this.vsTagIds].sort().join(',');
-                    break;
             }
         },
 
@@ -596,8 +497,6 @@ document.addEventListener('alpine:init', () => {
                 case 1: return this._snap[1] === JSON.stringify({ name: this.s1.name.trim(), lang: this.s1.default_locale, slug: this.s1.slug });
                 case 2: return this._snap[2] === JSON.stringify({ cc: dom('country_code'), phone: dom('phone'), currency: dom('currency') });
                 case 3: return this._snap[3] === `${dom('logo_key')}|${dom('cover_image_key')}`;
-                case 4: return this._snap[4] === [...this.cdTagIds].sort().join(',');
-                case 5: return this._snap[5] === [...this.vsTagIds].sort().join(',');
                 default: return false;
             }
         },
@@ -668,9 +567,6 @@ document.addEventListener('alpine:init', () => {
             }
             // Step 3 (branding) — a logo is required (an existing one counts).
             if (this.step === 3 && !this.hasLogo && !dom('logo_key')) { this.errors.logo = _o.i18n.logoRequired; return; }
-            // Steps 4 & 5 — at least one tag must be selected in EACH category.
-            if (this.step === 4 && !this._hasTagInEach(['cuisine', 'dietary'], this.cdTagIds)) { this.errors.cdTags = _o.i18n.tagsEachCategory; return; }
-            if (this.step === 5 && !this._hasTagInEach(['vibe', 'style'], this.vsTagIds)) { this.errors.vsTags = _o.i18n.tagsEachCategory; return; }
 
             // ── Skip API if nothing changed (never skip the final step — it must complete server-side) ──
             if (this._isUnchanged() && this.step < this.totalSteps) {
@@ -687,10 +583,6 @@ document.addEventListener('alpine:init', () => {
                     body = { ...body, country_code: dom('country_code'), phone: dom('phone'), currency: dom('currency') };
                 } else if (this.step === 3) {
                     body = { ...body, logo_key: dom('logo_key'), cover_image_key: dom('cover_image_key') };
-                } else if (this.step === 4) {
-                    body = { ...body, tag_ids: this.cdTagIds };
-                } else if (this.step === 5) {
-                    body = { ...body, tag_ids: this.vsTagIds };
                 }
 
                 const res = await fetch(_o.routes.advance, {

@@ -27,6 +27,13 @@ class GoogleController extends Controller
                 ->with('error', 'Google sign-in failed. Please try again.');
         }
 
+        // Google always sends an email for a verified account; without one we
+        // have nothing to key the account on, and users.email is NOT NULL.
+        if (blank($googleUser->getEmail())) {
+            return redirect()->route('login')
+                ->with('error', __('auth.google_no_email'));
+        }
+
         $socialAccount = SocialAccount::where('provider', 'google')
             ->where('provider_user_id', $googleUser->getId())
             ->first();
@@ -38,6 +45,7 @@ class GoogleController extends Controller
                 'token_expires_at' => $googleUser->expiresIn
                     ? now()->addSeconds($googleUser->expiresIn)
                     : null,
+                'avatar' => $googleUser->getAvatar(),
             ]);
 
             Auth::login($socialAccount->user, remember: true);
@@ -48,10 +56,6 @@ class GoogleController extends Controller
         $user = User::where('email', $googleUser->getEmail())->first();
 
         if ($user) {
-            if ($user->email_verified_at === null) {
-                $user->forceFill(['email_verified_at' => now()])->save();
-            }
-
             $this->attachSocialAccount($user, $googleUser);
             Auth::login($user, remember: true);
 
@@ -65,8 +69,6 @@ class GoogleController extends Controller
             'role' => UserRole::MenuOwner,
             'onboarding_step' => 0,
         ]);
-
-        $user->forceFill(['email_verified_at' => now()])->save();
 
         $this->attachSocialAccount($user, $googleUser);
         Auth::login($user, remember: true);
