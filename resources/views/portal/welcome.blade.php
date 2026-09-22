@@ -189,29 +189,28 @@
       </div>
 
       <div class="price-grid reveal">
-        <div class="plan">
-          <div class="tier">{{ __('portal.pricing.free.tier') }}</div>
-          <div class="amt"><span class="big display gold-text">{{ __('portal.pricing.free.price') }}</span><span class="per">{{ __('portal.pricing.free.per') }}</span></div>
-          <p class="pdesc">{{ __('portal.pricing.free.desc') }}</p>
-          <ul>
-            @foreach (__('portal.pricing.free.features') as $feature)
-              <li>{!! $ICON['check'] !!}<span>{{ $feature }}</span></li>
-            @endforeach
-          </ul>
-          <a class="btn btn-line" data-magnetic href="{{ $ctaAuthedHref ?? route('register') }}">{{ $ctaAuthedLabel ?? __('portal.pricing.free.cta') }}</a>
-        </div>
-
-        <div class="plan hot">
-          <div class="tier">{{ __('portal.pricing.premium.tier') }}</div>
-          <div class="amt"><span class="big display gold-text">{{ __('portal.pricing.premium.price') }}</span><span class="per">{{ __('portal.pricing.premium.per') }}</span></div>
-          <p class="pdesc">{{ __('portal.pricing.premium.desc') }}</p>
-          <ul>
-            @foreach (__('portal.pricing.premium.features') as $feature)
-              <li>{!! $ICON['check'] !!}<span>{{ $feature }}</span></li>
-            @endforeach
-          </ul>
-          <a class="btn btn-gold" data-magnetic href="{{ $ctaAuthedHref ?? route('register') }}">{{ $ctaAuthedLabel ?? __('portal.pricing.premium.cta') }}</a>
-        </div>
+        @foreach (__('portal.pricing.packages') as $slug => $plan)
+          @php
+            $isCustom = $slug === 'custom';
+            $isHot = $slug === 'premium';
+          @endphp
+          <div class="plan{{ $isHot ? ' hot' : '' }}">
+            <div class="tier">{{ $plan['tier'] }}</div>
+            <div class="amt"><span class="big display gold-text">{{ $plan['price'] }}</span><span class="per">{{ $plan['per'] }}</span></div>
+            <p class="pdesc">{{ $plan['desc'] }}</p>
+            <ul>
+              @foreach ($plan['features'] as $feature)
+                <li>{!! $ICON['check'] !!}<span>{{ $feature }}</span></li>
+              @endforeach
+            </ul>
+            {{-- Custom has no price to sign up against, so it goes to the
+                 contact form instead of registration. --}}
+            <a class="btn {{ $isHot ? 'btn-gold' : 'btn-line' }}" data-magnetic
+               href="{{ $isCustom ? route('contact') : ($ctaAuthedHref ?? route('register')) }}">
+              {{ $isCustom ? $plan['cta'] : ($ctaAuthedLabel ?? $plan['cta']) }}
+            </a>
+          </div>
+        @endforeach
       </div>
       <p class="price-note reveal"><b>{{ __('portal.pricing.note_bold') }}</b> <span>{{ __('portal.pricing.note') }}</span></p>
     </div>
