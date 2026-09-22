@@ -236,9 +236,12 @@
 
   {{-- ===== PAYMENTS ===== --}}
   @php
-    // Payment methods Paddle supports for owner billing. All render in each of
-    // three marquee rows (rotated per row for variety, duplicated for a seamless
-    // loop). toss/blik shipped as 446KB/70KB base64-raster SVGs, which the
+    // TODO(packages): marketing only — there is no checkout yet. Packages are
+    // requested and assigned by hand, so this section promises a payment flow
+    // that does not exist. Keep it or drop it once billing is decided.
+    // All render in each of three marquee rows (rotated per row for variety,
+    // duplicated for a seamless loop). toss/blik shipped as 446KB/70KB
+    // base64-raster SVGs, which the
     // browser re-rasterizes during the transform animation and stutters — they
     // are served as tiny rasterized WebP instead so the marquee stays smooth.
     $payLogos = [

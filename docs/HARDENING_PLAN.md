@@ -1,9 +1,15 @@
 # Backend hardening — progress checklist
 
 Working document. Each step lands green (`php artisan test`) before the next.
-Decisions taken (revisit if wrong): drop dead analytics columns; refunds claw
-back with a floor at zero; Google-only signup is intended; `default_locale`
-stays immutable after onboarding; no account deletion.
+Decisions taken (revisit if wrong): drop dead analytics columns; Google-only
+signup is intended; `default_locale` stays immutable after onboarding; no
+account deletion.
+
+**Historic.** This log predates the move from coins to packages. Items below
+that mention coins, the wallet, Paddle or feature defaults were done against
+code that no longer exists — they are kept as a record of what was hardened and
+why, not as a description of the app today. See CLAUDE.md for the current
+model.
 
 ## Step 1 — Dead code
 - [x] A1 delete `seo_helpers.php`, `ApiResponse` trait, unused model methods, `category` upload context
@@ -20,17 +26,18 @@ stays immutable after onboarding; no account deletion.
 - [x] B1 forgot/reset routes, notification, no-enumeration, expiry
 
 ## Step 4 — API for the SPA
-- [x] C1 `GET /api/user` shell payload (balance, limits, features, urls)
+- [x] C1 `GET /api/user` shell payload (limits, features, urls; the balance it
+      carried became the package block)
 - [x] C8 `GET /api/stats`
 - [x] C9 `PUT /api/password`, `PUT /api/account`
-- [x] C7 wallet pagination
+- [x] C7 wallet pagination *(removed with coins)*
 
 ## Step 5 — Menu builder conveniences
 - [x] C2 template preview `GET /{slug}?preview=`
 - [x] C3 `PATCH /dishes/{dish}/availability`, `POST /dishes/{dish}/move`
 
 ## Step 6 — Test tooling + unit layer
-- [x] D0 `tests/Unit`, shared `CreatesOwners` / `FakesPaddle` traits
+- [x] D0 `tests/Unit`, shared `CreatesOwners` trait *(`FakesPaddle` removed with coins)*
 - [x] D1 unit tests
 
 ## Step 7 — Feature matrix
@@ -49,7 +56,7 @@ stays immutable after onboarding; no account deletion.
 - A Google identity with no email hit the `users.email` NOT NULL constraint (500). (`GoogleLoginEdgeTest`)
 - Re-submitting the final onboarding step sent the welcome email again. (`OnboardingEdgeTest`)
 - An owner could pick a reserved slug (`admin`, `contact`, …) that the menu route can never serve. (`OnboardingEdgeTest`, `OwnerJourneyTest`)
-- `Wallet::balance()` trusted whatever copy of the user the caller held. (`CoinsEdgeTest`)
+- `Wallet::balance()` trusted whatever copy of the user the caller held. *(the wallet is gone; the lesson stands)*
 - Onboarding read a cached `restaurant` relation, so a revisit of step 1 tried to create a second restaurant. (`OnboardingEdgeTest`)
 - The admin "create restaurant" form had no uniqueness rule on the owner — a duplicate was a raw DB exception. (`AdminResourcesTest`)
 - The `api` limiter's custom 429 was thrown as an `HttpResponseException` and the new JSON error renderer turned it into a 500. (`ErrorShapeTest`)

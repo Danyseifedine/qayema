@@ -463,44 +463,50 @@ Bilingual (ar/en) restaurant-menu SaaS. Two codebases in this folder:
   `GET /api/csrf-token` (the body, because a cross-subdomain SPA can't read the
   cookie). **Currently only an auth bootstrap — the UI is unbuilt.**
 
-## The money model
+## Packages
 
-**Paddle sells exactly one thing: coin packs.** Everything else is priced in
-coins, in-app, as an integer on a row. Adding something purchasable therefore
-never touches the billing pipeline.
+**Four packages: Free, Pro, Premium and Custom.** A restaurant points at one
+(`restaurants.package_id`) and that package holds every limit and flag it gets.
+Nothing is sold in-app yet: an owner asks for a package and an admin assigns it.
 
 ```
-Paddle checkout (coin_packs) → transaction.completed → CreditPurchasedCoins
-    → Wallet::credit()  [ledger + cached balance, one transaction]
-Owner spends coins → TemplateStore::unlock() → Wallet::debit() + template_purchases
+Owner → POST /api/packages/request → ContactService::submit()
+    → contact_messages row (user_id + package_id) + email to the admin
+Admin → /admin → Restaurants → set package_id → limits move immediately
 ```
 
-- `App\Services\Global\Wallet` is the only way coins move. `coin_transactions`
-  is append-only and is the source of truth; `users.coin_balance` is a cached
-  total written in the same DB transaction under `lockForUpdate()`, so the two
-  cannot drift and concurrent spends can't both pass one balance check.
-- Idempotency is the unique `(type, reference)` index. A re-delivered Paddle
-  webhook credits nothing the second time; `credit()` returns null rather than
-  throwing.
-- Coin amounts always come from the `coin_packs` row resolved by the price that
-  was paid — never from the webhook payload.
-- Templates: `unlock` (spends coins) and `select` (switches) are **separate**
-  endpoints so choosing a design can never spend money by accident. Ownership is
-  permanent, so switching between owned templates is free. Can't-afford is a
-  **402** carrying `balance`, `needed` and `shortfall`.
+- `packages.features` is a JSON map of `App\Enums\Feature` slug => value:
+  an integer allowance, **null for unlimited**, or 0/1 for a flag. A key the map
+  doesn't carry falls back to that feature's `defaultValue()`, so adding an enum
+  case never breaks an existing package.
+- The four rows are **fixed**: seeded by `create_packages_table` from
+  `config('package.catalog')`, edited at **/admin → Packages**, never created or
+  deleted there. `PackageSeeder` is `firstOrCreate`, so seeding a live database
+  cannot overwrite an admin's edits.
+- `package_ends_at` is an admin-set expiry. Once it passes, `effectivePackage()`
+  returns the default package while the assignment stays on the row so an admin
+  can still see what lapsed. A restaurant with no write between expiry and the
+  next read is stale for up to `package.cache_ttl` (300 s).
+- A package request shares the public contact form's durable per-IP quota of
+  3/day, and comes back as a **429** carrying `retry_after` when it is hit.
+- **Templates grant nothing.** They are pure design, free, and every active one
+  is available on every package.
 
 ## Limits / entitlements
 
-One rule: **effective value = admin-set default + Σ active grants** (limits add,
-flags OR). Resolved by `App\Services\Global\Package`, cached `package:{id}` 300s.
+One rule: **effective value = the package's value + Σ active grants** (limits
+add, flags OR, unlimited stays unlimited). Resolved by
+`App\Services\Global\Entitlements`, cached `entitlements:{id}` 300s.
 
 - `App\Enums\Feature` is the registry — adding a limit is one enum case. The
-  defaults table seeds itself from `Feature::cases()`.
-- `feature_defaults` = the floor for everyone, edited at **/admin → Plan Limits**.
-  Changing one flushes every restaurant's cache.
+  admin form and the packages table both render from `Feature::cases()`.
+- Saving a package flushes **every** restaurant's cache (`Entitlements::flushAll()`
+  via the model's `saved` hook); changing one restaurant's package or expiry
+  flushes only that one.
 - `restaurant_features` = per-restaurant grants, managed on the restaurant's
-  "Extra slots & add-ons" tab.
-- **Templates grant nothing.** They are pure design plus a coin price.
+  "Extra slots & add-ons" tab, with source `admin` or `purchase`.
+- A limit of **null is unlimited**: `hasReachedXLimit()` is false, the API sends
+  `limit: null`, and a grant on top of it leaves it unlimited.
 
 ## Templates
 
@@ -508,14 +514,14 @@ A template is a row + a Blade view of the same slug
 (`resources/views/menu/templates/{slug}.blade.php`). Scaffold both with:
 
 ```bash
-php artisan make:menu-template midnight --price=650
+php artisan make:menu-template midnight
 ```
 
 `templates.settings_schema` declares what the owner may change
 (`[{key, type, default, options?}]`, types: color/text/boolean/select).
 `UpdateTemplateSettingsRequest` builds its validation from that schema at request
-time and **rejects any key the template doesn't declare**, so "the free template
-can change colours, paid ones are fixed" is data, not code. An empty schema = a
+time and **rejects any key the template doesn't declare**, so "this design can
+change its colours, that one is fixed" is data, not code. An empty schema = a
 fixed design.
 
 The public menu controller falls back to `classic` when a template row exists
@@ -549,13 +555,18 @@ without its Blade file, so a half-finished template never 500s a guest.
 ## Not yet built
 
 - The dashboard SPA itself (the API it consumes is complete and tested).
-- Paid template designs — only the free `classic` view exists.
-- Production Paddle price ids on the seeded coin packs, so nothing is sellable
-  live until those are filled in from the admin panel.
+- More template designs — only the `classic` view exists.
+- **Taking payment.** Pro/Premium/Custom are requested, not bought: there is no
+  checkout, no subscription and no billing provider. An admin assigns a package
+  by hand.
+- **What each package actually contains.** The numbers in
+  `config/package.php` and the copy in `lang/{en,ar}/portal.php` are marked
+  `TODO(packages)` placeholders and must be decided together.
 
 ## Testing
 
 PHPUnit: pure logic in `tests/Unit`, HTTP/admin/journey tests in `tests/Feature`
-(~650 tests). Shared fixtures: `Tests\Concerns\CreatesOwners`, `Tests\Concerns\FakesPaddle`.
+(~580 tests). Shared fixtures: `Tests\Concerns\CreatesOwners` (`owner()`,
+`ownerOn('pro')`, `published()`, `admin()`).
 Run `php artisan test`; format with `vendor/bin/pint --dirty`. Switching `actingAs()`
 users inside one test trips Filament's session-hash check — use separate tests.

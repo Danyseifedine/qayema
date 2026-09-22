@@ -233,7 +233,7 @@ return [
         'eyebrow' => 'Payments',
         'title' => 'One checkout,',
         'title_gold' => 'every method.',
-        'subtitle' => 'Pay for premium templates and add-ons your way — Apple Pay, Google Pay, PayPal, and 20+ local methods worldwide, handled securely by Paddle.',
+        'subtitle' => 'Pay for your package your way — Apple Pay, Google Pay, PayPal, and 20+ local methods worldwide.',
     ],
     'faq' => [
         'eyebrow' => 'Questions',

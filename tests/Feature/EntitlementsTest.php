@@ -155,6 +155,22 @@ class EntitlementsTest extends TestCase
         $this->assertSame(40, $restaurant->fresh()->dish_limit, 'The cache is flushed on delete.');
     }
 
+    public function test_a_feature_missing_from_a_package_falls_back_to_its_own_default(): void
+    {
+        // A package written before a feature existed carries no key for it.
+        // That must read as the feature's default, not as zero.
+        $package = Package::factory()->create(['features' => ['dish_limit' => 500]]);
+
+        $restaurant = Restaurant::factory()->create([
+            'template_id' => null,
+            'package_id' => $package->id,
+        ]);
+
+        $this->assertSame(500, $restaurant->dish_limit);
+        $this->assertSame(10, $restaurant->category_limit, 'Feature::defaultValue() fills the gap.');
+        $this->assertFalse($restaurant->entitlements()->can(Feature::QrStudio));
+    }
+
     public function test_templates_grant_nothing(): void
     {
         $restaurant = Restaurant::factory()->create();

@@ -37,9 +37,10 @@ A deployed host needs the same three values set in its own `php.ini`:
 | `post_max_size` | `12M` | The file plus the rest of the form |
 | `memory_limit` | `256M` | GD decodes the original before resizing, and a 6000 × 6000 image needs roughly 144 MB |
 
-The seed creates an admin (`admin@admin.com` / `password`), the free `classic`
-template, and three coin packs. Feature defaults (dish/category/social-link
-limits) are seeded by their migration.
+The seed creates an admin (`admin@admin.com` / `password`) and the `classic`
+template. The four packages (Free, Pro, Premium, Custom) are seeded by their
+migration from `config/package.php`, so a fresh database already has working
+limits.
 
 Sign in to the admin panel at `/admin`.
 
@@ -47,20 +48,20 @@ Sign in to the admin panel at `/admin`.
 
 | Concept | Where it lives |
 |---|---|
-| What a plan allows | `App\Enums\Feature` + `feature_defaults` + `restaurant_features` |
-| Resolving a limit | `App\Services\Global\Package` — default + Σ grants |
-| Coins | `App\Services\Global\Wallet` — append-only ledger + cached balance |
-| Buying a template | `App\Services\Global\TemplateStore` |
+| What a package allows | `App\Enums\Feature` + `packages.features` + `restaurant_features` |
+| Resolving a limit | `App\Services\Global\Entitlements` — package + Σ grants |
+| Moving a restaurant up | `/admin → Restaurants → Package` (an owner asks, an admin assigns) |
+| Asking for a package | `POST /api/packages/request` → a `contact_messages` row + an email |
 | A menu design | a `templates` row + `resources/views/menu/templates/{slug}.blade.php` |
 
 ## Common tasks
 
 ```bash
-php artisan test                              # ~650 tests, unit + feature
-php artisan test --testsuite=Feature --filter=WalletTest
+php artisan test                              # ~580 tests, unit + feature
+php artisan test --filter=EntitlementsTest
 vendor/bin/pint --dirty                       # format before committing
 
-php artisan make:menu-template midnight --price=650   # scaffold a design
+php artisan make:menu-template midnight       # scaffold a design
 php artisan stats:rollup                      # prune old menu_sessions
 ```
 
@@ -70,8 +71,10 @@ Unit tests live in `tests/Unit`, feature/journey tests in `tests/Feature`.
 
 1. `APP_ENV=production`, `APP_DEBUG=false`, and set `APP_NAME=Qayema` (it still
    reads `Laravel`, which shows in the public menu footer).
-2. Create the coin pack products in Paddle and paste their **production** price
-   ids into each pack in `/admin → Coin Packs`. Until then nothing is sellable.
+2. Set what each package contains at `/admin → Packages` — the seeded numbers
+   are placeholders. Nothing is sold in-app: owners request a package and an
+   admin assigns it, so set `CONTACT_RECIPIENT_EMAIL` or those requests reach
+   nobody.
 3. Set `CORS_ALLOWED_ORIGINS` and `SANCTUM_STATEFUL_DOMAINS` to the dashboard's
    subdomain, and `SESSION_DOMAIN` to the shared registrable domain
    (e.g. `.qayema.com`) so the session cookie is shared.

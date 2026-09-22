@@ -31,6 +31,31 @@ class LandingCtaTest extends TestCase
         $response->assertDontSee(route('register'), false);
     }
 
+    public function test_the_pricing_section_lists_the_four_packages(): void
+    {
+        $response = $this->get('/')->assertOk();
+
+        foreach (['Free', 'Pro', 'Premium', 'Custom'] as $tier) {
+            $response->assertSee($tier, false);
+        }
+    }
+
+    public function test_the_custom_package_points_at_the_contact_page_not_registration(): void
+    {
+        // Custom has no published price, so there is nothing to sign up
+        // against: the owner has to talk to us first.
+        $html = $this->get('/')->assertOk()->getContent();
+
+        $this->assertStringContainsString(route('contact'), $html);
+        $position = strpos($html, __('portal.pricing.packages.custom.cta'));
+        $this->assertNotFalse($position, 'The Custom call to action is missing.');
+        $this->assertStringContainsString(
+            route('contact'),
+            substr($html, max(0, $position - 300), 300),
+            'The Custom call to action does not link to the contact page.',
+        );
+    }
+
     public function test_onboarded_owner_is_pointed_to_the_dashboard(): void
     {
         config(['app.dashboard_url' => 'https://dash.qayema.test']);

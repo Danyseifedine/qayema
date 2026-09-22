@@ -1,7 +1,12 @@
 @php
     $package = $contactMessage->package;
     $restaurant = $contactMessage->user?->restaurant;
-    $safeMessage = str_replace(['\', '`', '*', '_', '[', ']', '(', ')', '#', '>', '!', '~'], ['\\', '\`', '\*', '\_', '\[', '\]', '\(', '\)', '\#', '\>', '\!', '\~'], $contactMessage->message);
+    // The body is rendered as Markdown, so every character Markdown treats as
+    // syntax is escaped with a backslash. The backslash itself goes first, or
+    // it would escape the escapes added after it.
+    $markdown = ['\\', '`', '*', '_', '[', ']', '(', ')', '#', '>', '!', '~'];
+    $escaped = array_map(fn (string $character): string => '\\'.$character, $markdown);
+    $safeMessage = str_replace($markdown, $escaped, $contactMessage->message);
 @endphp
 <x-mail::message>
 # {{ $package ? 'Package request from ' . $contactMessage->name : 'New message from ' . $contactMessage->name }}

@@ -20,7 +20,6 @@ erDiagram
         varchar email UK
         varchar role "admin or menu_owner"
         varchar password "nullable - Google-only accounts"
-        int coin_balance "cached; ledger is the truth"
         tinyint onboarding_step "0-3"
         timestamp onboarding_completed_at "nullable"
         timestamp email_verified_at "nullable"
@@ -33,6 +32,9 @@ erDiagram
         bigint id PK
         bigint user_id FK "UK - one restaurant per owner"
         bigint template_id FK "nullable, set null - null until chosen"
+        bigint package_id FK "nullable, set null - the plan in force"
+        timestamp package_started_at "nullable"
+        timestamp package_ends_at "nullable = no expiry; past = falls back to default"
         json name "translatable"
         json description "translatable, nullable"
         varchar slug UK "the public menu URL"
@@ -111,10 +113,10 @@ erDiagram
     dishes |o..o{ media : "image"
 ```
 
-## 2. Templates, coins & entitlements
+## 2. Templates, packages & entitlements
 
-The money model in one line: **Paddle sells coin packs; everything else is
-priced in coins.**
+What an owner gets in one line: **the package their restaurant is on, plus any
+grants on top.** Templates are pure design and grant nothing.
 
 ```mermaid
 erDiagram
@@ -123,49 +125,23 @@ erDiagram
         varchar slug UK "matches the Blade view name"
         json name "translatable"
         json description "translatable, nullable"
-        int price "coins; 0 = free"
         json settings_schema "what the owner may customize"
         tinyint is_active "default 1"
         int sort_order "default 0"
         timestamps created_updated
     }
 
-    template_purchases {
+    packages {
         bigint id PK
-        bigint restaurant_id FK "cascade"
-        bigint template_id FK "cascade"
-        bigint coin_transaction_id FK "nullable, set null"
-        int price_paid "what it cost at the time"
-        timestamps created_updated
-    }
-
-    coin_packs {
-        bigint id PK
-        varchar slug UK
+        varchar slug UK "32 - free, pro, premium, custom"
         json name "translatable"
-        int coins
-        varchar paddle_price_id_sandbox "nullable"
-        varchar paddle_price_id_production "nullable"
-        tinyint is_active "default 1"
+        json description "translatable, nullable"
+        int price_cents "nullable = contact us; 0 = free"
+        char currency "3, default USD"
+        tinyint is_contact_only "default 0"
+        tinyint is_default "default 0 - exactly one row"
         int sort_order "default 0"
-        timestamps created_updated
-    }
-
-    coin_transactions {
-        bigint id PK
-        bigint user_id FK "cascade"
-        int amount "signed - credits +, spends -"
-        int balance_after "running total"
-        varchar type "purchase, spend, admin_grant, refund"
-        varchar reference "UK with type - idempotency key"
-        json meta "nullable"
-        timestamps created_updated
-    }
-
-    feature_defaults {
-        bigint id PK
-        varchar feature UK "an App\\Enums\\Feature case"
-        int value "the floor for every restaurant"
+        json features "feature slug to int or null for unlimited"
         timestamps created_updated
     }
 
@@ -173,33 +149,39 @@ erDiagram
         bigint id PK
         bigint restaurant_id FK "cascade"
         varchar feature "an App\\Enums\\Feature case"
-        int value "added on top of the default"
-        varchar source "admin, purchase, coins"
+        int value "added on top of the package"
+        varchar source "admin, purchase"
         varchar reference "nullable - UK with restaurant+feature"
         timestamp ends_at "nullable = never expires"
         timestamps created_updated
     }
 
-    restaurants ||--o{ template_purchases : "unlocked"
-    templates ||--o{ template_purchases : "sold as"
+    packages ||--o{ restaurants : "entitles"
     templates |o--o{ restaurants : "styles (nullable)"
-    users ||--o{ coin_transactions : "ledger"
-    coin_transactions |o--o| template_purchases : "paid for"
     restaurants ||--o{ restaurant_features : "granted"
     templates |o..o{ media : "thumbnail"
 ```
 
-**How a limit is resolved** — `App\Services\Global\Package`:
+**How a limit is resolved** — `App\Services\Global\Entitlements`:
 
 ```
-effective value = feature_defaults[feature] + Σ (active restaurant_features grants)
+effective value = packages.features[feature] + Σ (active restaurant_features grants)
 ```
 
-Limits add up; flags (`qr_studio`) are on if anything says on. Templates grant
-nothing — they are pure design. Cached as `package:{id}` for 300s and flushed by
-`RestaurantFeature` saved/deleted hooks.
+Limits add up; flags (`qr_studio`) are on if anything says on; a `null` value is
+unlimited and stays unlimited however many grants sit on it. A feature missing
+from a package's map falls back to `App\Enums\Feature::defaultValue()`.
 
-## 3. Analytics, billing records & framework tables
+Cached as `entitlements:{id}` for 300s, flushed by `RestaurantFeature`
+saved/deleted hooks, by a restaurant whose `package_id`/`package_ends_at`
+changed, and for **every** restaurant when a package itself is saved.
+
+The four rows are seeded by the `packages` migration from
+`config('package.catalog')` and edited at `/admin → Packages`. Nothing is sold
+in-app: an owner asks through `POST /api/packages/request`, which writes a
+`contact_messages` row carrying `user_id` and `package_id`.
+
+## 3. Analytics, contact & framework tables
 
 ```mermaid
 erDiagram
@@ -218,28 +200,6 @@ erDiagram
         timestamps created_updated
     }
 
-    customers {
-        bigint id PK
-        varchar billable_type "polymorphic - App\\Models\\User"
-        bigint billable_id
-        varchar paddle_id UK
-        varchar email
-        timestamps created_updated
-    }
-
-    transactions {
-        bigint id PK
-        varchar billable_type "polymorphic"
-        bigint billable_id
-        varchar paddle_id UK "the coin_transactions reference"
-        varchar invoice_number "nullable"
-        varchar status
-        varchar total
-        varchar currency
-        timestamp billed_at
-        timestamps created_updated
-    }
-
     blocked_ips {
         bigint id PK
         varchar ip "indexed"
@@ -254,18 +214,19 @@ erDiagram
         varchar email
         text message
         varchar ip_address "indexed, 45"
+        bigint user_id FK "nullable, set null - set for a package request"
+        bigint package_id FK "nullable, set null - which package was asked for"
         timestamps created_updated
     }
 
     restaurants ||--o{ menu_sessions : "visits"
-    users |o..o{ customers : "Paddle customer"
-    users |o..o{ transactions : "payments"
+    users |o--o{ contact_messages : "asked for a package"
+    packages |o--o{ contact_messages : "requested"
 ```
 
-Also present, unchanged from the framework/Cashier defaults: `sessions`,
+Also present, unchanged from the framework defaults: `sessions`,
 `password_reset_tokens`, `cache`, `cache_locks`, `jobs`, `job_batches`,
-`failed_jobs`, `subscriptions`, `subscription_items` (Cashier requires the
-subscription tables; Qayema sells no subscriptions), and `telescope_*` in local.
+`failed_jobs`, and `telescope_*` in local.
 
 ## Regenerating this file
 

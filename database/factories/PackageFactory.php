@@ -32,23 +32,4 @@ class PackageFactory extends Factory
                 ->all(),
         ];
     }
-
-    /**
-     * @param  array<string, int|null>  $features
-     */
-    public function withFeatures(array $features): static
-    {
-        return $this->state(fn (array $attributes): array => [
-            'features' => array_merge($attributes['features'] ?? [], $features),
-        ]);
-    }
-
-    /** A package whose price is not published — the owner has to ask. */
-    public function contactOnly(): static
-    {
-        return $this->state(fn (array $attributes): array => [
-            'price_cents' => null,
-            'is_contact_only' => true,
-        ]);
-    }
 }

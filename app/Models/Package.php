@@ -109,9 +109,4 @@ class Package extends Model
 
         $this->forceFill(['features' => $features])->save();
     }
-
-    public function isFree(): bool
-    {
-        return $this->price_cents === 0;
-    }
 }

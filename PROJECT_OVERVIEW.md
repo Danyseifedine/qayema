@@ -3,8 +3,8 @@
 > **Qayema** is a bilingual (English/Arabic) SaaS for digital restaurant menus:
 > Laravel 12 API + Filament v4 admin, with a separate React dashboard SPA
 > (`qayema-dashboard/`). Owners build their menu, pick a design, and share it as
-> a QR code. Money works in two steps — Paddle sells **Qayema coins**, and coins
-> buy things inside the app.
+> a QR code. What an owner gets comes from the **package** their restaurant is
+> on: Free, Pro, Premium or Custom.
 
 Agent-facing architecture notes live in [CLAUDE.md](CLAUDE.md). The schema
 diagram lives in [docs/database-erd.md](docs/database-erd.md). This file is the
@@ -31,35 +31,37 @@ short human-facing map.
 - **Templates** — the menu designs. A new restaurant has none until the owner
   picks one, and the dashboard stays locked until they do.
 
-## Coins
+## Packages
 
-Paddle sells `coin_packs` and nothing else. `coin_transactions` is an
-append-only ledger; `users.coin_balance` is a cached total kept in step inside
-the same transaction, so the two can't drift. A re-delivered webhook can't
-double-credit — the unique `(type, reference)` index is the idempotency key.
+Four of them — **Free, Pro, Premium and Custom** — each holding its own limits
+and features in a JSON map, edited at **/admin → Packages**. Every restaurant
+points at one and starts on Free. Templates carry no price: every design is
+available on every package.
 
-Owners spend coins on paid **templates**. Unlocking is permanent, so switching
-between owned designs is always free.
+Nothing is sold in the app yet. An owner asks for a package from the dashboard,
+the request lands in **/admin → Contact Messages** with the package on it and an
+email goes out, and an admin assigns it on the restaurant. An admin-set
+`package_ends_at` drops the restaurant back to Free when it passes.
 
 ## Limits
 
-`effective limit = the admin-set default + every grant on that restaurant`.
+`effective limit = the package's value + every grant on that restaurant`.
 
-Defaults (dishes, categories, social links, QR Studio) are edited at
-**/admin → Plan Limits** and apply to everyone at once; per-restaurant top-ups
-live on each restaurant's "Extra slots & add-ons" tab. The registry of what a
-feature even *is* is the `App\Enums\Feature` enum — one case per feature.
+A limit of `null` means unlimited, which is how Custom is expressed.
+Per-restaurant top-ups live on each restaurant's "Extra slots & add-ons" tab.
+The registry of what a feature even *is* is the `App\Enums\Feature` enum — one
+case per feature.
 
 ## Adding a template
 
 ```bash
-php artisan make:menu-template midnight --price=650
+php artisan make:menu-template midnight
 ```
 
 That writes the database row and a Blade view at
 `resources/views/menu/templates/midnight.blade.php`. Design the view; set the
-price, thumbnail and which settings owners may change (colours, text, toggles)
-in the admin panel. No other code changes.
+thumbnail and which settings owners may change (colours, text, toggles) in the
+admin panel. No other code changes.
 
 ## Security
 
@@ -70,13 +72,16 @@ with a cross-domain CSRF token endpoint.
 
 ## Testing
 
-About 650 PHPUnit tests: unit (`tests/Unit`) plus feature, admin and end-to-end
+About 580 PHPUnit tests: unit (`tests/Unit`) plus feature, admin and end-to-end
 journey tests (`tests/Feature`). Run `php artisan test`; format with
 `vendor/bin/pint --dirty`.
 
 ## Known gaps
 
-- The dashboard SPA is an auth bootstrap only — the API it consumes is complete.
-- Only the free `classic` template design exists.
-- The seeded coin packs have no production Paddle price ids yet, so nothing is
-  sellable live until those are filled in.
+- The dashboard SPA is partially built — the API it consumes is complete.
+- Only the `classic` template design exists.
+- **No payment.** Pro, Premium and Custom are requested, not bought; an admin
+  assigns them by hand. There is no checkout or billing provider.
+- **What each package contains is undecided.** The seeded numbers in
+  `config/package.php` and the landing copy in `lang/{en,ar}/portal.php` are
+  marked `TODO(packages)` placeholders.

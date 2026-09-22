@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Packages;
 
+use App\Filament\Admin\Resources\Restaurants\RestaurantResource;
 use App\Mail\ContactMessageReceived;
 use App\Models\ContactMessage;
 use App\Models\Package;
@@ -142,6 +143,44 @@ class PackageRequestTest extends TestCase
 
         $this->assertDatabaseCount('contact_messages', 1);
         Log::shouldHaveReceived('warning')->once();
+    }
+
+    public function test_the_email_body_names_the_package_and_links_to_the_restaurant(): void
+    {
+        $owner = $this->owner(['slug' => 'beit-qayema']);
+
+        $this->actingAs($owner->user)->postJson(route('api.packages.request'), ['package' => 'pro'])->assertCreated();
+
+        // Mail::fake() never renders the view, so render it here: a broken
+        // template would otherwise only show up in a real inbox.
+        $rendered = (new ContactMessageReceived(ContactMessage::firstOrFail()))->render();
+
+        $this->assertStringContainsString('Package request', $rendered);
+        $this->assertStringContainsString('Pro', $rendered);
+        $this->assertStringContainsString(
+            RestaurantResource::getUrl('edit', ['record' => $owner]),
+            $rendered,
+            'The admin can open the restaurant straight from the email.',
+        );
+    }
+
+    public function test_a_public_enquiry_email_still_renders_without_a_package(): void
+    {
+        $contact = ContactMessage::create([
+            'name' => 'A guest',
+            'email' => 'guest@example.test',
+            'message' => 'Do you support **Arabic** and `code`?',
+            'ip_address' => '127.0.0.1',
+        ]);
+
+        $rendered = (new ContactMessageReceived($contact))->render();
+
+        $this->assertStringContainsString('New message from A guest', $rendered);
+        $this->assertStringNotContainsString('Requested package', $rendered);
+        // Markdown characters in the body are escaped, so a message cannot
+        // style the email or smuggle a link into it.
+        $this->assertStringNotContainsString('<strong>Arabic</strong>', $rendered);
+        $this->assertStringNotContainsString('<code>code</code>', $rendered);
     }
 
     public function test_a_user_without_a_restaurant_may_still_ask(): void
