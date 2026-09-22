@@ -67,7 +67,7 @@ class FeatureGrantsTest extends TestCase
                 'source' => 'admin',
             ]);
 
-        $this->assertTrue($restaurant->fresh()->package()->can(Feature::QrStudio));
+        $this->assertTrue($restaurant->fresh()->entitlements()->can(Feature::QrStudio));
     }
 
     public function test_the_table_lists_the_restaurants_grants(): void

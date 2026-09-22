@@ -5,7 +5,7 @@ namespace Tests\Feature\Api;
 use App\Enums\Feature;
 use App\Models\Category;
 use App\Models\Dish;
-use App\Models\FeatureDefault;
+use App\Models\Package;
 use App\Models\Restaurant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -65,7 +65,7 @@ class CategoryTest extends TestCase
 
     public function test_index_includes_the_plan_limit_meta(): void
     {
-        FeatureDefault::set(Feature::CategoryLimit, 10);
+        Package::default()->setFeature(Feature::CategoryLimit, 10);
         [$user, $restaurant] = $this->owner();
         Category::factory()->create(['restaurant_id' => $restaurant->id]);
 
@@ -149,7 +149,7 @@ class CategoryTest extends TestCase
 
     public function test_store_is_rejected_when_the_category_limit_is_reached(): void
     {
-        FeatureDefault::set(Feature::CategoryLimit, 1);
+        Package::default()->setFeature(Feature::CategoryLimit, 1);
         [$user, $restaurant] = $this->owner();
         Category::factory()->create(['restaurant_id' => $restaurant->id]);
 

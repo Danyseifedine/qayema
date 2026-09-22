@@ -40,6 +40,14 @@ class RestaurantsTable
                     ->searchable()
                     ->sortable(),
 
+                TextColumn::make('package.name')
+                    ->label('Package')
+                    ->placeholder('Default')
+                    ->badge()
+                    ->color(fn (Restaurant $record): string => $record->packageExpired() ? 'danger' : 'success')
+                    ->description(fn (Restaurant $record): ?string => $record->packageExpired() ? 'Expired' : null)
+                    ->toggleable(),
+
                 TextColumn::make('template.name')
                     ->label('Template')
                     ->placeholder('None')
@@ -53,7 +61,7 @@ class RestaurantsTable
 
                 TextColumn::make('dish_limit')
                     ->label('Dish Limit')
-                    ->getStateUsing(fn (Restaurant $record): int => $record->dish_limit)
+                    ->getStateUsing(fn (Restaurant $record): string => $record->dish_limit === null ? '∞' : (string) $record->dish_limit)
                     ->badge()
                     ->toggleable(isToggledHiddenByDefault: true),
 

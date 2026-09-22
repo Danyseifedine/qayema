@@ -30,17 +30,6 @@ class TemplatesTable
                     ->placeholder('N/A')
                     ->badge()
                     ->color('gray'),
-                TextColumn::make('price')
-                    ->label('Price')
-                    ->badge()
-                    ->color(fn (int $state): string => $state === 0 ? 'gray' : 'success')
-                    ->formatStateUsing(fn (int $state): string => $state === 0 ? 'Free' : $state.' coins')
-                    ->sortable(),
-                TextColumn::make('purchases_count')
-                    ->label('Unlocked by')
-                    ->counts('purchases')
-                    ->sortable()
-                    ->toggleable(),
                 TextColumn::make('restaurants_count')
                     ->label('Restaurants')
                     ->counts('restaurants')

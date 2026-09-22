@@ -36,6 +36,11 @@ class TempUploadRequest extends FormRequest
             'file.image' => 'The upload must be an image.',
             'file.mimes' => 'Images must be JPEG, PNG, or WebP.',
             'file.max' => 'Images must not exceed 10 MB.',
+            // PHP drops a file larger than `upload_max_filesize` before any
+            // rule runs, and Laravel's built-in `uploaded` rule fires instead.
+            // Without this the owner sees the framework's bare "The file
+            // failed to upload." with no hint that size was the problem.
+            'file.uploaded' => 'That image is too large for the server to accept. Images must be 10 MB or smaller.',
             'file.dimensions' => 'Images must be at most 6000 × 6000 pixels.',
             'context.in' => 'Invalid upload context.',
         ];

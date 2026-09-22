@@ -9,7 +9,7 @@ class TemplateSettingsTest extends TestCase
 {
     private function template(?array $schema): Template
     {
-        return new Template(['settings_schema' => $schema, 'price' => 0]);
+        return new Template(['settings_schema' => $schema]);
     }
 
     public function test_a_missing_schema_means_no_settings(): void
@@ -55,11 +55,5 @@ class TemplateSettingsTest extends TestCase
         $template = $this->template([['key' => 'primary', 'type' => 'color', 'default' => '#111111']]);
 
         $this->assertSame(['primary' => '#111111'], $template->resolveSettings(['legacy' => 'x', 'evil' => '<script>']));
-    }
-
-    public function test_free_is_exactly_a_zero_price(): void
-    {
-        $this->assertTrue((new Template(['price' => 0]))->isFree());
-        $this->assertFalse((new Template(['price' => 1]))->isFree());
     }
 }

@@ -3,15 +3,14 @@
 use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
-use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\DishController;
-use App\Http\Controllers\Api\PurchaseController;
+use App\Http\Controllers\Api\PackageController;
+use App\Http\Controllers\Api\PackageRequestController;
 use App\Http\Controllers\Api\QrController;
 use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\SocialLinkController;
 use App\Http\Controllers\Api\StatsController;
 use App\Http\Controllers\Api\TemplateController;
-use App\Http\Controllers\Api\WalletController;
 use App\Http\Controllers\TempUploadController;
 use Illuminate\Support\Facades\Route;
 
@@ -78,28 +77,20 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::match(['put', 'patch'], '/settings', [SettingsController::class, 'update'])->name('api.settings.update');
 
     // Menu templates — the store. A new restaurant has none and must choose
-    // before the dashboard unlocks. Paid templates are unlocked with coins
-    // (a separate call, so selecting can never spend by accident) and are owned
-    // for good once bought.
+    // before the dashboard unlocks. Every active design is free: what a package
+    // grants is limits and features, never a template.
     Route::get('/templates', [TemplateController::class, 'index'])->name('api.templates.index');
     Route::post('/templates/select', [TemplateController::class, 'select'])->name('api.templates.select');
-    Route::post('/templates/unlock', [TemplateController::class, 'unlock'])
-        ->middleware('throttle:mutations')
-        ->name('api.templates.unlock');
     Route::match(['put', 'patch'], '/template-settings', [TemplateController::class, 'updateSettings'])
         ->name('api.template-settings.update');
 
-    // Coins — the balance and ledger, the packs that top it up, and the
-    // checkout that opens a Paddle overlay for one. Coins are credited
-    // server-side when the Paddle webhook confirms payment.
-    Route::get('/wallet', [WalletController::class, 'show'])->name('api.wallet');
-    Route::get('/coin-packs', [WalletController::class, 'packs'])->name('api.coin-packs');
-    Route::post('/checkout', [CheckoutController::class, 'store'])
+    // Packages — what every plan contains and which one this restaurant is on.
+    // Nothing is sold here: an owner asks for a package and an admin assigns it,
+    // so the request lands as a contact message rather than a checkout.
+    Route::get('/packages', [PackageController::class, 'index'])->name('api.packages.index');
+    Route::post('/packages/request', [PackageRequestController::class, 'store'])
         ->middleware('throttle:mutations')
-        ->name('api.checkout');
-
-    // Short-lived invoice PDF links, fetched from Paddle on demand.
-    Route::get('/purchases/{transaction}/invoice', [PurchaseController::class, 'invoice'])->name('api.purchases.invoice');
+        ->name('api.packages.request');
 
     // QR studio — the menu link's QR design (persisted look) + scan analytics.
     Route::get('/qr', [QrController::class, 'show'])->name('api.qr.show');

@@ -12,7 +12,10 @@ return new class extends Migration
      * only ever edits the locale in `default_locale`.
      *
      * A new restaurant starts with template_id = null — the dashboard stays
-     * locked until the owner picks one.
+     * locked until the owner picks one — and on the default package, which is
+     * what its limits and features resolve from. `package_ends_at` is an
+     * admin-set expiry: once it passes, the restaurant falls back to the
+     * default package until a new one is assigned.
      */
     public function up(): void
     {
@@ -20,6 +23,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->unique()->constrained()->cascadeOnDelete();
             $table->foreignId('template_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('package_id')->nullable()->constrained()->nullOnDelete();
+            $table->timestamp('package_started_at')->nullable();
+            $table->timestamp('package_ends_at')->nullable();
 
             $table->json('name');
             $table->json('description')->nullable();

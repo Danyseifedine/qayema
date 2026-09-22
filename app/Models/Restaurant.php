@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Enums\Feature;
-use App\Services\Global\Package;
+use App\Services\Global\Entitlements;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,7 +24,7 @@ class Restaurant extends Model implements HasMedia
      * @var string[]
      */
     public const RESERVED_SLUGS = [
-        'admin', 'api', 'livewire', 'storage', 'up', 'paddle', 'sanctum', 'telescope',
+        'admin', 'api', 'livewire', 'storage', 'up', 'sanctum', 'telescope',
         'contact', 'privacy-policy', 'terms-of-service', 'cookie-policy', 'refund-policy',
         'get-started', 'register', 'login', 'logout', 'onboarding', 'auth', 'locale',
         'password', 'forgot-password', 'reset-password', 'temp-upload', 'impersonate',
@@ -36,6 +36,9 @@ class Restaurant extends Model implements HasMedia
     protected $fillable = [
         'user_id',
         'template_id',
+        'package_id',
+        'package_started_at',
+        'package_ends_at',
         'name',
         'description',
         'slug',
@@ -54,6 +57,8 @@ class Restaurant extends Model implements HasMedia
     {
         return [
             'is_active' => 'boolean',
+            'package_started_at' => 'datetime',
+            'package_ends_at' => 'datetime',
             'template_settings' => 'array',
             'qr_settings' => 'array',
         ];
@@ -62,6 +67,11 @@ class Restaurant extends Model implements HasMedia
     protected static function booted(): void
     {
         static::creating(function (self $restaurant) {
+            // Every restaurant is on a package from the moment it exists, so
+            // limits never have to cope with "no package yet".
+            $restaurant->package_id ??= Package::default()?->id;
+            $restaurant->package_started_at ??= now();
+
             if (empty($restaurant->slug)) {
                 $base = Str::slug($restaurant->name);
                 $slug = $base !== '' ? $base : 'menu';
@@ -71,6 +81,12 @@ class Restaurant extends Model implements HasMedia
                     $count++;
                 }
                 $restaurant->slug = $slug;
+            }
+        });
+
+        static::saved(function (self $restaurant): void {
+            if ($restaurant->wasChanged(['package_id', 'package_ends_at'])) {
+                Entitlements::flush($restaurant->id);
             }
         });
     }
@@ -83,6 +99,11 @@ class Restaurant extends Model implements HasMedia
     public function template(): BelongsTo
     {
         return $this->belongsTo(Template::class);
+    }
+
+    public function package(): BelongsTo
+    {
+        return $this->belongsTo(Package::class);
     }
 
     public function categories(): HasMany
@@ -110,33 +131,29 @@ class Restaurant extends Model implements HasMedia
         return $this->hasMany(RestaurantFeature::class);
     }
 
-    public function templatePurchases(): HasMany
+    /** True once an admin-set expiry has passed. */
+    public function packageExpired(): bool
     {
-        return $this->hasMany(TemplatePurchase::class);
-    }
-
-    public function package(): Package
-    {
-        return Package::for($this);
+        return $this->package_ends_at !== null && $this->package_ends_at->isPast();
     }
 
     /**
-     * Whether this restaurant may use a template: free ones are open to
-     * everyone, paid ones only once bought.
+     * The package the limits actually come from: the assigned one while it
+     * lasts, then the default. The assignment is left alone so an admin can
+     * still see what expired.
      */
-    public function owns(Template $template): bool
+    public function effectivePackage(): ?Package
     {
-        if ($template->isFree()) {
-            return true;
+        if ($this->package_id !== null && ! $this->packageExpired()) {
+            return $this->package;
         }
 
-        // Answer from the loaded relation when the caller eager-loaded it, so
-        // listing every template stays a single query.
-        if ($this->relationLoaded('templatePurchases')) {
-            return $this->templatePurchases->contains('template_id', $template->id);
-        }
+        return Package::default();
+    }
 
-        return $this->templatePurchases()->where('template_id', $template->id)->exists();
+    public function entitlements(): Entitlements
+    {
+        return Entitlements::for($this);
     }
 
     /**
@@ -173,34 +190,35 @@ class Restaurant extends Model implements HasMedia
         return array_merge($this->qrDefaultDesign(), $saved);
     }
 
-    public function getDishLimitAttribute(): int
+    /** Null means unlimited on this package. */
+    public function getDishLimitAttribute(): ?int
     {
-        return $this->package()->limit(Feature::DishLimit);
+        return $this->entitlements()->limit(Feature::DishLimit);
     }
 
-    public function getCategoryLimitAttribute(): int
+    public function getCategoryLimitAttribute(): ?int
     {
-        return $this->package()->limit(Feature::CategoryLimit);
+        return $this->entitlements()->limit(Feature::CategoryLimit);
     }
 
-    public function getSocialLinkLimitAttribute(): int
+    public function getSocialLinkLimitAttribute(): ?int
     {
-        return $this->package()->limit(Feature::SocialLinkLimit);
+        return $this->entitlements()->limit(Feature::SocialLinkLimit);
     }
 
     public function hasReachedDishLimit(): bool
     {
-        return $this->dishes()->count() >= $this->dish_limit;
+        return $this->dish_limit !== null && $this->dishes()->count() >= $this->dish_limit;
     }
 
     public function hasReachedCategoryLimit(): bool
     {
-        return $this->categories()->count() >= $this->category_limit;
+        return $this->category_limit !== null && $this->categories()->count() >= $this->category_limit;
     }
 
     public function hasReachedSocialLinkLimit(): bool
     {
-        return $this->socialLinks()->count() >= $this->social_link_limit;
+        return $this->social_link_limit !== null && $this->socialLinks()->count() >= $this->social_link_limit;
     }
 
     public function getTotalViews(): int

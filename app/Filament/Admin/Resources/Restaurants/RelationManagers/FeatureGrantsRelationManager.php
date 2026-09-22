@@ -45,12 +45,11 @@ class FeatureGrantsRelationManager extends RelationManager
                 // A flag is simply on, so its amount is always 1.
                 ->disabled(fn ($get): bool => Feature::tryFrom((string) $get('feature'))?->kind() === FeatureKind::Flag)
                 ->dehydrated()
-                ->helperText('Added on top of the plan limit. Ignored for on/off add-ons.'),
+                ->helperText('Added on top of the package limit. Ignored for on/off add-ons, and for a package that is already unlimited.'),
             Select::make('source')
                 ->options([
                     'admin' => 'Granted by admin',
                     'purchase' => 'Purchased',
-                    'coins' => 'Bought with coins',
                 ])
                 ->default('admin')
                 ->required(),

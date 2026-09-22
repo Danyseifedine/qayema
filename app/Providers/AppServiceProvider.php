@@ -2,17 +2,12 @@
 
 namespace App\Providers;
 
-use App\Listeners\CreditPurchasedCoins;
-use App\Listeners\ReverseRefundedCoins;
 use App\Services\Global\AbuseGuard;
 use Closure;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
-use Laravel\Paddle\Events\TransactionCompleted;
-use Laravel\Paddle\Events\WebhookReceived;
 use Symfony\Component\HttpFoundation\Response;
 
 class AppServiceProvider extends ServiceProvider
@@ -38,9 +33,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureRateLimiters();
-
-        Event::listen(TransactionCompleted::class, CreditPurchasedCoins::class);
-        Event::listen(WebhookReceived::class, ReverseRefundedCoins::class);
     }
 
     /**

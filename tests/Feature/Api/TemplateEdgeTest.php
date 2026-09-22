@@ -11,22 +11,6 @@ class TemplateEdgeTest extends TestCase
 {
     use CreatesOwners, RefreshDatabase;
 
-    public function test_unlocking_with_exactly_enough_coins_works_and_leaves_zero(): void
-    {
-        $owner = $this->ownerWithCoins(650);
-        $template = Template::factory()->paid(650)->create();
-
-        $this->actingAs($owner->user)->postJson(route('api.templates.unlock'), ['template_id' => $template->id])->assertOk()->assertJsonPath('meta.balance', 0);
-    }
-
-    public function test_one_coin_short_is_refused(): void
-    {
-        $owner = $this->ownerWithCoins(649);
-        $template = Template::factory()->paid(650)->create();
-
-        $this->actingAs($owner->user)->postJson(route('api.templates.unlock'), ['template_id' => $template->id])->assertStatus(402)->assertJsonPath('shortfall', 1);
-    }
-
     public function test_a_template_deactivated_after_selection_keeps_the_owner_on_it_until_they_switch(): void
     {
         $template = Template::factory()->create();

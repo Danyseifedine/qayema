@@ -3,7 +3,7 @@
 namespace Tests\Feature\Api;
 
 use App\Enums\Feature;
-use App\Models\FeatureDefault;
+use App\Models\Package;
 use App\Models\Restaurant;
 use App\Models\RestaurantSocialLink;
 use App\Models\User;
@@ -32,7 +32,7 @@ class SocialLinkTest extends TestCase
 
     public function test_index_returns_only_the_users_links_with_meta(): void
     {
-        FeatureDefault::set(Feature::SocialLinkLimit, 4);
+        Package::default()->setFeature(Feature::SocialLinkLimit, 4);
         [$user, $restaurant] = $this->owner();
         RestaurantSocialLink::factory()->create(['restaurant_id' => $restaurant->id, 'platform' => 'instagram']);
         RestaurantSocialLink::factory()->create(['restaurant_id' => Restaurant::factory()->create()->id]);
@@ -107,7 +107,7 @@ class SocialLinkTest extends TestCase
 
     public function test_store_is_rejected_when_the_limit_is_reached(): void
     {
-        FeatureDefault::set(Feature::SocialLinkLimit, 1);
+        Package::default()->setFeature(Feature::SocialLinkLimit, 1);
         [$user, $restaurant] = $this->owner();
         RestaurantSocialLink::factory()->create(['restaurant_id' => $restaurant->id, 'platform' => 'instagram']);
 

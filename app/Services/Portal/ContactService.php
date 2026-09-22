@@ -44,7 +44,10 @@ class ContactService
      * table itself — not volatile cache — so it cannot be reset by a deploy, a queue
      * restart, or `cache:clear`/`optimize:clear`.
      *
-     * @param  array{name: string, email: string, message: string}  $data
+     * A package request from a signed-in owner comes through here too, with
+     * `user_id` and `package_id` set: same inbox, same quota.
+     *
+     * @param  array{name: string, email: string, message: string, user_id?: int|null, package_id?: int|null}  $data
      *
      * @throws TooManyContactMessages when the per-IP daily limit is reached
      */
@@ -70,7 +73,7 @@ class ContactService
     }
 
     /**
-     * @param  array{name: string, email: string, message: string}  $data
+     * @param  array{name: string, email: string, message: string, user_id?: int|null, package_id?: int|null}  $data
      */
     private function createAndNotify(array $data, string $ip): ContactMessage
     {
@@ -79,6 +82,8 @@ class ContactService
             'email' => $data['email'],
             'message' => $data['message'],
             'ip_address' => $ip,
+            'user_id' => $data['user_id'] ?? null,
+            'package_id' => $data['package_id'] ?? null,
         ]);
 
         // The mailable is ShouldQueue, so this only pushes a job (no SMTP here).

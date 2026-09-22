@@ -27,7 +27,7 @@ class AuthTest extends TestCase
             ->assertJsonPath('data.email', $user->email)
             ->assertJsonPath('data.has_completed_onboarding', false)
             ->assertJsonStructure([
-                'data' => ['id', 'name', 'email', 'role', 'has_completed_onboarding', 'coin_balance', 'has_password', 'restaurant'],
+                'data' => ['id', 'name', 'email', 'role', 'has_completed_onboarding', 'has_password', 'restaurant'],
             ]);
     }
 
@@ -79,16 +79,19 @@ class AuthTest extends TestCase
         $this->assertGuest('web');
     }
 
-    public function test_the_shell_payload_carries_the_restaurant_limits_features_and_urls(): void
+    public function test_the_shell_payload_carries_the_restaurant_package_limits_features_and_urls(): void
     {
         $restaurant = \App\Models\Restaurant::factory()->create(['slug' => 'shell-test', 'template_id' => null]);
         \App\Models\Dish::factory()->count(3)->create(['restaurant_id' => $restaurant->id]);
-        $restaurant->user->wallet()->credit(120, \App\Enums\CoinTransactionType::AdminGrant);
 
         $data = $this->actingAs($restaurant->user)->getJson(route('api.user'))->assertOk()->json('data');
 
-        $this->assertSame(120, $data['coin_balance']);
+        $this->assertArrayNotHasKey('coin_balance', $data);
         $this->assertTrue($data['has_password']);
+        $this->assertSame('free', $data['restaurant']['package']['slug']);
+        $this->assertSame('Free', $data['restaurant']['package']['name']['en']);
+        $this->assertFalse($data['restaurant']['package']['is_contact_only']);
+        $this->assertNull($data['restaurant']['package']['ends_at']);
         $this->assertSame('shell-test', $data['restaurant']['slug']);
         $this->assertNull($data['restaurant']['template_id']);
         $this->assertSame(['used' => 3, 'limit' => 40], $data['restaurant']['limits']['dishes']);

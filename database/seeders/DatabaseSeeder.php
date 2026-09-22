@@ -13,13 +13,14 @@ class DatabaseSeeder extends Seeder
     use WithoutModelEvents;
 
     /**
-     * Feature defaults are seeded by their migration (from App\Enums\Feature),
-     * so a fresh database already has working limits before this runs.
+     * Packages are seeded by their migration (from config('package.catalog')),
+     * so a fresh database already has working limits before this runs. The
+     * seeder below only fills a gap on a database that predates one.
      */
     public function run(): void
     {
+        $this->call(PackageSeeder::class);
         $this->call(TemplateSeeder::class);
-        $this->call(CoinPackSeeder::class);
 
         User::updateOrCreate(['email' => 'admin@admin.com'], [
             'name' => 'Admin',

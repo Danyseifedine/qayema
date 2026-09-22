@@ -7,15 +7,14 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Str;
 
 /**
- * Scaffolds a menu template: the database row (price, schema, ordering) and the
- * Blade view that renders it, copied from `classic` as a starting point.
+ * Scaffolds a menu template: the database row (schema, ordering) and the Blade
+ * view that renders it, copied from `classic` as a starting point.
  */
 class MakeMenuTemplate extends Command
 {
     protected $signature = 'make:menu-template
                             {slug : The template slug, e.g. midnight}
                             {--name= : Display name (defaults to the slug, title-cased)}
-                            {--price=0 : Price in coins (0 makes it free)}
                             {--inactive : Create it hidden from the picker}
                             {--force : Overwrite the Blade view if it already exists}';
 
@@ -32,7 +31,6 @@ class MakeMenuTemplate extends Command
         }
 
         $name = $this->option('name') ?: Str::headline($slug);
-        $price = max(0, (int) $this->option('price'));
 
         $path = resource_path("views/menu/templates/{$slug}.blade.php");
 
@@ -56,7 +54,7 @@ class MakeMenuTemplate extends Command
 
         $contents = str_replace(
             'Template: classic (free)',
-            "Template: {$slug}".($price > 0 ? " ({$price} coins)" : ' (free)'),
+            "Template: {$slug}",
             (string) file_get_contents($stub)
         );
 
@@ -64,7 +62,6 @@ class MakeMenuTemplate extends Command
 
         $template = Template::updateOrCreate(['slug' => $slug], [
             'name' => ['en' => $name],
-            'price' => $price,
             'is_active' => ! $this->option('inactive'),
             'settings_schema' => [
                 ['key' => 'primary_color', 'type' => 'color', 'default' => '#C8A85A'],
@@ -76,9 +73,8 @@ class MakeMenuTemplate extends Command
         $this->components->info("Template [{$name}] created.");
         $this->components->twoColumnDetail('Row', "templates #{$template->id}");
         $this->components->twoColumnDetail('View', str_replace(base_path().'/', '', $path));
-        $this->components->twoColumnDetail('Price', $price > 0 ? "{$price} coins" : 'Free');
         $this->newLine();
-        $this->line('  Edit the view to design it, and adjust the price or settings in the admin panel.');
+        $this->line('  Edit the view to design it, and adjust its settings in the admin panel.');
 
         return self::SUCCESS;
     }

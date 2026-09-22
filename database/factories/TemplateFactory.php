@@ -20,19 +20,10 @@ class TemplateFactory extends Factory
         return [
             'name' => ['en' => fake()->unique()->words(2, true)],
             'slug' => fake()->unique()->slug(2),
-            'price' => 0,
             'settings_schema' => null,
             'is_active' => true,
             'sort_order' => 0,
         ];
-    }
-
-    /** A template that costs coins to unlock. */
-    public function paid(int $price = 500): static
-    {
-        return $this->state(fn (array $attributes): array => [
-            'price' => $price,
-        ]);
     }
 
     public function inactive(): static

@@ -5,7 +5,7 @@ namespace Tests\Feature;
 use App\Enums\Feature;
 use App\Models\Restaurant;
 use App\Models\User;
-use App\Services\Global\Package;
+use App\Services\Global\Entitlements;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -23,7 +23,7 @@ class QrStudioTest extends TestCase
             'reference' => 'txn_qr',
         ]);
 
-        Package::flush($restaurant->id);
+        Entitlements::flush($restaurant->id);
     }
 
     /** @return array<string, mixed> A full valid design payload. */

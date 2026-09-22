@@ -14,8 +14,9 @@ use Filament\Schemas\Schema;
 use Illuminate\Support\Str;
 
 /**
- * Everything that makes a template a template: its identity, its price in
- * coins, and the list of settings its owner may change. Publishing a new
+ * Everything that makes a template a template: its identity and the list of
+ * settings its owner may change. Templates carry no price and grant nothing —
+ * limits and features come from the restaurant's package. Publishing a new
  * template is this form plus a Blade view named after the slug.
  */
 class TemplateForm
@@ -65,18 +66,6 @@ class TemplateForm
                             ->placeholder('Describe what this template looks like and when to use it…')
                             ->rows(3)
                             ->columnSpanFull(),
-                    ]),
-
-                Section::make('Price')
-                    ->description('What this template costs in Qayema coins. Zero makes it free for everyone; anything higher must be unlocked once with coins and is then owned forever.')
-                    ->schema([
-                        TextInput::make('price')
-                            ->label('Price (coins)')
-                            ->numeric()
-                            ->minValue(0)
-                            ->default(0)
-                            ->required()
-                            ->suffix('coins'),
                     ]),
 
                 Section::make('Thumbnail')

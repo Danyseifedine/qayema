@@ -2,8 +2,8 @@
 
 namespace Tests\Concerns;
 
-use App\Enums\CoinTransactionType;
 use App\Enums\UserRole;
+use App\Models\Package;
 use App\Models\Restaurant;
 use App\Models\Template;
 use App\Models\User;
@@ -20,16 +20,14 @@ trait CreatesOwners
         return Restaurant::factory()->create(array_merge(['template_id' => null], $restaurant));
     }
 
-    /** An owner whose wallet already holds `$coins`. */
-    protected function ownerWithCoins(int $coins, array $restaurant = []): Restaurant
+    /** An onboarded owner on a named package rather than the default one. */
+    protected function ownerOn(string $slug, array $restaurant = []): Restaurant
     {
-        $owner = $this->owner($restaurant);
+        $package = Package::findBySlug($slug);
 
-        if ($coins > 0) {
-            $owner->user->wallet()->credit($coins, CoinTransactionType::AdminGrant);
-        }
+        $this->assertNotNull($package, "The [{$slug}] package is not seeded.");
 
-        return $owner;
+        return $this->owner(array_merge(['package_id' => $package->id], $restaurant));
     }
 
     /** A live restaurant on the free classic template, ready for guests. */

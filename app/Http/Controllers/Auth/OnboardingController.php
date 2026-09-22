@@ -20,7 +20,10 @@ class OnboardingController extends Controller
     public function show(Request $request): View|RedirectResponse
     {
         if ($request->user()->hasCompletedOnboarding()) {
-            return redirect('/');
+            // An owner who is already set up belongs in the dashboard, not on
+            // the marketing landing page. `afterLoginUrl()` is the same rule
+            // login uses, so both paths agree on where a finished owner goes.
+            return redirect()->away($request->user()->afterLoginUrl());
         }
 
         $restaurant = $request->user()->restaurant;

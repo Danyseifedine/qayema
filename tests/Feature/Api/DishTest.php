@@ -5,7 +5,7 @@ namespace Tests\Feature\Api;
 use App\Enums\Feature;
 use App\Models\Category;
 use App\Models\Dish;
-use App\Models\FeatureDefault;
+use App\Models\Package;
 use App\Models\Restaurant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -147,7 +147,7 @@ class DishTest extends TestCase
 
     public function test_store_is_rejected_when_the_dish_limit_is_reached(): void
     {
-        FeatureDefault::set(Feature::DishLimit, 1);
+        Package::default()->setFeature(Feature::DishLimit, 1);
         [$user, $restaurant] = $this->owner();
         $category = Category::factory()->create(['restaurant_id' => $restaurant->id]);
         Dish::factory()->create(['restaurant_id' => $restaurant->id]);

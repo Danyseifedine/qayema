@@ -6,7 +6,7 @@ namespace App\Enums;
  * Everything a restaurant's package can grant. This enum is the registry —
  * adding a limit or a flag means adding a case here and nothing else: the
  * defaults table seeds itself from `cases()`, the admin page renders from it,
- * and App\Services\Global\Package resolves it.
+ * and App\Services\Global\Entitlements resolves it.
  */
 enum Feature: string
 {

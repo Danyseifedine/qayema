@@ -6,7 +6,6 @@ use App\Filament\Admin\Resources\Users\Pages\CreateUser;
 use App\Filament\Admin\Resources\Users\Pages\EditUser;
 use App\Filament\Admin\Resources\Users\Pages\ListUsers;
 use App\Filament\Admin\Resources\Users\Pages\ViewUser;
-use App\Filament\Admin\Resources\Users\RelationManagers\CoinTransactionsRelationManager;
 use App\Filament\Admin\Resources\Users\Schemas\UserForm;
 use App\Filament\Admin\Resources\Users\Tables\UsersTable;
 use App\Models\User;
@@ -36,13 +35,6 @@ class UserResource extends Resource
     public static function table(Table $table): Table
     {
         return UsersTable::configure($table);
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            CoinTransactionsRelationManager::class,
-        ];
     }
 
     public static function getPages(): array

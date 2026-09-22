@@ -6,6 +6,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Http\Exceptions\PostTooLargeException;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 use Illuminate\Session\TokenMismatchException;
@@ -93,6 +94,16 @@ return Application::configure(basePath: dirname(__DIR__))
                 ], 429, $headers);
             }
 
+            // A body over `post_max_size` never reaches a controller, so this
+            // has to be named before the generic HTTP branch or it surfaces as
+            // an opaque 'http_error' the SPA cannot explain.
+            if ($e instanceof PostTooLargeException) {
+                return response()->json([
+                    'message' => __('That upload is too large. Images must be 10 MB or smaller.'),
+                    'code' => 'payload_too_large',
+                ], 413);
+            }
+
             if ($e instanceof HttpExceptionInterface) {
                 $status = $e->getStatusCode();
                 // The framework wraps some exceptions before we see them (a
@@ -108,7 +119,6 @@ return Application::configure(basePath: dirname(__DIR__))
                 }
 
                 $code = match ($status) {
-                    402 => 'payment_required',
                     403 => 'forbidden',
                     404 => 'not_found',
                     405 => 'method_not_allowed',

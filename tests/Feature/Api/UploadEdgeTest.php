@@ -31,6 +31,37 @@ class UploadEdgeTest extends TestCase
         $this->upload(UploadedFile::fake()->image('ok.jpg', 100, 100)->size(10240))->assertOk();
     }
 
+    public function test_a_file_php_itself_dropped_explains_that_it_was_too_large(): void
+    {
+        // PHP discards anything over `upload_max_filesize` before validation
+        // runs and marks the upload UPLOAD_ERR_INI_SIZE. Laravel's `uploaded`
+        // rule then fires, and without our message the owner would only see
+        // the framework's "The file failed to upload."
+        $path = UploadedFile::fake()->image('big.jpg', 100, 100)->getPathname();
+        $dropped = new UploadedFile($path, 'big.jpg', 'image/jpeg', UPLOAD_ERR_INI_SIZE, true);
+
+        $this->upload($dropped)
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('file')
+            ->assertJsonFragment([
+                'file' => ['That image is too large for the server to accept. Images must be 10 MB or smaller.'],
+            ]);
+    }
+
+    public function test_a_body_over_the_post_limit_is_a_413_the_spa_can_read(): void
+    {
+        // The request never reaches a controller, so the handler has to name
+        // this case or it surfaces as an opaque 'http_error'.
+        $response = $this->actingAs($this->owner()->user)
+            ->withServerVariables(['CONTENT_LENGTH' => (string) (1024 * 1024 * 1024)])
+            ->post(route('api.uploads.temp'), [], ['Accept' => 'application/json']);
+
+        $response->assertStatus(413)->assertJson([
+            'message' => 'That upload is too large. Images must be 10 MB or smaller.',
+            'code' => 'payload_too_large',
+        ]);
+    }
+
     public function test_a_decompression_bomb_is_rejected_by_its_declared_dimensions(): void
     {
         $this->upload(UploadedFile::fake()->image('bomb.png', 6001, 10))

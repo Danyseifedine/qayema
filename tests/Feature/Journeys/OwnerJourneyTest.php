@@ -3,14 +3,16 @@
 namespace Tests\Feature\Journeys;
 
 use App\Enums\Feature;
+use App\Filament\Admin\Resources\Packages\Pages\EditPackage;
 use App\Filament\Admin\Resources\Restaurants\Pages\EditRestaurant;
 use App\Filament\Admin\Resources\Restaurants\RelationManagers\FeatureGrantsRelationManager;
-use App\Models\FeatureDefault;
+use App\Models\Package;
 use App\Models\Restaurant;
 use App\Models\Template;
 use App\Models\User;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Mail\ContactMessageReceived;
 use Illuminate\Support\Facades\Mail;
 use Laravel\Socialite\Contracts\Provider;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
@@ -18,7 +20,6 @@ use Laravel\Socialite\Facades\Socialite;
 use Livewire\Livewire;
 use Mockery;
 use Tests\Concerns\CreatesOwners;
-use Tests\Concerns\FakesPaddle;
 use Tests\TestCase;
 
 /**
@@ -27,13 +28,12 @@ use Tests\TestCase;
  */
 class OwnerJourneyTest extends TestCase
 {
-    use CreatesOwners, FakesPaddle, RefreshDatabase;
+    use CreatesOwners, RefreshDatabase;
 
     protected function setUp(): void
     {
         parent::setUp();
         Mail::fake();
-        $this->fakePaddle();
         Template::factory()->withSettings([['key' => 'primary_color', 'type' => 'color', 'default' => '#C8A85A']])->create(['slug' => 'classic', 'sort_order' => 0]);
     }
 
@@ -67,7 +67,7 @@ class OwnerJourneyTest extends TestCase
 
     public function test_signup_onboard_pick_template_build_menu_hit_limit_get_more_go_live(): void
     {
-        FeatureDefault::set(Feature::DishLimit, 3);
+        Package::default()->setFeature(Feature::DishLimit, 3);
         $user = $this->signUpWithGoogle('journey@example.com');
         $restaurant = $this->onboard($user, 'journey');
 
@@ -100,59 +100,67 @@ class OwnerJourneyTest extends TestCase
         Mail::assertQueued(\App\Mail\WelcomeRestaurantOwner::class);
     }
 
-    public function test_buy_coins_unlock_a_paid_design_customise_it_and_switch_freely(): void
+    public function test_request_a_package_then_an_admin_assigns_it_and_the_limits_rise(): void
+    {
+        Mail::fake();
+        config(['services.contact.recipient' => 'owner@qayema.test']);
+
+        $owner = $this->owner(['default_locale' => 'en', 'slug' => 'growing']);
+        $pro = Package::findBySlug('pro');
+
+        // Starts on the free package and sees what it allows.
+        $this->actingAs($owner->user)->getJson(route('api.user'))
+            ->assertJsonPath('data.restaurant.package.slug', 'free')
+            ->assertJsonPath('data.restaurant.limits.dishes.limit', 40);
+
+        // Asks for Pro. Nothing changes yet — it lands in the admin inbox.
+        $this->actingAs($owner->user)->postJson(route('api.packages.request'), [
+            'package' => 'pro',
+            'message' => 'We are opening a second branch.',
+        ])->assertCreated()->assertJsonPath('data.package', 'pro');
+
+        $this->assertDatabaseHas('contact_messages', [
+            'user_id' => $owner->user_id,
+            'package_id' => $pro->id,
+            'message' => 'We are opening a second branch.',
+        ]);
+        Mail::assertQueued(ContactMessageReceived::class);
+        $this->actingAs($owner->user)->getJson(route('api.user'))
+            ->assertJsonPath('data.restaurant.package.slug', 'free');
+
+        // An admin assigns it from the panel.
+        $this->actingAs($this->admin());
+        Livewire::test(EditRestaurant::class, ['record' => $owner->id])
+            ->fillForm(['package_id' => $pro->id])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        // The owner's allowance moves immediately.
+        $this->actingAs($owner->user)->getJson(route('api.user'))
+            ->assertJsonPath('data.restaurant.package.slug', 'pro')
+            ->assertJsonPath('data.restaurant.limits.dishes.limit', 120)
+            ->assertJsonPath('data.restaurant.features.qr_studio', true);
+    }
+
+    public function test_a_design_can_be_customised_and_switched_freely(): void
     {
         $owner = $this->owner(['default_locale' => 'en', 'slug' => 'designer']);
-        $premium = Template::factory()->paid(650)->withSettings([['key' => 'primary_color', 'type' => 'color', 'default' => '#ABCDEF']])->create(['slug' => 'midnight', 'sort_order' => 1]);
-        $this->coinPack(1000, 'pri_1000');
+        $midnight = Template::factory()
+            ->withSettings([['key' => 'primary_color', 'type' => 'color', 'default' => '#ABCDEF']])
+            ->create(['slug' => 'midnight', 'sort_order' => 1]);
 
-        // Can't afford it, can't select it, but can preview it.
-        $this->actingAs($owner->user)->postJson(route('api.templates.unlock'), ['template_id' => $premium->id])->assertStatus(402)->assertJsonPath('shortfall', 650);
-        $this->actingAs($owner->user)->postJson(route('api.templates.select'), ['template_id' => $premium->id])->assertForbidden();
-        $this->actingAs($owner->user)->get('/designer?preview='.$premium->id)->assertOk()->assertSee('--accent: #ABCDEF', false);
-
-        // Buy a pack: checkout, then the webhook lands.
-        $this->actingAs($owner->user)->postJson(route('api.checkout'), ['pack_id' => \App\Models\CoinPack::first()->id])->assertOk();
-        $this->completePaddleTransaction($owner->user, 'txn_j1', 'pri_1000');
-        $this->actingAs($owner->user)->getJson(route('api.wallet'))->assertJsonPath('data.balance', 1000);
-
-        // Unlock, select, recolour.
-        $this->actingAs($owner->user)->postJson(route('api.templates.unlock'), ['template_id' => $premium->id])->assertOk()->assertJsonPath('meta.balance', 350);
-        $this->actingAs($owner->user)->postJson(route('api.templates.select'), ['template_id' => $premium->id])->assertOk();
+        // Preview, choose, recolour.
+        $this->actingAs($owner->user)->get('/designer?preview='.$midnight->id)->assertOk()->assertSee('--accent: #ABCDEF', false);
+        $this->actingAs($owner->user)->postJson(route('api.templates.select'), ['template_id' => $midnight->id])->assertOk();
         $this->actingAs($owner->user)->putJson(route('api.template-settings.update'), ['settings' => ['primary_color' => '#112233']])->assertOk();
         $this->get('/designer')->assertOk()->assertSee('--accent: #112233', false);
 
-        // Switch to free and back: no further charge, settings reset to defaults on each switch.
+        // Switch away and back: free both ways, settings reset to the defaults.
         $classic = Template::firstWhere('slug', 'classic');
         $this->actingAs($owner->user)->postJson(route('api.templates.select'), ['template_id' => $classic->id])->assertOk();
-        $this->actingAs($owner->user)->postJson(route('api.templates.select'), ['template_id' => $premium->id])->assertOk()->assertJsonPath('meta.balance', 350)->assertJsonPath('meta.settings.primary_color', '#ABCDEF');
-    }
-
-    public function test_a_refund_after_spending_floors_at_zero_and_keeps_the_template(): void
-    {
-        $owner = $this->owner();
-        $premium = Template::factory()->paid(800)->create();
-        $this->coinPack(1000, 'pri_1000');
-        $this->completePaddleTransaction($owner->user, 'txn_r', 'pri_1000');
-        $this->actingAs($owner->user)->postJson(route('api.templates.unlock'), ['template_id' => $premium->id])->assertOk();
-
-        $this->refundPaddleTransaction('txn_r');
-
-        $this->actingAs($owner->user)->getJson(route('api.wallet'))->assertJsonPath('data.balance', 0);
-        $this->assertTrue($owner->fresh()->owns($premium), 'What was bought stays bought; the shortfall is flagged for a human.');
-        $this->assertSame(800, $owner->user->coinTransactions()->where('type', 'refund')->first()->meta['shortfall']);
-    }
-
-    public function test_a_replayed_webhook_never_double_credits_across_the_whole_flow(): void
-    {
-        $owner = $this->owner();
-        $this->coinPack(500, 'pri_500');
-
-        for ($i = 0; $i < 3; $i++) {
-            $this->completePaddleTransaction($owner->user, 'txn_same', 'pri_500');
-        }
-
-        $this->actingAs($owner->user)->getJson(route('api.wallet'))->assertJsonPath('data.balance', 500)->assertJsonPath('meta.total', 1);
+        $this->actingAs($owner->user)->postJson(route('api.templates.select'), ['template_id' => $midnight->id])
+            ->assertOk()
+            ->assertJsonPath('meta.settings.primary_color', '#ABCDEF');
     }
 
     public function test_flooding_gets_the_ip_banned_and_the_ban_lifts_after_an_hour(): void
@@ -180,46 +188,49 @@ class OwnerJourneyTest extends TestCase
         $this->get('/')->assertOk();
     }
 
-    public function test_lowering_a_default_below_usage_blocks_new_rows_and_raising_it_unblocks(): void
+    public function test_lowering_a_package_limit_below_usage_blocks_new_rows_and_raising_it_unblocks(): void
     {
         $owner = $this->owner();
         $category = \App\Models\Category::factory()->create(['restaurant_id' => $owner->id]);
         \App\Models\Dish::factory()->count(5)->create(['restaurant_id' => $owner->id, 'category_id' => $category->id]);
+        $free = Package::default();
         $this->actingAs($this->admin());
 
-        Livewire::test(\App\Filament\Admin\Pages\ManageFeatureDefaults::class)
-            ->fillForm(['defaults.dish_limit' => 3, 'defaults.category_limit' => 10, 'defaults.social_link_limit' => 2, 'defaults.qr_studio' => false])
-            ->call('save');
+        Livewire::test(EditPackage::class, ['record' => $free->id])
+            ->fillForm(['features.dish_limit' => 3])
+            ->call('save')
+            ->assertHasNoFormErrors();
         $this->actingAs($owner->user)->postJson(route('api.dishes.store'), ['name' => ['en' => 'x'], 'price' => 1, 'category_id' => $category->id])->assertStatus(422);
         $this->assertSame(5, $owner->dishes()->count());
 
         $this->actingAs($this->admin());
-        Livewire::test(\App\Filament\Admin\Pages\ManageFeatureDefaults::class)
-            ->fillForm(['defaults.dish_limit' => 10, 'defaults.category_limit' => 10, 'defaults.social_link_limit' => 2, 'defaults.qr_studio' => false])
-            ->call('save');
+        Livewire::test(EditPackage::class, ['record' => $free->id])
+            ->fillForm(['features.dish_limit' => 10])
+            ->call('save')
+            ->assertHasNoFormErrors();
         $this->actingAs($owner->user)->postJson(route('api.dishes.store'), ['name' => ['en' => 'x'], 'price' => 1, 'category_id' => $category->id])->assertCreated();
     }
 
-    public function test_deleting_a_restaurant_cascades_content_but_keeps_the_user_and_their_coins(): void
+    public function test_deleting_a_restaurant_cascades_content_but_keeps_the_user_and_the_packages(): void
     {
-        $owner = $this->ownerWithCoins(300);
+        $owner = $this->ownerOn('pro');
         $category = \App\Models\Category::factory()->create(['restaurant_id' => $owner->id]);
-        $dish = \App\Models\Dish::factory()->create(['restaurant_id' => $owner->id, 'category_id' => $category->id]);
+        \App\Models\Dish::factory()->create(['restaurant_id' => $owner->id, 'category_id' => $category->id]);
         $owner->socialLinks()->create(['platform' => 'instagram', 'url' => 'https://instagram.com/x']);
         $owner->featureGrants()->create(['feature' => Feature::DishLimit, 'value' => 5, 'source' => 'admin']);
-        $premium = Template::factory()->paid(100)->create();
-        $owner->templatePurchases()->create(['template_id' => $premium->id, 'price_paid' => 100]);
+        $midnight = Template::factory()->create();
         $owner->statistics()->create(['session_id' => 's', 'viewed_at' => now()]);
         $userId = $owner->user_id;
+        $packageId = $owner->package_id;
 
         $owner->delete();
 
-        foreach (['categories', 'dishes', 'restaurant_social_links', 'restaurant_features', 'template_purchases', 'menu_sessions'] as $table) {
+        foreach (['categories', 'dishes', 'restaurant_social_links', 'restaurant_features', 'menu_sessions'] as $table) {
             $this->assertDatabaseCount($table, 0);
         }
         $this->assertDatabaseHas('users', ['id' => $userId]);
-        $this->assertSame(300, (int) User::find($userId)->coin_balance);
-        $this->assertDatabaseHas('templates', ['id' => $premium->id]);
+        $this->assertDatabaseHas('packages', ['id' => $packageId]);
+        $this->assertDatabaseHas('templates', ['id' => $midnight->id]);
     }
 
     public function test_password_reset_end_to_end_for_a_google_only_owner(): void

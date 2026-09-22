@@ -3,7 +3,10 @@
     "name": "laravel/laravel",
     "type": "project",
     "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "keywords": [
+        "laravel",
+        "framework"
+    ],
     "license": "MIT",
     "require": {
         "php": "^8.2",
@@ -11,7 +14,6 @@
         "filament/spatie-laravel-media-library-plugin": "^4.3",
         "intervention/image": "^3.11",
         "lab404/laravel-impersonate": "^1.7",
-        "laravel/cashier-paddle": "^2.8",
         "laravel/framework": "^12.0",
         "laravel/sanctum": "^4.0",
         "laravel/socialite": "^5.27",
@@ -78,7 +80,8 @@
         ],
         "pre-package-uninstall": [
             "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
-        ]
+        ],
+        "serve": "php -d upload_max_filesize=12M -d post_max_size=16M -d memory_limit=512M artisan serve"
     },
     "extra": {
         "laravel": {

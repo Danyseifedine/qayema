@@ -34,18 +34,18 @@ class MakeMenuTemplateTest extends TestCase
     {
         $path = $this->viewPath('midnight');
 
-        $this->artisan('make:menu-template', ['slug' => 'midnight', '--price' => 650])
+        $this->artisan('make:menu-template', ['slug' => 'midnight'])
             ->assertSuccessful();
 
         $this->assertFileExists($path);
-        $this->assertDatabaseHas('templates', ['slug' => 'midnight', 'price' => 650, 'is_active' => true]);
+        $this->assertDatabaseHas('templates', ['slug' => 'midnight', 'is_active' => true]);
     }
 
     public function test_the_scaffolded_template_renders_a_real_menu(): void
     {
         $this->viewPath('midnight');
 
-        $this->artisan('make:menu-template', ['slug' => 'midnight', '--price' => 650])
+        $this->artisan('make:menu-template', ['slug' => 'midnight'])
             ->assertSuccessful();
 
         $template = Template::where('slug', 'midnight')->firstOrFail();
@@ -63,13 +63,13 @@ class MakeMenuTemplateTest extends TestCase
             ->assertSee('Scaffolded Diner');
     }
 
-    public function test_it_defaults_to_a_free_template(): void
+    public function test_it_names_the_template_from_the_slug(): void
     {
         $this->viewPath('plain');
 
         $this->artisan('make:menu-template', ['slug' => 'plain'])->assertSuccessful();
 
-        $this->assertDatabaseHas('templates', ['slug' => 'plain', 'price' => 0]);
+        $this->assertDatabaseHas('templates', ['slug' => 'plain', 'name' => '{"en":"Plain"}']);
     }
 
     public function test_it_refuses_to_overwrite_an_existing_view(): void

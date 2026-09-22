@@ -4,7 +4,6 @@ namespace Tests\Unit\Models;
 
 use App\Enums\UserRole;
 use App\Models\User;
-use App\Services\Global\Wallet;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -50,14 +49,6 @@ class UserTest extends TestCase
 
         $this->assertSame(route('onboarding'), $fresh->afterLoginUrl());
         $this->assertSame('https://dashboard.example.test', $done->afterLoginUrl());
-    }
-
-    public function test_the_wallet_is_bound_to_the_user(): void
-    {
-        $user = User::factory()->create();
-
-        $this->assertInstanceOf(Wallet::class, $user->wallet());
-        $this->assertSame(0, $user->wallet()->balance());
     }
 
     public function test_sensitive_attributes_are_hidden_from_serialisation(): void

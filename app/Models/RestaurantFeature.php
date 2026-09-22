@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Enums\Feature;
-use App\Services\Global\Package;
+use App\Services\Global\Entitlements;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -37,7 +37,7 @@ class RestaurantFeature extends Model
 
     protected static function booted(): void
     {
-        $flush = fn (self $grant) => Package::flush($grant->restaurant_id);
+        $flush = fn (self $grant) => Entitlements::flush($grant->restaurant_id);
 
         static::saved($flush);
         static::deleted($flush);

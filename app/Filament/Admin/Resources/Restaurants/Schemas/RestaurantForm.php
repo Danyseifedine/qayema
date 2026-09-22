@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\Restaurants\Schemas;
 
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\Textarea;
@@ -68,8 +69,27 @@ class RestaurantForm
                             ->columnSpanFull(),
                     ]),
 
+                Section::make('Package')
+                    ->description('The plan this restaurant\'s limits and features come from. Extra slots granted below stack on top of it.')
+                    ->columns(3)
+                    ->schema([
+                        Select::make('package_id')
+                            ->label('Package')
+                            ->relationship('package', 'name')
+                            ->getOptionLabelFromRecordUsing(fn ($record): string => (string) $record->name)
+                            ->preload()
+                            ->required()
+                            ->default(fn (): ?int => \App\Models\Package::default()?->id),
+                        DateTimePicker::make('package_started_at')
+                            ->label('Started at')
+                            ->helperText('When this package was assigned.'),
+                        DateTimePicker::make('package_ends_at')
+                            ->label('Expires at')
+                            ->helperText('Leave empty for no expiry. Past this date the restaurant falls back to the default package.'),
+                    ]),
+
                 Section::make('Template')
-                    ->description('The public menu design. Templates are pure design — limits and feature access come from the feature defaults plus this restaurant\'s grants.')
+                    ->description('The public menu design. Templates are pure design — every active one is available on every package.')
                     ->schema([
                         Select::make('template_id')
                             ->label('Template')
@@ -78,7 +98,7 @@ class RestaurantForm
                             ->preload()
                             ->nullable()
                             ->placeholder('No template')
-                            ->helperText('Paid templates normally require coins; assigning one here grants it directly.'),
+                            ->helperText('The design the public menu renders with. The owner can change it themselves.'),
                     ]),
 
                 Section::make('Visibility')

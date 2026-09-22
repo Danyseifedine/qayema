@@ -21,8 +21,21 @@ composer install
 cp .env.example .env
 php artisan key:generate
 php artisan migrate --seed
-php artisan serve
+composer serve
 ```
+
+Use `composer serve`, not `php artisan serve`. The app accepts images up to
+10 MB, but a stock PHP install caps `upload_max_filesize` at 2 MB, and PHP
+discards a larger file before Laravel ever sees it. The script starts the
+built-in server with limits that match the app.
+
+A deployed host needs the same three values set in its own `php.ini`:
+
+| Setting | Minimum | Why |
+|---|---|---|
+| `upload_max_filesize` | `10M` | The largest image the app accepts |
+| `post_max_size` | `12M` | The file plus the rest of the form |
+| `memory_limit` | `256M` | GD decodes the original before resizing, and a 6000 × 6000 image needs roughly 144 MB |
 
 The seed creates an admin (`admin@admin.com` / `password`), the free `classic`
 template, and three coin packs. Feature defaults (dish/category/social-link

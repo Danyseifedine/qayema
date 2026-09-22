@@ -19,9 +19,15 @@ class ContactMessageReceived extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
+        $package = $this->contactMessage->package;
+
+        $subject = $package === null
+            ? 'New contact message from '.$this->contactMessage->name
+            : 'Package request: '.$package->getTranslation('name', 'en').' — '.$this->contactMessage->name;
+
         return new Envelope(
             replyTo: [new Address($this->contactMessage->email, $this->contactMessage->name)],
-            subject: 'New contact message from '.$this->contactMessage->name,
+            subject: $subject,
         );
     }
 

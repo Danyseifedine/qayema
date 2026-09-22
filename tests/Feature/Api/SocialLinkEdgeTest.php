@@ -3,7 +3,7 @@
 namespace Tests\Feature\Api;
 
 use App\Enums\Feature;
-use App\Models\FeatureDefault;
+use App\Models\Package;
 use App\Models\RestaurantSocialLink;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreatesOwners;
@@ -35,7 +35,7 @@ class SocialLinkEdgeTest extends TestCase
 
     public function test_every_supported_platform_is_accepted_and_others_are_not(): void
     {
-        FeatureDefault::set(Feature::SocialLinkLimit, 10);
+        Package::default()->setFeature(Feature::SocialLinkLimit, 10);
         $owner = $this->owner();
 
         foreach (RestaurantSocialLink::PLATFORMS as $platform) {
@@ -72,7 +72,7 @@ class SocialLinkEdgeTest extends TestCase
 
     public function test_deleting_frees_the_slot_and_the_platform(): void
     {
-        FeatureDefault::set(Feature::SocialLinkLimit, 1);
+        Package::default()->setFeature(Feature::SocialLinkLimit, 1);
         $owner = $this->owner();
         $link = RestaurantSocialLink::factory()->create(['restaurant_id' => $owner->id, 'platform' => 'instagram']);
 

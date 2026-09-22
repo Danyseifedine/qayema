@@ -7,8 +7,7 @@ use App\Filament\Admin\Resources\BlockedIps\BlockedIpResource;
 use App\Filament\Admin\Resources\BlockedIps\Pages\CreateBlockedIp;
 use App\Filament\Admin\Resources\Categories\CategoryResource;
 use App\Filament\Admin\Resources\Categories\Pages\CreateCategory;
-use App\Filament\Admin\Resources\CoinPacks\CoinPackResource;
-use App\Filament\Admin\Resources\CoinPacks\Pages\CreateCoinPack;
+use App\Filament\Admin\Resources\Packages\PackageResource;
 use App\Filament\Admin\Resources\ContactMessages\ContactMessageResource;
 use App\Filament\Admin\Resources\Dishes\DishResource;
 use App\Filament\Admin\Resources\Dishes\Pages\CreateDish;
@@ -53,7 +52,7 @@ class AdminResourcesTest extends TestCase
             'social links' => [RestaurantSocialLinkResource::class],
             'statistics' => [RestaurantStatisticResource::class],
             'contact messages' => [ContactMessageResource::class],
-            'coin packs' => [CoinPackResource::class],
+            'packages' => [PackageResource::class],
             'blocked ips' => [BlockedIpResource::class],
         ];
     }
@@ -165,35 +164,34 @@ class AdminResourcesTest extends TestCase
             ->assertHasFormErrors();
     }
 
-    public function test_assigning_a_paid_template_from_the_panel_bypasses_coins(): void
+    public function test_assigning_a_template_from_the_panel_applies_it(): void
     {
         $restaurant = Restaurant::factory()->create(['template_id' => null]);
-        $paid = Template::factory()->paid(900)->create();
+        $design = Template::factory()->create();
         $this->actingAs($this->admin());
 
         Livewire::test(EditRestaurant::class, ['record' => $restaurant->id])
-            ->fillForm(['template_id' => $paid->id])
+            ->fillForm(['template_id' => $design->id])
             ->call('save')
             ->assertHasNoFormErrors();
 
-        $this->assertSame($paid->id, $restaurant->fresh()->template_id);
-        $this->assertSame(0, (int) $restaurant->user->fresh()->coin_balance, 'Nothing was charged.');
+        $this->assertSame($design->id, $restaurant->fresh()->template_id);
     }
 
-    public function test_an_admin_can_publish_a_template_with_a_price_and_a_schema(): void
+    public function test_an_admin_can_publish_a_template_with_a_schema(): void
     {
         $this->actingAs($this->admin());
 
         Livewire::test(CreateTemplate::class)
             ->fillForm([
-                'name' => 'Midnight', 'slug' => 'midnight', 'price' => 650, 'is_active' => true, 'sort_order' => 3,
+                'name' => 'Midnight', 'slug' => 'midnight', 'is_active' => true, 'sort_order' => 3,
                 'settings_schema' => [['key' => 'accent', 'type' => 'color', 'default' => '#ABCDEF']],
             ])
             ->call('create')
             ->assertHasNoFormErrors();
 
         $template = Template::firstWhere('slug', 'midnight');
-        $this->assertSame(650, $template->price);
+        $this->assertSame(3, $template->sort_order);
         $this->assertSame('#ABCDEF', $template->defaultSettings()['accent']);
     }
 
@@ -203,31 +201,9 @@ class AdminResourcesTest extends TestCase
         $this->actingAs($this->admin());
 
         Livewire::test(CreateTemplate::class)
-            ->fillForm(['name' => 'Taken', 'slug' => 'taken', 'price' => 0])
+            ->fillForm(['name' => 'Taken', 'slug' => 'taken'])
             ->call('create')
             ->assertHasFormErrors(['slug']);
-    }
-
-    public function test_an_admin_can_create_a_coin_pack(): void
-    {
-        $this->actingAs($this->admin());
-
-        Livewire::test(CreateCoinPack::class)
-            ->fillForm(['name' => 'Mega', 'slug' => 'mega', 'coins' => 5000, 'is_active' => true, 'paddle_price_id_sandbox' => 'pri_mega'])
-            ->call('create')
-            ->assertHasNoFormErrors();
-
-        $this->assertDatabaseHas('coin_packs', ['slug' => 'mega', 'coins' => 5000]);
-    }
-
-    public function test_a_coin_pack_needs_a_positive_amount(): void
-    {
-        $this->actingAs($this->admin());
-
-        Livewire::test(CreateCoinPack::class)
-            ->fillForm(['name' => 'Zero', 'slug' => 'zero', 'coins' => 0])
-            ->call('create')
-            ->assertHasFormErrors(['coins']);
     }
 
     public function test_an_admin_can_add_a_category_and_a_dish_to_any_restaurant(): void

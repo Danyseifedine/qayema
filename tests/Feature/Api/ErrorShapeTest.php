@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Api;
 
-use App\Enums\CoinTransactionType;
 use App\Models\Category;
 use App\Models\Restaurant;
 use App\Models\Template;
@@ -80,18 +79,6 @@ class ErrorShapeTest extends TestCase
             ->deleteJson(route('api.user'))
             ->assertStatus(405)
             ->assertJsonPath('code', 'method_not_allowed');
-    }
-
-    public function test_cannot_afford_is_a_402_with_the_shortfall(): void
-    {
-        $restaurant = Restaurant::factory()->create(['template_id' => null]);
-        $restaurant->user->wallet()->credit(100, CoinTransactionType::AdminGrant);
-        $template = Template::factory()->paid(400)->create();
-
-        $this->actingAs($restaurant->user)
-            ->postJson(route('api.templates.unlock'), ['template_id' => $template->id])
-            ->assertStatus(402)
-            ->assertJsonPath('shortfall', 300);
     }
 
     public function test_throttling_is_json_with_a_retry_hint(): void

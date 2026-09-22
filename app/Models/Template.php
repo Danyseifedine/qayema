@@ -11,10 +11,10 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\Translatable\HasTranslations;
 
 /**
- * A menu layout. Pure design plus a price in coins — it grants no features.
- * Everything variable about a template lives in two columns: `price` (0 = free)
- * and `settings_schema`, the list of knobs the owner may turn. Adding a
- * template is a row plus a Blade view of the same slug.
+ * A menu layout. Pure design — it grants no features and costs nothing: every
+ * active template is open to every restaurant. The only variable part is
+ * `settings_schema`, the list of knobs the owner may turn. Adding a template
+ * is a row plus a Blade view of the same slug.
  */
 class Template extends Model implements HasMedia
 {
@@ -27,7 +27,6 @@ class Template extends Model implements HasMedia
         'slug',
         'name',
         'description',
-        'price',
         'settings_schema',
         'is_active',
         'sort_order',
@@ -36,7 +35,6 @@ class Template extends Model implements HasMedia
     protected function casts(): array
     {
         return [
-            'price' => 'integer',
             'settings_schema' => 'array',
             'is_active' => 'boolean',
             'sort_order' => 'integer',
@@ -48,11 +46,6 @@ class Template extends Model implements HasMedia
         return $this->hasMany(Restaurant::class);
     }
 
-    public function purchases(): HasMany
-    {
-        return $this->hasMany(TemplatePurchase::class);
-    }
-
     /**
      * @param  Builder<Template>  $query
      * @return Builder<Template>
@@ -60,11 +53,6 @@ class Template extends Model implements HasMedia
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true)->orderBy('sort_order')->orderBy('id');
-    }
-
-    public function isFree(): bool
-    {
-        return $this->price === 0;
     }
 
     /**

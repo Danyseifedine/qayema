@@ -15,10 +15,6 @@ return new class extends Migration
             // Nullable: Google-only accounts never set a password.
             $table->string('password')->nullable();
             $table->string('role', 16)->default('menu_owner');
-            // Qayema coins. The signed ledger in `coin_transactions` is the source
-            // of truth; this is the cached balance kept in step inside the same
-            // transaction as every ledger write.
-            $table->unsignedInteger('coin_balance')->default(0);
             $table->unsignedTinyInteger('onboarding_step')->default(0);
             $table->timestamp('onboarding_completed_at')->nullable();
             $table->rememberToken();

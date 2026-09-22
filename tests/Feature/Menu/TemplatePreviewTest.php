@@ -10,7 +10,7 @@ use Tests\TestCase;
 
 /**
  * `?preview={template_id}` lets the owner see any design on their real menu
- * before spending coins on it.
+ * before switching their menu over to it.
  */
 class TemplatePreviewTest extends TestCase
 {
@@ -29,7 +29,7 @@ class TemplatePreviewTest extends TestCase
 
     private function candidate(): Template
     {
-        return Template::factory()->paid(650)->withSettings([
+        return Template::factory()->withSettings([
             ['key' => 'primary_color', 'type' => 'color', 'default' => '#ABCDEF'],
         ])->create(['slug' => 'classic']);
     }
@@ -39,7 +39,7 @@ class TemplatePreviewTest extends TestCase
         $current = Template::factory()->create(['slug' => 'classic']);
         $restaurant = $this->restaurantOn($current);
         $restaurant->update(['template_settings' => ['primary_color' => '#111111']]);
-        $candidate = Template::factory()->paid(650)->withSettings([
+        $candidate = Template::factory()->withSettings([
             ['key' => 'primary_color', 'type' => 'color', 'default' => '#ABCDEF'],
         ])->create(['slug' => 'midnight']);
 
@@ -82,7 +82,7 @@ class TemplatePreviewTest extends TestCase
             ['key' => 'primary_color', 'type' => 'color', 'default' => '#111111'],
         ])->create(['slug' => 'classic']);
         $restaurant = $this->restaurantOn($current);
-        $candidate = Template::factory()->paid()->withSettings([
+        $candidate = Template::factory()->withSettings([
             ['key' => 'primary_color', 'type' => 'color', 'default' => '#ABCDEF'],
         ])->create(['slug' => 'midnight']);
 

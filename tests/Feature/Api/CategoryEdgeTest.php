@@ -61,7 +61,7 @@ class CategoryEdgeTest extends TestCase
 
     public function test_deleting_a_category_frees_a_slot(): void
     {
-        \App\Models\FeatureDefault::set(\App\Enums\Feature::CategoryLimit, 1);
+        \App\Models\Package::default()->setFeature(\App\Enums\Feature::CategoryLimit, 1);
         $owner = $this->owner();
         $category = Category::factory()->create(['restaurant_id' => $owner->id]);
 

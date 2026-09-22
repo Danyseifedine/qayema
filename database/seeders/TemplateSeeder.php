@@ -9,15 +9,14 @@ class TemplateSeeder extends Seeder
 {
     public function run(): void
     {
-        // The free template every new restaurant can pick. It's the one layout
-        // whose colors the owner may change; paid templates ship fixed designs.
+        // The design every new restaurant starts from. Its colors are owner
+        // editable; a template with an empty schema ships a fixed design.
         Template::updateOrCreate(['slug' => 'classic'], [
             'name' => ['en' => 'Classic', 'ar' => 'كلاسيك'],
             'description' => [
                 'en' => 'A clean, light layout that suits any restaurant.',
                 'ar' => 'تصميم بسيط وفاتح يناسب كل المطاعم.',
             ],
-            'price' => 0,
             'settings_schema' => [
                 ['key' => 'primary_color', 'type' => 'color', 'default' => '#C8A85A'],
                 ['key' => 'background_color', 'type' => 'color', 'default' => '#FFFFFF'],

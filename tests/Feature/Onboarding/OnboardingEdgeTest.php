@@ -91,10 +91,16 @@ class OnboardingEdgeTest extends TestCase
 
     public function test_a_completed_owner_is_sent_to_the_dashboard_instead_of_the_wizard(): void
     {
+        config(['app.dashboard_url' => 'https://dash.qayema.test']);
+
         $user = User::factory()->create(['onboarding_completed_at' => now(), 'onboarding_step' => 3]);
         Restaurant::factory()->create(['user_id' => $user->id]);
 
-        $this->actingAs($user)->get(route('onboarding'))->assertRedirect();
+        // Asserting the target, not just "a redirect": the bare assertion let
+        // this send finished owners to the landing page unnoticed.
+        $this->actingAs($user)
+            ->get(route('onboarding'))
+            ->assertRedirect('https://dash.qayema.test');
     }
 
     public function test_completing_twice_does_not_send_two_welcome_mails(): void

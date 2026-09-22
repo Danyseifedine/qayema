@@ -7,6 +7,7 @@ use App\Models\ContactMessage;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
 class ListContactMessages extends ListRecords
@@ -27,6 +28,12 @@ class ListContactMessages extends ListRecords
                     ->sortable()
                     ->copyable(),
 
+                TextColumn::make('package.name')
+                    ->label('Requested package')
+                    ->placeholder('—')
+                    ->badge()
+                    ->color('warning'),
+
                 TextColumn::make('message')
                     ->limit(60)
                     ->tooltip(fn (ContactMessage $record): string => $record->message)
@@ -41,6 +48,11 @@ class ListContactMessages extends ListRecords
                     ->dateTime()
                     ->sortable()
                     ->since(),
+            ])
+            ->filters([
+                SelectFilter::make('package_id')
+                    ->label('Requested package')
+                    ->relationship('package', 'name'),
             ])
             ->recordActions([
                 ViewAction::make(),

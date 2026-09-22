@@ -4,9 +4,9 @@ namespace App\Providers\Filament;
 
 use App\Filament\Admin\Resources\BlockedIps\BlockedIpResource;
 use App\Filament\Admin\Resources\Categories\CategoryResource;
-use App\Filament\Admin\Resources\CoinPacks\CoinPackResource;
 use App\Filament\Admin\Resources\ContactMessages\ContactMessageResource;
 use App\Filament\Admin\Resources\Dishes\DishResource;
+use App\Filament\Admin\Resources\Packages\PackageResource;
 use App\Filament\Admin\Resources\Restaurants\RestaurantResource;
 use App\Filament\Admin\Resources\RestaurantSocialLinks\RestaurantSocialLinkResource;
 use App\Filament\Admin\Resources\RestaurantStatistics\RestaurantStatisticResource;
@@ -49,7 +49,7 @@ class AdminPanelProvider extends PanelProvider
                 RestaurantSocialLinkResource::class,
                 RestaurantStatisticResource::class,
                 ContactMessageResource::class,
-                CoinPackResource::class,
+                PackageResource::class,
                 BlockedIpResource::class,
             ])
             ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\Filament\Admin\Pages')
