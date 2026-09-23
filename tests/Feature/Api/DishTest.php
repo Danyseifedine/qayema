@@ -46,7 +46,7 @@ class DishTest extends TestCase
         $this->getJson(route('api.dishes.index'))->assertUnauthorized();
     }
 
-    public function test_index_returns_only_the_users_dishes_with_category_and_meta(): void
+    public function test_index_returns_only_the_users_dishes_with_meta(): void
     {
         [$user, $restaurant] = $this->owner();
         $category = Category::factory()->create(['restaurant_id' => $restaurant->id]);
@@ -56,7 +56,10 @@ class DishTest extends TestCase
         $response = $this->actingAs($user)->getJson(route('api.dishes.index'))->assertOk();
 
         $response->assertJsonCount(1, 'data');
-        $response->assertJsonPath('data.0.category.id', $category->id);
+        $response->assertJsonPath('data.0.category_id', $category->id);
+        // The category's name is not repeated on every dish: the dashboard
+        // already holds the category list and looks it up from there.
+        $response->assertJsonMissingPath('data.0.category');
         $response->assertJsonStructure([
             'data' => [['id', 'name' => ['en', 'ar'], 'price', 'is_available', 'category_id', 'image_url']],
             'meta' => ['used', 'limit', 'currency'],

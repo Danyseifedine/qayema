@@ -28,14 +28,10 @@ class DishResource extends JsonResource
             'price' => $this->price !== null ? (string) $this->price : null,
             'is_available' => (bool) $this->is_available,
             'display_order' => $this->display_order,
+            // The id alone: the dashboard already holds the category list and
+            // looks the name up from it, so repeating the name on every dish
+            // was payload nobody read.
             'category_id' => $this->category_id,
-            'category' => $this->whenLoaded('category', fn () => $this->category ? [
-                'id' => $this->category->id,
-                'name' => [
-                    'en' => $this->category->getTranslation('name', 'en', false) ?: null,
-                    'ar' => $this->category->getTranslation('name', 'ar', false) ?: null,
-                ],
-            ] : null),
             'image_url' => $this->getFirstMediaUrl('image') ?: null,
         ];
     }

@@ -10,6 +10,7 @@ use App\Http\Requests\UpdateDishRequest;
 use App\Http\Resources\DishResource;
 use App\Models\Dish;
 use App\Models\Restaurant;
+use App\Services\Global\DisplayOrder;
 use App\Services\Global\MediaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -31,7 +32,7 @@ class DishController extends Controller
         $restaurant = $this->restaurant($request);
 
         $dishes = $restaurant->dishes()
-            ->with(['media', 'category'])
+            ->with('media')
             ->orderBy('display_order')
             ->orderBy('id')
             ->get();
@@ -75,7 +76,7 @@ class DishController extends Controller
 
         $this->syncImage($request, $dish);
 
-        return (new DishResource($dish->load(['media', 'category'])))
+        return (new DishResource($dish->load('media')))
             ->response()
             ->setStatusCode(201);
     }
@@ -84,7 +85,7 @@ class DishController extends Controller
     {
         $this->authorize('view', $dish);
 
-        return new DishResource($dish->load(['media', 'category']));
+        return new DishResource($dish->load('media'));
     }
 
     public function update(UpdateDishRequest $request, Dish $dish): DishResource
@@ -110,7 +111,7 @@ class DishController extends Controller
 
         $this->syncImage($request, $dish);
 
-        return new DishResource($dish->load(['media', 'category']));
+        return new DishResource($dish->load('media'));
     }
 
     public function destroy(Request $request, Dish $dish): JsonResponse
@@ -134,20 +135,16 @@ class DishController extends Controller
 
         /** @var array<int, int> $ids */
         $ids = $request->validated('ids');
-        $owned = $restaurant->dishes()->whereIn('id', $ids)->pluck('id')->all();
+        $owned = $restaurant->dishes()->whereIn('id', $ids)->pluck('id')->flip();
 
-        DB::transaction(function () use ($ids, $owned, $restaurant): void {
-            $position = 1;
+        // Keep the client's order, drop anything it does not own. `flip()` makes
+        // that check a hash lookup rather than a scan per id.
+        $ordered = array_values(array_filter($ids, static fn (int $id): bool => $owned->has($id)));
 
-            foreach ($ids as $id) {
-                if (in_array($id, $owned, true)) {
-                    $restaurant->dishes()->whereKey($id)->update(['display_order' => $position++]);
-                }
-            }
-        });
+        DisplayOrder::apply($restaurant->dishes(), $ordered);
 
         $dishes = $restaurant->dishes()
-            ->with(['media', 'category'])
+            ->with('media')
             ->orderBy('display_order')
             ->orderBy('id')
             ->get();
@@ -167,7 +164,7 @@ class DishController extends Controller
 
         $dish->update(['is_available' => $request->boolean('is_available')]);
 
-        return new DishResource($dish->load(['media', 'category']));
+        return new DishResource($dish->load('media'));
     }
 
     /**
@@ -196,15 +193,15 @@ class DishController extends Controller
             $index = $position === null ? count($siblings) : min((int) $position - 1, count($siblings));
             array_splice($siblings, $index, 0, [$dish->id]);
 
-            foreach ($siblings as $order => $id) {
-                Dish::query()->whereKey($id)->update([
-                    'display_order' => $order + 1,
-                    'category_id' => $categoryId,
-                ]);
-            }
+            // The siblings are already in this category; only the dish being
+            // moved needs its foreign key rewritten, and the whole column is
+            // renumbered in one statement rather than one per row.
+            DisplayOrder::apply($dish->restaurant->dishes(), $siblings);
+
+            $dish->forceFill(['category_id' => $categoryId])->save();
         });
 
-        return new DishResource($dish->fresh()->load(['media', 'category']));
+        return new DishResource($dish->fresh()->load('media'));
     }
 
     private function restaurant(Request $request): Restaurant

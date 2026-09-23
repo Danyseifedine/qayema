@@ -9,6 +9,7 @@ use App\Http\Requests\UpdateCategoryRequest;
 use App\Http\Resources\CategoryResource;
 use App\Models\Category;
 use App\Models\Restaurant;
+use App\Services\Global\DisplayOrder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -113,17 +114,13 @@ class CategoryController extends Controller
 
         /** @var array<int, int> $ids */
         $ids = $request->validated('ids');
-        $owned = $restaurant->categories()->whereIn('id', $ids)->pluck('id')->all();
+        $owned = $restaurant->categories()->whereIn('id', $ids)->pluck('id')->flip();
 
-        DB::transaction(function () use ($ids, $owned, $restaurant): void {
-            $position = 1;
+        // Keep the client's order, drop anything it does not own. `flip()` makes
+        // that check a hash lookup rather than a scan per id.
+        $ordered = array_values(array_filter($ids, static fn (int $id): bool => $owned->has($id)));
 
-            foreach ($ids as $id) {
-                if (in_array($id, $owned, true)) {
-                    $restaurant->categories()->whereKey($id)->update(['display_order' => $position++]);
-                }
-            }
-        });
+        DisplayOrder::apply($restaurant->categories(), $ordered);
 
         $categories = $restaurant->categories()
             ->withCount('dishes')

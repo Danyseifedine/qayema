@@ -25,6 +25,30 @@ class DishEdgeTest extends TestCase
         return array_merge(['name' => ['en' => 'Dish'], 'price' => 10], $overrides);
     }
 
+    public function test_reordering_a_long_menu_is_a_single_write(): void
+    {
+        [$owner, $category] = $this->menu();
+        $dishes = Dish::factory()->count(30)
+            ->create(['restaurant_id' => $owner->id, 'category_id' => $category->id]);
+        $ids = $dishes->pluck('id')->reverse()->values()->all();
+
+        $writes = 0;
+        \Illuminate\Support\Facades\DB::listen(function ($query) use (&$writes): void {
+            if (str_starts_with(strtolower(ltrim($query->sql)), 'update')) {
+                $writes++;
+            }
+        });
+
+        $this->actingAs($owner->user)
+            ->postJson(route('api.dishes.reorder'), ['ids' => $ids])
+            ->assertOk();
+
+        // One CASE statement for the whole list, not one per row: dragging on a
+        // menu of three hundred must not cost three hundred round trips.
+        $this->assertSame(1, $writes, 'Reordering 30 dishes took more than one UPDATE.');
+        $this->assertSame($ids, $owner->dishes()->pluck('id')->all(), 'The new order was saved.');
+    }
+
     public function test_price_boundaries(): void
     {
         [$owner, $category] = $this->menu();
