@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Packages;
 
+use App\Enums\Feature;
 use App\Models\Package;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -38,6 +39,10 @@ class PackageApiTest extends TestCase
 
     public function test_an_unlimited_limit_comes_through_as_null_and_a_flag_as_a_boolean(): void
     {
+        // Free ships with the QR studio open for now; this test needs a flag
+        // the default package lacks, so it closes that one first.
+        Package::default()->setFeature(Feature::QrStudio, 0);
+
         $owner = $this->owner();
 
         $packages = collect($this->actingAs($owner->user)->getJson(route('api.packages.index'))->json('data'))

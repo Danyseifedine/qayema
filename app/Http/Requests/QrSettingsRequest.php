@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Services\Global\QrStyle;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -17,23 +18,33 @@ class QrSettingsRequest extends FormRequest
     }
 
     /**
-     * The QR studio design settings persisted to restaurants.qr_settings.
+     * The QR design persisted to restaurants.qr_settings. The allowed shapes
+     * come from QrStyle, which is what draws them, so the two cannot drift.
      *
      * @return array<string, mixed>
      */
     public function rules(): array
     {
+        $colour = ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'];
+
         return [
-            'bg' => ['required', Rule::in(['cream', 'ink', 'gold', 'olive'])],
-            'dot' => ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
-            'eye' => ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
-            'dot_style' => ['required', Rule::in(['square', 'rounded', 'dot'])],
-            'corner' => ['required', Rule::in(['sharp', 'round', 'pill'])],
-            'logo' => ['required', Rule::in(['none', 'image'])],
-            'show_url' => ['required', 'boolean'],
-            'name' => ['nullable', 'string', 'max:60'],
-            'tagline' => ['nullable', 'string', 'max:80'],
+            'dot_style' => ['required', Rule::in(QrStyle::DOT_STYLES)],
+            'dot_color' => $colour,
+            // A second colour turns the dots into a gradient; null keeps them plain.
+            'dot_gradient' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'gradient_type' => ['required', Rule::in(QrStyle::GRADIENT_TYPES)],
+            'corner_style' => ['required', Rule::in(QrStyle::CORNER_STYLES)],
+            'corner_color' => $colour,
+            'eye_style' => ['required', Rule::in(QrStyle::EYE_STYLES)],
+            'eye_color' => $colour,
+            'background' => $colour,
+            'logo' => ['required', 'boolean'],
+            'logo_size' => ['required', Rule::in(array_keys(QrStyle::LOGO_SIZES))],
+            'card_theme' => ['required', Rule::in(QrStyle::CARD_THEMES)],
+            'title' => ['nullable', 'string', 'max:60'],
+            'subtitle' => ['nullable', 'string', 'max:80'],
             'cta' => ['nullable', 'string', 'max:60'],
+            'show_url' => ['required', 'boolean'],
         ];
     }
 }

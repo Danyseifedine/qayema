@@ -59,6 +59,7 @@ class CategoryController extends Controller
 
             $category = new Category([
                 'name' => $this->localeMap($request->validated('name')),
+                'description' => $this->localeMap($request->validated('description')),
                 'display_order' => (int) $locked->categories()->max('display_order') + 1,
             ]);
             $category->restaurant()->associate($locked);
@@ -83,12 +84,17 @@ class CategoryController extends Controller
     {
         $this->authorize('update', $category);
 
-        // Only replace the name when the client actually sent it — otherwise an
+        // Only replace a field when the client actually sent it — otherwise an
         // empty map would wipe every locale.
         if ($request->has('name')) {
             $category->name = $this->localeMap($request->validated('name'));
-            $category->save();
         }
+
+        if ($request->has('description')) {
+            $category->description = $this->localeMap($request->validated('description'));
+        }
+
+        $category->save();
 
         return new CategoryResource($category->loadCount('dishes'));
     }

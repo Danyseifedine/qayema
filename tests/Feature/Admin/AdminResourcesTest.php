@@ -7,15 +7,14 @@ use App\Filament\Admin\Resources\BlockedIps\BlockedIpResource;
 use App\Filament\Admin\Resources\BlockedIps\Pages\CreateBlockedIp;
 use App\Filament\Admin\Resources\Categories\CategoryResource;
 use App\Filament\Admin\Resources\Categories\Pages\CreateCategory;
-use App\Filament\Admin\Resources\Packages\PackageResource;
 use App\Filament\Admin\Resources\ContactMessages\ContactMessageResource;
 use App\Filament\Admin\Resources\Dishes\DishResource;
 use App\Filament\Admin\Resources\Dishes\Pages\CreateDish;
+use App\Filament\Admin\Resources\Packages\PackageResource;
 use App\Filament\Admin\Resources\Restaurants\Pages\CreateRestaurant;
 use App\Filament\Admin\Resources\Restaurants\Pages\EditRestaurant;
 use App\Filament\Admin\Resources\Restaurants\RestaurantResource;
 use App\Filament\Admin\Resources\RestaurantSocialLinks\RestaurantSocialLinkResource;
-use App\Filament\Admin\Resources\RestaurantStatistics\RestaurantStatisticResource;
 use App\Filament\Admin\Resources\Templates\Pages\CreateTemplate;
 use App\Filament\Admin\Resources\Templates\TemplateResource;
 use App\Filament\Admin\Resources\Users\Pages\CreateUser;
@@ -50,11 +49,21 @@ class AdminResourcesTest extends TestCase
             'categories' => [CategoryResource::class],
             'dishes' => [DishResource::class],
             'social links' => [RestaurantSocialLinkResource::class],
-            'statistics' => [RestaurantStatisticResource::class],
             'contact messages' => [ContactMessageResource::class],
             'packages' => [PackageResource::class],
             'blocked ips' => [BlockedIpResource::class],
         ];
+    }
+
+    public function test_the_dashboard_opens_and_carries_no_stats(): void
+    {
+        // The admin keeps no stats of its own. The owner dashboard's numbers
+        // come from the API, which still reads menu_sessions.
+        $this->actingAs($this->admin())
+            ->get(route('filament.admin.pages.dashboard'))
+            ->assertOk()
+            ->assertDontSee('fi-wi-stats-overview', false)
+            ->assertDontSee('Statistics');
     }
 
     /** @dataProvider resources */

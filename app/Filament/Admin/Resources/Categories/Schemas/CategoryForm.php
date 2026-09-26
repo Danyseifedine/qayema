@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\Categories\Schemas;
 
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -29,6 +30,12 @@ class CategoryForm
                             ->required()
                             ->maxLength(255)
                             ->helperText('Displayed as a section heading on the public menu.'),
+                        Textarea::make('description')
+                            ->placeholder('e.g. Served from noon until close')
+                            ->rows(2)
+                            ->maxLength(300)
+                            ->helperText('Optional. One line under the heading on the public menu.')
+                            ->columnSpanFull(),
                         TextInput::make('display_order')
                             ->label('Display Order')
                             ->numeric()

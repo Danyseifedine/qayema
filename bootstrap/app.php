@@ -99,7 +99,7 @@ return Application::configure(basePath: dirname(__DIR__))
             // an opaque 'http_error' the SPA cannot explain.
             if ($e instanceof PostTooLargeException) {
                 return response()->json([
-                    'message' => __('That upload is too large. Images must be 10 MB or smaller.'),
+                    'message' => \App\Services\Global\UploadLimits::tooLargeMessage(),
                     'code' => 'payload_too_large',
                 ], 413);
             }

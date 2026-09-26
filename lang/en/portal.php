@@ -182,6 +182,7 @@ return [
                 'features' => [
                     '300 dishes across 50 categories',
                     '12 social links',
+                    'Advanced analytics',
                     'Priority support',
                     'Everything in Pro',
                 ],

@@ -2,6 +2,9 @@
 
 namespace Tests\Feature\Api;
 
+use App\Enums\Feature;
+use App\Models\Order;
+use App\Models\Package;
 use App\Models\Restaurant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -63,14 +66,48 @@ class StatsApiTest extends TestCase
 
     public function test_the_range_limits_what_is_counted(): void
     {
+        Package::default()->setFeature(Feature::AdvancedAnalytics, 1);
         $restaurant = Restaurant::factory()->create();
         $this->visit($restaurant, 2, session: 'recent');
         $this->visit($restaurant, 20, session: 'older');
-        $this->visit($restaurant, 200, session: 'ancient');
+        $this->visit($restaurant, 60, session: 'ancient');
 
         $this->actingAs($restaurant->user)->getJson(route('api.stats', ['range' => '7d']))->assertJsonPath('data.totals.views', 1);
         $this->actingAs($restaurant->user)->getJson(route('api.stats', ['range' => '30d']))->assertJsonPath('data.totals.views', 2);
+        $this->actingAs($restaurant->user)->getJson(route('api.stats', ['range' => '90d']))->assertJsonPath('data.totals.views', 3);
         $this->actingAs($restaurant->user)->getJson(route('api.stats', ['range' => 'all']))->assertJsonPath('data.totals.views', 3);
+    }
+
+    public function test_longer_ranges_need_advanced_analytics(): void
+    {
+        Package::default()->setFeature(Feature::AdvancedAnalytics, 0);
+        $restaurant = Restaurant::factory()->create();
+
+        foreach (['7d', '30d'] as $range) {
+            $this->actingAs($restaurant->user)->getJson(route('api.stats', ['range' => $range]))->assertOk();
+        }
+
+        foreach (['90d', 'all'] as $range) {
+            $this->actingAs($restaurant->user)
+                ->getJson(route('api.stats', ['range' => $range]))
+                ->assertForbidden()
+                ->assertJsonPath('code', 'forbidden');
+        }
+    }
+
+    public function test_all_time_charts_from_the_first_visit(): void
+    {
+        Package::default()->setFeature(Feature::AdvancedAnalytics, 1);
+        $restaurant = Restaurant::factory()->create(['timezone' => 'UTC']);
+        $this->visit($restaurant, 45);
+
+        $series = $this->actingAs($restaurant->user)
+            ->getJson(route('api.stats', ['range' => 'all']))
+            ->assertOk()
+            ->json('data.series');
+
+        $this->assertCount(46, $series);
+        $this->assertSame(1, $series[0]['views']);
     }
 
     public function test_an_unknown_range_is_rejected(): void
@@ -102,20 +139,55 @@ class StatsApiTest extends TestCase
         $this->assertSame(0, $series[5]['views'], 'Days with no visits are present as zero.');
     }
 
-    public function test_devices_are_broken_down_and_unknown_is_bucketed(): void
+    public function test_days_are_the_restaurants_own(): void
     {
+        $this->travelTo(now()->setTimezone('UTC')->setTime(12, 0));
+        $restaurant = Restaurant::factory()->create(['timezone' => 'Asia/Beirut']);
+
+        // 23:30 UTC yesterday is already today in Beirut (UTC+2 or +3).
+        $restaurant->statistics()->create([
+            'session_id' => 'late',
+            'viewed_at' => now()->subDay()->setTime(23, 30),
+        ]);
+
+        $data = $this->actingAs($restaurant->user)->getJson(route('api.stats', ['range' => '7d']))->assertOk()->json('data');
+
+        $this->assertSame('Asia/Beirut', $data['timezone']);
+        $this->assertSame(1, $data['totals']['views_today']);
+        $this->assertSame(1, $data['series'][6]['views']);
+        $this->assertSame(0, $data['series'][5]['views']);
+    }
+
+    public function test_orders_are_counted_when_the_package_takes_them(): void
+    {
+        Package::default()->setFeature(Feature::Ordering, 1);
         $restaurant = Restaurant::factory()->create();
-        $this->visit($restaurant, device: 'mobile');
-        $this->visit($restaurant, device: 'mobile');
-        $this->visit($restaurant, device: 'desktop');
-        $this->visit($restaurant, device: null);
+        Order::factory()->for($restaurant)->create(['placed_at' => now()]);
+        Order::factory()->for($restaurant)->create(['placed_at' => now(), 'status' => 'cancelled']);
+        Order::factory()->for($restaurant)->create(['placed_at' => now()->subDays(40)]);
 
         $this->actingAs($restaurant->user)
             ->getJson(route('api.stats'))
-            ->assertOk()
-            ->assertJsonPath('data.devices.mobile', 2)
-            ->assertJsonPath('data.devices.desktop', 1)
-            ->assertJsonPath('data.devices.unknown', 1);
+            ->assertJsonPath('data.totals.orders', 1);
+    }
+
+    public function test_orders_are_null_when_the_package_does_not_take_them(): void
+    {
+        Package::default()->setFeature(Feature::Ordering, 0);
+        $restaurant = Restaurant::factory()->create();
+
+        $this->actingAs($restaurant->user)
+            ->getJson(route('api.stats'))
+            ->assertJsonPath('data.totals.orders', null);
+    }
+
+    public function test_the_summary_leaves_the_breakdowns_to_advanced(): void
+    {
+        $restaurant = Restaurant::factory()->create();
+
+        $data = $this->actingAs($restaurant->user)->getJson(route('api.stats'))->json('data');
+
+        $this->assertArrayNotHasKey('devices', $data);
     }
 
     public function test_one_restaurants_stats_never_include_anothers(): void

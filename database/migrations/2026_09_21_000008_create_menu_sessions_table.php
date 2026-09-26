@@ -20,6 +20,8 @@ return new class extends Migration
             $table->string('device_type', 32)->nullable();
             $table->string('browser', 64)->nullable();
             $table->string('os', 64)->nullable();
+            // The language the menu opened in.
+            $table->string('locale', 8)->nullable();
             $table->timestamp('viewed_at');
             $table->boolean('via_qr')->default(false);
             $table->timestamps();

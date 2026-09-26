@@ -48,7 +48,9 @@ return [
                 'dish_limit' => 40,
                 'category_limit' => 10,
                 'social_link_limit' => 2,
-                'qr_studio' => 0,
+                'qr_studio' => 1,
+                'ordering' => 1,
+                'advanced_analytics' => 0,
             ],
         ],
         [
@@ -67,6 +69,8 @@ return [
                 'category_limit' => 25,
                 'social_link_limit' => 6,
                 'qr_studio' => 1,
+                'ordering' => 1,
+                'advanced_analytics' => 0,
             ],
         ],
         [
@@ -85,6 +89,8 @@ return [
                 'category_limit' => 50,
                 'social_link_limit' => 12,
                 'qr_studio' => 1,
+                'ordering' => 1,
+                'advanced_analytics' => 1,
             ],
         ],
         [
@@ -103,6 +109,8 @@ return [
                 'category_limit' => null,
                 'social_link_limit' => null,
                 'qr_studio' => 1,
+                'ordering' => 1,
+                'advanced_analytics' => 1,
             ],
         ],
     ],

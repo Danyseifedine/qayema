@@ -26,36 +26,15 @@
 ])
 
 @php
-$defaultCountries = [
-    ['value' => 'LB', 'label' => 'Lebanon',              'flag' => '🇱🇧', 'meta' => '+961'],
-    ['value' => 'AE', 'label' => 'United Arab Emirates', 'flag' => '🇦🇪', 'meta' => '+971'],
-    ['value' => 'SA', 'label' => 'Saudi Arabia',         'flag' => '🇸🇦', 'meta' => '+966'],
-    ['value' => 'EG', 'label' => 'Egypt',                'flag' => '🇪🇬', 'meta' => '+20'],
-    ['value' => 'JO', 'label' => 'Jordan',               'flag' => '🇯🇴', 'meta' => '+962'],
-    ['value' => 'KW', 'label' => 'Kuwait',               'flag' => '🇰🇼', 'meta' => '+965'],
-    ['value' => 'QA', 'label' => 'Qatar',                'flag' => '🇶🇦', 'meta' => '+974'],
-    ['value' => 'BH', 'label' => 'Bahrain',              'flag' => '🇧🇭', 'meta' => '+973'],
-    ['value' => 'OM', 'label' => 'Oman',                 'flag' => '🇴🇲', 'meta' => '+968'],
-    ['value' => 'SY', 'label' => 'Syria',                'flag' => '🇸🇾', 'meta' => '+963'],
-    ['value' => 'IQ', 'label' => 'Iraq',                 'flag' => '🇮🇶', 'meta' => '+964'],
-    ['value' => 'TR', 'label' => 'Turkey',               'flag' => '🇹🇷', 'meta' => '+90'],
-    ['value' => 'US', 'label' => 'United States',        'flag' => '🇺🇸', 'meta' => '+1'],
-    ['value' => 'GB', 'label' => 'United Kingdom',       'flag' => '🇬🇧', 'meta' => '+44'],
-    ['value' => 'FR', 'label' => 'France',               'flag' => '🇫🇷', 'meta' => '+33'],
-    ['value' => 'DE', 'label' => 'Germany',              'flag' => '🇩🇪', 'meta' => '+49'],
-    ['value' => 'IT', 'label' => 'Italy',                'flag' => '🇮🇹', 'meta' => '+39'],
-    ['value' => 'ES', 'label' => 'Spain',                'flag' => '🇪🇸', 'meta' => '+34'],
-    ['value' => 'GR', 'label' => 'Greece',               'flag' => '🇬🇷', 'meta' => '+30'],
-    ['value' => 'NL', 'label' => 'Netherlands',          'flag' => '🇳🇱', 'meta' => '+31'],
-    ['value' => 'PT', 'label' => 'Portugal',             'flag' => '🇵🇹', 'meta' => '+351'],
-    ['value' => 'RU', 'label' => 'Russia',               'flag' => '🇷🇺', 'meta' => '+7'],
-    ['value' => 'CN', 'label' => 'China',                'flag' => '🇨🇳', 'meta' => '+86'],
-    ['value' => 'JP', 'label' => 'Japan',                'flag' => '🇯🇵', 'meta' => '+81'],
-    ['value' => 'KR', 'label' => 'South Korea',          'flag' => '🇰🇷', 'meta' => '+82'],
-    ['value' => 'IN', 'label' => 'India',                'flag' => '🇮🇳', 'meta' => '+91'],
-    ['value' => 'AU', 'label' => 'Australia',            'flag' => '🇦🇺', 'meta' => '+61'],
-    ['value' => 'CA', 'label' => 'Canada',               'flag' => '🇨🇦', 'meta' => '+1'],
-];
+$defaultCountries = collect(config('countries', []))
+    ->map(fn (array $country, string $code): array => [
+        'value' => $code,
+        'label' => $country['label'],
+        'flag' => $country['flag'],
+        'meta' => $country['dial'],
+    ])
+    ->values()
+    ->all();
 $list = $countries ?? $defaultCountries;
 @endphp
 

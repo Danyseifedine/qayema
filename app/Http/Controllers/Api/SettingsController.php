@@ -7,11 +7,12 @@ use App\Http\Requests\UpdateSettingsRequest;
 use App\Http\Resources\SettingsResource;
 use App\Models\Restaurant;
 use App\Services\Global\MediaService;
+use App\Services\Global\OpeningHours;
 use Illuminate\Http\Request;
 
 /**
- * The owner's restaurant profile: display name, description, address, contact
- * details and branding. The slug stays read-only. Always scoped to the
+ * The owner's restaurant profile: display name, description, contact details,
+ * location and branding. The slug stays read-only. Always scoped to the
  * authenticated user's own restaurant, so there's no cross-restaurant surface.
  */
 class SettingsController extends Controller
@@ -35,9 +36,10 @@ class SettingsController extends Controller
 
         $restaurant->setTranslation('name', $locale, $request->validated('name'));
         $restaurant->setTranslation('description', $locale, (string) $request->validated('description'));
-        $restaurant->setTranslation('address', $locale, (string) $request->validated('address'));
 
         $restaurant->fill([
+            'opening_hours' => OpeningHours::normalise((array) $request->validated('opening_hours')),
+            'timezone' => $request->validated('timezone'),
             'google_maps_url' => $request->validated('google_maps_url'),
             'country_code' => $request->validated('country_code'),
             'phone' => $request->validated('phone'),

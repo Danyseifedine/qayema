@@ -9,7 +9,6 @@ use App\Filament\Admin\Resources\Dishes\DishResource;
 use App\Filament\Admin\Resources\Packages\PackageResource;
 use App\Filament\Admin\Resources\Restaurants\RestaurantResource;
 use App\Filament\Admin\Resources\RestaurantSocialLinks\RestaurantSocialLinkResource;
-use App\Filament\Admin\Resources\RestaurantStatistics\RestaurantStatisticResource;
 use App\Filament\Admin\Resources\Templates\TemplateResource;
 use App\Filament\Admin\Resources\Users\UserResource;
 use App\Http\Middleware\EnsureUserIsAdmin;
@@ -47,7 +46,6 @@ class AdminPanelProvider extends PanelProvider
                 CategoryResource::class,
                 DishResource::class,
                 RestaurantSocialLinkResource::class,
-                RestaurantStatisticResource::class,
                 ContactMessageResource::class,
                 PackageResource::class,
                 BlockedIpResource::class,
@@ -55,14 +53,6 @@ class AdminPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\Filament\Admin\Pages')
             ->pages([
                 Dashboard::class,
-            ])
-            ->discoverWidgets(in: app_path('Filament/Admin/Widgets'), for: 'App\Filament\Admin\Widgets')
-            ->widgets([
-                \App\Filament\Admin\Widgets\TodayOverviewWidget::class,
-                \App\Filament\Admin\Widgets\RestaurantStatsWidget::class,
-                \App\Filament\Admin\Widgets\VisitorStatsWidget::class,
-                \App\Filament\Admin\Widgets\PopularRestaurantsWidget::class,
-                \App\Filament\Admin\Widgets\RecentActivityWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,

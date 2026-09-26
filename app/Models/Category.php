@@ -9,18 +9,20 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Translatable\HasTranslations;
 
 /**
- * A menu section: a name and a position. No image, no description.
+ * A menu section: a name, an optional line describing it, and a position.
+ * No image.
  */
 class Category extends Model
 {
     use HasFactory, HasTranslations;
 
     /** @var string[] */
-    public array $translatable = ['name'];
+    public array $translatable = ['name', 'description'];
 
     protected $fillable = [
         'restaurant_id',
         'name',
+        'description',
         'display_order',
     ];
 

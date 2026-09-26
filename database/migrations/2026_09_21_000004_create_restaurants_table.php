@@ -7,9 +7,9 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * One restaurant per owner (unique user_id). `name`, `description` and
-     * `address` are spatie/translatable JSON ({"ar": ..., "en": ...}); the owner
-     * only ever edits the locale in `default_locale`.
+     * One restaurant per owner (unique user_id). `name` and `description` are
+     * spatie/translatable JSON ({"ar": ..., "en": ...}); the owner only ever
+     * edits the locale in `default_locale`.
      *
      * A new restaurant starts with template_id = null — the dashboard stays
      * locked until the owner picks one — and on the default package, which is
@@ -31,10 +31,17 @@ return new class extends Migration
             $table->json('description')->nullable();
             $table->string('slug')->unique();
 
-            $table->json('address')->nullable();
+            // Where the restaurant is, as a map link. There is no separate
+            // written address: one link is what a guest taps for directions.
             $table->string('google_maps_url')->nullable();
             $table->char('country_code', 2)->nullable();
             $table->string('phone', 30)->nullable();
+
+            // One range per weekday, keyed mon..sun, null for a day closed:
+            // {"mon":{"open":"07:30","close":"22:00"},"tue":null,...}. The
+            // timezone is what makes "open now" mean anything.
+            $table->json('opening_hours')->nullable();
+            $table->string('timezone', 64)->nullable();
 
             $table->char('currency', 3)->default('USD');
             $table->char('default_locale', 2)->default('ar');

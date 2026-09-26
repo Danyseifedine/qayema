@@ -16,7 +16,7 @@ use Illuminate\Http\Request;
  */
 class MenuVisitRecorder
 {
-    public function record(Restaurant $restaurant, Request $request): ?RestaurantStatistic
+    public function record(Restaurant $restaurant, Request $request, ?string $locale = null): ?RestaurantStatistic
     {
         try {
             $agent = (string) $request->userAgent();
@@ -26,6 +26,7 @@ class MenuVisitRecorder
                 'device_type' => $this->deviceType($agent),
                 'browser' => $this->browser($agent),
                 'os' => $this->os($agent),
+                'locale' => $locale,
                 // The QR codes encode ?qr=1, which is the only way we can tell a
                 // scan from someone following a shared link.
                 'via_qr' => $request->query('qr') === '1',

@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Feature;
 use App\Models\Restaurant;
 use App\Models\Template;
+use App\Services\Global\MapPoint;
 use App\Services\Global\MenuVisitRecorder;
+use App\Services\Global\OpeningHours;
+use App\Services\Global\WhatsAppLink;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -43,10 +47,6 @@ class PublicMenuController extends Controller
             $view = 'menu.templates.classic';
         }
 
-        if ($preview === null) {
-            $this->visits->record($restaurant, $request);
-        }
-
         $restaurant->load([
             'categories' => fn ($query) => $query->orderBy('display_order')->orderBy('id'),
             'categories.dishes' => fn ($query) => $query->where('is_available', true)
@@ -63,13 +63,103 @@ class PublicMenuController extends Controller
             ? $template->resolveSettings((array) $restaurant->template_settings)
             : $template->defaultSettings();
 
+        $locale = $this->locale($request, $restaurant);
+
+        // A guest switching language navigates from this menu back to it.
+        // That is one visit, not two, so a self-referred load is not recorded.
+        if ($preview === null && ! $this->cameFromThisMenu($request, $restaurant)) {
+            $this->visits->record($restaurant, $request, $locale);
+        }
+
+        // The menu route carries no locale middleware, so without this every
+        // __() on the page resolves against APP_LOCALE and an Arabic menu
+        // prints English.
+        app()->setLocale($locale);
+
         return view($view, [
             'restaurant' => $restaurant,
             'template' => $template,
             'settings' => $settings,
-            'locale' => $restaurant->default_locale ?: 'ar',
+            'locale' => $locale,
             'is_preview' => $preview !== null,
+            'hours' => OpeningHours::for($restaurant),
+            'locales' => $this->localeLinks($restaurant, $preview),
+            'menu_url' => route('public.menu', $restaurant->slug),
+            'map_embed_url' => MapPoint::embedFor($restaurant),
+            // Chatting to the restaurant needs the same E.164 number an order
+            // hand-off uses, so it comes from the same place.
+            'whatsapp_url' => ($number = WhatsAppLink::internationalNumber($restaurant))
+                ? 'https://wa.me/'.$number
+                : null,
+            // Ordering is a package feature, and a preview is a dress
+            // rehearsal — neither should take a real order.
+            'can_order' => ! $preview && $restaurant->entitlements()->can(Feature::Ordering),
         ]);
+    }
+
+    /**
+     * The language the page renders in: whichever the guest asked for with
+     * ?lang=, and the owner's own otherwise. It is a query parameter rather
+     * than a session so each version has its own shareable, indexable URL.
+     */
+    private function locale(Request $request, Restaurant $restaurant): string
+    {
+        $asked = (string) $request->query('lang');
+
+        if (in_array($asked, config('locales.supported', []), true)) {
+            return $asked;
+        }
+
+        return $restaurant->default_locale ?: config('locales.default', 'en');
+    }
+
+    /**
+     * Every language this menu can be read in, as `code => [name, flag, url]`,
+     * for the switcher and the hreflang tags.
+     *
+     * @return array<string, array{name: string, flag: string, url: string}>
+     */
+    private function localeLinks(Restaurant $restaurant, ?Template $preview): array
+    {
+        $base = route('public.menu', $restaurant->slug);
+        $links = [];
+
+        foreach (config('locales.locales', []) as $code => $meta) {
+            if (! in_array($code, config('locales.supported', []), true)) {
+                continue;
+            }
+
+            $query = ['lang' => $code];
+
+            // A preview is a dress rehearsal; switching language inside one
+            // must not drop back to the live template.
+            if ($preview !== null) {
+                $query['preview'] = $preview->id;
+            }
+
+            $links[$code] = [
+                'name' => $meta['name'],
+                'flag' => $meta['flag'],
+                'url' => $base.'?'.http_build_query($query),
+            ];
+        }
+
+        return $links;
+    }
+
+    /** Whether this request is a navigation from this same menu page. */
+    private function cameFromThisMenu(Request $request, Restaurant $restaurant): bool
+    {
+        $referer = (string) $request->headers->get('referer');
+
+        if ($referer === '') {
+            return false;
+        }
+
+        return str_starts_with(
+            rtrim(strtok($referer, '?'), '/'),
+            rtrim(route('public.menu', $restaurant->slug), '/')
+        );
     }
 
     /**

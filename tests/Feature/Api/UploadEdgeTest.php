@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api;
 
+use App\Services\Global\UploadLimits;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Tests\Concerns\CreatesOwners;
@@ -43,9 +44,13 @@ class UploadEdgeTest extends TestCase
         $this->upload($dropped)
             ->assertStatus(422)
             ->assertJsonValidationErrors('file')
+            // The limit quoted is the one this server really enforces, which
+            // is PHP's when PHP's is the smaller of the two.
             ->assertJsonFragment([
-                'file' => ['That image is too large for the server to accept. Images must be 10 MB or smaller.'],
+                'file' => [UploadLimits::tooLargeMessage()],
             ]);
+
+        $this->assertStringContainsString(UploadLimits::describe(), UploadLimits::tooLargeMessage());
     }
 
     public function test_a_body_over_the_post_limit_is_a_413_the_spa_can_read(): void
@@ -57,7 +62,7 @@ class UploadEdgeTest extends TestCase
             ->post(route('api.uploads.temp'), [], ['Accept' => 'application/json']);
 
         $response->assertStatus(413)->assertJson([
-            'message' => 'That upload is too large. Images must be 10 MB or smaller.',
+            'message' => UploadLimits::tooLargeMessage(),
             'code' => 'payload_too_large',
         ]);
     }

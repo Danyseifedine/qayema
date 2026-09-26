@@ -5,4 +5,6 @@ return [
     'category_limit' => 'الفئات',
     'social_link_limit' => 'روابط التواصل',
     'qr_studio' => 'استوديو QR',
+    'ordering' => 'الطلبات',
+    'advanced_analytics' => 'تحليلات متقدمة',
 ];

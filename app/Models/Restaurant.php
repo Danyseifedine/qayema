@@ -31,7 +31,7 @@ class Restaurant extends Model implements HasMedia
     ];
 
     /** @var string[] */
-    public array $translatable = ['name', 'description', 'address'];
+    public array $translatable = ['name', 'description'];
 
     protected $fillable = [
         'user_id',
@@ -42,10 +42,11 @@ class Restaurant extends Model implements HasMedia
         'name',
         'description',
         'slug',
-        'address',
         'google_maps_url',
         'country_code',
         'phone',
+        'opening_hours',
+        'timezone',
         'currency',
         'default_locale',
         'is_active',
@@ -57,6 +58,7 @@ class Restaurant extends Model implements HasMedia
     {
         return [
             'is_active' => 'boolean',
+            'opening_hours' => 'array',
             'package_started_at' => 'datetime',
             'package_ends_at' => 'datetime',
             'template_settings' => 'array',
@@ -126,6 +128,16 @@ class Restaurant extends Model implements HasMedia
         return $this->hasMany(RestaurantStatistic::class);
     }
 
+    public function menuEvents(): HasMany
+    {
+        return $this->hasMany(MenuEvent::class);
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class)->latest('placed_at');
+    }
+
     public function featureGrants(): HasMany
     {
         return $this->hasMany(RestaurantFeature::class);
@@ -163,17 +175,24 @@ class Restaurant extends Model implements HasMedia
      */
     public function qrDefaultDesign(): array
     {
+        // The simple QR: black on white, square everything, no logo.
         return [
-            'bg' => 'cream',
-            'dot' => '#15120a',
-            'eye' => '#15120a',
             'dot_style' => 'square',
-            'corner' => 'round',
-            'logo' => 'none',
-            'show_url' => true,
-            'name' => $this->name,
-            'tagline' => null,
+            'dot_color' => '#000000',
+            'dot_gradient' => null,
+            'gradient_type' => 'linear',
+            'corner_style' => 'square',
+            'corner_color' => '#000000',
+            'eye_style' => 'square',
+            'eye_color' => '#000000',
+            'background' => '#FFFFFF',
+            'logo' => false,
+            'logo_size' => 'medium',
+            'card_theme' => 'light',
+            'title' => $this->name,
+            'subtitle' => null,
             'cta' => null,
+            'show_url' => true,
         ];
     }
 
@@ -185,9 +204,16 @@ class Restaurant extends Model implements HasMedia
      */
     public function qrDesign(): array
     {
-        $saved = array_filter((array) $this->qr_settings, fn ($value) => $value !== null);
+        $defaults = $this->qrDefaultDesign();
 
-        return array_merge($this->qrDefaultDesign(), $saved);
+        // Only keys the current design knows, so a field that is renamed or
+        // dropped later never lingers in what the card is drawn from.
+        $saved = array_intersect_key(
+            array_filter((array) $this->qr_settings, fn ($value) => $value !== null),
+            $defaults,
+        );
+
+        return array_merge($defaults, $saved);
     }
 
     /** Null means unlimited on this package. */

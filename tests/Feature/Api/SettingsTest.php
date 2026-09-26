@@ -64,33 +64,77 @@ class SettingsTest extends TestCase
                 'data' => [
                     'name' => ['en', 'ar'],
                     'description' => ['en', 'ar'],
-                    'address' => ['en', 'ar'],
                     'default_locale', 'slug', 'google_maps_url', 'phone',
-                    'country_code', 'currency', 'logo_url', 'cover_url',
+                    'country_code', 'currency', 'opening_hours', 'timezone',
+                    'logo_url', 'cover_url',
                 ],
                 'meta' => ['currencies' => [['code', 'name', 'symbol']]],
             ])
             ->assertJsonPath('data.slug', $restaurant->slug);
     }
 
-    public function test_update_saves_the_description_address_and_map_url(): void
+    public function test_update_saves_the_description_and_map_url(): void
     {
         [$user, $restaurant] = $this->owner();
 
         $this->actingAs($user)
             ->putJson(route('api.settings.update'), $this->basePayload([
                 'description' => 'Best mezze in town',
-                'address' => 'Hamra Street, Beirut',
-                'google_maps_url' => 'https://maps.google.com/?q=beirut',
+                'google_maps_url' => 'https://maps.google.com/?q=33.8886,35.4955',
             ]))
             ->assertOk()
-            ->assertJsonPath('data.google_maps_url', 'https://maps.google.com/?q=beirut');
+            ->assertJsonPath('data.google_maps_url', 'https://maps.google.com/?q=33.8886,35.4955');
 
         $restaurant->refresh();
-        $locale = $restaurant->default_locale;
 
-        $this->assertSame('Best mezze in town', $restaurant->getTranslation('description', $locale));
-        $this->assertSame('Hamra Street, Beirut', $restaurant->getTranslation('address', $locale));
+        $this->assertSame(
+            'Best mezze in town',
+            $restaurant->getTranslation('description', $restaurant->default_locale),
+        );
+    }
+
+    public function test_opening_hours_round_trip_with_a_timezone(): void
+    {
+        [$user, $restaurant] = $this->owner();
+
+        $this->actingAs($user)
+            ->putJson(route('api.settings.update'), $this->basePayload([
+                'timezone' => 'Asia/Beirut',
+                'opening_hours' => [
+                    'mon' => ['open' => '07:30', 'close' => '22:00'],
+                    'tue' => null,
+                ],
+            ]))
+            ->assertOk()
+            ->assertJsonPath('data.timezone', 'Asia/Beirut')
+            ->assertJsonPath('data.opening_hours.mon', ['open' => '07:30', 'close' => '22:00'])
+            ->assertJsonPath('data.opening_hours.tue', null)
+            // The whole week always comes back, so the form never guesses.
+            ->assertJsonPath('data.opening_hours.sun', null);
+
+        $this->assertSame('Asia/Beirut', $restaurant->fresh()->timezone);
+    }
+
+    public function test_a_half_written_range_is_rejected(): void
+    {
+        [$user] = $this->owner();
+
+        $this->actingAs($user)
+            ->putJson(route('api.settings.update'), $this->basePayload([
+                'opening_hours' => ['mon' => ['open' => '07:30']],
+            ]))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('opening_hours.mon.close');
+    }
+
+    public function test_an_unreal_timezone_is_rejected(): void
+    {
+        [$user] = $this->owner();
+
+        $this->actingAs($user)
+            ->putJson(route('api.settings.update'), $this->basePayload(['timezone' => 'Middle/Earth']))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('timezone');
     }
 
     public function test_update_rejects_a_malformed_map_url(): void

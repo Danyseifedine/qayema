@@ -60,6 +60,35 @@ return [
             'report' => false,
         ],
 
+        /*
+         * Cloudflare R2, where the media library keeps every logo, cover and
+         * dish photo once MEDIA_DISK=r2. Guests read files through the public
+         * domain in R2_PUBLIC_URL; the app writes through the account's S3 API
+         * at R2_ENDPOINT (https://<account id>.r2.cloudflarestorage.com).
+         *
+         * No `visibility` on purpose: R2 has no per-object ACLs, so asking for
+         * public-read would send a header it cannot honour. The bucket is made
+         * public by its domain, not by each file.
+         *
+         * `throw` stays off. The media library checks each write's result
+         * itself: on a failed one it deletes the row it just saved and raises
+         * DiskCannotBeAccessed, which MediaService catches to fall back to
+         * local storage. A thrown write skips that cleanup and leaves a row
+         * pointing at a file that was never stored.
+         */
+        'r2' => [
+            'driver' => 's3',
+            'key' => env('R2_ACCESS_KEY_ID'),
+            'secret' => env('R2_SECRET_ACCESS_KEY'),
+            'region' => env('R2_DEFAULT_REGION', 'auto'),
+            'bucket' => env('R2_BUCKET'),
+            'url' => env('R2_PUBLIC_URL'),
+            'endpoint' => env('R2_ENDPOINT'),
+            'use_path_style_endpoint' => env('R2_USE_PATH_STYLE_ENDPOINT', false),
+            'throw' => false,
+            'report' => false,
+        ],
+
     ],
 
     /*

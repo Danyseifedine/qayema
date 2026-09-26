@@ -46,6 +46,10 @@ class RestaurantPackageTest extends TestCase
 
     public function test_an_expiry_in_the_past_drops_the_restaurant_back_to_free(): void
     {
+        // Free ships with the QR studio open for now; this test needs a flag
+        // the default package lacks, so it closes that one first.
+        Package::default()->setFeature(Feature::QrStudio, 0);
+
         $owner = $this->ownerOn('pro');
         $this->assertSame(120, $owner->dish_limit);
         $this->actingAs($this->admin());

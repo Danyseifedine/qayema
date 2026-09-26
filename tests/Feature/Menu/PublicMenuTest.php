@@ -38,6 +38,113 @@ class PublicMenuTest extends TestCase
             ->assertSee("Joe's Diner");
     }
 
+    public function test_the_menu_offers_directions_when_a_location_is_set(): void
+    {
+        $restaurant = $this->published(['google_maps_url' => 'https://maps.google.com/?q=33.88,35.49']);
+
+        $this->get(route('public.menu', $restaurant->slug))
+            ->assertOk()
+            ->assertSee('https://maps.google.com/?q=33.88,35.49', false)
+            ->assertSee('Find us');
+    }
+
+    public function test_the_menu_shows_no_location_chip_without_a_link(): void
+    {
+        // There is no written address to fall back on, so nothing is shown.
+        $restaurant = $this->published(['google_maps_url' => null]);
+
+        $this->get(route('public.menu', $restaurant->slug))
+            ->assertOk()
+            ->assertDontSee('Find us');
+    }
+
+    public function test_a_category_description_shows_under_its_heading(): void
+    {
+        $restaurant = $this->published(['default_locale' => 'en']);
+        $category = Category::factory()->create([
+            'restaurant_id' => $restaurant->id,
+            'name' => ['en' => 'Plates'],
+            'description' => ['en' => 'From noon onwards'],
+        ]);
+        Dish::factory()->create(['restaurant_id' => $restaurant->id, 'category_id' => $category->id, 'price' => 9]);
+
+        $html = $this->get(route('public.menu', $restaurant->slug))->assertOk()->getContent();
+
+        $this->assertStringContainsString('<p>From noon onwards</p>', $html);
+        $this->assertLessThan(strpos($html, 'From noon onwards'), strpos($html, '<h2>Plates</h2>'));
+    }
+
+    public function test_a_category_without_a_description_renders_no_empty_line(): void
+    {
+        $restaurant = $this->published(['default_locale' => 'en']);
+        $category = Category::factory()->create(['restaurant_id' => $restaurant->id, 'name' => ['en' => 'Plates']]);
+        Dish::factory()->create(['restaurant_id' => $restaurant->id, 'category_id' => $category->id, 'price' => 9]);
+
+        $html = $this->get(route('public.menu', $restaurant->slug))->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression('#<h2>Plates</h2>\s*</div>#', $html);
+    }
+
+    public function test_the_phone_card_keeps_only_the_hours(): void
+    {
+        // Directions and a way to reach the restaurant live in the dock, so the
+        // card under the cover no longer repeats them. The wide-screen header
+        // still carries all three, since it has no dock.
+        $restaurant = $this->published([
+            'phone' => '70123456',
+            'google_maps_url' => 'https://maps.google.com/?q=33,35',
+            'opening_hours' => array_fill_keys(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'], ['open' => '09:00', 'close' => '22:00']),
+            'timezone' => 'Asia/Beirut',
+        ]);
+
+        $html = $this->get(route('public.menu', $restaurant->slug))->assertOk()->getContent();
+
+        // The card runs from its own opening tag to the menu sections, which
+        // always render — the search box only does when there are dishes.
+        $start = strpos($html, '<div class="info">');
+        $this->assertNotFalse($start, 'The hours card should render.');
+        $card = substr($html, $start, strpos($html, '<div class="sections">') - $start);
+
+        $this->assertStringContainsString('09:00', $card);
+        $this->assertStringNotContainsString('tel:70123456', $card);
+        $this->assertStringNotContainsString('maps.google.com', $card);
+
+        // Still present in the header facts row.
+        $this->assertStringContainsString('class="fact" href="tel:70123456"', $html);
+    }
+
+    public function test_the_category_filter_opens_on_all(): void
+    {
+        $restaurant = $this->published();
+
+        foreach (['Starters', 'Mains'] as $name) {
+            $category = Category::factory()->create([
+                'restaurant_id' => $restaurant->id,
+                'name' => ['en' => $name],
+            ]);
+            Dish::factory()->create([
+                'restaurant_id' => $restaurant->id,
+                'category_id' => $category->id,
+                'price' => 7.5,
+            ]);
+        }
+
+        $html = $this->get(route('public.menu', $restaurant->slug))->assertOk()->getContent();
+
+        // All comes first and is the one selected, so a guest sees the whole
+        // menu before choosing to narrow it.
+        $this->assertStringContainsString('<button type="button" class="tab" data-tab="all" aria-current="true">', $html);
+        $this->assertSame(2, substr_count($html, 'aria-current="false"'));
+        $this->assertLessThan(
+            strpos($html, 'Starters'),
+            strpos($html, 'data-tab="all"'),
+            'The All tab should be rendered before the categories.'
+        );
+
+        // The pill the script slides between tabs.
+        $this->assertStringContainsString('class="tab-pill"', $html);
+    }
+
     public function test_the_menu_shows_categories_and_available_dishes(): void
     {
         $restaurant = $this->published();

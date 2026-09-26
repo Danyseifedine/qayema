@@ -60,10 +60,7 @@ class OnboardingService
             $path = $this->media->tempPath($user->id, $mediaKey);
 
             if (file_exists($path)) {
-                $restaurant->clearMediaCollection($collection);
-                $restaurant->addMedia($path)
-                    ->usingName(str_replace('_', '-', $collection))
-                    ->toMediaCollection($collection);
+                $this->media->replace($restaurant, $path, $collection, str_replace('_', '-', $collection));
             }
         }
     }

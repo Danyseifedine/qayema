@@ -14,11 +14,13 @@ enum Feature: string
     case CategoryLimit = 'category_limit';
     case SocialLinkLimit = 'social_link_limit';
     case QrStudio = 'qr_studio';
+    case Ordering = 'ordering';
+    case AdvancedAnalytics = 'advanced_analytics';
 
     public function kind(): FeatureKind
     {
         return match ($this) {
-            self::QrStudio => FeatureKind::Flag,
+            self::QrStudio, self::Ordering, self::AdvancedAnalytics => FeatureKind::Flag,
             default => FeatureKind::Limit,
         };
     }
@@ -38,7 +40,7 @@ enum Feature: string
             self::DishLimit => 40,
             self::CategoryLimit => 10,
             self::SocialLinkLimit => 2,
-            self::QrStudio => 0,
+            self::QrStudio, self::Ordering, self::AdvancedAnalytics => 0,
         };
     }
 
@@ -49,6 +51,8 @@ enum Feature: string
             self::CategoryLimit => __('features.category_limit'),
             self::SocialLinkLimit => __('features.social_link_limit'),
             self::QrStudio => __('features.qr_studio'),
+            self::Ordering => __('features.ordering'),
+            self::AdvancedAnalytics => __('features.advanced_analytics'),
         };
     }
 

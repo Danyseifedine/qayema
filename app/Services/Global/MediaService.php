@@ -3,11 +3,18 @@
 namespace App\Services\Global;
 
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\Image;
 use Intervention\Image\ImageManager;
 use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\MediaCollections\Exceptions\DiskCannotBeAccessed;
+use Spatie\MediaLibrary\MediaCollections\Exceptions\DiskDoesNotExist;
+use Spatie\MediaLibrary\MediaCollections\Exceptions\FileCannotBeAdded;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Throwable;
 
 /**
  * End-to-end media pipeline: optimize an uploaded image, park it in the user's
@@ -19,6 +26,9 @@ class MediaService
     private const TEMP_TTL_SECONDS = 3600;
 
     private const DEFAULT_MAX_BYTES = 50 * 1024;
+
+    /** Where an upload lands when the configured media disk cannot take it. */
+    public const FALLBACK_DISK = 'public';
 
     protected ImageManager $manager;
 
@@ -74,8 +84,7 @@ class MediaService
             $path = $this->tempPath((int) auth()->id(), $key);
 
             if (is_file($path)) {
-                $model->clearMediaCollection($collection);
-                $model->addMedia($path)->usingName($mediaName)->toMediaCollection($collection);
+                $this->replace($model, $path, $collection, $mediaName);
             }
 
             return;
@@ -83,6 +92,73 @@ class MediaService
 
         if ($delete) {
             $model->clearMediaCollection($collection);
+        }
+    }
+
+    /**
+     * Make this file the collection's one image.
+     *
+     * The old image is removed only after the new one is safely stored, so a
+     * failed upload leaves the restaurant with what it had rather than with
+     * nothing. Clearing first — what this used to do — lost the logo whenever
+     * the store after it failed.
+     */
+    public function replace(HasMedia $model, string $path, string $collection, string $mediaName): Media
+    {
+        $media = $this->store($model, $path, $collection, $mediaName);
+
+        $model->clearMediaCollectionExcept($collection, $media);
+
+        return $media;
+    }
+
+    /**
+     * Store on the configured media disk (R2), and fall back to local storage
+     * when that disk cannot take the file.
+     *
+     * Only a storage failure falls back. A file that is too big, missing or
+     * the wrong type fails the same way anywhere, so it is not retried —
+     * that would only hide the real error behind a second one. Every fallback
+     * is logged, because a file that quietly lands locally never reaches R2
+     * on its own.
+     */
+    private function store(HasMedia $model, string $path, string $collection, string $mediaName): Media
+    {
+        $disk = (string) config('media-library.disk_name');
+
+        // The media library saves the row before it copies the file, and only
+        // cleans that row up for a failure that comes back as `false`. The
+        // transaction covers the ones that throw instead, so a failed attempt
+        // never leaves a row pointing at a file that is not there.
+        $attempt = fn (string $onDisk): Media => DB::transaction(
+            fn (): Media => $model->addMedia($path)->usingName($mediaName)->toMediaCollection($collection, $onDisk)
+        );
+
+        try {
+            return $attempt($disk);
+        } catch (Throwable $exception) {
+            // Both disk errors share a parent with the file ones, so they are
+            // named: a disk that is down and a disk that is not configured
+            // (a typo in MEDIA_DISK) are storage problems, and fall back.
+            $aboutTheDisk = $exception instanceof DiskCannotBeAccessed || $exception instanceof DiskDoesNotExist;
+            $aboutTheFile = $exception instanceof FileCannotBeAdded && ! $aboutTheDisk;
+
+            // The media library leaves the temp file in place when the copy
+            // fails, so there is still something to retry with.
+            if ($aboutTheFile || $disk === self::FALLBACK_DISK || ! is_file($path)) {
+                throw $exception;
+            }
+
+            Log::warning('Media disk failed; the upload was stored locally instead.', [
+                'disk' => $disk,
+                'fallback' => self::FALLBACK_DISK,
+                'model' => $model::class,
+                'id' => $model->getKey(),
+                'collection' => $collection,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return $attempt(self::FALLBACK_DISK);
         }
     }
 

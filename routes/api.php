@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\DishController;
+use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\PackageRequestController;
 use App\Http\Controllers\Api\QrController;
@@ -38,8 +39,10 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         ->middleware('throttle:auth')
         ->name('api.password.update');
 
-    // Dashboard-home analytics from menu_sessions.
+    // Dashboard-home analytics: the summary every package gets, and the
+    // advanced breakdowns behind the advanced_analytics flag.
     Route::get('/stats', [StatsController::class, 'show'])->name('api.stats');
+    Route::get('/stats/advanced', [StatsController::class, 'advanced'])->name('api.stats.advanced');
 
     // Temp image upload: the SPA POSTs a file here, it's optimized and parked in
     // the user's temp area, and the returned key rides along on the next
@@ -91,6 +94,13 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::post('/packages/request', [PackageRequestController::class, 'store'])
         ->middleware('throttle:mutations')
         ->name('api.packages.request');
+
+    // Orders placed from the public menu. Read-only apart from the status:
+    // what was ordered is written once, by the guest, and never edited.
+    Route::get('/orders', [OrderController::class, 'index'])->name('api.orders.index');
+    Route::match(['put', 'patch'], '/orders/{order}', [OrderController::class, 'update'])
+        ->middleware('throttle:mutations')
+        ->name('api.orders.update');
 
     // QR studio — the menu link's QR design (persisted look) + scan analytics.
     Route::get('/qr', [QrController::class, 'show'])->name('api.qr.show');

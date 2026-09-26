@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\PublicMenuController;
+use App\Http\Controllers\PublicMenuEventController;
+use App\Http\Controllers\PublicOrderController;
 use App\Http\Controllers\QrCardController;
 use App\Http\Controllers\TempUploadController;
 use Illuminate\Support\Facades\Route;
@@ -52,6 +54,20 @@ Route::middleware('portal.locale')->group(function () {
 
 // Public, shareable QR table card (qr_studio owners only — 404 otherwise).
 Route::get('/{restaurant:slug}/qr', [QrCardController::class, 'show'])->name('public.qr');
+
+// A guest placing an order from the public menu. Two segments, so it is safe
+// beside the one-segment catch-all below; the limiter is deliberately gentle
+// because a whole restaurant shares one wifi and therefore one IP.
+Route::post('/{restaurant:slug}/order', [PublicOrderController::class, 'store'])
+    ->middleware('throttle:orders')
+    ->name('public.order');
+
+// What guests do on a menu once it is open, in small batches. Keyed per IP
+// like ordering, and for the same reason never a ban: a full dining room
+// shares one address.
+Route::post('/{restaurant:slug}/events', [PublicMenuEventController::class, 'store'])
+    ->middleware('throttle:menu-events')
+    ->name('public.events');
 
 // The public menu — what the QR code points at. Declared last because the slug
 // would otherwise swallow every other path, and constrained to the shape a slug

@@ -106,6 +106,79 @@ class CategoryTest extends TestCase
         $this->assertSame('أطباق رئيسية', $category->getTranslation('name', 'ar'));
     }
 
+    public function test_a_category_can_carry_a_description(): void
+    {
+        [$user] = $this->owner();
+
+        $this->actingAs($user)
+            ->postJson(route('api.categories.store'), [
+                'name' => ['en' => 'Mains'],
+                'description' => ['en' => 'From noon onwards', 'ar' => 'من الظهر'],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.description.en', 'From noon onwards')
+            ->assertJsonPath('data.description.ar', 'من الظهر');
+    }
+
+    public function test_the_description_is_optional_and_always_answers_both_locales(): void
+    {
+        [$user] = $this->owner();
+
+        // No description sent at all, and a blank one, both come back empty
+        // rather than missing, so the client never probes for the key.
+        $this->actingAs($user)
+            ->postJson(route('api.categories.store'), ['name' => ['en' => 'Sides']])
+            ->assertCreated()
+            ->assertJsonPath('data.description', ['en' => null, 'ar' => null]);
+
+        $this->actingAs($user)
+            ->postJson(route('api.categories.store'), [
+                'name' => ['en' => 'Sweets'],
+                'description' => ['en' => '   ', 'ar' => ''],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.description', ['en' => null, 'ar' => null]);
+    }
+
+    public function test_a_description_is_kept_to_one_short_line(): void
+    {
+        [$user] = $this->owner();
+
+        $this->actingAs($user)
+            ->postJson(route('api.categories.store'), [
+                'name' => ['en' => 'Mains'],
+                'description' => ['en' => str_repeat('a', 301)],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('description.en');
+    }
+
+    public function test_renaming_does_not_wipe_the_description(): void
+    {
+        [$user, $restaurant] = $this->owner();
+        $category = Category::factory()->create([
+            'restaurant_id' => $restaurant->id,
+            'name' => ['en' => 'Mains'],
+            'description' => ['en' => 'From noon onwards'],
+        ]);
+
+        // Only the name is sent; the description must survive untouched.
+        $this->actingAs($user)
+            ->putJson(route('api.categories.update', $category), ['name' => ['en' => 'Plates']])
+            ->assertOk()
+            ->assertJsonPath('data.name.en', 'Plates')
+            ->assertJsonPath('data.description.en', 'From noon onwards');
+
+        // And it can be cleared on purpose.
+        $this->actingAs($user)
+            ->putJson(route('api.categories.update', $category), [
+                'name' => ['en' => 'Plates'],
+                'description' => ['en' => '', 'ar' => ''],
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.description', ['en' => null, 'ar' => null]);
+    }
+
     public function test_store_requires_a_name(): void
     {
         [$user] = $this->owner();

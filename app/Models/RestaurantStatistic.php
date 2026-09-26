@@ -22,6 +22,7 @@ class RestaurantStatistic extends Model
         'device_type',
         'browser',
         'os',
+        'locale',
         'viewed_at',
         'via_qr',
     ];

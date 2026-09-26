@@ -6,16 +6,18 @@ use App\Enums\Feature;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\QrSettingsRequest;
 use App\Models\Restaurant;
+use App\Services\Global\QrStyle;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class QrController extends Controller
 {
     /**
-     * The QR studio payload. The link and a basic black-on-white code are free;
-     * everything else — saved designs, customization, the centre logo, and the
-     * scan analytics — requires the purchased qr_studio add-on. When locked the
-     * payload carries defaults and no stats, so nothing premium leaks.
+     * The QR studio payload. The link and a basic black-on-white code are
+     * always there; saved designs, customization, the centre logo and the scan
+     * counts follow the qr_studio flag. Every package ships with it on for
+     * now; when it is off the payload carries defaults and no stats, so
+     * nothing gated leaks.
      */
     public function show(Request $request): JsonResponse
     {
@@ -58,8 +60,14 @@ class QrController extends Controller
             'url' => "{$base}/{$restaurant->slug}?qr=1",
             'display_url' => "{$host}/{$restaurant->slug}",
             'card_url' => $unlocked ? route('public.qr', $restaurant->slug) : null,
-            'logo_url' => $unlocked ? ($restaurant->getFirstMediaUrl('logo') ?: null) : null,
+            // Inlined, not linked: see QrStyle::logoDataUrl().
+            'logo_data_url' => $unlocked ? QrStyle::logoDataUrl($restaurant) : null,
+            // What a "brand" card is painted with, so the picker can show it.
+            'brand_color' => QrStyle::brandColor($restaurant),
             'settings' => $unlocked ? $restaurant->qrDesign() : $restaurant->qrDefaultDesign(),
+            // What "Reset to simple" goes back to, so the dashboard never
+            // keeps its own copy of the defaults.
+            'defaults' => $restaurant->qrDefaultDesign(),
             'stats' => $unlocked
                 ? [
                     'today' => $restaurant->getQrScanCount('today'),

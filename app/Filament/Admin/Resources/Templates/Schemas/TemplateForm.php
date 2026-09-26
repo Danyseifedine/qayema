@@ -100,7 +100,7 @@ class TemplateForm
                                     ->live()
                                     ->required(),
                                 TextInput::make('default')
-                                    ->placeholder('#C8A85A')
+                                    ->placeholder('#1F6FEB')
                                     ->helperText('Applied when the owner has not chosen one.'),
                                 TagsInput::make('options')
                                     ->label('Choices')

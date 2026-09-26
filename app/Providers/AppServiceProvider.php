@@ -51,6 +51,13 @@ class AppServiceProvider extends ServiceProvider
         // above that — otherwise the raw 429 fires before the friendly lockout.
         $this->defineRateLimiter('login', fn (): Limit => Limit::perMinute(20), autoBan: false);
         $this->defineRateLimiter('contact', fn (): Limit => Limit::perMinute(10), autoBan: false);
+        // Guests ordering share one IP across a whole dining room, so this is
+        // keyed per IP but must never escalate to a ban: a busy lunch service
+        // is not an attack.
+        $this->defineRateLimiter('orders', fn (): Limit => Limit::perMinute(10), autoBan: false);
+        // The menu batches what guests do, so one guest sends a handful of
+        // these a visit. The ceiling is for a full room on one wifi.
+        $this->defineRateLimiter('menu-events', fn (): Limit => Limit::perMinute(300), autoBan: false);
 
         // Dashboard SPA endpoints. The SPA polls /api/user on every boot, so the
         // ceiling is generous; a 429 here is self-inflicted (one session), so it

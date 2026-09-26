@@ -15,13 +15,25 @@ class SettingsEdgeTest extends TestCase
         return array_merge(['name' => 'My Place', 'phone' => '+961 70 123 456', 'currency' => 'USD'], $overrides);
     }
 
-    public function test_description_and_address_length_limits(): void
+    public function test_description_length_limit(): void
     {
         $owner = $this->owner();
 
         $this->actingAs($owner->user)->putJson(route('api.settings.update'), $this->payload(['description' => str_repeat('x', 2000)]))->assertOk();
         $this->actingAs($owner->user)->putJson(route('api.settings.update'), $this->payload(['description' => str_repeat('x', 2001)]))->assertStatus(422)->assertJsonValidationErrors('description');
-        $this->actingAs($owner->user)->putJson(route('api.settings.update'), $this->payload(['address' => str_repeat('x', 501)]))->assertStatus(422)->assertJsonValidationErrors('address');
+    }
+
+    public function test_a_written_address_is_not_accepted_any_more(): void
+    {
+        // The restaurant is located by its map link alone, so a stray address
+        // in the payload is ignored rather than stored.
+        $owner = $this->owner();
+
+        $this->actingAs($owner->user)
+            ->putJson(route('api.settings.update'), $this->payload(['address' => 'Hamra Street']))
+            ->assertOk();
+
+        $this->assertArrayNotHasKey('address', $owner->fresh()->getAttributes());
     }
 
     public function test_the_map_link_must_be_a_web_url(): void
@@ -41,7 +53,7 @@ class SettingsEdgeTest extends TestCase
         $owner = $this->owner(['google_maps_url' => 'https://maps.google.com/x', 'description' => ['en' => 'old']]);
 
         $this->actingAs($owner->user)
-            ->putJson(route('api.settings.update'), $this->payload(['google_maps_url' => null, 'description' => null, 'address' => null]))
+            ->putJson(route('api.settings.update'), $this->payload(['google_maps_url' => null, 'description' => null]))
             ->assertOk()
             ->assertJsonPath('data.google_maps_url', null);
     }

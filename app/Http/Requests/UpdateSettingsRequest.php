@@ -24,7 +24,9 @@ class UpdateSettingsRequest extends FormRequest
             // can't corrupt the JSON column or 500 the save.
             'name' => ['required', 'string', 'min:2', 'max:255', 'regex:/^[^\x00-\x1F\x7F]+$/u'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'address' => ['nullable', 'string', 'max:500'],
+            // Where the restaurant is. A link rather than a written address:
+            // it is what a guest taps for directions, and the dashboard can
+            // fill it from the owner's own position.
             'google_maps_url' => ['nullable', 'url:http,https', 'max:2048'],
 
             // The logo is mandatory: it can be replaced (a temp-upload key) but
@@ -39,6 +41,15 @@ class UpdateSettingsRequest extends FormRequest
             // Literal space (not \s) so newlines/tabs can't be stored in the phone.
             'phone' => ['required', 'string', 'max:30', 'regex:/^(?=(?:\D*\d){6,})[0-9+() .\-]{6,30}$/'],
             'currency' => ['required', 'string', Rule::in(array_keys(config('currencies', [])))],
+
+            // One range per weekday, or null for a day it does not open. The
+            // service normalises before saving, so anything malformed here is
+            // dropped rather than stored.
+            'opening_hours' => ['nullable', 'array'],
+            'opening_hours.*' => ['nullable', 'array'],
+            'opening_hours.*.open' => ['required_with:opening_hours.*.close', 'nullable', 'date_format:H:i'],
+            'opening_hours.*.close' => ['required_with:opening_hours.*.open', 'nullable', 'date_format:H:i'],
+            'timezone' => ['nullable', 'string', 'timezone'],
         ];
     }
 

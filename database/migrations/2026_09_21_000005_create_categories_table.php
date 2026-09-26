@@ -7,7 +7,8 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * A menu section. Name and order, nothing else — no image, no description.
+     * A menu section: a name, an optional line describing it, and a position.
+     * No image.
      */
     public function up(): void
     {
@@ -15,6 +16,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('restaurant_id')->constrained()->cascadeOnDelete();
             $table->json('name');
+            $table->json('description')->nullable();
             $table->unsignedInteger('display_order')->default(0);
             $table->timestamps();
 

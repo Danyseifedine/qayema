@@ -23,7 +23,6 @@ class RestaurantFactory extends Factory
             'name' => ['en' => fake()->company()],
             'slug' => fake()->unique()->slug(3),
             'description' => ['en' => fake()->sentence()],
-            'address' => ['en' => fake()->address()],
             'country_code' => 'LB',
             'phone' => fake()->numerify('70######'),
             'is_active' => true,

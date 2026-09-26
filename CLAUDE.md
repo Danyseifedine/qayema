@@ -529,18 +529,42 @@ without its Blade file, so a half-finished template never 500s a guest.
 
 ## Conventions & gotchas
 
-- **Content:** category = name + order only. Dish = name, price, ingredients, one
-  image, availability, order. No descriptions, no category images, no tags.
+- **Content:** category = name, an optional one-line description (max 300),
+  and order. Dish = name, price, ingredients, one image, availability, order.
+  No category images, no tags.
+- **Never run `migrate:fresh`, `migrate:refresh`, `db:wipe` or `db:seed` over
+  the local database without asking.** Migrations are edited in place
+  pre-launch, which makes `migrate:fresh` look like the way to apply one — but
+  the local MySQL holds the owner's own working data, binary logging is off,
+  and there are no dumps, so a wipe is unrecoverable. Tests run on in-memory
+  SQLite and need none of this. To apply an in-place column change to the live
+  local DB, ask, or add it with a one-off `Schema::table` in tinker.
 - **Translatable** columns are spatie `{en, ar}` JSON; the owner only edits the
   locale in `restaurants.default_locale`.
-- **Media:** Spatie medialibrary on Cloudflare R2 (`s3`). Temp-upload flow: POST
-  an image → optimized to WebP → parked per-user → promoted by key on the next
-  create/update. The raw upload is never stored.
+- **Media:** Spatie medialibrary on Cloudflare R2, the `r2` disk in
+  `config/filesystems.php`, chosen by `MEDIA_DISK=r2`. Temp-upload flow: POST
+  an image → optimized to WebP → parked per-user on local disk
+  (`storage/app/temp/{user}`) → promoted by key into the media library on the
+  next create/update. The raw upload is never stored. The `r2` disk sets no
+  `visibility` (R2 has no per-object ACLs; the bucket is public through its
+  domain). `phpunit.xml` pins `MEDIA_DISK=public`, so tests can never reach the
+  bucket.
+- **Every promotion goes through `MediaService::replace()`** — the dashboard's
+  `sync()` and onboarding's `saveBranding()` alike. It stores on `MEDIA_DISK`
+  and, if that disk is down or not configured, **falls back to the local
+  `public` disk** and logs a warning (`Media disk failed; …`). Files that fell
+  back stay local; nothing moves them to R2 later. A problem with the file
+  itself (too big, missing, wrong type) is not retried. The old image is
+  removed only *after* the new one is stored — clearing first, as both paths
+  used to, lost the logo whenever the upload then failed.
+- **Keep `throw: false` on the `r2` disk.** The media library saves the row,
+  then copies the file, and only cleans the row up when the copy *returns*
+  false. A disk that throws skips that and leaves a row pointing at nothing.
+  `replace()` also wraps each attempt in a transaction as a second guard.
 - **The `/{slug}` route is a catch-all** declared last in `routes/web.php` and
   constrained against reserved prefixes (`admin`, `api`, `up`, …). Adding a new
   top-level page means adding it *before* that route.
-- **Analytics:** every menu render writes a `menu_sessions` row; `via_qr` comes
-  from the `?qr=1` the QR codes encode. `stats:rollup` prunes after 6 months.
+- **Analytics:** see the Analytics section below.
 - Rate limiters in `AppServiceProvider` (`api`/`mutations`/`uploads`/`auth`/
   `contact`); the high-volume ones feed the `AbuseGuard` auto-ban.
 - Session lifetime is intentionally 1 year (the SPA rides it).
@@ -552,9 +576,128 @@ without its Blade file, so a half-finished template never 500s a guest.
 - Every `api/*` error is `{message, code}` JSON (see `bootstrap/app.php`); a
   rate limiter's custom response arrives as `HttpResponseException` and must pass through.
 
+## Ordering
+
+A guest builds a cart on the public menu and places an order. It is **stored**
+(`orders` + `order_items`) and the guest is then sent to **WhatsApp** with the
+order written out — nothing here is realtime, so the hand-off is what actually
+reaches the owner.
+
+- `App\Services\Global\OrderPlacer` is the only way an order is created. Every
+  dish is re-read scoped to the restaurant and every price comes from the
+  database; a price in the request body is ignored.
+- Order lines carry **their own** `name` and `unit_price`. A dish renamed,
+  repriced or deleted later must not rewrite what was ordered, which is why
+  `order_items.dish_id` is `nullOnDelete`.
+- `POST /{slug}/order` is public, on the `web` group (session + CSRF), limited
+  to 10/min per IP with **`autoBan: false`**: a dining room is one IP.
+- Gated on the `ordering` package flag, which `config/package.php` ships **on**
+  for all four tiers. Off means the menu renders with no cart
+  and the endpoint 404s.
+- The owner reads them at `GET /api/orders`; only `status` is writable.
+
+## Maps
+
+`restaurants.google_maps_url` is the only thing stored; there are no lat/lng
+columns. `App\Services\Global\MapPoint` reads the point back out of that URL
+(`?q=`, `?ll=`, `?query=`, `/@lat,lng,17z`) and builds a **keyless
+OpenStreetMap** embed — Google's needs an API key and a billing account, and
+this page is scanned all day. A shortened `maps.app.goo.gl` link hides its
+coordinates behind a redirect, so it gets the directions button but no map.
+
+It mirrors `parseMapCoordinates` / `mapEmbedUrlFor` in the dashboard
+(`src/features/settings/hooks/use-current-location.ts`) — change one, change
+both.
+
+**The map frame must send a Referer.** OSM's tile policy requires one and
+forbids a restrictive referrer policy, so the iframe sets no `referrerpolicy`
+and uses `sandbox="allow-scripts allow-same-origin"`. A bare `allow-scripts`
+puts the frame in an opaque origin, the tile requests arrive anonymous, and
+every tile comes back **403 Access blocked**. `allow-same-origin` restores
+openstreetmap.org's own origin, not ours, so the frame still cannot reach the
+page. The dashboard's `location-field.tsx` carries the same pair.
+
+## QR studio
+
+The owner's QR code: a plain black-on-white code by default, customizable from
+the dashboard's QR page. The link it encodes (`/{slug}?qr=1`) **never changes
+with the design**, so a printed code keeps working whatever is saved.
+
+- Gated on `qr_studio`, which `config/package.php` ships **on for every tier**
+  for now — per-package customization is to be decided later. When it is, give
+  each editor group (colours, shapes, logo, card) its own flag then.
+- `restaurants.qr_settings` is a **flat design we own** (`dot_style`,
+  `dot_color`, `dot_gradient`, …), not the drawing library's option tree.
+  `Restaurant::qrDesign()` merges it over `qrDefaultDesign()` (the simple QR)
+  and drops any key the defaults no longer know.
+- `App\Services\Global\QrStyle::options()` is the one place a design becomes
+  `qr-code-styling` options. The dashboard mirrors it in
+  `src/features/qr-studio/components/preview/qr-options.ts`; both are tested
+  against the same cases (`tests/Unit/Services/QrStyleTest.php`) — change one,
+  change both. The allowed shapes are QrStyle's constants, which
+  `QrSettingsRequest` validates against.
+- Drawn by `qr-code-styling` 1.9.2 on both sides: npm in the dashboard, and a
+  vendored copy at `public/js/qr-code-styling.js` for the printable card at
+  `/{slug}/qr`. Same library, same options, same code on the table.
+- The logo is sent **inline as a data URL** (`QrStyle::logoDataUrl()`), not as
+  its CDN link: a browser only draws a cross-origin image into a PNG when that
+  domain sends CORS headers, and R2 does not by default.
+- A logo raises error correction to H. Tested decoding showed red corner
+  centres (#EA4335, ~3.9:1 on white) stop a reader finding the code, so the
+  dashboard warns below **4.5:1** for every colour against the background.
+
+## Analytics
+
+- **Visits:** every menu render (not a preview, not a self-referred language
+  switch) writes a `menu_sessions` row with device, browser, OS, the `locale`
+  it opened in, and `via_qr` from the `?qr=1` the QR codes encode.
+- **Guest actions:** `public/js/menu-track.js` batches what guests do into
+  `POST /{slug}/events` (`throttle:menu-events`, never a ban — a dining room
+  shares one IP) → `MenuEventRecorder` → `menu_events`. Types are
+  `App\Enums\MenuEventType`. Links opt in with `data-track="…"` (+
+  `data-track-value`); the cart and the menu navigation dispatch a
+  `qayema:track` DOM event rather than calling the tracker, so a menu without
+  it loses nothing. The recorder drops a dish/category that is not the
+  restaurant's, clears fields a type does not carry, and normalises search
+  terms. Events share the visit's `session_id`, which is what the funnel counts.
+  Recorded on **every** package, so moving up shows history at once. Owner
+  previews load no tracker.
+- **Reading:** `App\Services\Global\MenuStats`. `summary()` (`GET /api/stats`)
+  is every package, ranges `7d`/`30d`; `advanced()` (`GET /api/stats/advanced`)
+  and the `90d`/`all` ranges need the `advanced_analytics` flag (on for
+  Premium and Custom). Days and hours are the restaurant's `timezone` (UTC when
+  unset): rows are grouped by UTC hour with `SUBSTR(ts, 1, 13)` — portable
+  across MySQL and SQLite — and shifted in PHP. Orders and the funnel are null
+  when the package does not take orders; cancelled orders stay out of revenue.
+- `stats:rollup` prunes `menu_sessions` and `menu_events` after 6 months.
+
+## Menu language
+
+The public menu renders in `restaurants.default_locale`, and a guest can ask
+for any other `config('locales.supported')` language with `?lang=`. A query
+parameter rather than a session, so every version has its own shareable,
+indexable URL — `hreflang` tags declare them. An unsupported value falls back
+silently.
+
+Content follows only as far as the owner filled it in: `name`/`ingredients`
+accept `{en, ar}` and require **one** of them, so a dish typed in one language
+shows that language on both menus. Only the interface strings are guaranteed.
+
+A load whose referer is this same menu is **not** recorded as a visit — a
+language switch is one visit continuing, not two.
+
+## Opening hours
+
+`restaurants.opening_hours` is one range per weekday (`null` = closed) and
+`restaurants.timezone` is what makes "open now" mean anything.
+`App\Services\Global\OpeningHours` owns the logic, including a range whose
+close is at or before its open, which runs past midnight.
+
 ## Not yet built
 
 - The dashboard SPA itself (the API it consumes is complete and tested).
+- **Realtime.** Nothing pushes. The dashboard's Orders page polls every 60s
+  while it is open; WhatsApp is the notification.
 - More template designs — only the `classic` view exists.
 - **Taking payment.** Pro/Premium/Custom are requested, not bought: there is no
   checkout, no subscription and no billing provider. An admin assigns a package

@@ -79,6 +79,8 @@ class UserResource extends JsonResource
             ],
             'features' => [
                 'qr_studio' => $entitlements->can(Feature::QrStudio),
+                'ordering' => $entitlements->can(Feature::Ordering),
+                'advanced_analytics' => $entitlements->can(Feature::AdvancedAnalytics),
             ],
         ];
     }
