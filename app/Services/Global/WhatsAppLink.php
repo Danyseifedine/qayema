@@ -56,8 +56,9 @@ class WhatsAppLink
 
     private static function message(Restaurant $restaurant, Order $order): string
     {
-        $locale = $restaurant->default_locale ?: 'ar';
-        $name = $restaurant->getTranslation('name', $locale, false) ?: (string) $restaurant->name;
+        // The labels below come through __(), in the app locale the order
+        // request set from the guest's menu language; the name follows it.
+        $name = MenuLanguages::text($restaurant, 'name', app()->getLocale());
         $symbol = (string) config("currencies.{$restaurant->currency}.symbol", $restaurant->currency);
 
         $lines = [

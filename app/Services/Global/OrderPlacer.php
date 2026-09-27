@@ -24,9 +24,13 @@ class OrderPlacer
      *
      * @throws ValidationException when nothing in the cart can be ordered
      */
-    public function place(Restaurant $restaurant, array $lines, ?string $note = null): Order
+    public function place(Restaurant $restaurant, array $lines, ?string $note = null, ?string $locale = null): Order
     {
-        return DB::transaction(function () use ($restaurant, $lines, $note): Order {
+        // Lines are named in the language the guest ordered in, when it is one
+        // of this menu's; the menu's opening language otherwise.
+        $locale = in_array($locale, $restaurant->menuLanguages(), true) ? (string) $locale : MenuLanguages::default($restaurant);
+
+        return DB::transaction(function () use ($restaurant, $lines, $note, $locale): Order {
             // One query for the whole cart, scoped to this restaurant: a dish
             // id from somewhere else simply is not in the result.
             $dishes = Dish::query()
@@ -36,7 +40,6 @@ class OrderPlacer
                 ->get()
                 ->keyBy('id');
 
-            $locale = $restaurant->default_locale ?: 'ar';
             $items = [];
             $total = '0.00';
 
@@ -54,7 +57,7 @@ class OrderPlacer
                 $items[] = [
                     'dish_id' => $dish->id,
                     // Copied, not looked up: the menu may change tomorrow.
-                    'name' => $dish->getTranslation('name', $locale, false) ?: (string) $dish->name,
+                    'name' => MenuLanguages::text($dish, 'name', $locale),
                     'unit_price' => $unitPrice,
                     'quantity' => $quantity,
                     'line_total' => $lineTotal,

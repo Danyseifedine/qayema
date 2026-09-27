@@ -82,10 +82,9 @@ class AdvancedStatsApiTest extends TestCase
 
         $this->assertSame(array_fill(0, 24, 0), $data['hours']);
         $this->assertSame(array_fill(0, 7, 0), $data['weekdays']);
-        $this->assertSame([], $data['devices']);
+        $this->assertSame([], $data['languages']);
         $this->assertSame(0, $data['actions']['dish_add']);
         $this->assertSame(['visitors' => 0, 'carted' => 0, 'ordered' => 0], $data['funnel']);
-        $this->assertSame(0, $data['orders']['count']);
         $this->assertSame([], $data['top_added']);
     }
 
@@ -123,19 +122,27 @@ class AdvancedStatsApiTest extends TestCase
         $this->assertSame([0, 2, 0, 0, 0, 0, 0], $data['weekdays']);
     }
 
-    public function test_visits_are_broken_down_with_unknown_bucketed(): void
+    public function test_visits_are_counted_by_language_with_unknown_bucketed(): void
     {
         $restaurant = $this->restaurant();
-        $this->visit($restaurant, ['device_type' => 'mobile', 'browser' => 'Safari', 'os' => 'iOS', 'locale' => 'ar']);
-        $this->visit($restaurant, ['device_type' => 'mobile', 'browser' => 'Chrome', 'os' => 'Android', 'locale' => 'ar']);
-        $this->visit($restaurant, ['device_type' => 'desktop', 'browser' => 'Chrome', 'os' => null, 'locale' => 'en']);
+        $this->visit($restaurant, ['locale' => 'ar']);
+        $this->visit($restaurant, ['locale' => 'ar']);
+        $this->visit($restaurant, ['locale' => 'en']);
+        $this->visit($restaurant, ['locale' => null]);
 
-        $data = $this->advanced($restaurant);
+        $this->assertSame(
+            [['key' => 'ar', 'count' => 2], ['key' => 'en', 'count' => 1], ['key' => 'unknown', 'count' => 1]],
+            $this->advanced($restaurant)['languages'],
+        );
+    }
 
-        $this->assertSame([['key' => 'mobile', 'count' => 2], ['key' => 'desktop', 'count' => 1]], $data['devices']);
-        $this->assertSame([['key' => 'Chrome', 'count' => 2], ['key' => 'Safari', 'count' => 1]], $data['browsers']);
-        $this->assertContains(['key' => 'unknown', 'count' => 1], $data['systems']);
-        $this->assertSame([['key' => 'ar', 'count' => 2], ['key' => 'en', 'count' => 1]], $data['languages']);
+    public function test_it_leaves_out_devices_and_order_money(): void
+    {
+        $data = $this->advanced($this->restaurant());
+
+        foreach (['devices', 'browsers', 'systems', 'orders'] as $key) {
+            $this->assertArrayNotHasKey($key, $data);
+        }
     }
 
     public function test_guest_actions_are_counted_by_type(): void
@@ -193,34 +200,6 @@ class AdvancedStatsApiTest extends TestCase
         $this->assertSame([['term' => 'sushi', 'count' => 1]], $data['missed_searches']);
     }
 
-    public function test_orders_add_up_without_the_cancelled_ones(): void
-    {
-        $restaurant = $this->restaurant(['currency' => 'USD']);
-        $dish = Dish::factory()->for($restaurant)->create(['name' => ['en' => 'Falafel']]);
-
-        $kept = Order::factory()->for($restaurant)->create(['total' => '30.00']);
-        $kept->items()->create(['dish_id' => $dish->id, 'name' => 'Falafel', 'unit_price' => '10.00', 'quantity' => 3, 'line_total' => '30.00']);
-
-        $other = Order::factory()->for($restaurant)->create(['total' => '10.00']);
-        // Its dish was deleted since: it still counts, under the name it was ordered by.
-        $other->items()->create(['dish_id' => null, 'name' => 'Old special', 'unit_price' => '10.00', 'quantity' => 1, 'line_total' => '10.00']);
-
-        $cancelled = Order::factory()->for($restaurant)->create(['total' => '99.00', 'status' => 'cancelled']);
-        $cancelled->items()->create(['dish_id' => $dish->id, 'name' => 'Falafel', 'unit_price' => '99.00', 'quantity' => 9, 'line_total' => '99.00']);
-
-        $orders = $this->advanced($restaurant)['orders'];
-
-        $this->assertSame(2, $orders['count']);
-        $this->assertSame(1, $orders['cancelled']);
-        $this->assertEquals(40, $orders['revenue']);
-        $this->assertEquals(20, $orders['average']);
-        $this->assertSame('USD', $orders['currency']);
-        $this->assertEquals([
-            ['name' => 'Falafel', 'quantity' => 3, 'revenue' => 30],
-            ['name' => 'Old special', 'quantity' => 1, 'revenue' => 10],
-        ], $orders['top_dishes']);
-    }
-
     public function test_the_funnel_runs_from_visit_to_cart_to_order(): void
     {
         $restaurant = $this->restaurant();
@@ -239,14 +218,11 @@ class AdvancedStatsApiTest extends TestCase
         $this->assertSame(['visitors' => 3, 'carted' => 2, 'ordered' => 1], $this->advanced($restaurant)['funnel']);
     }
 
-    public function test_orders_and_funnel_are_null_when_the_package_does_not_take_orders(): void
+    public function test_the_funnel_is_null_when_the_package_does_not_take_orders(): void
     {
         Package::default()->setFeature(Feature::Ordering, 0);
 
-        $data = $this->advanced($this->restaurant());
-
-        $this->assertNull($data['orders']);
-        $this->assertNull($data['funnel']);
+        $this->assertNull($this->advanced($this->restaurant())['funnel']);
     }
 
     public function test_one_restaurants_numbers_never_include_anothers(): void
@@ -254,15 +230,15 @@ class AdvancedStatsApiTest extends TestCase
         $mine = $this->restaurant();
         $theirs = $this->restaurant();
         $dish = Dish::factory()->for($theirs)->create();
-        $this->visit($theirs, ['device_type' => 'mobile']);
+        $this->visit($theirs, ['locale' => 'ar']);
         $this->event($theirs, MenuEventType::DishAdd, ['dish_id' => $dish->id]);
-        Order::factory()->for($theirs)->create(['total' => '50.00']);
+        Order::factory()->for($theirs)->create();
 
         $data = $this->advanced($mine);
 
-        $this->assertSame([], $data['devices']);
+        $this->assertSame([], $data['languages']);
         $this->assertSame(0, $data['actions']['dish_add']);
         $this->assertSame([], $data['top_added']);
-        $this->assertSame(0, $data['orders']['count']);
+        $this->assertSame(0, $data['funnel']['ordered']);
     }
 }

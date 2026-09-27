@@ -8,12 +8,15 @@
     template row's slug.
 --}}
 @php
-    $isRtl = in_array($locale, config('locales.rtl', ['ar']), true);
+    $isRtl = \App\Services\Global\MenuLanguages::isRtl($locale);
+    // Every piece of text is this language, else English — the language every
+    // name is required in — so nothing on the menu is ever blank.
+    $text = fn ($model, string $field): string => \App\Services\Global\MenuLanguages::text($model, $field, $locale);
     $logo = $restaurant->getFirstMediaUrl('logo') ?: null;
     $cover = $restaurant->getFirstMediaUrl('cover_image') ?: null;
     $currency = config("currencies.{$restaurant->currency}.symbol", $restaurant->currency);
-    $name = $restaurant->getTranslation('name', $locale, false) ?: $restaurant->name;
-    $description = $restaurant->getTranslation('description', $locale, false);
+    $name = $text($restaurant, 'name');
+    $description = $text($restaurant, 'description');
     $todayRange = $hours->todayRange();
 
     $accent = $settings['primary_color'] ?? '#1F6FEB';
@@ -26,9 +29,13 @@
     $rgb = strlen($hex) === 6 && ctype_xdigit($hex) ? array_map('hexdec', str_split($hex, 2)) : [31, 111, 235];
     $accentInk = (0.2126 * $rgb[0] + 0.7152 * $rgb[1] + 0.0722 * $rgb[2]) / 255 > 0.62 ? '#111418' : '#FFFFFF';
 
-    // Quotes cannot go through {{ }} — it escapes them to &#039; and the whole
-    // CSS declaration is then invalid.
-    $fontStack = $isRtl ? "'El Messiri'" : "'Inter'";
+    // A script Inter does not cover (Arabic, Chinese, Devanagari) gets its own
+    // font, loaded only on that language's menu. Quotes cannot go through
+    // {{ }} — it escapes them to &#039; and the whole CSS declaration is then
+    // invalid.
+    $scriptFont = \App\Services\Global\MenuLanguages::font($locale);
+    $fontStack = $scriptFont ? "'{$scriptFont}', 'Inter'" : "'Inter'";
+    $fontFamilies = 'family=Inter:wght@400;500;600;700'.($scriptFont ? '&family='.str_replace(' ', '+', $scriptFont).':wght@400;500;600;700' : '');
 
     $icons = [
         'clock' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/><path d="M12 7v5l3 3"/></svg>',
@@ -117,7 +124,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="{{ $accent }}">
     <title>{{ $name }}</title>
-    <meta name="description" content="{{ $description ?? $name }}">
+    <meta name="description" content="{{ $description ?: $name }}">
 
     @foreach ($locales as $code => $link)
         <link rel="alternate" hreflang="{{ $code }}" href="{{ $link['url'] }}">
@@ -126,7 +133,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=El+Messiri:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?{!! $fontFamilies !!}&display=swap" rel="stylesheet">
 
     <style>
         :root {
@@ -721,7 +728,7 @@
                     <button type="button" class="tab" data-tab="all" aria-current="true">{{ __('All') }}</button>
                     @foreach ($visible as $category)
                         <button type="button" class="tab" data-tab="category-{{ $category->id }}" aria-current="false">
-                            {{ $category->getTranslation('name', $locale, false) ?: $category->name }}
+                            {{ $text($category, 'name') }}
                         </button>
                     @endforeach
                 </div>
@@ -731,9 +738,9 @@
         <div class="sections">
             @forelse ($visible as $category)
                 <section class="category" id="category-{{ $category->id }}">
-                    @php $categoryDescription = $category->getTranslation('description', $locale, false); @endphp
+                    @php $categoryDescription = $text($category, 'description'); @endphp
                     <div class="category-head">
-                        <h2>{{ $category->getTranslation('name', $locale, false) ?: $category->name }}</h2>
+                        <h2>{{ $text($category, 'name') }}</h2>
                         @if ($categoryDescription)
                             <p>{{ $categoryDescription }}</p>
                         @endif
@@ -742,8 +749,8 @@
                         @foreach ($category->dishes as $dish)
                             @php
                                 $image = $dish->getFirstMediaUrl('image') ?: null;
-                                $ingredients = $dish->getTranslation('ingredients', $locale, false);
-                                $dishName = $dish->getTranslation('name', $locale, false) ?: $dish->name;
+                                $ingredients = $text($dish, 'ingredients');
+                                $dishName = $text($dish, 'name');
                             @endphp
                             <article class="dish" data-dish="{{ $dish->id }}" data-name="{{ $dishName }}"
                                      data-image="{{ $image }}"
@@ -950,6 +957,7 @@
     <script>
         window.QAYEMA_MENU = {
             orderUrl: @js(route('public.order', $restaurant->slug)),
+            locale: @js($locale),
             currency: @js($currency),
             storageKey: @js('qayema-cart-'.$restaurant->slug),
             icons: { plus: @js($icons['plus']), minus: @js($icons['minus']) },

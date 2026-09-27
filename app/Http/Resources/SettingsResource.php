@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Services\Global\MenuLanguages;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -15,10 +16,13 @@ class SettingsResource extends JsonResource
     {
         return [
             // Editable everywhere except the slug, which is immutable once set.
-            // `default_locale` tells the SPA which translation the owner manages.
-            'name' => $this->translations('name'),
-            'description' => $this->translations('description'),
-            'default_locale' => $this->default_locale ?: 'ar',
+            // Text comes as one entry per menu language: English, then the
+            // second language when there is one.
+            'languages' => $this->menuLanguages(),
+            'second_locale' => $this->menuLanguages()[1] ?? null,
+            'default_locale' => MenuLanguages::default($this->resource),
+            'name' => MenuLanguages::map($this->resource, 'name', $this->menuLanguages()),
+            'description' => MenuLanguages::map($this->resource, 'description', $this->menuLanguages()),
             'slug' => $this->slug,
             'google_maps_url' => $this->google_maps_url,
             'phone' => $this->phone,
@@ -30,17 +34,6 @@ class SettingsResource extends JsonResource
             'timezone' => $this->timezone ?: config('app.timezone', 'UTC'),
             'logo_url' => $this->getFirstMediaUrl('logo') ?: null,
             'cover_url' => $this->getFirstMediaUrl('cover_image') ?: null,
-        ];
-    }
-
-    /**
-     * @return array<string, string|null>
-     */
-    private function translations(string $attribute): array
-    {
-        return [
-            'en' => $this->getTranslation($attribute, 'en', false) ?: null,
-            'ar' => $this->getTranslation($attribute, 'ar', false) ?: null,
         ];
     }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\Validator;
+use App\Services\Global\MenuLanguages;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreCategoryRequest extends FormRequest
@@ -17,31 +17,28 @@ class StoreCategoryRequest extends FormRequest
     }
 
     /**
-     * @return array<string, array<int, string>>
+     * @return array<string, mixed>
      */
     public function rules(): array
     {
+        // One entry per menu language; English is the one a name needs.
+        $languages = MenuLanguages::forOwner($this->user());
+
         return [
             'name' => ['required', 'array'],
-            'name.en' => ['nullable', 'string', 'max:255'],
-            'name.ar' => ['nullable', 'string', 'max:255'],
+            ...MenuLanguages::rules('name', $languages, 255, 'required'),
             'description' => ['nullable', 'array'],
-            'description.en' => ['nullable', 'string', 'max:300'],
-            'description.ar' => ['nullable', 'string', 'max:300'],
+            ...MenuLanguages::rules('description', $languages, 300),
         ];
     }
 
     /**
-     * A category needs a name in at least one language.
+     * @return array<string, string>
      */
-    public function withValidator(Validator $validator): void
+    public function messages(): array
     {
-        $validator->after(function (Validator $validator): void {
-            $name = (array) $this->input('name', []);
-
-            if (blank($name['en'] ?? null) && blank($name['ar'] ?? null)) {
-                $validator->errors()->add('name', __('A category name is required in at least one language.'));
-            }
-        });
+        return [
+            'name.en.required' => __('A category name is required in English.'),
+        ];
     }
 }

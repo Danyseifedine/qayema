@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Services\Global\MenuLanguages;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -17,13 +18,19 @@ class UpdateSettingsRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            // Written to the restaurant's default locale. The slug is immutable,
-            // so it is intentionally not accepted here. The /u regex rejects
-            // interior control characters and malformed UTF-8, so a hostile name
-            // can't corrupt the JSON column or 500 the save.
-            'name' => ['required', 'string', 'min:2', 'max:255', 'regex:/^[^\x00-\x1F\x7F]+$/u'],
-            'description' => ['nullable', 'string', 'max:2000'],
+        $second = $this->secondLocale();
+        $languages = $second === null ? [MenuLanguages::MAIN] : [MenuLanguages::MAIN, $second];
+
+        $rules = [
+            // The menu's languages: English always, plus an optional second
+            // one from the list. The menu opens in English or that second one.
+            'second_locale' => ['nullable', 'string', Rule::in(MenuLanguages::secondChoices())],
+            'default_locale' => ['nullable', 'string', Rule::in($languages)],
+
+            // One entry per menu language, English required. The slug is
+            // immutable, so it is intentionally not accepted here.
+            'name' => ['required', 'array'],
+            'description' => ['nullable', 'array'],
             // Where the restaurant is. A link rather than a written address:
             // it is what a guest taps for directions, and the dashboard can
             // fill it from the owner's own position.
@@ -51,6 +58,33 @@ class UpdateSettingsRequest extends FormRequest
             'opening_hours.*.close' => ['required_with:opening_hours.*.open', 'nullable', 'date_format:H:i'],
             'timezone' => ['nullable', 'string', 'timezone'],
         ];
+
+        foreach ($languages as $code) {
+            // The /u regex rejects interior control characters and malformed
+            // UTF-8, so a hostile name can't corrupt the JSON column or 500
+            // the save.
+            $rules["name.{$code}"] = [
+                $code === MenuLanguages::MAIN ? 'required' : 'nullable',
+                'string', 'min:2', 'max:255', 'regex:/^[^\x00-\x1F\x7F]+$/u',
+            ];
+            $rules["description.{$code}"] = ['nullable', 'string', 'max:2000'];
+        }
+
+        return $rules;
+    }
+
+    /**
+     * The second language this save leaves the menu with: the one asked for,
+     * null when it was cleared, and the current one when the request does not
+     * mention it at all.
+     */
+    public function secondLocale(): ?string
+    {
+        $second = $this->exists('second_locale')
+            ? $this->input('second_locale')
+            : $this->user()?->restaurant?->second_locale;
+
+        return in_array($second, MenuLanguages::secondChoices(), true) ? $second : null;
     }
 
     /**
@@ -63,6 +97,9 @@ class UpdateSettingsRequest extends FormRequest
             'country_code.alpha' => __('Please choose a country from the list.'),
             'phone.regex' => __('Please enter a valid phone number using digits only.'),
             'currency.in' => __('Please choose a currency from the list.'),
+            'second_locale.in' => __('Please choose a language from the list.'),
+            'default_locale.in' => __('The menu can only open in English or its second language.'),
+            'name.en.required' => __('The restaurant name is required in English.'),
         ];
     }
 }

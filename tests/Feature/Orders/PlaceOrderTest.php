@@ -39,6 +39,37 @@ class PlaceOrderTest extends TestCase
         ]);
     }
 
+    public function test_the_whatsapp_message_comes_in_the_guests_language(): void
+    {
+        $shop = $this->shop(['second_locale' => 'fr', 'country_code' => 'LB', 'phone' => '70123456']);
+        $dish = $this->dish($shop, 'Bread', '2.00');
+        $dish->setTranslation('name', 'fr', 'Pain')->save();
+
+        $response = $this->postJson(route('public.order', $shop->slug), [
+            'items' => [['dish_id' => $dish->id, 'quantity' => 1]],
+            'locale' => 'fr',
+        ])->assertCreated();
+
+        $message = rawurldecode((string) parse_url($response->json('data.whatsapp_url'), PHP_URL_QUERY));
+        $this->assertStringContainsString('Nouvelle commande', $message);
+        $this->assertStringContainsString('Pain', $message);
+        $this->assertSame('Pain', $shop->orders()->first()->items()->first()->name);
+    }
+
+    public function test_a_language_the_menu_does_not_have_is_ignored(): void
+    {
+        $shop = $this->shop(['second_locale' => 'fr', 'country_code' => 'LB', 'phone' => '70123456']);
+        $dish = $this->dish($shop, 'Bread', '2.00');
+
+        $response = $this->postJson(route('public.order', $shop->slug), [
+            'items' => [['dish_id' => $dish->id, 'quantity' => 1]],
+            'locale' => 'de',
+        ])->assertCreated();
+
+        $message = rawurldecode((string) parse_url($response->json('data.whatsapp_url'), PHP_URL_QUERY));
+        $this->assertStringContainsString('New order', $message);
+    }
+
     public function test_an_order_is_stored_with_its_lines(): void
     {
         $shop = $this->shop(['default_locale' => 'en']);

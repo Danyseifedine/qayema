@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Services\Global\MenuLanguages;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -17,14 +18,9 @@ class DishResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'name' => [
-                'en' => $this->getTranslation('name', 'en', false) ?: null,
-                'ar' => $this->getTranslation('name', 'ar', false) ?: null,
-            ],
-            'ingredients' => [
-                'en' => $this->getTranslation('ingredients', 'en', false) ?: null,
-                'ar' => $this->getTranslation('ingredients', 'ar', false) ?: null,
-            ],
+            // One entry per menu language (English, then the second one).
+            'name' => MenuLanguages::map($this->resource, 'name', MenuLanguages::forOwner($request->user())),
+            'ingredients' => MenuLanguages::map($this->resource, 'ingredients', MenuLanguages::forOwner($request->user())),
             'price' => $this->price !== null ? (string) $this->price : null,
             'is_available' => (bool) $this->is_available,
             'display_order' => $this->display_order,

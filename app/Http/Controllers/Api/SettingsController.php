@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateSettingsRequest;
 use App\Http\Resources\SettingsResource;
 use App\Models\Restaurant;
 use App\Services\Global\MediaService;
+use App\Services\Global\MenuLanguages;
 use App\Services\Global\OpeningHours;
 use Illuminate\Http\Request;
 
@@ -30,12 +31,19 @@ class SettingsController extends Controller
     {
         $restaurant = $this->restaurant($request);
 
-        // Translatable fields are written to the restaurant's own default locale
-        // — the single language the owner manages — matching onboarding.
-        $locale = $restaurant->default_locale ?: 'ar';
+        // The languages first, so the text below is written for the menu's
+        // new languages. Text in a language the owner switched away from is
+        // left in place, hidden, for if they switch back.
+        $restaurant->second_locale = $request->secondLocale();
+        $languages = $restaurant->menuLanguages();
 
-        $restaurant->setTranslation('name', $locale, $request->validated('name'));
-        $restaurant->setTranslation('description', $locale, (string) $request->validated('description'));
+        // Dropping the second language takes the menu back to opening in
+        // English; so does a default that is no longer one of its languages.
+        $default = $request->validated('default_locale') ?? $restaurant->default_locale;
+        $restaurant->default_locale = in_array($default, $languages, true) ? $default : MenuLanguages::MAIN;
+
+        MenuLanguages::fill($restaurant, 'name', MenuLanguages::input($request, 'name', $languages), $languages);
+        MenuLanguages::fill($restaurant, 'description', MenuLanguages::input($request, 'description', $languages), $languages);
 
         $restaurant->fill([
             'opening_hours' => OpeningHours::normalise((array) $request->validated('opening_hours')),

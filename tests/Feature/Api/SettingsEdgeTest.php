@@ -12,15 +12,15 @@ class SettingsEdgeTest extends TestCase
 
     private function payload(array $overrides = []): array
     {
-        return array_merge(['name' => 'My Place', 'phone' => '+961 70 123 456', 'currency' => 'USD'], $overrides);
+        return array_merge(['name' => ['en' => 'My Place'], 'phone' => '+961 70 123 456', 'currency' => 'USD'], $overrides);
     }
 
     public function test_description_length_limit(): void
     {
         $owner = $this->owner();
 
-        $this->actingAs($owner->user)->putJson(route('api.settings.update'), $this->payload(['description' => str_repeat('x', 2000)]))->assertOk();
-        $this->actingAs($owner->user)->putJson(route('api.settings.update'), $this->payload(['description' => str_repeat('x', 2001)]))->assertStatus(422)->assertJsonValidationErrors('description');
+        $this->actingAs($owner->user)->putJson(route('api.settings.update'), $this->payload(['description' => ['en' => str_repeat('x', 2000)]]))->assertOk();
+        $this->actingAs($owner->user)->putJson(route('api.settings.update'), $this->payload(['description' => ['en' => str_repeat('x', 2001)]]))->assertStatus(422)->assertJsonValidationErrors('description.en');
     }
 
     public function test_a_written_address_is_not_accepted_any_more(): void
@@ -55,7 +55,8 @@ class SettingsEdgeTest extends TestCase
         $this->actingAs($owner->user)
             ->putJson(route('api.settings.update'), $this->payload(['google_maps_url' => null, 'description' => null]))
             ->assertOk()
-            ->assertJsonPath('data.google_maps_url', null);
+            ->assertJsonPath('data.google_maps_url', null)
+            ->assertJsonPath('data.description', ['en' => null, 'ar' => null]);
     }
 
     public function test_country_code_is_two_ascii_letters_in_either_case(): void
@@ -107,24 +108,80 @@ class SettingsEdgeTest extends TestCase
         $this->assertCount(1, $owner->fresh()->getMedia('cover_image'));
     }
 
-    public function test_the_other_locales_name_is_preserved_when_editing_the_default_one(): void
+    public function test_text_in_a_language_switched_away_from_is_kept_hidden(): void
     {
-        $owner = $this->owner(['default_locale' => 'ar', 'name' => ['ar' => 'قديم', 'en' => 'Kept English']]);
+        // Arabic today, French before: the French name must survive an edit
+        // and come back when French does.
+        $owner = $this->owner(['second_locale' => 'ar', 'name' => ['en' => 'Olive', 'fr' => 'Olivier']]);
 
-        $this->actingAs($owner->user)->putJson(route('api.settings.update'), $this->payload(['name' => 'جديد']))->assertOk();
+        $this->actingAs($owner->user)
+            ->putJson(route('api.settings.update'), $this->payload(['name' => ['en' => 'Olive', 'ar' => 'زيتون']]))
+            ->assertOk()
+            ->assertJsonPath('data.name', ['en' => 'Olive', 'ar' => 'زيتون']);
 
-        $owner->refresh();
-        $this->assertSame('جديد', $owner->getTranslation('name', 'ar'));
-        $this->assertSame('Kept English', $owner->getTranslation('name', 'en'));
+        $this->assertSame('Olivier', $owner->fresh()->getTranslation('name', 'fr', false));
+
+        $this->actingAs($owner->user)
+            ->putJson(route('api.settings.update'), $this->payload(['second_locale' => 'fr', 'name' => ['en' => 'Olive']]))
+            ->assertOk()
+            ->assertJsonPath('data.languages', ['en', 'fr'])
+            ->assertJsonPath('data.name', ['en' => 'Olive', 'fr' => 'Olivier']);
+
+        $this->assertSame('زيتون', $owner->fresh()->getTranslation('name', 'ar', false), 'Arabic is kept too.');
     }
 
-    public function test_default_locale_cannot_be_changed_after_onboarding(): void
+    public function test_the_menu_can_open_in_its_second_language(): void
     {
-        $owner = $this->owner(['default_locale' => 'ar']);
+        $owner = $this->owner(['second_locale' => 'ar', 'default_locale' => 'en']);
 
-        $this->actingAs($owner->user)->putJson(route('api.settings.update'), $this->payload(['default_locale' => 'en']))->assertOk();
+        $this->actingAs($owner->user)
+            ->putJson(route('api.settings.update'), $this->payload(['default_locale' => 'ar']))
+            ->assertOk()
+            ->assertJsonPath('data.default_locale', 'ar');
+    }
 
-        $this->assertSame('ar', $owner->fresh()->default_locale);
+    public function test_the_menu_cannot_open_in_a_language_it_is_not_written_in(): void
+    {
+        $owner = $this->owner(['second_locale' => 'ar']);
+
+        $this->actingAs($owner->user)
+            ->putJson(route('api.settings.update'), $this->payload(['default_locale' => 'fr']))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('default_locale');
+    }
+
+    public function test_only_a_language_from_the_list_can_be_the_second_one(): void
+    {
+        $owner = $this->owner();
+
+        foreach (['en', 'xx', 'klingon'] as $bad) {
+            $this->actingAs($owner->user)
+                ->putJson(route('api.settings.update'), $this->payload(['second_locale' => $bad]))
+                ->assertStatus(422, $bad)
+                ->assertJsonValidationErrors('second_locale');
+        }
+    }
+
+    public function test_dropping_the_second_language_opens_the_menu_in_english(): void
+    {
+        $owner = $this->owner(['second_locale' => 'ar', 'default_locale' => 'ar']);
+
+        $this->actingAs($owner->user)
+            ->putJson(route('api.settings.update'), $this->payload(['second_locale' => null]))
+            ->assertOk()
+            ->assertJsonPath('data.languages', ['en'])
+            ->assertJsonPath('data.second_locale', null)
+            ->assertJsonPath('data.default_locale', 'en');
+    }
+
+    public function test_a_save_that_does_not_mention_the_languages_keeps_them(): void
+    {
+        $owner = $this->owner(['second_locale' => 'fr', 'default_locale' => 'fr']);
+
+        $this->actingAs($owner->user)->putJson(route('api.settings.update'), $this->payload())->assertOk();
+
+        $this->assertSame('fr', $owner->fresh()->second_locale);
+        $this->assertSame('fr', $owner->fresh()->default_locale);
     }
 
     public function test_is_active_cannot_be_flipped_by_the_owner(): void

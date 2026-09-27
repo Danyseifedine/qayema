@@ -189,15 +189,15 @@ class CategoryTest extends TestCase
             ->assertJsonValidationErrors('name');
     }
 
-    public function test_store_succeeds_with_only_an_arabic_name(): void
+    public function test_a_name_in_the_second_language_alone_is_not_enough(): void
     {
+        // English is every menu's main language: the one a name must have.
         [$user] = $this->owner();
 
         $this->actingAs($user)
             ->postJson(route('api.categories.store'), ['name' => ['ar' => 'مقبلات']])
-            ->assertCreated()
-            ->assertJsonPath('data.name.ar', 'مقبلات')
-            ->assertJsonPath('data.name.en', null);
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('name.en');
     }
 
     public function test_store_rejects_a_blank_name_in_every_language(): void
@@ -207,7 +207,7 @@ class CategoryTest extends TestCase
         $this->actingAs($user)
             ->postJson(route('api.categories.store'), ['name' => ['en' => '', 'ar' => '']])
             ->assertStatus(422)
-            ->assertJsonValidationErrors('name');
+            ->assertJsonValidationErrors('name.en');
     }
 
     public function test_store_rejects_an_overlong_name(): void

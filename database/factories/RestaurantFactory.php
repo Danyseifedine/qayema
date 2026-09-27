@@ -28,6 +28,8 @@ class RestaurantFactory extends Factory
             'is_active' => true,
             'currency' => 'USD',
             'default_locale' => 'en',
+            // What onboarding gives a new restaurant.
+            'second_locale' => 'ar',
         ];
     }
 

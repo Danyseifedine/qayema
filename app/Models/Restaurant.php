@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\Feature;
 use App\Services\Global\Entitlements;
+use App\Services\Global\MenuLanguages;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -33,6 +34,14 @@ class Restaurant extends Model implements HasMedia
     /** @var string[] */
     public array $translatable = ['name', 'description'];
 
+    /**
+     * Dashboard sections an owner may switch off. The core ones — overview,
+     * menu, templates, restaurant, package, profile — always stay.
+     *
+     * @var array<int, string>
+     */
+    public const HIDEABLE_SECTIONS = ['analytics', 'orders', 'qr', 'social-links'];
+
     protected $fillable = [
         'user_id',
         'template_id',
@@ -49,9 +58,11 @@ class Restaurant extends Model implements HasMedia
         'timezone',
         'currency',
         'default_locale',
+        'second_locale',
         'is_active',
         'template_settings',
         'qr_settings',
+        'hidden_sections',
     ];
 
     protected function casts(): array
@@ -63,6 +74,7 @@ class Restaurant extends Model implements HasMedia
             'package_ends_at' => 'datetime',
             'template_settings' => 'array',
             'qr_settings' => 'array',
+            'hidden_sections' => 'array',
         ];
     }
 
@@ -161,6 +173,26 @@ class Restaurant extends Model implements HasMedia
         }
 
         return Package::default();
+    }
+
+    /**
+     * English, then the second language when there is one.
+     *
+     * @return array<int, string>
+     */
+    public function menuLanguages(): array
+    {
+        return MenuLanguages::for($this);
+    }
+
+    /**
+     * The sections this owner switched off, limited to ones that can be.
+     *
+     * @return array<int, string>
+     */
+    public function hiddenSections(): array
+    {
+        return array_values(array_intersect(self::HIDEABLE_SECTIONS, (array) $this->hidden_sections));
     }
 
     public function entitlements(): Entitlements

@@ -50,7 +50,7 @@ return [
                 'social_link_limit' => 2,
                 'qr_studio' => 1,
                 'ordering' => 1,
-                'advanced_analytics' => 0,
+                'advanced_analytics' => 1,
             ],
         ],
         [
@@ -70,7 +70,7 @@ return [
                 'social_link_limit' => 6,
                 'qr_studio' => 1,
                 'ordering' => 1,
-                'advanced_analytics' => 0,
+                'advanced_analytics' => 1,
             ],
         ],
         [

@@ -29,9 +29,10 @@ class RestaurantsTable
 
                 TextColumn::make('name')
                     ->placeholder('N/A')
+                    // The whole JSON, so a name matches in whichever language
+                    // the owner wrote it.
                     ->searchable(query: fn ($query, string $search) => $query
-                        ->where('name->ar', 'like', "%{$search}%")
-                        ->orWhere('name->en', 'like', "%{$search}%"))
+                        ->where('name', 'like', "%{$search}%"))
                     ->weight('bold'),
 
                 TextColumn::make('user.name')

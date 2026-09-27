@@ -79,7 +79,7 @@ class MenuLocaleTest extends TestCase
 
         $html = $this->get($base)->assertOk()->getContent();
 
-        foreach (config('locales.supported') as $code) {
+        foreach ($restaurant->menuLanguages() as $code) {
             $this->assertStringContainsString('hreflang="'.$code.'"', $html);
             $this->assertStringContainsString($base.'?lang='.$code, $html);
         }
@@ -90,6 +90,78 @@ class MenuLocaleTest extends TestCase
         $this->assertStringContainsString('class="pop-item"', $html);
         $this->assertStringContainsString('lang="en"', $html);
         $this->assertStringContainsString('aria-current="true"', $html);
+    }
+
+    public function test_a_french_menu_speaks_french_and_offers_only_its_own_languages(): void
+    {
+        $restaurant = $this->shop('fr');
+        $restaurant->update(['second_locale' => 'fr']);
+        Dish::query()->first()->setTranslation('name', 'fr', 'Bol maison')->save();
+
+        $html = $this->get(route('public.menu', $restaurant->slug))
+            ->assertOk()
+            ->assertSee('<html lang="fr" dir="ltr">', false)
+            ->assertSee('Bol maison')
+            ->assertSee('Rechercher dans le menu')
+            // The category has no French name, so it shows the English one.
+            ->assertSee('Plates')
+            ->getContent();
+
+        $this->assertStringContainsString('hreflang="en"', $html);
+        $this->assertStringContainsString('hreflang="fr"', $html);
+        $this->assertStringNotContainsString('hreflang="ar"', $html, 'Arabic text is kept, but not offered.');
+    }
+
+    public function test_a_language_the_menu_is_not_written_in_opens_the_default_one(): void
+    {
+        $restaurant = $this->shop('fr');
+        $restaurant->update(['second_locale' => 'fr']);
+
+        // The dish still has Arabic text from before, but Arabic is not one of
+        // this menu's languages any more.
+        $this->get(route('public.menu', $restaurant->slug).'?lang=ar')
+            ->assertOk()
+            ->assertSee('<html lang="fr"', false)
+            ->assertDontSee('صحن البيت');
+    }
+
+    public function test_an_english_only_menu_has_no_language_switcher(): void
+    {
+        $restaurant = $this->shop('en');
+        $restaurant->update(['second_locale' => null]);
+
+        $this->get(route('public.menu', $restaurant->slug))
+            ->assertOk()
+            ->assertDontSee('id="pop-lang"', false)
+            ->assertDontSee('hreflang="ar"', false);
+    }
+
+    public function test_text_missing_in_the_second_language_shows_in_english(): void
+    {
+        $restaurant = $this->shop('ar');
+        Dish::factory()->create([
+            'restaurant_id' => $restaurant->id,
+            'category_id' => Category::query()->first()->id,
+            'name' => ['en' => 'Lemonade'],
+            'price' => '3.00',
+        ]);
+
+        $this->get(route('public.menu', $restaurant->slug))
+            ->assertOk()
+            ->assertSee('صحن البيت')
+            ->assertSee('Lemonade');
+    }
+
+    public function test_chinese_loads_a_font_that_has_its_characters(): void
+    {
+        $restaurant = $this->shop('zh');
+        $restaurant->update(['second_locale' => 'zh']);
+
+        $this->get(route('public.menu', $restaurant->slug))
+            ->assertOk()
+            ->assertSee('family=Noto+Sans+SC', false)
+            ->assertSee('搜索菜单')
+            ->assertDontSee('El+Messiri', false);
     }
 
     public function test_a_language_switch_is_not_counted_as_a_second_visit(): void

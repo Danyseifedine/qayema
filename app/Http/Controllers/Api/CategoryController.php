@@ -10,6 +10,7 @@ use App\Http\Resources\CategoryResource;
 use App\Models\Category;
 use App\Models\Restaurant;
 use App\Services\Global\DisplayOrder;
+use App\Services\Global\MenuLanguages;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -58,10 +59,11 @@ class CategoryController extends Controller
             }
 
             $category = new Category([
-                'name' => $this->localeMap($request->validated('name')),
-                'description' => $this->localeMap($request->validated('description')),
                 'display_order' => (int) $locked->categories()->max('display_order') + 1,
             ]);
+            $languages = $locked->menuLanguages();
+            MenuLanguages::fill($category, 'name', MenuLanguages::input($request, 'name', $languages), $languages);
+            MenuLanguages::fill($category, 'description', MenuLanguages::input($request, 'description', $languages), $languages);
             $category->restaurant()->associate($locked);
             $category->save();
 
@@ -84,15 +86,12 @@ class CategoryController extends Controller
     {
         $this->authorize('update', $category);
 
-        // Only replace a field when the client actually sent it — otherwise an
-        // empty map would wipe every locale.
-        if ($request->has('name')) {
-            $category->name = $this->localeMap($request->validated('name'));
-        }
-
-        if ($request->has('description')) {
-            $category->description = $this->localeMap($request->validated('description'));
-        }
+        // Only the menu's current languages are written. Text in a language
+        // the owner has switched away from stays, hidden, for if they switch
+        // back.
+        $languages = $category->restaurant->menuLanguages();
+        MenuLanguages::fill($category, 'name', MenuLanguages::input($request, 'name', $languages), $languages);
+        MenuLanguages::fill($category, 'description', MenuLanguages::input($request, 'description', $languages), $languages);
 
         $category->save();
 
@@ -144,22 +143,5 @@ class CategoryController extends Controller
         abort_if($restaurant === null, 403);
 
         return $restaurant;
-    }
-
-    /**
-     * Reduce a validated {en, ar} input to the non-empty locales Spatie should
-     * store. Empty/absent locales are dropped so they don't overwrite with "".
-     *
-     * @param  array<string, string|null>|null  $input
-     * @return array<string, string>
-     */
-    private function localeMap(?array $input): array
-    {
-        $input ??= [];
-
-        return array_filter([
-            'en' => trim((string) ($input['en'] ?? '')),
-            'ar' => trim((string) ($input['ar'] ?? '')),
-        ], static fn (string $value): bool => $value !== '');
     }
 }

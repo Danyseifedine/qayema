@@ -341,6 +341,9 @@
                     items: current.map(function (line) {
                         return { dish_id: Number(line.id), quantity: line.quantity };
                     }),
+                    // The language the guest is reading, so the WhatsApp
+                    // message and any error come back in it.
+                    locale: config.locale,
                 }),
             })
             .then(function (response) {

@@ -10,7 +10,6 @@ use App\Models\Dish;
 use App\Models\Restaurant;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Collection;
 
 /**
  * The owner's analytics for one range, from `menu_sessions`, `menu_events`
@@ -94,16 +93,12 @@ class MenuStats
             'range' => $this->range,
             'previous' => $this->previous(),
             ...$this->busyTimes(),
-            'devices' => $this->breakdown($visits, 'device_type'),
-            'browsers' => $this->breakdown($visits, 'browser'),
-            'systems' => $this->breakdown($visits, 'os'),
             'languages' => $this->breakdown($visits, 'locale'),
             'actions' => $this->actions(),
             'top_added' => $this->topDishesAdded(),
             'top_categories' => $this->topCategories(),
             'searches' => $this->searches([MenuEventType::Search, MenuEventType::SearchMiss]),
             'missed_searches' => $this->searches([MenuEventType::SearchMiss]),
-            'orders' => $this->takesOrders() ? $this->orders() : null,
             'funnel' => $this->takesOrders() ? $this->funnel($visits) : null,
         ];
     }
@@ -299,60 +294,6 @@ class MenuStats
     }
 
     /**
-     * What was ordered and what it came to. A cancelled order is counted on
-     * its own and kept out of the money.
-     *
-     * @return array<string, mixed>
-     */
-    private function orders(): array
-    {
-        $orders = $this->ordersInRange($this->from, null);
-
-        $kept = (clone $orders)->where('status', '!=', OrderStatus::Cancelled->value);
-        $count = (clone $kept)->count();
-        $revenue = round((float) (clone $kept)->sum('total'), 2);
-
-        return [
-            'count' => $count,
-            'cancelled' => (clone $orders)->where('status', OrderStatus::Cancelled->value)->count(),
-            'revenue' => $revenue,
-            'average' => $count > 0 ? round($revenue / $count, 2) : 0.0,
-            'currency' => (string) $this->restaurant->currency,
-            'top_dishes' => $this->topDishesOrdered(),
-        ];
-    }
-
-    /**
-     * Dishes by how many were ordered. A line keeps its own name, so one whose
-     * dish was since deleted still counts, under the name it was ordered by.
-     *
-     * @return array<int, array{name: string, quantity: int, revenue: float}>
-     */
-    private function topDishesOrdered(): array
-    {
-        $rows = $this->ordersInRange($this->from, null)
-            ->where('status', '!=', OrderStatus::Cancelled->value)
-            ->join('order_items', 'order_items.order_id', '=', 'orders.id')
-            ->selectRaw('order_items.dish_id, order_items.name, SUM(order_items.quantity) as quantity, SUM(order_items.line_total) as revenue')
-            ->groupBy('order_items.dish_id', 'order_items.name')
-            ->get();
-
-        $names = $this->names(Dish::class, $rows->pluck('dish_id')->filter());
-
-        return $rows
-            ->groupBy(fn ($row) => $row->dish_id !== null ? 'dish:'.$row->dish_id : 'name:'.$row->name)
-            ->map(fn (Collection $lines) => [
-                'name' => $names[$lines->first()->dish_id] ?? (string) $lines->first()->name,
-                'quantity' => (int) $lines->sum('quantity'),
-                'revenue' => round((float) $lines->sum('revenue'), 2),
-            ])
-            ->sortBy([['quantity', 'desc'], ['name', 'asc']])
-            ->take(self::TOP)
-            ->values()
-            ->all();
-    }
-
-    /**
      * From opening the menu to ordering: visitors, then those who put
      * something in the cart, then orders placed.
      *
@@ -440,14 +381,14 @@ class MenuStats
             return [];
         }
 
-        $locale = $this->restaurant->default_locale ?: config('locales.default', 'en');
+        $locale = MenuLanguages::default($this->restaurant);
 
         return $model::query()
             ->where('restaurant_id', $this->restaurant->id)
             ->whereKey($ids->all())
             ->get()
             ->mapWithKeys(fn (Dish|Category $row) => [
-                $row->getKey() => (string) ($row->getTranslation('name', $locale, false) ?: $row->name),
+                $row->getKey() => MenuLanguages::text($row, 'name', $locale),
             ])
             ->all();
     }

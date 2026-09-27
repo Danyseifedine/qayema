@@ -26,6 +26,9 @@ class PlaceOrderRequest extends FormRequest
             'items.*.dish_id' => ['required', 'integer', 'min:1'],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:99'],
             'note' => ['nullable', 'string', 'max:500'],
+            // The language the guest was reading; checked against the menu's
+            // own languages in the controller.
+            'locale' => ['nullable', 'string', 'size:2'],
         ];
     }
 

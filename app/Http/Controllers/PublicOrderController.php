@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\Feature;
 use App\Http\Requests\PlaceOrderRequest;
 use App\Models\Restaurant;
+use App\Services\Global\MenuLanguages;
 use App\Services\Global\OrderPlacer;
 use App\Services\Global\WhatsAppLink;
 use Illuminate\Http\JsonResponse;
@@ -26,10 +27,18 @@ class PublicOrderController extends Controller
         abort_unless($restaurant->is_active, 404);
         abort_unless($restaurant->entitlements()->can(Feature::Ordering), 404);
 
+        // The guest's menu language: the WhatsApp text and any error come
+        // back in the language they were reading.
+        $locale = in_array($request->validated('locale'), $restaurant->menuLanguages(), true)
+            ? (string) $request->validated('locale')
+            : MenuLanguages::default($restaurant);
+        app()->setLocale($locale);
+
         $order = $placer->place(
             $restaurant,
             $request->validated('items'),
             $request->validated('note'),
+            $locale,
         );
 
         return response()->json([

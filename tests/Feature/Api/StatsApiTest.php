@@ -24,6 +24,13 @@ class StatsApiTest extends TestCase
         ]);
     }
 
+    public function test_every_package_ships_with_advanced_analytics_open(): void
+    {
+        foreach (Package::all() as $package) {
+            $this->assertSame(1, (int) $package->features['advanced_analytics'], "{$package->slug} should ship with advanced analytics open.");
+        }
+    }
+
     public function test_stats_require_authentication(): void
     {
         $this->getJson(route('api.stats'))->assertUnauthorized();

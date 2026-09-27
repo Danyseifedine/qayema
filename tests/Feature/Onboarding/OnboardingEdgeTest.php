@@ -29,16 +29,31 @@ class OnboardingEdgeTest extends TestCase
         $this->assertSame('Second Name', $user->fresh()->restaurant->getTranslation('name', 'en'));
     }
 
-    public function test_the_name_is_saved_under_the_chosen_locale(): void
+    public function test_the_name_is_saved_in_english_and_arabic_is_the_second_language(): void
     {
+        // English is every menu's main language, so the one name typed at
+        // onboarding goes there; the menu still opens in the language chosen.
         $user = $this->fresh();
 
         $this->actingAs($user)->postJson(route('onboarding.advance'), ['_step' => 1, 'name' => 'مطعمي', 'slug' => 'mine', 'default_locale' => 'ar'])->assertOk();
 
         $restaurant = $user->fresh()->restaurant;
         $this->assertSame('ar', $restaurant->default_locale);
-        $this->assertSame('مطعمي', $restaurant->getTranslation('name', 'ar'));
-        $this->assertSame('', $restaurant->getTranslation('name', 'en', false));
+        $this->assertSame('ar', $restaurant->second_locale);
+        $this->assertSame('مطعمي', $restaurant->getTranslation('name', 'en', false));
+    }
+
+    public function test_running_step_one_again_keeps_the_other_languages_of_the_name(): void
+    {
+        $user = $this->fresh();
+        $this->actingAs($user)->postJson(route('onboarding.advance'), ['_step' => 1, 'name' => 'Olive', 'slug' => 'mine', 'default_locale' => 'en'])->assertOk();
+        $user->fresh()->restaurant->setTranslation('name', 'ar', 'زيتون')->save();
+
+        $this->actingAs($user)->postJson(route('onboarding.advance'), ['_step' => 1, 'name' => 'Olive Bar', 'slug' => 'mine', 'default_locale' => 'en'])->assertOk();
+
+        $restaurant = $user->fresh()->restaurant;
+        $this->assertSame('Olive Bar', $restaurant->getTranslation('name', 'en', false));
+        $this->assertSame('زيتون', $restaurant->getTranslation('name', 'ar', false));
     }
 
     public function test_a_slug_taken_by_someone_else_is_rejected_but_your_own_is_fine(): void

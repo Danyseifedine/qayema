@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\PackageRequestController;
 use App\Http\Controllers\Api\QrController;
+use App\Http\Controllers\Api\SectionsController;
 use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\SocialLinkController;
 use App\Http\Controllers\Api\StatsController;
@@ -38,6 +39,11 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::put('/password', [AccountController::class, 'updatePassword'])
         ->middleware('throttle:auth')
         ->name('api.password.update');
+
+    // Optional dashboard sections the owner switched off.
+    Route::put('/sections', [SectionsController::class, 'update'])
+        ->middleware('throttle:mutations')
+        ->name('api.sections.update');
 
     // Dashboard-home analytics: the summary every package gets, and the
     // advanced breakdowns behind the advanced_analytics flag.

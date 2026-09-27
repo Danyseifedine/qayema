@@ -39,7 +39,12 @@ return Application::configure(basePath: dirname(__DIR__))
         );
 
         // JSON API responses get the same hardening headers as the web surface.
-        $middleware->api(prepend: [\App\Http\Middleware\SecurityHeaders::class]);
+        // The dashboard names its language on every request; errors and
+        // messages come back in it. First, so even a sign-in error does.
+        $middleware->api(prepend: [
+            \App\Http\Middleware\SetApiLocale::class,
+            \App\Http\Middleware\SecurityHeaders::class,
+        ]);
 
         $middleware->alias([
             'portal.locale' => \App\Http\Middleware\SetPortalLocale::class,

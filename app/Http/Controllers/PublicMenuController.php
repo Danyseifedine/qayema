@@ -6,6 +6,7 @@ use App\Enums\Feature;
 use App\Models\Restaurant;
 use App\Models\Template;
 use App\Services\Global\MapPoint;
+use App\Services\Global\MenuLanguages;
 use App\Services\Global\MenuVisitRecorder;
 use App\Services\Global\OpeningHours;
 use App\Services\Global\WhatsAppLink;
@@ -98,19 +99,18 @@ class PublicMenuController extends Controller
     }
 
     /**
-     * The language the page renders in: whichever the guest asked for with
-     * ?lang=, and the owner's own otherwise. It is a query parameter rather
-     * than a session so each version has its own shareable, indexable URL.
+     * The language the page renders in: whichever of the menu's own languages
+     * the guest asked for with ?lang=, and the one the owner chose to open in
+     * otherwise. It is a query parameter rather than a session so each version
+     * has its own shareable, indexable URL.
      */
     private function locale(Request $request, Restaurant $restaurant): string
     {
         $asked = (string) $request->query('lang');
 
-        if (in_array($asked, config('locales.supported', []), true)) {
-            return $asked;
-        }
-
-        return $restaurant->default_locale ?: config('locales.default', 'en');
+        return in_array($asked, $restaurant->menuLanguages(), true)
+            ? $asked
+            : MenuLanguages::default($restaurant);
     }
 
     /**
@@ -124,10 +124,8 @@ class PublicMenuController extends Controller
         $base = route('public.menu', $restaurant->slug);
         $links = [];
 
-        foreach (config('locales.locales', []) as $code => $meta) {
-            if (! in_array($code, config('locales.supported', []), true)) {
-                continue;
-            }
+        foreach ($restaurant->menuLanguages() as $code) {
+            $meta = MenuLanguages::catalogue()[$code];
 
             $query = ['lang' => $code];
 

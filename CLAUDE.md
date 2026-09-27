@@ -539,8 +539,9 @@ without its Blade file, so a half-finished template never 500s a guest.
   and there are no dumps, so a wipe is unrecoverable. Tests run on in-memory
   SQLite and need none of this. To apply an in-place column change to the live
   local DB, ask, or add it with a one-off `Schema::table` in tinker.
-- **Translatable** columns are spatie `{en, ar}` JSON; the owner only edits the
-  locale in `restaurants.default_locale`.
+- **Translatable** columns are spatie JSON keyed by language. For menu
+  content see "Menu languages" below; packages and templates (platform
+  content) stay `{en, ar}`, shown in the dashboard's interface language.
 - **Media:** Spatie medialibrary on Cloudflare R2, the `r2` disk in
   `config/filesystems.php`, chosen by `MEDIA_DISK=r2`. Temp-upload flow: POST
   an image → optimized to WebP → parked per-user on local disk
@@ -568,7 +569,16 @@ without its Blade file, so a half-finished template never 500s a guest.
 - Rate limiters in `AppServiceProvider` (`api`/`mutations`/`uploads`/`auth`/
   `contact`); the high-volume ones feed the `AbuseGuard` auto-ban.
 - Session lifetime is intentionally 1 year (the SPA rides it).
+- `restaurants.hidden_sections` is the owner's list of dashboard sections they
+  switched off (`PUT /api/sections`, limited to `Restaurant::HIDEABLE_SECTIONS`:
+  analytics, orders, qr, social-links). Dashboard-only — it changes nothing on
+  the menu or in the data.
 - Locale middleware alias is `portal.locale`; the session key stays `owner_locale`.
+- API requests take their language from `Accept-Language` (`SetApiLocale`,
+  first in the `api` group so even a 401 is translated), limited to
+  `locales.supported`. Arabic API text: `lang/ar.json` and
+  `lang/ar/validation.php` (only the rules the API uses; anything else falls
+  back to Laravel's English).
 - Filament v4 testing: table **header** actions need
   `callAction(TestAction::make('create')->table())`, not `callAction('create')`.
 - `Restaurant::RESERVED_SLUGS` is the single list behind both the public menu
@@ -664,24 +674,48 @@ with the design**, so a printed code keeps working whatever is saved.
   previews load no tracker.
 - **Reading:** `App\Services\Global\MenuStats`. `summary()` (`GET /api/stats`)
   is every package, ranges `7d`/`30d`; `advanced()` (`GET /api/stats/advanced`)
-  and the `90d`/`all` ranges need the `advanced_analytics` flag (on for
-  Premium and Custom). Days and hours are the restaurant's `timezone` (UTC when
+  and the `90d`/`all` ranges need the `advanced_analytics` flag — **on for
+  every package for now**, by the owner's choice, until they decide which
+  packages keep it; tests of the locked path switch it off themselves. Days and hours are the restaurant's `timezone` (UTC when
   unset): rows are grouped by UTC hour with `SUBSTR(ts, 1, 13)` — portable
-  across MySQL and SQLite — and shifted in PHP. Orders and the funnel are null
-  when the package does not take orders; cancelled orders stay out of revenue.
+  across MySQL and SQLite — and shifted in PHP. The funnel (visit → cart → order)
+  is null when the package does not take orders. Devices, browsers, systems
+  and order money are deliberately **not** reported — the owner decided they
+  do not help a restaurant (the order itself reaches them on WhatsApp). The
+  visit rows still record device/browser/OS.
 - `stats:rollup` prunes `menu_sessions` and `menu_events` after 6 months.
 
-## Menu language
+## Menu languages
 
-The public menu renders in `restaurants.default_locale`, and a guest can ask
-for any other `config('locales.supported')` language with `?lang=`. A query
-parameter rather than a session, so every version has its own shareable,
-indexable URL — `hreflang` tags declare them. An unsupported value falls back
-silently.
+Every menu is written in **English** plus, optionally, **one second language**
+the owner picks in the dashboard (`restaurants.second_locale`, null = English
+only) from `config('locales.menu')` — Arabic, French, Spanish, Turkish,
+German, Italian, Russian, Chinese, Hindi, Portuguese. `default_locale` is what
+the menu opens in: `en` or the second language. `config('locales.supported')`
+is only the **portal's** UI list and has nothing to do with menus.
 
-Content follows only as far as the owner filled it in: `name`/`ingredients`
-accept `{en, ar}` and require **one** of them, so a dish typed in one language
-shows that language on both menus. Only the interface strings are guaranteed.
+- `App\Services\Global\MenuLanguages` owns it: `for()` (`['en', second?]`),
+  `default()`, `text()` (that language, else English — never spatie's
+  accessor, which fell back to the app locale and showed Arabic-only text
+  blank), `map()` for resources, `rules()` for requests, `input()` + `fill()`
+  for writes.
+- **English is required** for every name (restaurant, category, dish);
+  everything else is optional per language.
+- The API only reads and writes the menu's **active** languages and merges into
+  the stored JSON, so text in a language the owner switched away from stays,
+  hidden, and comes back if they switch back. A language sent blank clears
+  that language; a field sent as `null` clears all active ones; a field not
+  sent is untouched.
+- Public menu: `?lang=` accepts only the menu's own languages (anything else
+  opens the default), hreflang and the switcher list only those, and an
+  English-only menu has no switcher. `dir` and the extra Google Font
+  (El Messiri, Noto Sans SC, Noto Sans Devanagari) come from the catalogue.
+- The menu's own words live in `lang/{code}.json` (same keys as `ar.json`).
+  The non-Arabic ones were written by Claude and still want a native read.
+- The cart sends the guest's language with an order; the WhatsApp text, any
+  error and the line names come back in it.
+- A new restaurant gets Arabic as its second language at onboarding; the name
+  typed there is saved in English.
 
 A load whose referer is this same menu is **not** recorded as a visit — a
 language switch is one visit continuing, not two.

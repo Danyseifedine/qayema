@@ -103,7 +103,7 @@ class DishTest extends TestCase
         $this->actingAs($user)
             ->postJson(route('api.dishes.store'), ['name' => ['en' => '', 'ar' => '']])
             ->assertStatus(422)
-            ->assertJsonValidationErrors('name');
+            ->assertJsonValidationErrors('name.en');
     }
 
     public function test_store_rejects_an_overlong_name(): void
@@ -381,5 +381,51 @@ class DishTest extends TestCase
             ->putJson(route('api.dishes.update', $dish), ['name' => ['en' => 'X']])
             ->assertForbidden();
         $this->actingAs($user)->deleteJson(route('api.dishes.destroy', $dish))->assertForbidden();
+    }
+
+    public function test_dishes_come_in_the_menus_own_languages(): void
+    {
+        [$user, $restaurant] = $this->owner();
+        $restaurant->update(['second_locale' => 'fr']);
+        Dish::factory()->create(['restaurant_id' => $restaurant->id, 'name' => ['en' => 'Bread', 'fr' => 'Pain', 'ar' => 'خبز']]);
+
+        $this->actingAs($user)
+            ->getJson(route('api.dishes.index'))
+            ->assertJsonPath('data.0.name', ['en' => 'Bread', 'fr' => 'Pain']);
+    }
+
+    public function test_an_english_only_menu_has_english_alone(): void
+    {
+        [$user, $restaurant] = $this->owner();
+        $restaurant->update(['second_locale' => null]);
+        Dish::factory()->create(['restaurant_id' => $restaurant->id, 'name' => ['en' => 'Bread', 'ar' => 'خبز']]);
+
+        $this->actingAs($user)
+            ->getJson(route('api.dishes.index'))
+            ->assertJsonPath('data.0.name', ['en' => 'Bread']);
+    }
+
+    public function test_editing_keeps_text_in_a_language_the_menu_no_longer_uses(): void
+    {
+        [$user, $restaurant] = $this->owner();
+        $restaurant->update(['second_locale' => 'fr']);
+        $dish = Dish::factory()->create(['restaurant_id' => $restaurant->id, 'name' => ['en' => 'Bread', 'ar' => 'خبز']]);
+
+        $this->actingAs($user)
+            ->putJson(route('api.dishes.update', $dish), ['name' => ['en' => 'Bread', 'fr' => 'Pain']])
+            ->assertOk();
+
+        $this->assertSame(['en' => 'Bread', 'ar' => 'خبز', 'fr' => 'Pain'], $dish->fresh()->getTranslations('name'));
+    }
+
+    public function test_clearing_the_second_language_text_removes_only_that(): void
+    {
+        [$user, $restaurant] = $this->owner();
+        $dish = Dish::factory()->create(['restaurant_id' => $restaurant->id, 'name' => ['en' => 'Bread', 'ar' => 'خبز']]);
+
+        $this->actingAs($user)
+            ->putJson(route('api.dishes.update', $dish), ['name' => ['en' => 'Bread', 'ar' => '']])
+            ->assertOk()
+            ->assertJsonPath('data.name', ['en' => 'Bread', 'ar' => null]);
     }
 }

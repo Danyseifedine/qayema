@@ -12,6 +12,7 @@ use App\Models\Dish;
 use App\Models\Restaurant;
 use App\Services\Global\DisplayOrder;
 use App\Services\Global\MediaService;
+use App\Services\Global\MenuLanguages;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -61,13 +62,14 @@ class DishController extends Controller
             }
 
             $dish = new Dish([
-                'name' => $this->localeMap($request->validated('name')),
-                'ingredients' => $this->localeMap($request->validated('ingredients')),
                 'price' => $request->validated('price'),
                 'category_id' => $request->validated('category_id'),
                 'is_available' => $request->boolean('is_available', true),
                 'display_order' => (int) $locked->dishes()->max('display_order') + 1,
             ]);
+            $languages = $locked->menuLanguages();
+            MenuLanguages::fill($dish, 'name', MenuLanguages::input($request, 'name', $languages), $languages);
+            MenuLanguages::fill($dish, 'ingredients', MenuLanguages::input($request, 'ingredients', $languages), $languages);
             $dish->restaurant()->associate($locked);
             $dish->save();
 
@@ -92,12 +94,10 @@ class DishController extends Controller
     {
         $this->authorize('update', $dish);
 
-        if ($request->has('name')) {
-            $dish->name = $this->localeMap($request->validated('name'));
-        }
-        if ($request->has('ingredients')) {
-            $dish->ingredients = $this->localeMap($request->validated('ingredients'));
-        }
+        // Only the menu's current languages are written; hidden ones stay.
+        $languages = $dish->restaurant->menuLanguages();
+        MenuLanguages::fill($dish, 'name', MenuLanguages::input($request, 'name', $languages), $languages);
+        MenuLanguages::fill($dish, 'ingredients', MenuLanguages::input($request, 'ingredients', $languages), $languages);
         if ($request->has('price')) {
             $dish->price = $request->validated('price');
         }
@@ -211,20 +211,6 @@ class DishController extends Controller
         abort_if($restaurant === null, 403);
 
         return $restaurant;
-    }
-
-    /**
-     * @param  array<string, string|null>|null  $input
-     * @return array<string, string>
-     */
-    private function localeMap(?array $input): array
-    {
-        $input ??= [];
-
-        return array_filter([
-            'en' => trim((string) ($input['en'] ?? '')),
-            'ar' => trim((string) ($input['ar'] ?? '')),
-        ], static fn (string $value): bool => $value !== '');
     }
 
     /**

@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Enums\Feature;
 use App\Models\Restaurant;
+use App\Services\Global\MenuLanguages;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -47,12 +48,12 @@ class UserResource extends JsonResource
 
         return [
             'id' => $restaurant->id,
-            'name' => [
-                'en' => $restaurant->getTranslation('name', 'en', false) ?: null,
-                'ar' => $restaurant->getTranslation('name', 'ar', false) ?: null,
-            ],
+            'name' => MenuLanguages::map($restaurant, 'name', $restaurant->menuLanguages()),
             'slug' => $restaurant->slug,
-            'default_locale' => $restaurant->default_locale ?: 'ar',
+            // What the menu is written in: English, then the second language
+            // when there is one. The dashboard's text fields have a tab each.
+            'languages' => $restaurant->menuLanguages(),
+            'default_locale' => MenuLanguages::default($restaurant),
             'is_active' => (bool) $restaurant->is_active,
             // null until the owner picks a template — the dashboard stays
             // locked to the Templates tab while this is null.
@@ -77,6 +78,8 @@ class UserResource extends JsonResource
                 'categories' => ['used' => $restaurant->categories()->count(), 'limit' => $entitlements->limit(Feature::CategoryLimit)],
                 'social_links' => ['used' => $restaurant->socialLinks()->count(), 'limit' => $entitlements->limit(Feature::SocialLinkLimit)],
             ],
+            // Optional dashboard sections the owner switched off.
+            'hidden_sections' => $restaurant->hiddenSections(),
             'features' => [
                 'qr_studio' => $entitlements->can(Feature::QrStudio),
                 'ordering' => $entitlements->can(Feature::Ordering),

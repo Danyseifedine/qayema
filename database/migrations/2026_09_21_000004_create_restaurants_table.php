@@ -44,12 +44,20 @@ return new class extends Migration
             $table->string('timezone', 64)->nullable();
 
             $table->char('currency', 3)->default('USD');
-            $table->char('default_locale', 2)->default('ar');
+            // English is every menu's main language; `second_locale` is the one
+            // other language the owner chose (config('locales.menu')), or null
+            // for an English-only menu. `default_locale` is what the menu opens
+            // in: 'en' or the second language.
+            $table->char('default_locale', 2)->default('en');
+            $table->char('second_locale', 2)->nullable();
             $table->boolean('is_active')->default(true);
 
             // Owner-chosen values for the active template's settings_schema.
             $table->json('template_settings')->nullable();
             $table->json('qr_settings')->nullable();
+            // Dashboard sections the owner switched off (Restaurant::HIDEABLE_SECTIONS).
+            // Only the dashboard reads it; the menu and its data are unaffected.
+            $table->json('hidden_sections')->nullable();
 
             $table->timestamps();
         });

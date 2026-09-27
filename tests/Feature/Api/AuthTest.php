@@ -83,9 +83,10 @@ class AuthTest extends TestCase
 
     public function test_the_shell_payload_carries_the_restaurant_package_limits_features_and_urls(): void
     {
-        // Free ships with the QR studio open for now; this test needs a flag
-        // the default package lacks, so it closes that one first.
+        // Free ships with the QR studio and advanced analytics open for now;
+        // this test needs flags the default package lacks, so it closes them.
         Package::default()->setFeature(Feature::QrStudio, 0);
+        Package::default()->setFeature(Feature::AdvancedAnalytics, 0);
 
         $restaurant = \App\Models\Restaurant::factory()->create(['slug' => 'shell-test', 'template_id' => null]);
         \App\Models\Dish::factory()->count(3)->create(['restaurant_id' => $restaurant->id]);

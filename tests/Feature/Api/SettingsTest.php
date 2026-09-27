@@ -33,7 +33,7 @@ class SettingsTest extends TestCase
     private function basePayload(array $overrides = []): array
     {
         return array_merge([
-            'name' => 'My Restaurant',
+            'name' => ['en' => 'My Restaurant'],
             'phone' => '+961 70 123 456',
             'currency' => 'USD',
         ], $overrides);
@@ -62,6 +62,7 @@ class SettingsTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'data' => [
+                    'languages', 'second_locale',
                     'name' => ['en', 'ar'],
                     'description' => ['en', 'ar'],
                     'default_locale', 'slug', 'google_maps_url', 'phone',
@@ -79,7 +80,7 @@ class SettingsTest extends TestCase
 
         $this->actingAs($user)
             ->putJson(route('api.settings.update'), $this->basePayload([
-                'description' => 'Best mezze in town',
+                'description' => ['en' => 'Best mezze in town'],
                 'google_maps_url' => 'https://maps.google.com/?q=33.8886,35.4955',
             ]))
             ->assertOk()
@@ -89,7 +90,7 @@ class SettingsTest extends TestCase
 
         $this->assertSame(
             'Best mezze in town',
-            $restaurant->getTranslation('description', $restaurant->default_locale),
+            $restaurant->getTranslation('description', 'en'),
         );
     }
 
@@ -194,7 +195,7 @@ class SettingsTest extends TestCase
         [$user, $restaurant] = $this->owner();
 
         $this->actingAs($user)
-            ->putJson(route('api.settings.update'), $this->basePayload(['name' => 'Renamed Bistro']))
+            ->putJson(route('api.settings.update'), $this->basePayload(['name' => ['en' => 'Renamed Bistro']]))
             ->assertOk()
             ->assertJsonPath('data.name.en', 'Renamed Bistro');
 
@@ -206,9 +207,9 @@ class SettingsTest extends TestCase
         [$user] = $this->owner();
 
         $this->actingAs($user)
-            ->putJson(route('api.settings.update'), $this->basePayload(['name' => '']))
+            ->putJson(route('api.settings.update'), $this->basePayload(['name' => ['en' => '']]))
             ->assertStatus(422)
-            ->assertJsonValidationErrors('name');
+            ->assertJsonValidationErrors('name.en');
     }
 
     public function test_update_rejects_a_one_character_name(): void
@@ -216,22 +217,21 @@ class SettingsTest extends TestCase
         [$user] = $this->owner();
 
         $this->actingAs($user)
-            ->putJson(route('api.settings.update'), $this->basePayload(['name' => 'x']))
+            ->putJson(route('api.settings.update'), $this->basePayload(['name' => ['en' => 'x']]))
             ->assertStatus(422)
-            ->assertJsonValidationErrors('name');
+            ->assertJsonValidationErrors('name.en');
     }
 
-    public function test_update_writes_the_name_to_the_restaurants_own_locale(): void
+    public function test_update_writes_the_name_in_each_menu_language(): void
     {
-        // An Arabic-default restaurant gets the name written to 'ar', not 'en'.
         [$user, $restaurant] = $this->owner();
-        $restaurant->update(['default_locale' => 'ar']);
 
         $this->actingAs($user)
-            ->putJson(route('api.settings.update'), $this->basePayload(['name' => 'مطعم']))
-            ->assertOk();
+            ->putJson(route('api.settings.update'), $this->basePayload(['name' => ['en' => 'Olive', 'ar' => 'زيتون']]))
+            ->assertOk()
+            ->assertJsonPath('data.name', ['en' => 'Olive', 'ar' => 'زيتون']);
 
-        $this->assertSame('مطعم', $restaurant->fresh()->getTranslation('name', 'ar'));
+        $this->assertSame('زيتون', $restaurant->fresh()->getTranslation('name', 'ar'));
     }
 
     public function test_update_rejects_a_name_with_control_characters(): void
@@ -241,9 +241,9 @@ class SettingsTest extends TestCase
         [$user] = $this->owner();
 
         $this->actingAs($user)
-            ->putJson(route('api.settings.update'), $this->basePayload(['name' => "Bad\nName"]))
+            ->putJson(route('api.settings.update'), $this->basePayload(['name' => ['en' => "Bad\nName"]]))
             ->assertStatus(422)
-            ->assertJsonValidationErrors('name');
+            ->assertJsonValidationErrors('name.en');
     }
 
     public function test_update_rejects_an_over_long_country_code(): void

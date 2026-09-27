@@ -41,7 +41,7 @@ class MenuEventRecorder
                 $type = MenuEventType::from($event['type']);
                 $dish = $type->carriesDish() ? ($event['dish_id'] ?? null) : null;
                 $category = $type->carriesCategory() ? ($event['category_id'] ?? null) : null;
-                $value = $type->carriesValue() ? $this->clean($type, $event['value'] ?? null) : null;
+                $value = $type->carriesValue() ? $this->clean($type, $event['value'] ?? null, $restaurant->menuLanguages()) : null;
 
                 if ($type->carriesDish() && ! isset($dishIds[$dish])) {
                     continue;
@@ -97,7 +97,10 @@ class MenuEventRecorder
         return array_fill_keys(collect($lookup($asked))->map(fn ($id) => (int) $id)->all(), true);
     }
 
-    private function clean(MenuEventType $type, ?string $value): ?string
+    /**
+     * @param  array<int, string>  $languages  the menu's own languages
+     */
+    private function clean(MenuEventType $type, ?string $value, array $languages): ?string
     {
         $value = Str::of((string) $value)->squish()->lower()->limit(64, '')->toString();
 
@@ -106,7 +109,7 @@ class MenuEventRecorder
         }
 
         // A language is only worth counting when it is one the menu offers.
-        if ($type === MenuEventType::Language && ! in_array($value, config('locales.supported', []), true)) {
+        if ($type === MenuEventType::Language && ! in_array($value, $languages, true)) {
             return null;
         }
 

@@ -6,6 +6,7 @@ use App\Mail\WelcomeRestaurantOwner;
 use App\Models\Restaurant;
 use App\Models\User;
 use App\Services\Global\MediaService;
+use App\Services\Global\MenuLanguages;
 use Illuminate\Support\Facades\Mail;
 
 /**
@@ -17,24 +18,41 @@ class OnboardingService
 {
     public function __construct(private readonly MediaService $media) {}
 
-    /** Step 1 — restaurant name, slug and preferred language (create or update). */
+    /**
+     * Step 1 — restaurant name, slug and the language the menu opens in.
+     *
+     * The name goes in English, the language every name is required in. A new
+     * restaurant starts with Arabic as its second language, which the owner
+     * can change or drop in the dashboard.
+     */
     public function saveIdentity(User $user, string $name, string $slug, ?string $locale): void
     {
-        $defaultLocale = $locale ?? 'ar';
-
-        $attributes = [
-            'name' => [$defaultLocale => $name],
-            'slug' => $slug,
-            'default_locale' => $defaultLocale,
-        ];
-
         if ($user->restaurant) {
-            $user->restaurant->update($attributes);
+            $restaurant = $user->restaurant;
+            $restaurant->setTranslation('name', MenuLanguages::MAIN, $name);
+            $restaurant->fill([
+                'slug' => $slug,
+                'default_locale' => $this->openingLanguage($locale, $restaurant->menuLanguages()),
+            ])->save();
 
             return;
         }
 
-        Restaurant::create(['user_id' => $user->id, ...$attributes]);
+        Restaurant::create([
+            'user_id' => $user->id,
+            'name' => [MenuLanguages::MAIN => $name],
+            'slug' => $slug,
+            'second_locale' => 'ar',
+            'default_locale' => $this->openingLanguage($locale, [MenuLanguages::MAIN, 'ar']),
+        ]);
+    }
+
+    /**
+     * @param  array<int, string>  $languages
+     */
+    private function openingLanguage(?string $locale, array $languages): string
+    {
+        return in_array($locale, $languages, true) ? (string) $locale : MenuLanguages::MAIN;
     }
 
     /** Step 2 — country code, phone and currency. */
