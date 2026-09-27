@@ -11,13 +11,15 @@
 <title>{{ $design['title'] ?: config('app.name') }} — QR</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=El+Messiri:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="{{ $card['fonts_href'] }}" rel="stylesheet">
 <style>
     /* The table card, in the menu's own look: the same type and the owner's
        accent, so the card on the table matches the menu it opens. */
     :root {
         --accent: {{ $card['accent'] }};
         --accent-ink: {{ $card['accent_ink'] }};
+        {{-- The owner's fonts (MenuFonts); raw because {{ }} would escape the quotes. --}}
+        --font: {!! $card['font'] !!}, system-ui, sans-serif;
     }
 
     * { box-sizing: border-box; }
@@ -30,7 +32,7 @@
         gap: 18px;
         padding: 32px 16px;
         background: #F4F5F7;
-        font-family: 'Inter', 'El Messiri', system-ui, sans-serif;
+        font-family: var(--font);
         -webkit-font-smoothing: antialiased;
     }
 

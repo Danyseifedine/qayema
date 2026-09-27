@@ -21,7 +21,7 @@ class MenuLanguages
     public const MAIN = 'en';
 
     /**
-     * @return array<string, array{name: string, english: string, flag: string, rtl: bool, font: string|null}>
+     * @return array<string, array{name: string, english: string, flag: string, rtl: bool, script: string}>
      */
     public static function catalogue(): array
     {
@@ -110,11 +110,6 @@ class MenuLanguages
     public static function isRtl(string $code): bool
     {
         return (bool) (self::catalogue()[$code]['rtl'] ?? false);
-    }
-
-    public static function font(string $code): ?string
-    {
-        return self::catalogue()[$code]['font'] ?? null;
     }
 
     /**

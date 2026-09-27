@@ -5,17 +5,14 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Concerns\ResolvesRestaurant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SelectTemplateRequest;
-use App\Http\Requests\UpdateTemplateSettingsRequest;
 use App\Http\Resources\TemplateResource;
 use App\Models\Restaurant;
 use App\Models\Template;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 /**
- * The template store: what an owner can pick from, switching between designs,
- * and customizing whatever the chosen template exposes.
+ * The design store: what an owner can pick from, and switching between them.
  *
  * Every active template is free and open to every restaurant — what a package
  * grants is limits and features, never a design. A newly onboarded restaurant
@@ -31,44 +28,18 @@ class TemplateController extends Controller
     }
 
     /**
-     * Switch to a template, seeding that template's default settings. Every
-     * active design is available, so this never fails on entitlement.
+     * Switch to a template. Every active design is available, so this never
+     * fails on entitlement. The colours the owner chose for each design are
+     * kept: switching back brings them back (Restaurant::designSettings()).
      */
     public function select(SelectTemplateRequest $request): AnonymousResourceCollection
     {
         $restaurant = $this->restaurant($request);
         $template = $this->activeTemplate($request->validated('template_id'));
 
-        $restaurant->update([
-            'template_id' => $template->id,
-            'template_settings' => $template->defaultSettings(),
-        ]);
+        $restaurant->update(['template_id' => $template->id]);
 
         return $this->collection($restaurant);
-    }
-
-    /**
-     * Save the owner's customizations for their active template. What may be
-     * changed is declared by that template's own schema. Only the keys sent
-     * change, so saving one colour leaves the others as they were.
-     */
-    public function updateSettings(UpdateTemplateSettingsRequest $request): JsonResponse
-    {
-        $restaurant = $this->restaurant($request);
-        $template = $restaurant->template;
-
-        abort_if($template === null, 403, __('Choose a template first.'));
-
-        // resolveSettings() drops anything the schema doesn't declare and fills
-        // the gaps with the template's defaults.
-        $settings = $template->resolveSettings(array_merge(
-            (array) $restaurant->template_settings,
-            (array) $request->validated('settings'),
-        ));
-
-        $restaurant->update(['template_settings' => $settings]);
-
-        return response()->json(['data' => ['settings' => $settings]]);
     }
 
     private function collection(Restaurant $restaurant): AnonymousResourceCollection
@@ -76,10 +47,6 @@ class TemplateController extends Controller
         return TemplateResource::collection(Template::query()->active()->get())->additional([
             'meta' => [
                 'current' => $restaurant->template_id,
-                // What the menu is drawn with: the saved values over the
-                // template's defaults. An object even when empty, so it never
-                // arrives as a JSON list.
-                'settings' => (object) ($restaurant->template?->resolveSettings((array) $restaurant->template_settings) ?? []),
             ],
         ]);
     }

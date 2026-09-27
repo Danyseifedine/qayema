@@ -23,7 +23,6 @@ class TemplatePreviewTest extends TestCase
             'name' => ['en' => 'Preview Diner'],
             'default_locale' => 'en',
             'template_id' => $template?->id,
-            'template_settings' => $template?->defaultSettings(),
         ]);
     }
 
@@ -38,7 +37,7 @@ class TemplatePreviewTest extends TestCase
     {
         $current = Template::factory()->create(['slug' => 'classic']);
         $restaurant = $this->restaurantOn($current);
-        $restaurant->update(['template_settings' => ['primary_color' => '#111111']]);
+        $restaurant->update(['template_settings' => [$current->id => ['primary_color' => '#111111']]]);
         $candidate = Template::factory()->withSettings([
             ['key' => 'primary_color', 'type' => 'color', 'default' => '#ABCDEF'],
         ])->create(['slug' => 'midnight']);
@@ -46,7 +45,8 @@ class TemplatePreviewTest extends TestCase
         $this->actingAs($restaurant->user)
             ->get(route('public.menu', $restaurant->slug).'?preview='.$candidate->id)
             ->assertOk()
-            // The candidate's defaults render, not the owner's saved colours.
+            // The candidate's defaults render: the owner's colours belong to
+            // the design they saved them on.
             ->assertSee('--accent: #ABCDEF', false)
             ->assertDontSee('--accent: #111111', false);
     }

@@ -27,58 +27,6 @@ class TemplateEdgeTest extends TestCase
         $this->actingAs($owner->user)->postJson(route('api.templates.select'), ['template_id' => $other->id])->assertOk();
     }
 
-    public function test_boolean_settings_accept_string_spellings(): void
-    {
-        $template = Template::factory()->withSettings([['key' => 'show_prices', 'type' => 'boolean', 'default' => true]])->create();
-        $owner = $this->owner(['template_id' => $template->id, 'template_settings' => $template->defaultSettings()]);
-
-        $this->actingAs($owner->user)->putJson(route('api.template-settings.update'), ['settings' => ['show_prices' => '0']])->assertOk()->assertJsonPath('data.settings.show_prices', '0');
-        $this->actingAs($owner->user)->putJson(route('api.template-settings.update'), ['settings' => ['show_prices' => 'nope']])->assertStatus(422);
-    }
-
-    public function test_a_choice_removed_from_the_schema_is_rejected_on_the_next_save(): void
-    {
-        $template = Template::factory()->withSettings([['key' => 'density', 'type' => 'select', 'default' => 'cosy', 'options' => ['cosy', 'compact']]])->create();
-        $owner = $this->owner(['template_id' => $template->id, 'template_settings' => ['density' => 'compact']]);
-
-        $template->update(['settings_schema' => [['key' => 'density', 'type' => 'select', 'default' => 'cosy', 'options' => ['cosy']]]]);
-
-        $this->actingAs($owner->user)->putJson(route('api.template-settings.update'), ['settings' => ['density' => 'compact']])->assertStatus(422);
-    }
-
-    public function test_a_setting_added_to_the_schema_later_shows_up_with_its_default(): void
-    {
-        $template = Template::factory()->withSettings([['key' => 'primary', 'type' => 'color', 'default' => '#111111']])->create();
-        $owner = $this->owner(['template_id' => $template->id, 'template_settings' => ['primary' => '#222222']]);
-
-        $template->update(['settings_schema' => [
-            ['key' => 'primary', 'type' => 'color', 'default' => '#111111'],
-            ['key' => 'accent', 'type' => 'color', 'default' => '#ABCDEF'],
-        ]]);
-
-        $this->actingAs($owner->user)->putJson(route('api.template-settings.update'), ['settings' => ['primary' => '#222222']])
-            ->assertOk()->assertJsonPath('data.settings.accent', '#ABCDEF')->assertJsonPath('data.settings.primary', '#222222');
-    }
-
-    public function test_text_settings_have_a_length_limit(): void
-    {
-        $template = Template::factory()->withSettings([['key' => 'heading', 'type' => 'text', 'default' => 'Menu']])->create();
-        $owner = $this->owner(['template_id' => $template->id]);
-
-        $this->actingAs($owner->user)->putJson(route('api.template-settings.update'), ['settings' => ['heading' => str_repeat('x', 256)]])->assertStatus(422);
-    }
-
-    public function test_colours_are_case_insensitive_hex_only(): void
-    {
-        $template = Template::factory()->withSettings([['key' => 'primary', 'type' => 'color', 'default' => '#111111']])->create();
-        $owner = $this->owner(['template_id' => $template->id]);
-
-        $this->actingAs($owner->user)->putJson(route('api.template-settings.update'), ['settings' => ['primary' => '#AbCdEf']])->assertOk();
-        foreach (['#FFF', 'FFFFFF', '#GGGGGG', 'rgb(0,0,0)', '#12345678'] as $bad) {
-            $this->actingAs($owner->user)->putJson(route('api.template-settings.update'), ['settings' => ['primary' => $bad]])->assertStatus(422, $bad);
-        }
-    }
-
     public function test_the_listing_is_ordered_by_sort_order_then_id(): void
     {
         $owner = $this->owner();
@@ -88,38 +36,5 @@ class TemplateEdgeTest extends TestCase
         $slugs = array_column($this->actingAs($owner->user)->getJson(route('api.templates.index'))->json('data'), 'slug');
 
         $this->assertSame(['a', 'b'], $slugs);
-    }
-
-    public function test_saving_one_colour_keeps_the_others(): void
-    {
-        $template = Template::factory()->withSettings([
-            ['key' => 'primary_color', 'type' => 'color', 'default' => '#111111'],
-            ['key' => 'background_color', 'type' => 'color', 'default' => '#FFFFFF'],
-        ])->create();
-        $owner = $this->owner([
-            'template_id' => $template->id,
-            'template_settings' => ['primary_color' => '#111111', 'background_color' => '#FAF7F0'],
-        ]);
-
-        $this->actingAs($owner->user)->putJson(route('api.template-settings.update'), ['settings' => ['primary_color' => '#C0392B']])
-            ->assertOk()
-            ->assertJsonPath('data.settings.primary_color', '#C0392B')
-            ->assertJsonPath('data.settings.background_color', '#FAF7F0');
-    }
-
-    public function test_the_list_reports_the_settings_the_menu_is_drawn_with(): void
-    {
-        $template = Template::factory()->withSettings([
-            ['key' => 'primary_color', 'type' => 'color', 'default' => Template::DEFAULT_PRIMARY_COLOR],
-        ])->create();
-
-        // Nothing saved yet: the template's default fills the gap.
-        $owner = $this->owner(['template_id' => $template->id, 'template_settings' => null]);
-        $this->actingAs($owner->user)->getJson(route('api.templates.index'))
-            ->assertJsonPath('meta.settings.primary_color', Template::DEFAULT_PRIMARY_COLOR);
-
-        // No template at all: an empty object, never a list.
-        $fresh = $this->owner(['template_id' => null]);
-        $this->assertStringContainsString('"settings":{}', $this->actingAs($fresh->user)->getJson(route('api.templates.index'))->getContent());
     }
 }

@@ -78,5 +78,7 @@
     "The given data was invalid.": "البيانات المُدخلة غير صالحة.",
     "(and :count more error)": "(وخطأ آخر)",
     "(and :count more errors)": "{2} (وخطآن آخران)|[3,10] (و:count أخطاء أخرى)|[11,*] (و:count خطأً آخر)",
-    "QR Studio is switched off.": "استوديو QR متوقف."
+    "QR Studio is switched off.": "استوديو QR متوقف.",
+    "Please choose a font from the list.": "يرجى اختيار خط من القائمة.",
+    "Your menu has no text in :script.": "لا يوجد في قائمتك نص بخط :script."
 }

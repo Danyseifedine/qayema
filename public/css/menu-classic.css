@@ -144,7 +144,7 @@ a.fact:hover { color: var(--text); }
 
 /* ---- Category tabs ---- */
 .tabs { position: sticky; top: var(--bar); z-index: 10; margin-top: 8px; background: var(--page); border-bottom: 1px solid var(--line); padding: 8px 0; }
-.tabs-inner { position: relative; display: flex; gap: 4px; overflow-x: auto; padding: 0 12px; scrollbar-width: none; }
+.tabs-inner { position: relative; display: flex; gap: 4px; overflow-x: auto; padding: 0 16px; scrollbar-width: none; }
 .tabs-inner::-webkit-scrollbar { display: none; }
 .tab { position: relative; z-index: 1; flex-shrink: 0; padding: 8px 14px; border-radius: 8px; border: 0; background: transparent; color: var(--text); font-size: 13.5px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: color .32s cubic-bezier(.2,.9,.3,1); }
 .tab[aria-current="true"] { color: var(--accent-ink); font-weight: 600; }

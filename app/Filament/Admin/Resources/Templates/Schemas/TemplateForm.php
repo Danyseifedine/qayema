@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\Templates\Schemas;
 
 use App\Models\Template;
+use App\Support\Color;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
@@ -23,8 +24,9 @@ use Illuminate\Support\Str;
 class TemplateForm
 {
     /**
-     * The setting types a template may expose. Each maps to an input the
-     * dashboard knows how to render.
+     * The setting types a template may expose. Only colours have an editor in
+     * the dashboard (Colors & fonts); the others are read by the view at
+     * their default until an owner-facing editor exists.
      *
      * @var array<string, string>
      */
@@ -81,19 +83,21 @@ class TemplateForm
                     ]),
 
                 Section::make('Owner Settings')
-                    ->description('What the owner may customize on this template. Leave empty to make the design fixed.')
+                    ->description('What the owner may customize on this template. Each colour shows on the dashboard\'s Colors & fonts page with its label, and reaches the view as a CSS variable: primary_color becomes var(--primary-color). Leave empty to make the design fixed.')
                     ->schema([
                         Repeater::make('settings_schema')
                             ->label('')
                             ->addActionLabel('Add a setting')
                             ->reorderable()
                             ->collapsible()
-                            ->itemLabel(fn (array $state): ?string => $state['key'] ?? null)
+                            ->itemLabel(fn (array $state): ?string => $state['label']['en'] ?? $state['key'] ?? null)
                             ->columns(3)
                             ->schema([
                                 TextInput::make('key')
                                     ->placeholder('primary_color')
                                     ->required()
+                                    ->regex(Template::SETTING_KEY_PATTERN)
+                                    ->validationMessages(['regex' => 'Lowercase letters, digits and underscores, starting with a letter.'])
                                     ->helperText('Referenced from the Blade view.'),
                                 Select::make('type')
                                     ->options(self::SETTING_TYPES)
@@ -102,7 +106,20 @@ class TemplateForm
                                     ->required(),
                                 TextInput::make('default')
                                     ->placeholder(Template::DEFAULT_PRIMARY_COLOR)
+                                    ->rules(fn ($get): array => $get('type') === 'color' ? [Color::RULE] : [])
                                     ->helperText('Applied when the owner has not chosen one.'),
+                                TextInput::make('label.en')
+                                    ->label('Label (English)')
+                                    ->placeholder('Main colour')
+                                    ->helperText('What the owner reads. The key is shown when empty.'),
+                                TextInput::make('label.ar')
+                                    ->label('Label (Arabic)')
+                                    ->placeholder('اللون الرئيسي'),
+                                TextInput::make('contrast_with')
+                                    ->label('Read against')
+                                    ->placeholder('background_color')
+                                    ->visible(fn ($get): bool => $get('type') === 'color')
+                                    ->helperText('Another colour key: the dashboard warns when the two are hard to read together.'),
                                 TagsInput::make('options')
                                     ->label('Choices')
                                     ->placeholder('Add a choice')

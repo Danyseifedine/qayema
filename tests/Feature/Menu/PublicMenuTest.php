@@ -25,7 +25,6 @@ class PublicMenuTest extends TestCase
             'default_locale' => 'en',
             'is_active' => true,
             'template_id' => $template->id,
-            'template_settings' => $template->defaultSettings(),
         ], $attributes));
     }
 
@@ -193,7 +192,7 @@ class PublicMenuTest extends TestCase
     public function test_the_owners_colour_choice_reaches_the_page(): void
     {
         $restaurant = $this->published();
-        $restaurant->update(['template_settings' => ['primary_color' => '#112233']]);
+        $restaurant->update(['template_settings' => [$restaurant->template_id => ['primary_color' => '#112233']]]);
 
         $this->get(route('public.menu', $restaurant->slug))
             ->assertOk()

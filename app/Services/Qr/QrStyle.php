@@ -121,8 +121,7 @@ class QrStyle
      */
     public static function brandColor(Restaurant $restaurant): string
     {
-        $settings = $restaurant->template?->resolveSettings((array) $restaurant->template_settings) ?? [];
-        $colour = $settings['primary_color'] ?? null;
+        $colour = $restaurant->designSettings()['primary_color'] ?? null;
 
         return Color::isHex($colour) ? $colour : Template::DEFAULT_PRIMARY_COLOR;
     }

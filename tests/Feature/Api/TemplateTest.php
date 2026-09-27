@@ -38,7 +38,7 @@ class TemplateTest extends TestCase
 
         $response->assertJsonStructure([
             'data' => [['id', 'slug', 'settings_schema', 'name' => ['en', 'ar'], 'description' => ['en', 'ar']]],
-            'meta' => ['current', 'settings'],
+            'meta' => ['current'],
         ]);
 
         // Only active templates are offered, and nothing is selected yet.
@@ -91,19 +91,21 @@ class TemplateTest extends TestCase
             ->assertJsonValidationErrors('template_id');
     }
 
-    public function test_selecting_a_template_seeds_its_default_settings(): void
+    public function test_selecting_a_template_keeps_the_colours_chosen_for_others(): void
     {
         [$user, $restaurant] = $this->owner();
-        $template = Template::factory()->withSettings([
+        $styled = Template::factory()->withSettings([
             ['key' => 'primary_color', 'type' => 'color', 'default' => '#C8A85A'],
         ])->create(['slug' => 'styled']);
+        $restaurant->update(['template_settings' => [$styled->id => ['primary_color' => '#112233']]]);
 
         $this->actingAs($user)
-            ->postJson(route('api.templates.select'), ['template_id' => $template->id])
-            ->assertOk()
-            ->assertJsonPath('meta.settings.primary_color', '#C8A85A');
+            ->postJson(route('api.templates.select'), ['template_id' => $styled->id])
+            ->assertOk();
 
-        $this->assertSame(['primary_color' => '#C8A85A'], $restaurant->fresh()->template_settings);
+        // Nothing is reset on the way in: the colours chosen before return.
+        $this->assertSame([$styled->id => ['primary_color' => '#112233']], $restaurant->fresh()->template_settings);
+        $this->assertSame('#112233', $restaurant->fresh()->designSettings()['primary_color']);
     }
 
     public function test_every_active_template_is_selectable(): void

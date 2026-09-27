@@ -71,6 +71,7 @@ class Restaurant extends Model implements HasMedia
         'template_settings',
         'qr_settings',
         'switched_off',
+        'menu_fonts',
     ];
 
     protected function casts(): array
@@ -83,6 +84,7 @@ class Restaurant extends Model implements HasMedia
             'template_settings' => 'array',
             'qr_settings' => 'array',
             'switched_off' => 'array',
+            'menu_fonts' => 'array',
         ];
     }
 
@@ -218,6 +220,75 @@ class Restaurant extends Model implements HasMedia
     public function hasQrStudio(): bool
     {
         return $this->entitlements()->can(Feature::QrStudio) && ! $this->isSwitchedOff('qr');
+    }
+
+    /**
+     * A design's colours as the menu draws them: the owner's choices for that
+     * design over its defaults. The design in use when none is given.
+     *
+     * @return array<string, mixed>
+     */
+    public function designSettings(?Template $template = null): array
+    {
+        $template ??= $this->template;
+
+        return $template?->resolveSettings($this->chosenDesignSettings($template)) ?? [];
+    }
+
+    /**
+     * Only what the owner changed on one design.
+     *
+     * @return array<string, mixed>
+     */
+    public function chosenDesignSettings(Template $template): array
+    {
+        return (array) ($this->designSettingsByTemplate()[$template->id] ?? []);
+    }
+
+    /**
+     * Save some of a design's colours. Only that design's entry changes; a
+     * null value drops the owner's choice, so the design default applies.
+     *
+     * @param  array<string, mixed>  $values
+     */
+    public function saveDesignSettings(Template $template, array $values): void
+    {
+        $chosen = array_filter(
+            array_intersect_key(
+                array_replace($this->chosenDesignSettings($template), $values),
+                $template->defaultSettings(),
+            ),
+            fn ($value): bool => $value !== null,
+        );
+
+        $all = $this->designSettingsByTemplate();
+        // Assigned by key, never merged: array_merge renumbers integer keys
+        // and would hand one design's colours to another.
+        $all[$template->id] = $chosen;
+
+        $this->update(['template_settings' => array_filter($all, fn (array $entry): bool => $entry !== [])]);
+    }
+
+    /**
+     * The column as {template_id: values}. Before designs kept their own
+     * colours it held one flat map for the design in use, which reads as
+     * that design's entry.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function designSettingsByTemplate(): array
+    {
+        $stored = (array) $this->template_settings;
+
+        $perDesign = $stored === [] || collect($stored)->every(
+            fn ($value, $key): bool => is_int($key) && is_array($value),
+        );
+
+        if ($perDesign) {
+            return $stored;
+        }
+
+        return $this->template_id !== null ? [$this->template_id => $stored] : [];
     }
 
     public function entitlements(): Entitlements

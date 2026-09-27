@@ -52,8 +52,13 @@ return new class extends Migration
             $table->char('second_locale', 2)->nullable();
             $table->boolean('is_active')->default(true);
 
-            // Owner-chosen values for the active template's settings_schema.
+            // The owner's colours, per design: {"<template_id>": {key: value}},
+            // holding only what they changed from that design's defaults, so
+            // each design keeps its own when the owner switches between them.
             $table->json('template_settings')->nullable();
+            // The owner's font per writing system, {script: family}, from
+            // config/fonts.php. The same for every design.
+            $table->json('menu_fonts')->nullable();
             $table->json('qr_settings')->nullable();
             // Optional features the owner switched off on the dashboard's
             // Features page (Restaurant::OPTIONAL_FEATURES). Orders and

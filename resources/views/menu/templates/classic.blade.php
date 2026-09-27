@@ -4,8 +4,9 @@
     Every menu template is a standalone page: it receives $restaurant, $template,
     $settings (the owner's choices merged over the template's defaults), $locale
     (the language the owner writes in), $hours, $can_order and $is_preview.
-    Its static styles are public/css/menu-classic.css; only the :root colours
-    and font stay inline, because they are the restaurant's own. Run
+    Its static styles are public/css/menu-classic.css; the owner's fonts and
+    the design's colour variables come from menu.partials.theme, and only the
+    colours this design names differently stay inline below. Run
     `php artisan make:menu-template <slug>` to add a design: it copies this
     file and the stylesheet, and the slug must match the template row's.
 --}}
@@ -28,14 +29,6 @@
     $accent = $settings['primary_color'] ?? Template::DEFAULT_PRIMARY_COLOR;
     // What to print *on* the accent: measured, since the owner picks the colour.
     $accentInk = Color::inkOn($accent);
-
-    // A script Inter does not cover (Arabic, Chinese, Devanagari) gets its own
-    // font, loaded only on that language's menu. Quotes cannot go through
-    // {{ }} — it escapes them to &#039; and the whole CSS declaration is then
-    // invalid.
-    $scriptFont = MenuLanguages::font($locale);
-    $fontStack = $scriptFont ? "'{$scriptFont}', 'Inter'" : "'Inter'";
-    $fontFamilies = 'family=Inter:wght@400;500;600;700'.($scriptFont ? '&family='.str_replace(' ', '+', $scriptFont).':wght@400;500;600;700' : '');
 
     $icons = MenuIcons::all();
 
@@ -113,9 +106,7 @@
     @endforeach
     <link rel="alternate" hreflang="x-default" href="{{ route('public.menu', $restaurant->slug) }}">
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?{!! $fontFamilies !!}&display=swap" rel="stylesheet">
+    @include('menu.partials.theme')
 
     <style>
         :root {
@@ -130,7 +121,6 @@
             --soft: color-mix(in srgb, var(--text) 6%, var(--bg));
             --line: color-mix(in srgb, var(--text) 11%, var(--bg));
             --muted: color-mix(in srgb, var(--text) 58%, var(--bg));
-            --font: {!! $fontStack !!}, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
             /* The phone top bar's height, which the sticky category tabs sit
                under. .topbar-inner holds it, so a bigger logo or no cart
                button can never make the tabs slide beneath the bar. */

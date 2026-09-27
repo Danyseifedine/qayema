@@ -41,7 +41,6 @@ trait CreatesOwners
         return Restaurant::factory()->create(array_merge([
             'is_active' => true,
             'template_id' => $template->id,
-            'template_settings' => $template->defaultSettings(),
         ], $restaurant));
     }
 

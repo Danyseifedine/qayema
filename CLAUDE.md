@@ -512,21 +512,48 @@ add, flags OR, unlimited stays unlimited). Resolved by
 
 A template is a row + a Blade view of the same slug
 (`resources/views/menu/templates/{slug}.blade.php`) + its stylesheet
-(`public/css/menu-{slug}.css`, cache-busted by `filemtime`). Only the `:root`
-colours and font stay inline in the view, because they are the restaurant's
-own; tests assert on that `--accent: #XXXXXX` line, so keep its spacing. The
-inline SVG icons come from `App\Support\MenuIcons`. Scaffold all of it with:
+(`public/css/menu-{slug}.css`, cache-busted by `filemtime`). The view's `<head>`
+`@include('menu.partials.theme')`, which loads the owner's fonts and prints
+every colour the design declares as a CSS variable (`primary_color` →
+`--primary-color` and `--primary-color-ink`), plus `--font`. Classic also
+keeps its own `--accent/--bg/--text` lines; tests assert `--accent: #XXXXXX`,
+so keep their spacing. The inline SVG icons come from `App\Support\MenuIcons`.
+Scaffold all of it with:
 
 ```bash
 php artisan make:menu-template midnight
 ```
 
-`templates.settings_schema` declares what the owner may change
-(`[{key, type, default, options?}]`, types: color/text/boolean/select).
-`UpdateTemplateSettingsRequest` builds its validation from that schema at request
-time and **rejects any key the template doesn't declare**, so "this design can
-change its colours, that one is fixed" is data, not code. An empty schema = a
-fixed design.
+**A design's colours are data, not code.** `templates.settings_schema`
+declares them: `[{key, type: "color", default, label: {en, ar}, contrast_with?}]`
+(edited in the admin panel; `key` is `^[a-z][a-z0-9_]*$`, a colour default must
+be hex). To give a design another colour: add a row, use `var(--the-key)` in
+its view — nothing else. The dashboard's **Colors & fonts** page lists exactly
+the colour rows (`Template::colorSettings()`), labelled, with a contrast
+warning against `contrast_with`. `UpdateColorsFontsRequest` builds its rules
+from those rows and rejects anything else. text/boolean/select rows still
+resolve to their defaults but have no owner UI. An empty schema = a fixed
+design.
+
+**Each design remembers its colours.** `restaurants.template_settings` is
+`{template_id: {key: value}}` holding only what the owner changed
+(`Restaurant::designSettings()` resolves it over the design's defaults;
+`saveDesignSettings()` writes one entry, by key — never `array_merge`, which
+renumbers the integer keys). Switching design resets nothing. An old flat map
+is read as the current design's. `resolveSettings()` drops a stored colour
+that isn't hex, so a view can print one straight into CSS.
+
+**Fonts belong to the restaurant**, one per writing system the menu uses:
+`config/fonts.php` is the curated catalogue (per script: families with the
+weights each really has — Google 400s on a missing one —, a default, a sample
+dish name, and `latin_first`); each menu language names its `script` in
+`config/locales.php`. `restaurants.menu_fonts` = `{script: family}`.
+`App\Services\Menu\MenuFonts` gives the scripts in use (via
+`MenuLanguages::for()`), the pick or default, the CSS stack and the Google
+Fonts URL. Arabic and Chinese stack the Latin pick first (their fonts also
+carry Latin, which would win for prices); Cyrillic and Devanagari put their
+own first (Latin fonts also carry them). The QR card loads every font the
+menu uses. API: `GET/PUT /api/colors-fonts` (`ColorsFontsController`).
 
 The public menu controller falls back to `classic` when a template row exists
 without its Blade file, so a half-finished template never 500s a guest. The
@@ -541,6 +568,7 @@ One name per thing, shared with the dashboard (`../qayema-dashboard`):
 |---|---|
 | Analytics | `AnalyticsController`, `GET /api/analytics[/advanced]`, `Services/Analytics/MenuStats`, model `MenuSession` (table `menu_sessions`) |
 | Design | `TemplateController`, `/api/templates` — a *design* is a `Template` row; the model keeps its name |
+| Colors & fonts | `ColorsFontsController`, `GET/PUT /api/colors-fonts`, `Restaurant::designSettings()`, `MenuFonts`, `config/fonts.php` |
 | Restaurant | `RestaurantController`, `GET/PUT /api/restaurant`, `RestaurantResource`, `UpdateRestaurantRequest` |
 | Features | `FeaturesController`, `PUT /api/features`, column `switched_off` |
 | Package | `/api/packages` |
@@ -753,8 +781,8 @@ is only the **portal's** UI list and has nothing to do with menus.
   sent is untouched.
 - Public menu: `?lang=` accepts only the menu's own languages (anything else
   opens the default), hreflang and the switcher list only those, and an
-  English-only menu has no switcher. `dir` and the extra Google Font
-  (El Messiri, Noto Sans SC, Noto Sans Devanagari) come from the catalogue.
+  English-only menu has no switcher. `dir` comes from the catalogue; fonts
+  come from the language's script (see Templates → fonts).
 - The menu's own words live in `lang/{code}.json` (same keys as `ar.json`).
   The non-Arabic ones were written by Claude and still want a native read.
 - The cart sends the guest's language with an order; the WhatsApp text, any

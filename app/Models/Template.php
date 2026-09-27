@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Color;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -27,15 +28,26 @@ class Template extends Model implements HasMedia
 
     /**
      * The knobs the classic design exposes, and what a scaffolded template
-     * starts from (TemplateSeeder, make:menu-template).
+     * starts from (TemplateSeeder, make:menu-template). `label` is what the
+     * owner reads on Colors & fonts; `contrast_with` names the colour this
+     * one is read against, so the dashboard can warn when they clash.
      *
-     * @var array<int, array{key: string, type: string, default: string}>
+     * @var array<int, array{key: string, type: string, default: string, label: array{en: string, ar: string}, contrast_with?: string}>
      */
     public const CLASSIC_SCHEMA = [
-        ['key' => 'primary_color', 'type' => 'color', 'default' => self::DEFAULT_PRIMARY_COLOR],
-        ['key' => 'background_color', 'type' => 'color', 'default' => '#FFFFFF'],
-        ['key' => 'text_color', 'type' => 'color', 'default' => '#111418'],
+        ['key' => 'primary_color', 'type' => 'color', 'default' => self::DEFAULT_PRIMARY_COLOR,
+            'label' => ['en' => 'Main colour', 'ar' => 'اللون الرئيسي']],
+        ['key' => 'background_color', 'type' => 'color', 'default' => '#FFFFFF',
+            'label' => ['en' => 'Background', 'ar' => 'الخلفية']],
+        ['key' => 'text_color', 'type' => 'color', 'default' => '#111418',
+            'label' => ['en' => 'Text', 'ar' => 'النص'], 'contrast_with' => 'background_color'],
     ];
+
+    /**
+     * A setting's key: it becomes a CSS variable, a form path and a validation
+     * rule, so it is kept to lowercase words joined by underscores.
+     */
+    public const SETTING_KEY_PATTERN = '/^[a-z][a-z0-9_]*$/';
 
     /** @var string[] */
     public array $translatable = ['name', 'description'];
@@ -75,7 +87,7 @@ class Template extends Model implements HasMedia
     /**
      * The settings this template exposes, as declared rows.
      *
-     * @return array<int, array{key: string, type: string, default: mixed}>
+     * @return array<int, array{key: string, type: string, default: mixed, label?: array<string, string|null>, contrast_with?: string|null, options?: array<int, string>}>
      */
     public function settingsSchema(): array
     {
@@ -83,8 +95,24 @@ class Template extends Model implements HasMedia
     }
 
     /**
-     * The schema collapsed to key => default, which is what a restaurant's
-     * `template_settings` is seeded with when the template is selected.
+     * The colour rows alone, with a usable key: what the owner edits on the
+     * dashboard's Colors & fonts page and what the menu gets as CSS variables.
+     *
+     * @return array<int, array{key: string, type: string, default: mixed, label?: array<string, string|null>, contrast_with?: string|null}>
+     */
+    public function colorSettings(): array
+    {
+        return array_values(array_filter(
+            $this->settingsSchema(),
+            fn (array $row): bool => ($row['type'] ?? null) === 'color'
+                && is_string($row['key'] ?? null)
+                && preg_match(self::SETTING_KEY_PATTERN, $row['key']) === 1,
+        ));
+    }
+
+    /**
+     * The schema collapsed to key => default: what a design looks like
+     * before its owner changes anything.
      *
      * @return array<string, mixed>
      */
@@ -98,7 +126,9 @@ class Template extends Model implements HasMedia
 
     /**
      * Merge an owner's stored settings over the template defaults, ignoring
-     * nulls and any key the schema doesn't declare.
+     * nulls, any key the schema doesn't declare, and a colour that isn't a
+     * hex — views print these straight into CSS, where a stray `;}` would
+     * break out of the rule.
      *
      * @param  array<string, mixed>  $stored
      * @return array<string, mixed>
@@ -106,12 +136,15 @@ class Template extends Model implements HasMedia
     public function resolveSettings(array $stored = []): array
     {
         $defaults = $this->defaultSettings();
+        $colors = array_column($this->colorSettings(), 'key');
 
         return array_merge(
             $defaults,
             array_filter(
                 array_intersect_key($stored, $defaults),
-                fn ($value): bool => $value !== null
+                fn ($value, string $key): bool => $value !== null
+                    && (! in_array($key, $colors, true) || Color::isHex($value)),
+                ARRAY_FILTER_USE_BOTH,
             )
         );
     }

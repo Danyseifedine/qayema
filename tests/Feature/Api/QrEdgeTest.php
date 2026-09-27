@@ -168,7 +168,8 @@ class QrEdgeTest extends TestCase
 
     public function test_a_brand_card_takes_the_menus_colour(): void
     {
-        $owner = $this->published(['template_settings' => ['primary_color' => '#EA4335']]);
+        $owner = $this->published();
+        $owner->update(['template_settings' => [$owner->template_id => ['primary_color' => '#EA4335']]]);
         $owner->update(['qr_settings' => $this->design(['card_theme' => 'brand'])]);
 
         $this->get(route('public.qr', $owner->slug))

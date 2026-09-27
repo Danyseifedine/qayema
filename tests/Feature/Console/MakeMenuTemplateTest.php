@@ -60,7 +60,6 @@ class MakeMenuTemplateTest extends TestCase
             'name' => ['en' => 'Scaffolded Diner'],
             'default_locale' => 'en',
             'template_id' => $template->id,
-            'template_settings' => $template->defaultSettings(),
         ]);
 
         // The whole point: a brand new template is live for guests immediately.

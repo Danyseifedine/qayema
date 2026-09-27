@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\ColorsFontsController;
 use App\Http\Controllers\Api\DishController;
 use App\Http\Controllers\Api\FeaturesController;
 use App\Http\Controllers\Api\MenuLanguagesController;
@@ -95,8 +96,13 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // grants is limits and features, never a template.
     Route::get('/templates', [TemplateController::class, 'index'])->name('api.templates.index');
     Route::post('/templates/select', [TemplateController::class, 'select'])->name('api.templates.select');
-    Route::match(['put', 'patch'], '/template-settings', [TemplateController::class, 'updateSettings'])
-        ->name('api.template-settings.update');
+
+    // Colors & fonts: the colours the design in use declares (each design
+    // keeps its own), and one font per writing system the menu uses.
+    Route::get('/colors-fonts', [ColorsFontsController::class, 'show'])->name('api.colors-fonts.show');
+    Route::put('/colors-fonts', [ColorsFontsController::class, 'update'])
+        ->middleware('throttle:mutations')
+        ->name('api.colors-fonts.update');
 
     // Packages — what every plan contains and which one this restaurant is on.
     // Nothing is sold here: an owner asks for a package and an admin assigns it,

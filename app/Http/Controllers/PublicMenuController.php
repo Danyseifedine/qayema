@@ -57,11 +57,9 @@ class PublicMenuController extends Controller
             'media',
         ]);
 
-        // A preview shows the candidate template with its own defaults — the
-        // owner has no saved settings for a design they haven't chosen yet.
-        $settings = $preview === null
-            ? $template->resolveSettings((array) $restaurant->template_settings)
-            : $template->defaultSettings();
+        // Each design keeps the colours its owner chose for it, so a preview
+        // of another design shows those, or its defaults if there are none.
+        $settings = $restaurant->designSettings($template);
 
         $locale = $this->locale($request, $restaurant);
 

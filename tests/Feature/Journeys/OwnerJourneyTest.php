@@ -152,15 +152,15 @@ class OwnerJourneyTest extends TestCase
         // Preview, choose, recolour.
         $this->actingAs($owner->user)->get('/designer?preview='.$midnight->id)->assertOk()->assertSee('--accent: #ABCDEF', false);
         $this->actingAs($owner->user)->postJson(route('api.templates.select'), ['template_id' => $midnight->id])->assertOk();
-        $this->actingAs($owner->user)->putJson(route('api.template-settings.update'), ['settings' => ['primary_color' => '#112233']])->assertOk();
+        $this->actingAs($owner->user)->putJson(route('api.colors-fonts.update'), ['colors' => ['primary_color' => '#112233']])->assertOk();
         $this->get('/designer')->assertOk()->assertSee('--accent: #112233', false);
 
-        // Switch away and back: free both ways, settings reset to the defaults.
+        // Switch away and back: free both ways, and each design keeps its colours.
         $classic = Template::firstWhere('slug', 'classic');
         $this->actingAs($owner->user)->postJson(route('api.templates.select'), ['template_id' => $classic->id])->assertOk();
-        $this->actingAs($owner->user)->postJson(route('api.templates.select'), ['template_id' => $midnight->id])
-            ->assertOk()
-            ->assertJsonPath('meta.settings.primary_color', '#ABCDEF');
+        $this->get('/designer')->assertOk()->assertDontSee('--accent: #112233', false);
+        $this->actingAs($owner->user)->postJson(route('api.templates.select'), ['template_id' => $midnight->id])->assertOk();
+        $this->get('/designer')->assertOk()->assertSee('--accent: #112233', false);
     }
 
     public function test_flooding_gets_the_ip_banned_and_the_ban_lifts_after_an_hour(): void

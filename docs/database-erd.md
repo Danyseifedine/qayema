@@ -46,7 +46,8 @@ erDiagram
         char default_locale "2, ar or en"
         varchar timezone "default UTC"
         tinyint is_active "default 1"
-        json template_settings "owner's choices for the active template"
+        json template_settings "per design: {template_id: {key: colour}}, owner's changes only"
+        json menu_fonts "{script: family}, config/fonts.php"
         json qr_settings "QR card design"
         timestamps created_updated
     }

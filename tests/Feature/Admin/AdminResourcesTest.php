@@ -204,6 +204,38 @@ class AdminResourcesTest extends TestCase
         $this->assertSame('#ABCDEF', $template->defaultSettings()['accent']);
     }
 
+    public function test_a_colour_setting_carries_its_labels_and_contrast_partner(): void
+    {
+        $this->actingAs($this->admin());
+
+        Livewire::test(CreateTemplate::class)
+            ->fillForm([
+                'name' => 'Midnight', 'slug' => 'midnight', 'is_active' => true, 'sort_order' => 3,
+                'settings_schema' => [
+                    ['key' => 'ink', 'type' => 'color', 'default' => '#F5F1E8', 'label' => ['en' => 'Ink', 'ar' => 'الحبر'], 'contrast_with' => 'paper'],
+                    ['key' => 'paper', 'type' => 'color', 'default' => '#101010', 'label' => ['en' => 'Paper', 'ar' => null]],
+                ],
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $rows = Template::firstWhere('slug', 'midnight')->colorSettings();
+        $this->assertSame(['en' => 'Ink', 'ar' => 'الحبر'], $rows[0]['label']);
+        $this->assertSame('paper', $rows[0]['contrast_with']);
+    }
+
+    public function test_a_setting_key_must_be_a_plain_word_and_a_colour_default_a_hex(): void
+    {
+        $this->actingAs($this->admin());
+
+        foreach ([['key' => 'main colour', 'type' => 'color', 'default' => '#FFFFFF'], ['key' => 'main', 'type' => 'color', 'default' => 'red']] as $row) {
+            Livewire::test(CreateTemplate::class)
+                ->fillForm(['name' => 'Midnight', 'slug' => 'midnight', 'is_active' => true, 'sort_order' => 3, 'settings_schema' => [$row]])
+                ->call('create')
+                ->assertHasFormErrors();
+        }
+    }
+
     public function test_template_slugs_are_unique(): void
     {
         Template::factory()->create(['slug' => 'taken']);
