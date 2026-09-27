@@ -20,6 +20,11 @@ class Template extends Model implements HasMedia
 {
     use HasFactory, HasTranslations, InteractsWithMedia;
 
+    /**
+     * Qayema's own gold: the accent a menu has until its owner picks one.
+     */
+    public const DEFAULT_PRIMARY_COLOR = '#F8D38D';
+
     /** @var string[] */
     public array $translatable = ['name', 'description'];
 

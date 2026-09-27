@@ -19,14 +19,14 @@
     $description = $text($restaurant, 'description');
     $todayRange = $hours->todayRange();
 
-    $accent = $settings['primary_color'] ?? '#1F6FEB';
+    $accent = $settings['primary_color'] ?? \App\Models\Template::DEFAULT_PRIMARY_COLOR;
 
     // What to print *on* the accent. A pale accent needs near-black, a strong
     // one needs white, and the owner picks the colour — so it is measured, not
     // guessed. CSS has no contrast function, hence the luminance here.
     $hex = ltrim($accent, '#');
     $hex = strlen($hex) === 3 ? $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2] : $hex;
-    $rgb = strlen($hex) === 6 && ctype_xdigit($hex) ? array_map('hexdec', str_split($hex, 2)) : [31, 111, 235];
+    $rgb = strlen($hex) === 6 && ctype_xdigit($hex) ? array_map('hexdec', str_split($hex, 2)) : [248, 211, 141];
     $accentInk = (0.2126 * $rgb[0] + 0.7152 * $rgb[1] + 0.0722 * $rgb[2]) / 255 > 0.62 ? '#111418' : '#FFFFFF';
 
     // A script Inter does not cover (Arabic, Chinese, Devanagari) gets its own
@@ -149,7 +149,10 @@
             --line: color-mix(in srgb, var(--text) 11%, var(--bg));
             --muted: color-mix(in srgb, var(--text) 58%, var(--bg));
             --font: {!! $fontStack !!}, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-            --bar: 49px;
+            /* The phone top bar's height, which the sticky category tabs sit
+               under. .topbar-inner holds it, so a bigger logo or no cart
+               button can never make the tabs slide beneath the bar. */
+            --bar: 61px;
             --dock: 0px;
         }
 
@@ -187,21 +190,32 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            min-height: calc(var(--bar) - 1px);
             padding: 12px 14px;
         }
-        .brand { display: flex; align-items: center; gap: 8px; text-decoration: none; color: inherit; min-width: 0; }
-        .brand-mark {
-            width: 22px;
-            height: 22px;
+        .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; min-width: 0; }
+        /* The owner's logo as they drew it: its own shape and its own
+           transparency, never cropped to a circle or set on a colour. A wide
+           logo grows sideways up to a limit, so the name still fits. */
+        img.brand-mark {
+            height: 36px;
+            width: auto;
+            max-width: 120px;
+            flex-shrink: 0;
+            object-fit: contain;
+        }
+        /* No logo: the name's first letter on the menu's colour. */
+        span.brand-mark {
+            width: 32px;
+            height: 32px;
             flex-shrink: 0;
             border-radius: 50%;
-            object-fit: cover;
             background: var(--accent);
             color: var(--accent-ink);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 11px;
+            font-size: 14px;
             font-weight: 700;
             letter-spacing: -0.02em;
         }
@@ -386,12 +400,14 @@
             background: var(--bg);
             border: 1px solid var(--line);
             border-radius: 999px;
-            /* Three layers: a hairline to seat it, a close shadow for shape,
-               and a wide one to lift it off whatever it is floating over. */
+            /* Three layers: a hairline to seat it, a small shadow held in
+               under its bottom edge (the negative spread keeps it from
+               showing above), and a wide one to lift it off whatever it is
+               floating over. */
             box-shadow:
-                0 1px 2px rgba(0,0,0,.07),
-                0 6px 16px rgba(0,0,0,.13),
-                0 18px 42px rgba(0,0,0,.17);
+                0 1px 2px rgba(0,0,0,.08),
+                0 9px 16px -5px rgba(0,0,0,.34),
+                0 18px 40px -10px rgba(0,0,0,.2);
         }
 
         .dockitem {
@@ -579,7 +595,8 @@
 
             .topbar { flex: none; position: static; }
             .topbar-inner { padding: 14px 32px; gap: 24px; }
-            .brand-mark { width: 28px; height: 28px; font-size: 14px; }
+            img.brand-mark { height: 44px; max-width: 160px; }
+            span.brand-mark { width: 38px; height: 38px; font-size: 16px; }
             .brand-name { font-size: 16px; }
             .facts-row { display: flex; }
             .field.topbar-search { display: flex; min-width: 220px; padding: 8px 14px; border-radius: 8px; }

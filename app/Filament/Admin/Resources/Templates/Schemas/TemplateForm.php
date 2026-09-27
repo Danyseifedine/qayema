@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\Templates\Schemas;
 
+use App\Models\Template;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
@@ -100,7 +101,7 @@ class TemplateForm
                                     ->live()
                                     ->required(),
                                 TextInput::make('default')
-                                    ->placeholder('#1F6FEB')
+                                    ->placeholder(Template::DEFAULT_PRIMARY_COLOR)
                                     ->helperText('Applied when the owner has not chosen one.'),
                                 TagsInput::make('options')
                                     ->label('Choices')

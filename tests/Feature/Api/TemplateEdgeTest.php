@@ -89,4 +89,37 @@ class TemplateEdgeTest extends TestCase
 
         $this->assertSame(['a', 'b'], $slugs);
     }
+
+    public function test_saving_one_colour_keeps_the_others(): void
+    {
+        $template = Template::factory()->withSettings([
+            ['key' => 'primary_color', 'type' => 'color', 'default' => '#111111'],
+            ['key' => 'background_color', 'type' => 'color', 'default' => '#FFFFFF'],
+        ])->create();
+        $owner = $this->owner([
+            'template_id' => $template->id,
+            'template_settings' => ['primary_color' => '#111111', 'background_color' => '#FAF7F0'],
+        ]);
+
+        $this->actingAs($owner->user)->putJson(route('api.template-settings.update'), ['settings' => ['primary_color' => '#C0392B']])
+            ->assertOk()
+            ->assertJsonPath('data.settings.primary_color', '#C0392B')
+            ->assertJsonPath('data.settings.background_color', '#FAF7F0');
+    }
+
+    public function test_the_list_reports_the_settings_the_menu_is_drawn_with(): void
+    {
+        $template = Template::factory()->withSettings([
+            ['key' => 'primary_color', 'type' => 'color', 'default' => Template::DEFAULT_PRIMARY_COLOR],
+        ])->create();
+
+        // Nothing saved yet: the template's default fills the gap.
+        $owner = $this->owner(['template_id' => $template->id, 'template_settings' => null]);
+        $this->actingAs($owner->user)->getJson(route('api.templates.index'))
+            ->assertJsonPath('meta.settings.primary_color', Template::DEFAULT_PRIMARY_COLOR);
+
+        // No template at all: an empty object, never a list.
+        $fresh = $this->owner(['template_id' => null]);
+        $this->assertStringContainsString('"settings":{}', $this->actingAs($fresh->user)->getJson(route('api.templates.index'))->getContent());
+    }
 }

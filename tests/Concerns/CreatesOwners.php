@@ -35,7 +35,7 @@ trait CreatesOwners
     {
         $template = Template::query()->firstWhere('slug', 'classic')
             ?? Template::factory()->withSettings([
-                ['key' => 'primary_color', 'type' => 'color', 'default' => '#1F6FEB'],
+                ['key' => 'primary_color', 'type' => 'color', 'default' => Template::DEFAULT_PRIMARY_COLOR],
             ])->create(['slug' => 'classic']);
 
         return Restaurant::factory()->create(array_merge([

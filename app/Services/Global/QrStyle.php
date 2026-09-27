@@ -3,6 +3,7 @@
 namespace App\Services\Global;
 
 use App\Models\Restaurant;
+use App\Models\Template;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
@@ -114,15 +115,15 @@ class QrStyle
 
     /**
      * The menu's own accent, so a "brand" card matches the menu it opens.
-     * Falls back to the classic template's blue when there is no template or
-     * no valid colour saved.
+     * Falls back to Qayema's gold when there is no template or no valid colour
+     * saved.
      */
     public static function brandColor(Restaurant $restaurant): string
     {
         $settings = $restaurant->template?->resolveSettings((array) $restaurant->template_settings) ?? [];
         $colour = $settings['primary_color'] ?? null;
 
-        return is_string($colour) && preg_match('/^#[0-9a-fA-F]{6}$/', $colour) ? $colour : '#1F6FEB';
+        return is_string($colour) && preg_match('/^#[0-9a-fA-F]{6}$/', $colour) ? $colour : Template::DEFAULT_PRIMARY_COLOR;
     }
 
     /** Near-black on a light colour, white on a dark one — the menu's rule. */

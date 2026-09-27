@@ -46,7 +46,8 @@ class TemplateController extends Controller
 
     /**
      * Save the owner's customizations for their active template. What may be
-     * changed is declared by that template's own schema.
+     * changed is declared by that template's own schema. Only the keys sent
+     * change, so saving one colour leaves the others as they were.
      */
     public function updateSettings(UpdateTemplateSettingsRequest $request): JsonResponse
     {
@@ -57,7 +58,10 @@ class TemplateController extends Controller
 
         // resolveSettings() drops anything the schema doesn't declare and fills
         // the gaps with the template's defaults.
-        $settings = $template->resolveSettings((array) $request->validated('settings'));
+        $settings = $template->resolveSettings(array_merge(
+            (array) $restaurant->template_settings,
+            (array) $request->validated('settings'),
+        ));
 
         $restaurant->update(['template_settings' => $settings]);
 
@@ -69,7 +73,10 @@ class TemplateController extends Controller
         return TemplateResource::collection(Template::query()->active()->get())->additional([
             'meta' => [
                 'current' => $restaurant->template_id,
-                'settings' => $restaurant->template_settings ?? [],
+                // What the menu is drawn with: the saved values over the
+                // template's defaults. An object even when empty, so it never
+                // arrives as a JSON list.
+                'settings' => (object) ($restaurant->template?->resolveSettings((array) $restaurant->template_settings) ?? []),
             ],
         ]);
     }

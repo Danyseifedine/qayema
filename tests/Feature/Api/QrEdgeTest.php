@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use App\Enums\Feature;
 use App\Models\Package;
 use App\Models\Restaurant;
+use App\Models\Template;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -179,11 +180,11 @@ class QrEdgeTest extends TestCase
         $this->actingAs($owner->user)->getJson(route('api.qr.show'))->assertJsonPath('data.brand_color', '#EA4335');
     }
 
-    public function test_without_a_template_the_brand_colour_is_the_classic_blue(): void
+    public function test_without_a_template_the_brand_colour_is_qayema_gold(): void
     {
         $owner = $this->owner();
 
-        $this->actingAs($owner->user)->getJson(route('api.qr.show'))->assertJsonPath('data.brand_color', '#1F6FEB');
+        $this->actingAs($owner->user)->getJson(route('api.qr.show'))->assertJsonPath('data.brand_color', Template::DEFAULT_PRIMARY_COLOR);
     }
 
     public function test_the_card_is_not_found_for_an_unknown_or_reserved_slug(): void
