@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\Feature;
 use App\Models\Restaurant;
 use App\Models\Template;
 use App\Services\Global\MapPoint;
@@ -94,7 +93,7 @@ class PublicMenuController extends Controller
                 : null,
             // Ordering is a package feature, and a preview is a dress
             // rehearsal — neither should take a real order.
-            'can_order' => ! $preview && $restaurant->entitlements()->can(Feature::Ordering),
+            'can_order' => ! $preview && $restaurant->takesOrders(),
         ]);
     }
 

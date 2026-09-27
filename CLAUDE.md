@@ -569,10 +569,13 @@ without its Blade file, so a half-finished template never 500s a guest.
 - Rate limiters in `AppServiceProvider` (`api`/`mutations`/`uploads`/`auth`/
   `contact`); the high-volume ones feed the `AbuseGuard` auto-ban.
 - Session lifetime is intentionally 1 year (the SPA rides it).
-- `restaurants.hidden_sections` is the owner's list of dashboard sections they
-  switched off (`PUT /api/sections`, limited to `Restaurant::HIDEABLE_SECTIONS`:
-  analytics, orders, qr, social-links). Dashboard-only — it changes nothing on
-  the menu or in the data.
+- `restaurants.hidden_sections` holds the optional features the owner
+  switched off on the dashboard's Features page (`PUT /api/sections`, limited
+  to `Restaurant::OPTIONAL_FEATURES`): `orders` (no ordering at all —
+  `takesOrders()`), `qr` (studio styling and printable card off, plain code
+  kept — `hasQrStudio()`), `analytics` (page hidden), `languages` (English-only
+  menu — `MenuLanguages::for()`; `written()` ignores the switch). Nothing is
+  deleted by switching one off. The package still decides what can be on.
 - Locale middleware alias is `portal.locale`; the session key stays `owner_locale`.
 - API requests take their language from `Accept-Language` (`SetApiLocale`,
   first in the `api` group so even a 401 is translated), limited to
@@ -688,8 +691,8 @@ with the design**, so a printed code keeps working whatever is saved.
 ## Menu languages
 
 Every menu is written in **English** plus, optionally, **one second language**
-the owner picks in the dashboard (`restaurants.second_locale`, null = English
-only) from `config('locales.menu')` — Arabic, French, Spanish, Turkish,
+the owner picks on the dashboard's Features page (`PUT /api/menu-languages`,
+`restaurants.second_locale`, null = English only) from `config('locales.menu')` — Arabic, French, Spanish, Turkish,
 German, Italian, Russian, Chinese, Hindi, Portuguese. `default_locale` is what
 the menu opens in: `en` or the second language. `config('locales.supported')`
 is only the **portal's** UI list and has nothing to do with menus.

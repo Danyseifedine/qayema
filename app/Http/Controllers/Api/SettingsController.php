@@ -31,16 +31,9 @@ class SettingsController extends Controller
     {
         $restaurant = $this->restaurant($request);
 
-        // The languages first, so the text below is written for the menu's
-        // new languages. Text in a language the owner switched away from is
-        // left in place, hidden, for if they switch back.
-        $restaurant->second_locale = $request->secondLocale();
+        // Text in the menu's current languages; any other language already in
+        // the column is left in place, hidden, for if the owner switches back.
         $languages = $restaurant->menuLanguages();
-
-        // Dropping the second language takes the menu back to opening in
-        // English; so does a default that is no longer one of its languages.
-        $default = $request->validated('default_locale') ?? $restaurant->default_locale;
-        $restaurant->default_locale = in_array($default, $languages, true) ? $default : MenuLanguages::MAIN;
 
         MenuLanguages::fill($restaurant, 'name', MenuLanguages::input($request, 'name', $languages), $languages);
         MenuLanguages::fill($restaurant, 'description', MenuLanguages::input($request, 'description', $languages), $languages);

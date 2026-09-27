@@ -62,10 +62,10 @@ class SettingsTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'data' => [
-                    'languages', 'second_locale',
+                    'languages',
                     'name' => ['en', 'ar'],
                     'description' => ['en', 'ar'],
-                    'default_locale', 'slug', 'google_maps_url', 'phone',
+                    'slug', 'google_maps_url', 'phone',
                     'country_code', 'currency', 'opening_hours', 'timezone',
                     'logo_url', 'cover_url',
                 ],

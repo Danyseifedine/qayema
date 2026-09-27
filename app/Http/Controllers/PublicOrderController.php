@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\Feature;
 use App\Http\Requests\PlaceOrderRequest;
 use App\Models\Restaurant;
 use App\Services\Global\MenuLanguages;
@@ -25,7 +24,7 @@ class PublicOrderController extends Controller
         // than a 403: a restaurant that does not take orders should not even
         // admit the endpoint exists.
         abort_unless($restaurant->is_active, 404);
-        abort_unless($restaurant->entitlements()->can(Feature::Ordering), 404);
+        abort_unless($restaurant->takesOrders(), 404);
 
         // The guest's menu language: the WhatsApp text and any error come
         // back in the language they were reading.

@@ -35,12 +35,20 @@ class Restaurant extends Model implements HasMedia
     public array $translatable = ['name', 'description'];
 
     /**
-     * Dashboard sections an owner may switch off. The core ones — overview,
-     * menu, templates, restaurant, package, profile — always stay.
+     * Features an owner may switch off on the dashboard's Features page,
+     * stored in `hidden_sections`:
+     * - `orders`: guests cannot order (no cart, the endpoint 404s), and the
+     *   Orders page leaves the sidebar;
+     * - `qr`: the QR studio's styling and printable card go — the plain code
+     *   and its downloads stay;
+     * - `analytics`: the Analytics page leaves the sidebar;
+     * - `languages`: the menu is English-only (MenuLanguages::for()).
+     * Nothing is deleted by switching one off; the package still decides what
+     * can be switched on at all.
      *
      * @var array<int, string>
      */
-    public const HIDEABLE_SECTIONS = ['analytics', 'orders', 'qr', 'social-links'];
+    public const OPTIONAL_FEATURES = ['orders', 'qr', 'analytics', 'languages'];
 
     protected $fillable = [
         'user_id',
@@ -186,13 +194,30 @@ class Restaurant extends Model implements HasMedia
     }
 
     /**
-     * The sections this owner switched off, limited to ones that can be.
+     * The optional features this owner switched off.
      *
      * @return array<int, string>
      */
-    public function hiddenSections(): array
+    public function switchedOff(): array
     {
-        return array_values(array_intersect(self::HIDEABLE_SECTIONS, (array) $this->hidden_sections));
+        return array_values(array_intersect(self::OPTIONAL_FEATURES, (array) $this->hidden_sections));
+    }
+
+    public function isSwitchedOff(string $feature): bool
+    {
+        return in_array($feature, $this->switchedOff(), true);
+    }
+
+    /** Guests can order: the package includes it and the owner has not switched it off. */
+    public function takesOrders(): bool
+    {
+        return $this->entitlements()->can(Feature::Ordering) && ! $this->isSwitchedOff('orders');
+    }
+
+    /** The QR studio's styling is on: in the package and not switched off. */
+    public function hasQrStudio(): bool
+    {
+        return $this->entitlements()->can(Feature::QrStudio) && ! $this->isSwitchedOff('qr');
     }
 
     public function entitlements(): Entitlements

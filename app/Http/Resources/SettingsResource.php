@@ -19,8 +19,6 @@ class SettingsResource extends JsonResource
             // Text comes as one entry per menu language: English, then the
             // second language when there is one.
             'languages' => $this->menuLanguages(),
-            'second_locale' => $this->menuLanguages()[1] ?? null,
-            'default_locale' => MenuLanguages::default($this->resource),
             'name' => MenuLanguages::map($this->resource, 'name', $this->menuLanguages()),
             'description' => MenuLanguages::map($this->resource, 'description', $this->menuLanguages()),
             'slug' => $this->slug,

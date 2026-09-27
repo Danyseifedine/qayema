@@ -53,6 +53,9 @@ class UserResource extends JsonResource
             // What the menu is written in: English, then the second language
             // when there is one. The dashboard's text fields have a tab each.
             'languages' => $restaurant->menuLanguages(),
+            // The second language chosen, even while "Multiple languages" is
+            // switched off, so switching it back on shows what it was.
+            'second_locale' => MenuLanguages::written($restaurant)[1] ?? null,
             'default_locale' => MenuLanguages::default($restaurant),
             'is_active' => (bool) $restaurant->is_active,
             // null until the owner picks a template — the dashboard stays
@@ -78,8 +81,8 @@ class UserResource extends JsonResource
                 'categories' => ['used' => $restaurant->categories()->count(), 'limit' => $entitlements->limit(Feature::CategoryLimit)],
                 'social_links' => ['used' => $restaurant->socialLinks()->count(), 'limit' => $entitlements->limit(Feature::SocialLinkLimit)],
             ],
-            // Optional dashboard sections the owner switched off.
-            'hidden_sections' => $restaurant->hiddenSections(),
+            // Optional features the owner switched off (Features page).
+            'hidden_sections' => $restaurant->switchedOff(),
             'features' => [
                 'qr_studio' => $entitlements->can(Feature::QrStudio),
                 'ordering' => $entitlements->can(Feature::Ordering),

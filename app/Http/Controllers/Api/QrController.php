@@ -39,6 +39,7 @@ class QrController extends Controller
 
         abort_if($restaurant === null, 403, __('Create your restaurant before designing a QR code.'));
         abort_unless($restaurant->entitlements()->can(Feature::QrStudio), 403, __('QR Studio is a paid add-on.'));
+        abort_if($restaurant->isSwitchedOff('qr'), 403, __('QR Studio is switched off.'));
 
         $restaurant->update(['qr_settings' => $request->validated()]);
 
@@ -50,13 +51,16 @@ class QrController extends Controller
      */
     private function payload(Restaurant $restaurant): array
     {
-        $unlocked = $restaurant->entitlements()->can(Feature::QrStudio);
+        $unlocked = $restaurant->hasQrStudio();
 
         $base = rtrim((string) config('app.url'), '/');
         $host = (string) (parse_url($base, PHP_URL_HOST) ?: $base);
 
         return [
             'unlocked' => $unlocked,
+            // Locked by the owner's own switch rather than the package, so the
+            // dashboard can point to Features instead of to an upgrade.
+            'switched_off' => $restaurant->isSwitchedOff('qr'),
             'url' => "{$base}/{$restaurant->slug}?qr=1",
             'display_url' => "{$host}/{$restaurant->slug}",
             'card_url' => $unlocked ? route('public.qr', $restaurant->slug) : null,

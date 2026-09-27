@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\DishController;
+use App\Http\Controllers\Api\MenuLanguagesController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\PackageRequestController;
@@ -40,10 +41,14 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         ->middleware('throttle:auth')
         ->name('api.password.update');
 
-    // Optional dashboard sections the owner switched off.
+    // Optional features the owner switched off, and the menu's languages —
+    // both set from the dashboard's Features page.
     Route::put('/sections', [SectionsController::class, 'update'])
         ->middleware('throttle:mutations')
         ->name('api.sections.update');
+    Route::put('/menu-languages', [MenuLanguagesController::class, 'update'])
+        ->middleware('throttle:mutations')
+        ->name('api.menu-languages.update');
 
     // Dashboard-home analytics: the summary every package gets, and the
     // advanced breakdowns behind the advanced_analytics flag.

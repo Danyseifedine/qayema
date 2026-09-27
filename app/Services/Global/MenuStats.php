@@ -2,7 +2,6 @@
 
 namespace App\Services\Global;
 
-use App\Enums\Feature;
 use App\Enums\MenuEventType;
 use App\Enums\OrderStatus;
 use App\Models\Category;
@@ -315,7 +314,7 @@ class MenuStats
 
     private function takesOrders(): bool
     {
-        return $this->restaurant->entitlements()->can(Feature::Ordering);
+        return $this->restaurant->takesOrders();
     }
 
     /**

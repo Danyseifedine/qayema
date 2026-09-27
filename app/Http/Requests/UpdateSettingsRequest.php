@@ -18,15 +18,11 @@ class UpdateSettingsRequest extends FormRequest
      */
     public function rules(): array
     {
-        $second = $this->secondLocale();
-        $languages = $second === null ? [MenuLanguages::MAIN] : [MenuLanguages::MAIN, $second];
+        // The languages themselves are set on the Features page
+        // (MenuLanguagesController); the text here follows them.
+        $languages = MenuLanguages::forOwner($this->user());
 
         $rules = [
-            // The menu's languages: English always, plus an optional second
-            // one from the list. The menu opens in English or that second one.
-            'second_locale' => ['nullable', 'string', Rule::in(MenuLanguages::secondChoices())],
-            'default_locale' => ['nullable', 'string', Rule::in($languages)],
-
             // One entry per menu language, English required. The slug is
             // immutable, so it is intentionally not accepted here.
             'name' => ['required', 'array'],
@@ -74,20 +70,6 @@ class UpdateSettingsRequest extends FormRequest
     }
 
     /**
-     * The second language this save leaves the menu with: the one asked for,
-     * null when it was cleared, and the current one when the request does not
-     * mention it at all.
-     */
-    public function secondLocale(): ?string
-    {
-        $second = $this->exists('second_locale')
-            ? $this->input('second_locale')
-            : $this->user()?->restaurant?->second_locale;
-
-        return in_array($second, MenuLanguages::secondChoices(), true) ? $second : null;
-    }
-
-    /**
      * @return array<string, string>
      */
     public function messages(): array
@@ -97,8 +79,6 @@ class UpdateSettingsRequest extends FormRequest
             'country_code.alpha' => __('Please choose a country from the list.'),
             'phone.regex' => __('Please enter a valid phone number using digits only.'),
             'currency.in' => __('Please choose a currency from the list.'),
-            'second_locale.in' => __('Please choose a language from the list.'),
-            'default_locale.in' => __('The menu can only open in English or its second language.'),
             'name.en.required' => __('The restaurant name is required in English.'),
         ];
     }

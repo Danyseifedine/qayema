@@ -19,9 +19,9 @@ class UpdateSectionsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // The full list of switched-off sections; an empty list shows them all.
+            // The full list of switched-off features; an empty list switches them all on.
             'hidden' => ['present', 'array'],
-            'hidden.*' => ['string', 'distinct', Rule::in(Restaurant::HIDEABLE_SECTIONS)],
+            'hidden.*' => ['string', 'distinct', Rule::in(Restaurant::OPTIONAL_FEATURES)],
         ];
     }
 }

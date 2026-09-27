@@ -7,9 +7,9 @@ use App\Http\Requests\UpdateSectionsRequest;
 use Illuminate\Http\JsonResponse;
 
 /**
- * Which optional dashboard sections the owner has switched off. Purely a
- * dashboard preference: hiding Orders does not stop guests ordering, and
- * nothing a hidden section holds is touched.
+ * Which optional features the owner has switched off (see
+ * Restaurant::OPTIONAL_FEATURES for what each one does). Nothing a feature
+ * holds is deleted; switching it back on brings it all back.
  */
 class SectionsController extends Controller
 {
@@ -18,6 +18,6 @@ class SectionsController extends Controller
         $restaurant = $request->user()->restaurant;
         $restaurant->update(['hidden_sections' => array_values($request->validated('hidden'))]);
 
-        return response()->json(['data' => ['hidden' => $restaurant->hiddenSections()]]);
+        return response()->json(['data' => ['hidden' => $restaurant->switchedOff()]]);
     }
 }

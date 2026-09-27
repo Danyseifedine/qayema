@@ -136,6 +136,18 @@ class MenuLocaleTest extends TestCase
             ->assertDontSee('hreflang="ar"', false);
     }
 
+    public function test_switching_menu_languages_off_serves_english_only(): void
+    {
+        $restaurant = $this->shop('ar');
+        $restaurant->update(['hidden_sections' => ['languages']]);
+
+        $this->get(route('public.menu', $restaurant->slug).'?lang=ar')
+            ->assertOk()
+            ->assertSee('<html lang="en"', false)
+            ->assertSee('House Bowl')
+            ->assertDontSee('id="pop-lang"', false);
+    }
+
     public function test_text_missing_in_the_second_language_shows_in_english(): void
     {
         $restaurant = $this->shop('ar');
