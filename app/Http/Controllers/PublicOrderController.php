@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\PlaceOrderRequest;
 use App\Models\Restaurant;
-use App\Services\Global\MenuLanguages;
-use App\Services\Global\OrderPlacer;
-use App\Services\Global\WhatsAppLink;
+use App\Services\Menu\MenuLanguages;
+use App\Services\Orders\OrderPlacer;
+use App\Services\Orders\WhatsAppLink;
 use Illuminate\Http\JsonResponse;
 
 /**

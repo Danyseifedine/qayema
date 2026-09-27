@@ -55,9 +55,10 @@ return new class extends Migration
             // Owner-chosen values for the active template's settings_schema.
             $table->json('template_settings')->nullable();
             $table->json('qr_settings')->nullable();
-            // Dashboard sections the owner switched off (Restaurant::HIDEABLE_SECTIONS).
-            // Only the dashboard reads it; the menu and its data are unaffected.
-            $table->json('hidden_sections')->nullable();
+            // Optional features the owner switched off on the dashboard's
+            // Features page (Restaurant::OPTIONAL_FEATURES). Orders and
+            // languages change the public menu too; nothing is deleted.
+            $table->json('switched_off')->nullable();
 
             $table->timestamps();
         });

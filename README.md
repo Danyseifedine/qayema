@@ -49,7 +49,7 @@ Sign in to the admin panel at `/admin`.
 | Concept | Where it lives |
 |---|---|
 | What a package allows | `App\Enums\Feature` + `packages.features` + `restaurant_features` |
-| Resolving a limit | `App\Services\Global\Entitlements` — package + Σ grants |
+| Resolving a limit | `App\Services\Packages\Entitlements` — package + Σ grants |
 | Moving a restaurant up | `/admin → Restaurants → Package` (an owner asks, an admin assigns) |
 | Asking for a package | `POST /api/packages/request` → a `contact_messages` row + an email |
 | A menu design | a `templates` row + `resources/views/menu/templates/{slug}.blade.php` |

@@ -5,8 +5,8 @@ namespace App\Services\Portal;
 use App\Mail\WelcomeRestaurantOwner;
 use App\Models\Restaurant;
 use App\Models\User;
-use App\Services\Global\MediaService;
-use App\Services\Global\MenuLanguages;
+use App\Services\Media\MediaService;
+use App\Services\Menu\MenuLanguages;
 use Illuminate\Support\Facades\Mail;
 
 /**

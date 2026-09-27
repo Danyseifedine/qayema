@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exceptions\TooManyContactMessages;
 use App\Http\Requests\ContactRequest;
-use App\Services\Portal\ContactService;
+use App\Services\Contact\ContactService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;

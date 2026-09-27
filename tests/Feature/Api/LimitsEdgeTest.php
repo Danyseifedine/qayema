@@ -4,8 +4,8 @@ namespace Tests\Feature\Api;
 
 use App\Enums\Feature;
 use App\Models\Dish;
+use App\Models\FeatureGrant;
 use App\Models\Package;
-use App\Models\RestaurantFeature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreatesOwners;
 use Tests\TestCase;
@@ -55,7 +55,7 @@ class LimitsEdgeTest extends TestCase
         $this->create($owner, $category)->assertCreated();
         $this->create($owner, $category)->assertStatus(422);
 
-        RestaurantFeature::factory()->for($owner)->forFeature(Feature::DishLimit, 5)->create();
+        FeatureGrant::factory()->for($owner)->forFeature(Feature::DishLimit, 5)->create();
 
         $this->create($owner, $category)->assertCreated();
         $this->actingAs($owner->user)->getJson(route('api.dishes.index'))->assertJsonPath('meta.limit', 6);
@@ -67,7 +67,7 @@ class LimitsEdgeTest extends TestCase
         $owner = $this->owner();
         $category = \App\Models\Category::factory()->create(['restaurant_id' => $owner->id]);
         $this->create($owner, $category)->assertCreated();
-        $grant = RestaurantFeature::factory()->for($owner)->forFeature(Feature::DishLimit, 5)->create(['ends_at' => now()->addDay()]);
+        $grant = FeatureGrant::factory()->for($owner)->forFeature(Feature::DishLimit, 5)->create(['ends_at' => now()->addDay()]);
         $this->create($owner, $category)->assertCreated();
 
         $grant->update(['ends_at' => now()->subMinute()]);
@@ -82,7 +82,7 @@ class LimitsEdgeTest extends TestCase
         Dish::factory()->count(5)->create(['restaurant_id' => $owner->id, 'category_id' => $category->id]);
 
         Package::default()->setFeature(Feature::DishLimit, 3);
-        \App\Services\Global\Entitlements::flush($owner->id);
+        \App\Services\Packages\Entitlements::flush($owner->id);
 
         $this->assertSame(5, $owner->dishes()->count(), 'Nothing is deleted.');
         $this->create($owner, $category)->assertStatus(422);
@@ -120,7 +120,7 @@ class LimitsEdgeTest extends TestCase
         $owner = $this->owner();
         $this->actingAs($owner->user)->getJson(route('api.user'))->assertJsonPath('data.restaurant.limits.dishes.limit', 40);
 
-        RestaurantFeature::factory()->for($owner)->forFeature(Feature::DishLimit, 10)->create();
+        FeatureGrant::factory()->for($owner)->forFeature(Feature::DishLimit, 10)->create();
 
         $this->actingAs($owner->user)->getJson(route('api.user'))->assertJsonPath('data.restaurant.limits.dishes.limit', 50);
     }

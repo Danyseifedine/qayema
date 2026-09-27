@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Template;
+use App\Support\Color;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -55,7 +56,7 @@ class UpdateTemplateSettingsRequest extends FormRequest
     {
         return match ($field['type'] ?? 'text') {
             // Six-digit hex, which is what the colour inputs emit.
-            'color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'color' => ['nullable', 'string', Color::RULE],
             'boolean' => ['nullable', 'boolean'],
             'select' => ['nullable', Rule::in($field['options'] ?? [])],
             default => ['nullable', 'string', 'max:255'],

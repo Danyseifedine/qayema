@@ -18,7 +18,7 @@ $locales = [
 // ─── MENU LANGUAGES ───────────────────────────────────────────────────────────
 //
 // What a restaurant's menu can be written in: English, always, plus at most one
-// second language the owner picks in the dashboard (App\Services\Global\
+// second language the owner picks in the dashboard (App\Services\Menu\
 // MenuLanguages). Separate from the portal list above on purpose — offering a
 // menu in French does not mean translating the whole portal into French.
 //

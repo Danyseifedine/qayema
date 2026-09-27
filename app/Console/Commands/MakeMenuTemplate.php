@@ -52,27 +52,27 @@ class MakeMenuTemplate extends Command
             mkdir(dirname($path), 0755, true);
         }
 
+        // The view and its stylesheet are copied together, so a new design
+        // starts self-contained and can be restyled without touching classic.
         $contents = str_replace(
-            'Template: classic (free)',
-            "Template: {$slug}",
+            ['Template: classic (free)', 'css/menu-classic.css'],
+            ["Template: {$slug}", "css/menu-{$slug}.css"],
             (string) file_get_contents($stub)
         );
 
         file_put_contents($path, $contents);
+        copy(public_path('css/menu-classic.css'), public_path("css/menu-{$slug}.css"));
 
         $template = Template::updateOrCreate(['slug' => $slug], [
             'name' => ['en' => $name],
             'is_active' => ! $this->option('inactive'),
-            'settings_schema' => [
-                ['key' => 'primary_color', 'type' => 'color', 'default' => Template::DEFAULT_PRIMARY_COLOR],
-                ['key' => 'background_color', 'type' => 'color', 'default' => '#FFFFFF'],
-                ['key' => 'text_color', 'type' => 'color', 'default' => '#111418'],
-            ],
+            'settings_schema' => Template::CLASSIC_SCHEMA,
         ]);
 
         $this->components->info("Template [{$name}] created.");
         $this->components->twoColumnDetail('Row', "templates #{$template->id}");
         $this->components->twoColumnDetail('View', str_replace(base_path().'/', '', $path));
+        $this->components->twoColumnDetail('Styles', "public/css/menu-{$slug}.css");
         $this->newLine();
         $this->line('  Edit the view to design it, and adjust its settings in the admin panel.');
 

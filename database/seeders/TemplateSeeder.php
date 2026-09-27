@@ -17,11 +17,7 @@ class TemplateSeeder extends Seeder
                 'en' => 'A clean, light layout that suits any restaurant.',
                 'ar' => 'تصميم بسيط وفاتح يناسب كل المطاعم.',
             ],
-            'settings_schema' => [
-                ['key' => 'primary_color', 'type' => 'color', 'default' => Template::DEFAULT_PRIMARY_COLOR],
-                ['key' => 'background_color', 'type' => 'color', 'default' => '#FFFFFF'],
-                ['key' => 'text_color', 'type' => 'color', 'default' => '#111418'],
-            ],
+            'settings_schema' => Template::CLASSIC_SCHEMA,
             'is_active' => true,
             'sort_order' => 0,
         ]);

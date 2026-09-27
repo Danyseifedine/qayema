@@ -2,17 +2,19 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\ResolvesRestaurant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\MoveDishRequest;
 use App\Http\Requests\ReorderDishesRequest;
 use App\Http\Requests\StoreDishRequest;
+use App\Http\Requests\UpdateDishAvailabilityRequest;
 use App\Http\Requests\UpdateDishRequest;
 use App\Http\Resources\DishResource;
 use App\Models\Dish;
 use App\Models\Restaurant;
-use App\Services\Global\DisplayOrder;
-use App\Services\Global\MediaService;
-use App\Services\Global\MenuLanguages;
+use App\Services\Media\MediaService;
+use App\Services\Menu\DisplayOrder;
+use App\Services\Menu\MenuLanguages;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -25,6 +27,8 @@ use Illuminate\Validation\ValidationException;
  */
 class DishController extends Controller
 {
+    use ResolvesRestaurant;
+
     public function __construct(private readonly MediaService $media) {}
 
     public function index(Request $request): AnonymousResourceCollection
@@ -156,11 +160,9 @@ class DishController extends Controller
      * Flip availability alone — the single most frequent edit, so it gets a
      * call that needs nothing but the flag.
      */
-    public function updateAvailability(Request $request, Dish $dish): DishResource
+    public function updateAvailability(UpdateDishAvailabilityRequest $request, Dish $dish): DishResource
     {
         $this->authorize('update', $dish);
-
-        $request->validate(['is_available' => ['required', 'boolean']]);
 
         $dish->update(['is_available' => $request->boolean('is_available')]);
 
@@ -202,15 +204,6 @@ class DishController extends Controller
         });
 
         return new DishResource($dish->fresh()->load('media'));
-    }
-
-    private function restaurant(Request $request): Restaurant
-    {
-        $restaurant = $request->user()->restaurant;
-
-        abort_if($restaurant === null, 403);
-
-        return $restaurant;
     }
 
     /**

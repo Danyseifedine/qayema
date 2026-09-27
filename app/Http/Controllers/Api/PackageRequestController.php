@@ -6,7 +6,7 @@ use App\Exceptions\TooManyContactMessages;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\RequestPackageRequest;
 use App\Models\Package;
-use App\Services\Portal\ContactService;
+use App\Services\Contact\ContactService;
 use Illuminate\Http\JsonResponse;
 
 /**

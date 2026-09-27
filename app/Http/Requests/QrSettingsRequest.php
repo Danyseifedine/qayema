@@ -2,7 +2,8 @@
 
 namespace App\Http\Requests;
 
-use App\Services\Global\QrStyle;
+use App\Services\Qr\QrStyle;
+use App\Support\Color;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -25,13 +26,13 @@ class QrSettingsRequest extends FormRequest
      */
     public function rules(): array
     {
-        $colour = ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'];
+        $colour = ['required', 'string', Color::RULE];
 
         return [
             'dot_style' => ['required', Rule::in(QrStyle::DOT_STYLES)],
             'dot_color' => $colour,
             // A second colour turns the dots into a gradient; null keeps them plain.
-            'dot_gradient' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'dot_gradient' => ['nullable', 'string', Color::RULE],
             'gradient_type' => ['required', Rule::in(QrStyle::GRADIENT_TYPES)],
             'corner_style' => ['required', Rule::in(QrStyle::CORNER_STYLES)],
             'corner_color' => $colour,

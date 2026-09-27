@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use App\Enums\Feature;
-use App\Services\Global\Entitlements;
-use App\Services\Global\MenuLanguages;
+use App\Services\Menu\MenuLanguages;
+use App\Services\Packages\Entitlements;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -36,7 +36,7 @@ class Restaurant extends Model implements HasMedia
 
     /**
      * Features an owner may switch off on the dashboard's Features page,
-     * stored in `hidden_sections`:
+     * stored in `switched_off`:
      * - `orders`: guests cannot order (no cart, the endpoint 404s), and the
      *   Orders page leaves the sidebar;
      * - `qr`: the QR studio's styling and printable card go — the plain code
@@ -70,7 +70,7 @@ class Restaurant extends Model implements HasMedia
         'is_active',
         'template_settings',
         'qr_settings',
-        'hidden_sections',
+        'switched_off',
     ];
 
     protected function casts(): array
@@ -82,7 +82,7 @@ class Restaurant extends Model implements HasMedia
             'package_ends_at' => 'datetime',
             'template_settings' => 'array',
             'qr_settings' => 'array',
-            'hidden_sections' => 'array',
+            'switched_off' => 'array',
         ];
     }
 
@@ -143,9 +143,9 @@ class Restaurant extends Model implements HasMedia
         return $this->hasMany(RestaurantSocialLink::class);
     }
 
-    public function statistics(): HasMany
+    public function menuSessions(): HasMany
     {
-        return $this->hasMany(RestaurantStatistic::class);
+        return $this->hasMany(MenuSession::class);
     }
 
     public function menuEvents(): HasMany
@@ -160,7 +160,7 @@ class Restaurant extends Model implements HasMedia
 
     public function featureGrants(): HasMany
     {
-        return $this->hasMany(RestaurantFeature::class);
+        return $this->hasMany(FeatureGrant::class);
     }
 
     /** True once an admin-set expiry has passed. */
@@ -200,7 +200,7 @@ class Restaurant extends Model implements HasMedia
      */
     public function switchedOff(): array
     {
-        return array_values(array_intersect(self::OPTIONAL_FEATURES, (array) $this->hidden_sections));
+        return array_values(array_intersect(self::OPTIONAL_FEATURES, (array) $this->switched_off));
     }
 
     public function isSwitchedOff(string $feature): bool
@@ -306,12 +306,12 @@ class Restaurant extends Model implements HasMedia
 
     public function getTotalViews(): int
     {
-        return $this->statistics()->count();
+        return $this->menuSessions()->count();
     }
 
     public function getQrScanCount(string $period = 'all'): int
     {
-        $query = $this->statistics()->where('via_qr', true);
+        $query = $this->menuSessions()->where('via_qr', true);
 
         return match ($period) {
             'today' => $query->whereDate('viewed_at', today())->count(),

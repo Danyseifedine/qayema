@@ -1,18 +1,18 @@
 <?php
 
 use App\Http\Controllers\Api\AccountController;
+use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\DishController;
+use App\Http\Controllers\Api\FeaturesController;
 use App\Http\Controllers\Api\MenuLanguagesController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\PackageRequestController;
 use App\Http\Controllers\Api\QrController;
-use App\Http\Controllers\Api\SectionsController;
-use App\Http\Controllers\Api\SettingsController;
+use App\Http\Controllers\Api\RestaurantController;
 use App\Http\Controllers\Api\SocialLinkController;
-use App\Http\Controllers\Api\StatsController;
 use App\Http\Controllers\Api\TemplateController;
 use App\Http\Controllers\TempUploadController;
 use Illuminate\Support\Facades\Route;
@@ -43,17 +43,17 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
     // Optional features the owner switched off, and the menu's languages —
     // both set from the dashboard's Features page.
-    Route::put('/sections', [SectionsController::class, 'update'])
+    Route::put('/features', [FeaturesController::class, 'update'])
         ->middleware('throttle:mutations')
-        ->name('api.sections.update');
+        ->name('api.features.update');
     Route::put('/menu-languages', [MenuLanguagesController::class, 'update'])
         ->middleware('throttle:mutations')
         ->name('api.menu-languages.update');
 
-    // Dashboard-home analytics: the summary every package gets, and the
-    // advanced breakdowns behind the advanced_analytics flag.
-    Route::get('/stats', [StatsController::class, 'show'])->name('api.stats');
-    Route::get('/stats/advanced', [StatsController::class, 'advanced'])->name('api.stats.advanced');
+    // Analytics: the summary every package gets, and the advanced breakdowns
+    // behind the advanced_analytics flag.
+    Route::get('/analytics', [AnalyticsController::class, 'show'])->name('api.analytics');
+    Route::get('/analytics/advanced', [AnalyticsController::class, 'advanced'])->name('api.analytics.advanced');
 
     // Temp image upload: the SPA POSTs a file here, it's optimized and parked in
     // the user's temp area, and the returned key rides along on the next
@@ -85,10 +85,10 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::match(['put', 'patch'], '/dishes/{dish}', [DishController::class, 'update'])->name('api.dishes.update');
     Route::delete('/dishes/{dish}', [DishController::class, 'destroy'])->name('api.dishes.destroy');
 
-    // Menu settings — the owner's own restaurant profile (read-only name/slug,
-    // editable logo/banner/tags). A singleton, so no {id}.
-    Route::get('/settings', [SettingsController::class, 'show'])->name('api.settings.show');
-    Route::match(['put', 'patch'], '/settings', [SettingsController::class, 'update'])->name('api.settings.update');
+    // The restaurant itself — name, contact, hours, branding (the dashboard's
+    // Restaurant page). The slug is read-only. A singleton, so no {id}.
+    Route::get('/restaurant', [RestaurantController::class, 'show'])->name('api.restaurant.show');
+    Route::match(['put', 'patch'], '/restaurant', [RestaurantController::class, 'update'])->name('api.restaurant.update');
 
     // Menu templates — the store. A new restaurant has none and must choose
     // before the dashboard unlocks. Every active design is free: what a package

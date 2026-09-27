@@ -2,7 +2,7 @@
 
 namespace App\Http\Resources;
 
-use App\Services\Global\MenuLanguages;
+use App\Services\Menu\MenuLanguages;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 

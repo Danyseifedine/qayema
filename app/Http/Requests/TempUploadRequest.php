@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Services\Global\UploadLimits;
+use App\Services\Media\UploadLimits;
 use Illuminate\Foundation\Http\FormRequest;
 
 class TempUploadRequest extends FormRequest

@@ -5,7 +5,7 @@ namespace Tests\Feature\Security;
 use App\Http\Middleware\BlockAbusiveIps;
 use App\Models\BlockedIp;
 use App\Models\User;
-use App\Services\Global\AbuseGuard;
+use App\Services\Security\AbuseGuard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
 use Tests\TestCase;

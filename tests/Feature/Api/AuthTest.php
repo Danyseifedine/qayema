@@ -81,7 +81,7 @@ class AuthTest extends TestCase
         $this->assertGuest('web');
     }
 
-    public function test_the_shell_payload_carries_the_restaurant_package_limits_features_and_urls(): void
+    public function test_the_shell_payload_carries_the_restaurant_package_limits_plan_and_urls(): void
     {
         // Free ships with the QR studio and advanced analytics open for now;
         // this test needs flags the default package lacks, so it closes them.
@@ -103,8 +103,8 @@ class AuthTest extends TestCase
         $this->assertNull($data['restaurant']['template_id']);
         $this->assertSame(['used' => 3, 'limit' => 40], $data['restaurant']['limits']['dishes']);
         $this->assertSame(['used' => 0, 'limit' => 10], $data['restaurant']['limits']['categories']);
-        $this->assertFalse($data['restaurant']['features']['qr_studio']);
-        $this->assertFalse($data['restaurant']['features']['advanced_analytics']);
+        $this->assertFalse($data['restaurant']['plan']['qr_studio']);
+        $this->assertFalse($data['restaurant']['plan']['advanced_analytics']);
         $this->assertStringEndsWith('/shell-test', $data['restaurant']['public_url']);
         $this->assertStringEndsWith('/shell-test?qr=1', $data['restaurant']['qr_url']);
     }

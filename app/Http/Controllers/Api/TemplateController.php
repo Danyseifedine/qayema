@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\ResolvesRestaurant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SelectTemplateRequest;
 use App\Http\Requests\UpdateTemplateSettingsRequest;
@@ -22,6 +23,8 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
  */
 class TemplateController extends Controller
 {
+    use ResolvesRestaurant;
+
     public function index(Request $request): AnonymousResourceCollection
     {
         return $this->collection($this->restaurant($request));
@@ -84,14 +87,5 @@ class TemplateController extends Controller
     private function activeTemplate(int $id): Template
     {
         return Template::query()->active()->findOrFail($id);
-    }
-
-    private function restaurant(Request $request): Restaurant
-    {
-        $restaurant = $request->user()->restaurant;
-
-        abort_if($restaurant === null, 403);
-
-        return $restaurant;
     }
 }

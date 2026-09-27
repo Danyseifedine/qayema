@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Services\Global\AbuseGuard;
+use App\Services\Security\AbuseGuard;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;

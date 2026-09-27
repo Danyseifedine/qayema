@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\ResolvesRestaurant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ReorderCategoriesRequest;
 use App\Http\Requests\StoreCategoryRequest;
@@ -9,8 +10,8 @@ use App\Http\Requests\UpdateCategoryRequest;
 use App\Http\Resources\CategoryResource;
 use App\Models\Category;
 use App\Models\Restaurant;
-use App\Services\Global\DisplayOrder;
-use App\Services\Global\MenuLanguages;
+use App\Services\Menu\DisplayOrder;
+use App\Services\Menu\MenuLanguages;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -23,6 +24,8 @@ use Illuminate\Validation\ValidationException;
  */
 class CategoryController extends Controller
 {
+    use ResolvesRestaurant;
+
     public function index(Request $request): AnonymousResourceCollection
     {
         $this->authorize('viewAny', Category::class);
@@ -134,14 +137,5 @@ class CategoryController extends Controller
             ->get();
 
         return CategoryResource::collection($categories);
-    }
-
-    private function restaurant(Request $request): Restaurant
-    {
-        $restaurant = $request->user()->restaurant;
-
-        abort_if($restaurant === null, 403);
-
-        return $restaurant;
     }
 }

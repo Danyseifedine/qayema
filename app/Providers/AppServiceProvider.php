@@ -2,7 +2,7 @@
 
 namespace App\Providers;
 
-use App\Services\Global\AbuseGuard;
+use App\Services\Security\AbuseGuard;
 use Closure;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;

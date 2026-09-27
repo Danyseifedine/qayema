@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\ResolvesRestaurant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreSocialLinkRequest;
 use App\Http\Requests\UpdateSocialLinkRequest;
@@ -21,6 +22,8 @@ use Illuminate\Validation\ValidationException;
  */
 class SocialLinkController extends Controller
 {
+    use ResolvesRestaurant;
+
     public function index(Request $request): AnonymousResourceCollection
     {
         $this->authorize('viewAny', RestaurantSocialLink::class);
@@ -78,14 +81,5 @@ class SocialLinkController extends Controller
         $socialLink->delete();
 
         return response()->json(null, 204);
-    }
-
-    private function restaurant(Request $request): Restaurant
-    {
-        $restaurant = $request->user()->restaurant;
-
-        abort_if($restaurant === null, 403);
-
-        return $restaurant;
     }
 }

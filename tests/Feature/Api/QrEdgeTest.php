@@ -197,7 +197,7 @@ class QrEdgeTest extends TestCase
     {
         $owner = $this->owner();
         $other = $this->published();
-        $other->statistics()->create(['session_id' => 'x', 'via_qr' => true, 'viewed_at' => now()]);
+        $other->menuSessions()->create(['session_id' => 'x', 'via_qr' => true, 'viewed_at' => now()]);
 
         $this->actingAs($owner->user)->getJson(route('api.qr.show'))->assertJsonPath('data.stats.total', 0);
     }

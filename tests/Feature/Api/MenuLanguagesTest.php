@@ -40,7 +40,7 @@ class MenuLanguagesTest extends TestCase
 
         $this->actingAs($owner->user)->save(['second_locale' => 'ar', 'default_locale' => 'en'])->assertOk();
         $this->actingAs($owner->user)
-            ->getJson(route('api.settings.show'))
+            ->getJson(route('api.restaurant.show'))
             ->assertJsonPath('data.name', ['en' => 'Olive', 'ar' => 'زيتون']);
     }
 

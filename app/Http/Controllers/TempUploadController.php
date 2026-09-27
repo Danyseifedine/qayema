@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\TempUploadRequest;
-use App\Services\Global\MediaService;
+use App\Services\Media\MediaService;
 use Illuminate\Http\JsonResponse;
 
 class TempUploadController extends Controller

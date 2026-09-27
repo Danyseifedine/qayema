@@ -3,7 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Restaurant;
-use App\Services\Global\QrStyle;
+use App\Services\Qr\QrStyle;
+use App\Support\Color;
 use Illuminate\View\View;
 
 class QrCardController extends Controller
@@ -24,14 +25,14 @@ class QrCardController extends Controller
         $design = $restaurant->qrDesign();
         $accent = QrStyle::brandColor($restaurant);
 
-        return view('portal.qr-card', [
+        return view('menu.qr-card', [
             'card' => [
                 'url' => $url,
                 'display_url' => "{$host}/{$restaurant->slug}",
                 'design' => $design,
                 'options' => QrStyle::options($design, $url, $design['logo'] ? QrStyle::logoDataUrl($restaurant) : null),
                 'accent' => $accent,
-                'accent_ink' => QrStyle::inkOn($accent),
+                'accent_ink' => Color::inkOn($accent),
             ],
         ]);
     }

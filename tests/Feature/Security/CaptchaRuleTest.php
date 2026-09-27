@@ -3,7 +3,7 @@
 namespace Tests\Feature\Security;
 
 use App\Rules\ValidCaptcha;
-use App\Services\ThirdParty\Captcha;
+use App\Services\Security\Captcha;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Validator;
 use Tests\TestCase;

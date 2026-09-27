@@ -8,6 +8,7 @@ use App\Models\SocialAccount;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Laravel\Socialite\Contracts\User as SocialiteUser;
 use Laravel\Socialite\Facades\Socialite;
 use Throwable;
 
@@ -76,7 +77,7 @@ class GoogleController extends Controller
         return redirect($user->afterLoginUrl());
     }
 
-    private function attachSocialAccount(User $user, \Laravel\Socialite\Contracts\User $googleUser): void
+    private function attachSocialAccount(User $user, SocialiteUser $googleUser): void
     {
         $user->socialAccounts()->create([
             'provider' => 'google',

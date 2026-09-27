@@ -40,7 +40,7 @@ class FeatureGrantsTest extends TestCase
             ])
             ->assertHasNoActionErrors();
 
-        $this->assertDatabaseHas('restaurant_features', [
+        $this->assertDatabaseHas('feature_grants', [
             'restaurant_id' => $restaurant->id,
             'feature' => Feature::DishLimit->value,
             'value' => 60,

@@ -5,8 +5,8 @@ namespace App\Enums;
 /**
  * Everything a restaurant's package can grant. This enum is the registry —
  * adding a limit or a flag means adding a case here and nothing else: the
- * defaults table seeds itself from `cases()`, the admin page renders from it,
- * and App\Services\Global\Entitlements resolves it.
+ * package form renders from `cases()`, and App\Services\Packages\Entitlements
+ * resolves it against the package and any grants.
  */
 enum Feature: string
 {
@@ -31,8 +31,8 @@ enum Feature: string
     }
 
     /**
-     * The value a fresh install starts with, used to seed `feature_defaults`.
-     * After that the admin panel owns these numbers.
+     * The value a fresh install's default package starts with. After that the
+     * admin panel owns these numbers.
      */
     public function defaultValue(): int
     {

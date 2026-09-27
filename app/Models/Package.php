@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Enums\Feature;
-use App\Services\Global\Entitlements;
+use App\Services\Packages\Entitlements;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;

@@ -113,31 +113,31 @@ class ViewUser extends ViewRecord
                 ->schema([
                     TextEntry::make('stat_total_views')
                         ->label('Total Views')
-                        ->getStateUsing(fn () => number_format($restaurant?->statistics()->count() ?? 0))
+                        ->getStateUsing(fn () => number_format($restaurant?->menuSessions()->count() ?? 0))
                         ->badge()
                         ->color('info'),
 
                     TextEntry::make('stat_unique_visitors')
                         ->label('Unique Visitors')
-                        ->getStateUsing(fn () => number_format($restaurant?->statistics()->distinct('session_id')->count('session_id') ?? 0))
+                        ->getStateUsing(fn () => number_format($restaurant?->menuSessions()->distinct('session_id')->count('session_id') ?? 0))
                         ->badge()
                         ->color('success'),
 
                     TextEntry::make('stat_qr_scans')
                         ->label('QR Scans')
-                        ->getStateUsing(fn () => number_format($restaurant?->statistics()->where('via_qr', true)->count() ?? 0))
+                        ->getStateUsing(fn () => number_format($restaurant?->menuSessions()->where('via_qr', true)->count() ?? 0))
                         ->badge()
                         ->color('warning'),
 
                     TextEntry::make('stat_views_today')
                         ->label('Views Today')
-                        ->getStateUsing(fn () => number_format($restaurant?->statistics()->whereDate('viewed_at', today())->count() ?? 0))
+                        ->getStateUsing(fn () => number_format($restaurant?->menuSessions()->whereDate('viewed_at', today())->count() ?? 0))
                         ->badge()
                         ->color('info'),
 
                     TextEntry::make('stat_last_visit')
                         ->label('Last Visit')
-                        ->getStateUsing(fn () => $restaurant?->statistics()->latest('viewed_at')->value('viewed_at'))
+                        ->getStateUsing(fn () => $restaurant?->menuSessions()->latest('viewed_at')->value('viewed_at'))
                         ->dateTime()
                         ->placeholder('No visits yet'),
 
@@ -148,7 +148,7 @@ class ViewUser extends ViewRecord
                                 return '—';
                             }
 
-                            $top = $restaurant->statistics()
+                            $top = $restaurant->menuSessions()
                                 ->selectRaw('device_type, COUNT(*) as cnt')
                                 ->groupBy('device_type')
                                 ->orderByDesc('cnt')

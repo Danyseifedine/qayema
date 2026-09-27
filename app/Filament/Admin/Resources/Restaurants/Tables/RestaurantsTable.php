@@ -74,21 +74,21 @@ class RestaurantsTable
 
                 TextColumn::make('total_views')
                     ->label('Total Views')
-                    ->getStateUsing(fn (Restaurant $record): int => $record->statistics()->count())
+                    ->getStateUsing(fn (Restaurant $record): int => $record->menuSessions()->count())
                     ->badge()
                     ->color('info')
                     ->sortable(false),
 
                 TextColumn::make('unique_visitors')
                     ->label('Unique Visitors')
-                    ->getStateUsing(fn (Restaurant $record): int => $record->statistics()->distinct('session_id')->count('session_id'))
+                    ->getStateUsing(fn (Restaurant $record): int => $record->menuSessions()->distinct('session_id')->count('session_id'))
                     ->badge()
                     ->color('success')
                     ->toggleable(),
 
                 TextColumn::make('qr_scans')
                     ->label('QR Scans')
-                    ->getStateUsing(fn (Restaurant $record): int => $record->statistics()->where('via_qr', true)->count())
+                    ->getStateUsing(fn (Restaurant $record): int => $record->menuSessions()->where('via_qr', true)->count())
                     ->badge()
                     ->color('warning')
                     ->toggleable(),

@@ -139,7 +139,7 @@ class MenuLocaleTest extends TestCase
     public function test_switching_menu_languages_off_serves_english_only(): void
     {
         $restaurant = $this->shop('ar');
-        $restaurant->update(['hidden_sections' => ['languages']]);
+        $restaurant->update(['switched_off' => ['languages']]);
 
         $this->get(route('public.menu', $restaurant->slug).'?lang=ar')
             ->assertOk()
@@ -182,15 +182,15 @@ class MenuLocaleTest extends TestCase
         $base = route('public.menu', $restaurant->slug);
 
         $this->get($base)->assertOk();
-        $this->assertSame(1, $restaurant->statistics()->count());
+        $this->assertSame(1, $restaurant->menuSessions()->count());
 
         // Arriving from the menu itself is the same visit continuing.
         $this->get($base.'?lang=ar', ['referer' => $base])->assertOk();
-        $this->assertSame(1, $restaurant->statistics()->count());
+        $this->assertSame(1, $restaurant->menuSessions()->count());
 
         // Someone opening a shared Arabic link is a new visit.
         $this->get($base.'?lang=ar')->assertOk();
-        $this->assertSame(2, $restaurant->statistics()->count());
+        $this->assertSame(2, $restaurant->menuSessions()->count());
     }
 
     public function test_a_preview_keeps_previewing_when_the_language_changes(): void

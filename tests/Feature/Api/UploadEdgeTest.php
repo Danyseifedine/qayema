@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Api;
 
-use App\Services\Global\UploadLimits;
+use App\Services\Media\UploadLimits;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Tests\Concerns\CreatesOwners;

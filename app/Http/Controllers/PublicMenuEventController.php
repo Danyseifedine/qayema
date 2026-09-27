@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\MenuEventsRequest;
 use App\Models\Restaurant;
-use App\Services\Global\MenuEventRecorder;
+use App\Services\Analytics\MenuEventRecorder;
 use Illuminate\Http\Response;
 
 /**

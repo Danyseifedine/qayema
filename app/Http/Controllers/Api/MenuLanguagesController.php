@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\ResolvesRestaurant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateMenuLanguagesRequest;
-use App\Services\Global\MenuLanguages;
+use App\Services\Menu\MenuLanguages;
 use Illuminate\Http\JsonResponse;
 
 /**
@@ -14,9 +15,11 @@ use Illuminate\Http\JsonResponse;
  */
 class MenuLanguagesController extends Controller
 {
+    use ResolvesRestaurant;
+
     public function update(UpdateMenuLanguagesRequest $request): JsonResponse
     {
-        $restaurant = $request->user()->restaurant;
+        $restaurant = $this->restaurant($request);
 
         $restaurant->update([
             'second_locale' => $request->validated('second_locale'),

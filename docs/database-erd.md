@@ -145,7 +145,7 @@ erDiagram
         timestamps created_updated
     }
 
-    restaurant_features {
+    feature_grants {
         bigint id PK
         bigint restaurant_id FK "cascade"
         varchar feature "an App\\Enums\\Feature case"
@@ -158,21 +158,21 @@ erDiagram
 
     packages ||--o{ restaurants : "entitles"
     templates |o--o{ restaurants : "styles (nullable)"
-    restaurants ||--o{ restaurant_features : "granted"
+    restaurants ||--o{ feature_grants : "granted"
     templates |o..o{ media : "thumbnail"
 ```
 
-**How a limit is resolved** — `App\Services\Global\Entitlements`:
+**How a limit is resolved** — `App\Services\Packages\Entitlements`:
 
 ```
-effective value = packages.features[feature] + Σ (active restaurant_features grants)
+effective value = packages.features[feature] + Σ (active feature_grants grants)
 ```
 
 Limits add up; flags (`qr_studio`) are on if anything says on; a `null` value is
 unlimited and stays unlimited however many grants sit on it. A feature missing
 from a package's map falls back to `App\Enums\Feature::defaultValue()`.
 
-Cached as `entitlements:{id}` for 300s, flushed by `RestaurantFeature`
+Cached as `entitlements:{id}` for 300s, flushed by `FeatureGrant`
 saved/deleted hooks, by a restaurant whose `package_id`/`package_ends_at`
 changed, and for **every** restaurant when a package itself is saved.
 

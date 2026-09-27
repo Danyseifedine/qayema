@@ -8,7 +8,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | A restaurant's limits and features come from the package it is on, plus
-    | any grants in `restaurant_features` that stack on top. The registry of
+    | any grants in `feature_grants` that stack on top. The registry of
     | what a feature IS lives in App\Enums\Feature; the numbers live in the
     | `packages` table so they're editable from /admin → Packages without a
     | deploy. Templates are pure design and grant nothing.

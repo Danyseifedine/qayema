@@ -4,7 +4,7 @@ namespace App\Http\Resources;
 
 use App\Enums\Feature;
 use App\Models\Restaurant;
-use App\Services\Global\MenuLanguages;
+use App\Services\Menu\MenuLanguages;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -82,8 +82,9 @@ class UserResource extends JsonResource
                 'social_links' => ['used' => $restaurant->socialLinks()->count(), 'limit' => $entitlements->limit(Feature::SocialLinkLimit)],
             ],
             // Optional features the owner switched off (Features page).
-            'hidden_sections' => $restaurant->switchedOff(),
-            'features' => [
+            'switched_off' => $restaurant->switchedOff(),
+            // What this restaurant may use: its package plus any grants.
+            'plan' => [
                 'qr_studio' => $entitlements->can(Feature::QrStudio),
                 'ordering' => $entitlements->can(Feature::Ordering),
                 'advanced_analytics' => $entitlements->can(Feature::AdvancedAnalytics),

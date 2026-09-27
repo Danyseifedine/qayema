@@ -25,6 +25,18 @@ class Template extends Model implements HasMedia
      */
     public const DEFAULT_PRIMARY_COLOR = '#F8D38D';
 
+    /**
+     * The knobs the classic design exposes, and what a scaffolded template
+     * starts from (TemplateSeeder, make:menu-template).
+     *
+     * @var array<int, array{key: string, type: string, default: string}>
+     */
+    public const CLASSIC_SCHEMA = [
+        ['key' => 'primary_color', 'type' => 'color', 'default' => self::DEFAULT_PRIMARY_COLOR],
+        ['key' => 'background_color', 'type' => 'color', 'default' => '#FFFFFF'],
+        ['key' => 'text_color', 'type' => 'color', 'default' => '#111418'],
+    ];
+
     /** @var string[] */
     public array $translatable = ['name', 'description'];
 

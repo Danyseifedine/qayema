@@ -5,7 +5,7 @@ namespace Tests\Feature\Orders;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Restaurant;
-use App\Services\Global\WhatsAppLink;
+use App\Services\Orders\WhatsAppLink;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

@@ -3,15 +3,18 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\Feature;
+use App\Http\Controllers\Concerns\ResolvesRestaurant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\QrSettingsRequest;
 use App\Models\Restaurant;
-use App\Services\Global\QrStyle;
+use App\Services\Qr\QrStyle;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class QrController extends Controller
 {
+    use ResolvesRestaurant;
+
     /**
      * The QR studio payload. The link and a basic black-on-white code are
      * always there; saved designs, customization, the centre logo and the scan
@@ -21,9 +24,7 @@ class QrController extends Controller
      */
     public function show(Request $request): JsonResponse
     {
-        $restaurant = $request->user()->restaurant;
-
-        abort_if($restaurant === null, 403, __('Create your restaurant before designing a QR code.'));
+        $restaurant = $this->restaurant($request, __('Create your restaurant before designing a QR code.'));
 
         return response()->json(['data' => $this->payload($restaurant)]);
     }
@@ -35,9 +36,7 @@ class QrController extends Controller
      */
     public function update(QrSettingsRequest $request): JsonResponse
     {
-        $restaurant = $request->user()->restaurant;
-
-        abort_if($restaurant === null, 403, __('Create your restaurant before designing a QR code.'));
+        $restaurant = $this->restaurant($request, __('Create your restaurant before designing a QR code.'));
         abort_unless($restaurant->entitlements()->can(Feature::QrStudio), 403, __('QR Studio is a paid add-on.'));
         abort_if($restaurant->isSwitchedOff('qr'), 403, __('QR Studio is switched off.'));
 

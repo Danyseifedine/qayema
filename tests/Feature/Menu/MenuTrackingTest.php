@@ -122,11 +122,11 @@ class MenuTrackingTest extends TestCase
     {
         $restaurant = $this->published();
 
-        $restaurant->statistics()->create([
+        $restaurant->menuSessions()->create([
             'session_id' => 'old',
             'viewed_at' => now()->subMonths(8),
         ]);
-        $restaurant->statistics()->create([
+        $restaurant->menuSessions()->create([
             'session_id' => 'recent',
             'viewed_at' => now()->subDay(),
         ]);

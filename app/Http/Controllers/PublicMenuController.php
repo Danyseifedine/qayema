@@ -4,11 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Restaurant;
 use App\Models\Template;
-use App\Services\Global\MapPoint;
-use App\Services\Global\MenuLanguages;
-use App\Services\Global\MenuVisitRecorder;
-use App\Services\Global\OpeningHours;
-use App\Services\Global\WhatsAppLink;
+use App\Services\Analytics\MenuVisitRecorder;
+use App\Services\Menu\MapPoint;
+use App\Services\Menu\MenuLanguages;
+use App\Services\Menu\OpeningHours;
+use App\Services\Orders\WhatsAppLink;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 

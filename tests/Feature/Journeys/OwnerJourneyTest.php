@@ -6,13 +6,13 @@ use App\Enums\Feature;
 use App\Filament\Admin\Resources\Packages\Pages\EditPackage;
 use App\Filament\Admin\Resources\Restaurants\Pages\EditRestaurant;
 use App\Filament\Admin\Resources\Restaurants\RelationManagers\FeatureGrantsRelationManager;
+use App\Mail\ContactMessageReceived;
 use App\Models\Package;
 use App\Models\Restaurant;
 use App\Models\Template;
 use App\Models\User;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use App\Mail\ContactMessageReceived;
 use Illuminate\Support\Facades\Mail;
 use Laravel\Socialite\Contracts\Provider;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
@@ -96,7 +96,7 @@ class OwnerJourneyTest extends TestCase
 
         // Guests see all four; the visit is counted.
         $this->get('/journey?qr=1')->assertOk()->assertSee('Hummus')->assertSee('Fourth');
-        $this->actingAs($user)->getJson(route('api.stats'))->assertJsonPath('data.totals.qr_scans', 1);
+        $this->actingAs($user)->getJson(route('api.analytics'))->assertJsonPath('data.totals.qr_scans', 1);
         Mail::assertQueued(\App\Mail\WelcomeRestaurantOwner::class);
     }
 
@@ -139,7 +139,7 @@ class OwnerJourneyTest extends TestCase
         $this->actingAs($owner->user)->getJson(route('api.user'))
             ->assertJsonPath('data.restaurant.package.slug', 'pro')
             ->assertJsonPath('data.restaurant.limits.dishes.limit', 120)
-            ->assertJsonPath('data.restaurant.features.qr_studio', true);
+            ->assertJsonPath('data.restaurant.plan.qr_studio', true);
     }
 
     public function test_a_design_can_be_customised_and_switched_freely(): void
@@ -219,13 +219,13 @@ class OwnerJourneyTest extends TestCase
         $owner->socialLinks()->create(['platform' => 'instagram', 'url' => 'https://instagram.com/x']);
         $owner->featureGrants()->create(['feature' => Feature::DishLimit, 'value' => 5, 'source' => 'admin']);
         $midnight = Template::factory()->create();
-        $owner->statistics()->create(['session_id' => 's', 'viewed_at' => now()]);
+        $owner->menuSessions()->create(['session_id' => 's', 'viewed_at' => now()]);
         $userId = $owner->user_id;
         $packageId = $owner->package_id;
 
         $owner->delete();
 
-        foreach (['categories', 'dishes', 'restaurant_social_links', 'restaurant_features', 'menu_sessions'] as $table) {
+        foreach (['categories', 'dishes', 'restaurant_social_links', 'feature_grants', 'menu_sessions'] as $table) {
             $this->assertDatabaseCount($table, 0);
         }
         $this->assertDatabaseHas('users', ['id' => $userId]);

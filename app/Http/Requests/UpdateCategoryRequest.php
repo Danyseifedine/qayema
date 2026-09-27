@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Services\Global\MenuLanguages;
+use App\Services\Menu\MenuLanguages;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateCategoryRequest extends FormRequest

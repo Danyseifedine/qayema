@@ -174,7 +174,7 @@ protected function isAccessible(User $user, ?string $path = null): bool
 - Since Laravel 11, Laravel has a new streamlined file structure which this project uses.
 
 ### Laravel 12 Structure
-- No middleware files in `app/Http/Middleware/`.
+- Middleware lives in `app/Http/Middleware/` and is registered in `bootstrap/app.php`.
 - `bootstrap/app.php` is the file to register middleware, exceptions, and routing files.
 - `bootstrap/providers.php` contains application specific service providers.
 - **No app\Console\Kernel.php** - use `bootstrap/app.php` or `routes/console.php` for console configuration.
@@ -496,14 +496,14 @@ Admin → /admin → Restaurants → set package_id → limits move immediately
 
 One rule: **effective value = the package's value + Σ active grants** (limits
 add, flags OR, unlimited stays unlimited). Resolved by
-`App\Services\Global\Entitlements`, cached `entitlements:{id}` 300s.
+`App\Services\Packages\Entitlements`, cached `entitlements:{id}` 300s.
 
 - `App\Enums\Feature` is the registry — adding a limit is one enum case. The
   admin form and the packages table both render from `Feature::cases()`.
 - Saving a package flushes **every** restaurant's cache (`Entitlements::flushAll()`
   via the model's `saved` hook); changing one restaurant's package or expiry
   flushes only that one.
-- `restaurant_features` = per-restaurant grants, managed on the restaurant's
+- `feature_grants` = per-restaurant grants, managed on the restaurant's
   "Extra slots & add-ons" tab, with source `admin` or `purchase`.
 - A limit of **null is unlimited**: `hasReachedXLimit()` is false, the API sends
   `limit: null`, and a grant on top of it leaves it unlimited.
@@ -511,7 +511,11 @@ add, flags OR, unlimited stays unlimited). Resolved by
 ## Templates
 
 A template is a row + a Blade view of the same slug
-(`resources/views/menu/templates/{slug}.blade.php`). Scaffold both with:
+(`resources/views/menu/templates/{slug}.blade.php`) + its stylesheet
+(`public/css/menu-{slug}.css`, cache-busted by `filemtime`). Only the `:root`
+colours and font stay inline in the view, because they are the restaurant's
+own; tests assert on that `--accent: #XXXXXX` line, so keep its spacing. The
+inline SVG icons come from `App\Support\MenuIcons`. Scaffold all of it with:
 
 ```bash
 php artisan make:menu-template midnight
@@ -525,7 +529,45 @@ change its colours, that one is fixed" is data, not code. An empty schema = a
 fixed design.
 
 The public menu controller falls back to `classic` when a template row exists
-without its Blade file, so a half-finished template never 500s a guest.
+without its Blade file, so a half-finished template never 500s a guest. The
+printable QR card is `resources/views/menu/qr-card.blade.php` (a per-restaurant
+public page, not portal content).
+
+## Code layout and names
+
+One name per thing, shared with the dashboard (`../qayema-dashboard`):
+
+| Owner sees | Backend |
+|---|---|
+| Analytics | `AnalyticsController`, `GET /api/analytics[/advanced]`, `Services/Analytics/MenuStats`, model `MenuSession` (table `menu_sessions`) |
+| Design | `TemplateController`, `/api/templates` — a *design* is a `Template` row; the model keeps its name |
+| Restaurant | `RestaurantController`, `GET/PUT /api/restaurant`, `RestaurantResource`, `UpdateRestaurantRequest` |
+| Features | `FeaturesController`, `PUT /api/features`, column `switched_off` |
+| Package | `/api/packages` |
+| Account | `/api/account` |
+
+Three words that are never swapped: **plan** = what a restaurant may use
+(`restaurant.plan.{qr_studio, ordering, advanced_analytics}` in `/api/user`,
+resolved by `Entitlements`); **grant** = an admin giving one restaurant more
+than its package (`FeatureGrant`, table `feature_grants`); **switched off** =
+what the owner turned off on the Features page (`restaurant.switched_off`).
+`App\Enums\Feature` and `Package.features` describe what a *package* contains.
+
+- `app/Services/<Group>/`: `Analytics` (MenuStats, MenuEventRecorder,
+  MenuVisitRecorder), `Menu` (MenuLanguages, OpeningHours, MapPoint,
+  DisplayOrder), `Orders` (OrderPlacer, WhatsAppLink), `Packages`
+  (Entitlements), `Qr` (QrStyle), `Media` (MediaService, UploadLimits),
+  `Security` (AbuseGuard, Captcha), `Contact` (ContactService), `Portal`
+  (OnboardingService). A new service goes in the group it serves.
+- `app/Support/` is for value helpers with no dependencies (`Color`).
+- Every owner API controller resolves its restaurant through the
+  `ResolvesRestaurant` trait (403 when the user has none); never copy the
+  helper. `PackageRequestController` is the one exception on purpose: a user
+  without a restaurant may still ask for a package.
+- Validation is always a Form Request, including one-field ones
+  (`AnalyticsRangeRequest`, `UpdateOrderRequest`, `UpdateDishAvailabilityRequest`).
+- `Template::CLASSIC_SCHEMA` is the one copy of the classic design's settings
+  (seeder and `make:menu-template`).
 
 ## Conventions & gotchas
 
@@ -569,9 +611,9 @@ without its Blade file, so a half-finished template never 500s a guest.
 - Rate limiters in `AppServiceProvider` (`api`/`mutations`/`uploads`/`auth`/
   `contact`); the high-volume ones feed the `AbuseGuard` auto-ban.
 - Session lifetime is intentionally 1 year (the SPA rides it).
-- `restaurants.hidden_sections` holds the optional features the owner
-  switched off on the dashboard's Features page (`PUT /api/sections`, limited
-  to `Restaurant::OPTIONAL_FEATURES`): `orders` (no ordering at all —
+- `restaurants.switched_off` holds the optional features the owner
+  switched off on the dashboard's Features page (`PUT /api/features` with
+  `{off: [...]}`, limited to `Restaurant::OPTIONAL_FEATURES`): `orders` (no ordering at all —
   `takesOrders()`), `qr` (studio styling and printable card off, plain code
   kept — `hasQrStudio()`), `analytics` (page hidden), `languages` (English-only
   menu — `MenuLanguages::for()`; `written()` ignores the switch). Nothing is
@@ -596,7 +638,7 @@ A guest builds a cart on the public menu and places an order. It is **stored**
 order written out — nothing here is realtime, so the hand-off is what actually
 reaches the owner.
 
-- `App\Services\Global\OrderPlacer` is the only way an order is created. Every
+- `App\Services\Orders\OrderPlacer` is the only way an order is created. Every
   dish is re-read scoped to the restaurant and every price comes from the
   database; a price in the request body is ignored.
 - Order lines carry **their own** `name` and `unit_price`. A dish renamed,
@@ -612,7 +654,7 @@ reaches the owner.
 ## Maps
 
 `restaurants.google_maps_url` is the only thing stored; there are no lat/lng
-columns. `App\Services\Global\MapPoint` reads the point back out of that URL
+columns. `App\Services\Menu\MapPoint` reads the point back out of that URL
 (`?q=`, `?ll=`, `?query=`, `/@lat,lng,17z`) and builds a **keyless
 OpenStreetMap** embed — Google's needs an API key and a billing account, and
 this page is scanned all day. A shortened `maps.app.goo.gl` link hides its
@@ -643,11 +685,11 @@ with the design**, so a printed code keeps working whatever is saved.
   `dot_color`, `dot_gradient`, …), not the drawing library's option tree.
   `Restaurant::qrDesign()` merges it over `qrDefaultDesign()` (the simple QR)
   and drops any key the defaults no longer know.
-- `App\Services\Global\QrStyle::options()` is the one place a design becomes
+- `App\Services\Qr\QrStyle::options()` is the one place a design becomes
   `qr-code-styling` options. The dashboard mirrors it in
-  `src/features/qr-studio/components/preview/qr-options.ts`; both are tested
-  against the same cases (`tests/Unit/Services/QrStyleTest.php`) — change one,
-  change both. The allowed shapes are QrStyle's constants, which
+  `src/features/qr/utils/qr-options.ts`; both are tested against the same
+  cases (`tests/Unit/Services/Qr/QrStyleTest.php`) — change one, change both.
+  Hex checks and the ink-on-a-colour rule live in `App\Support\Color`. The allowed shapes are QrStyle's constants, which
   `QrSettingsRequest` validates against.
 - Drawn by `qr-code-styling` 1.9.2 on both sides: npm in the dashboard, and a
   vendored copy at `public/js/qr-code-styling.js` for the printable card at
@@ -675,8 +717,8 @@ with the design**, so a printed code keeps working whatever is saved.
   terms. Events share the visit's `session_id`, which is what the funnel counts.
   Recorded on **every** package, so moving up shows history at once. Owner
   previews load no tracker.
-- **Reading:** `App\Services\Global\MenuStats`. `summary()` (`GET /api/stats`)
-  is every package, ranges `7d`/`30d`; `advanced()` (`GET /api/stats/advanced`)
+- **Reading:** `App\Services\Analytics\MenuStats`. `summary()` (`GET /api/analytics`)
+  is every package, ranges `7d`/`30d`; `advanced()` (`GET /api/analytics/advanced`)
   and the `90d`/`all` ranges need the `advanced_analytics` flag — **on for
   every package for now**, by the owner's choice, until they decide which
   packages keep it; tests of the locked path switch it off themselves. Days and hours are the restaurant's `timezone` (UTC when
@@ -697,7 +739,7 @@ German, Italian, Russian, Chinese, Hindi, Portuguese. `default_locale` is what
 the menu opens in: `en` or the second language. `config('locales.supported')`
 is only the **portal's** UI list and has nothing to do with menus.
 
-- `App\Services\Global\MenuLanguages` owns it: `for()` (`['en', second?]`),
+- `App\Services\Menu\MenuLanguages` owns it: `for()` (`['en', second?]`),
   `default()`, `text()` (that language, else English — never spatie's
   accessor, which fell back to the app locale and showed Arabic-only text
   blank), `map()` for resources, `rules()` for requests, `input()` + `fill()`
@@ -727,12 +769,11 @@ language switch is one visit continuing, not two.
 
 `restaurants.opening_hours` is one range per weekday (`null` = closed) and
 `restaurants.timezone` is what makes "open now" mean anything.
-`App\Services\Global\OpeningHours` owns the logic, including a range whose
+`App\Services\Menu\OpeningHours` owns the logic, including a range whose
 close is at or before its open, which runs past midnight.
 
 ## Not yet built
 
-- The dashboard SPA itself (the API it consumes is complete and tested).
 - **Realtime.** Nothing pushes. The dashboard's Orders page polls every 60s
   while it is open; WhatsApp is the notification.
 - More template designs — only the `classic` view exists.
@@ -745,8 +786,13 @@ close is at or before its open, which runs past midnight.
 
 ## Testing
 
-PHPUnit: pure logic in `tests/Unit`, HTTP/admin/journey tests in `tests/Feature`
-(~580 tests). Shared fixtures: `Tests\Concerns\CreatesOwners` (`owner()`,
+PHPUnit, ~770 tests. `tests/Unit/Services/<Group>/` mirrors `app/Services/<Group>/`
+and holds only tests that extend `PHPUnit\Framework\TestCase` (no container,
+no database); anything that boots the app or touches the DB is a Feature test.
+`tests/Feature/<Area>/` groups by area — `Api/` is every `/api/*` endpoint, then
+`Admin`, `Auth`, `Console`, `Journeys`, `Media`, `Menu`, `Onboarding`, `Orders`
+(public ordering), `Packages`, `Portal`, `Security`. Names are `<Thing>Test` and
+`<Thing>EdgeTest`, never `<Thing>ApiTest`. Shared fixtures: `Tests\Concerns\CreatesOwners` (`owner()`,
 `ownerOn('pro')`, `published()`, `admin()`).
 Run `php artisan test`; format with `vendor/bin/pint --dirty`. Switching `actingAs()`
 users inside one test trips Filament's session-hash check — use separate tests.

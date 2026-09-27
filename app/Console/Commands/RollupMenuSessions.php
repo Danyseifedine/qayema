@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\MenuEvent;
-use App\Models\RestaurantStatistic;
+use App\Models\MenuSession;
 use Illuminate\Console\Command;
 
 class RollupMenuSessions extends Command
@@ -18,7 +18,7 @@ class RollupMenuSessions extends Command
         $pruneMonths = (int) $this->option('prune-months');
 
         if ($pruneMonths > 0) {
-            $pruned = RestaurantStatistic::where('viewed_at', '<', now()->subMonths($pruneMonths))->delete();
+            $pruned = MenuSession::where('viewed_at', '<', now()->subMonths($pruneMonths))->delete();
             $this->info("Pruned {$pruned} raw menu_sessions rows older than {$pruneMonths} months.");
 
             $events = MenuEvent::where('occurred_at', '<', now()->subMonths($pruneMonths))->delete();

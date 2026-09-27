@@ -24,9 +24,9 @@ class ScheduledTasksTest extends TestCase
     public function test_rollup_prunes_exactly_past_the_retention_window(): void
     {
         $restaurant = Restaurant::factory()->create();
-        $restaurant->statistics()->create(['session_id' => 'old', 'viewed_at' => now()->subMonths(6)->subMinute()]);
-        $restaurant->statistics()->create(['session_id' => 'edge', 'viewed_at' => now()->subMonths(6)->addMinute()]);
-        $restaurant->statistics()->create(['session_id' => 'new', 'viewed_at' => now()]);
+        $restaurant->menuSessions()->create(['session_id' => 'old', 'viewed_at' => now()->subMonths(6)->subMinute()]);
+        $restaurant->menuSessions()->create(['session_id' => 'edge', 'viewed_at' => now()->subMonths(6)->addMinute()]);
+        $restaurant->menuSessions()->create(['session_id' => 'new', 'viewed_at' => now()]);
 
         $this->artisan('stats:rollup')->assertSuccessful()->expectsOutputToContain('Pruned 1');
 
@@ -38,7 +38,7 @@ class ScheduledTasksTest extends TestCase
     public function test_a_custom_retention_can_be_passed(): void
     {
         $restaurant = Restaurant::factory()->create();
-        $restaurant->statistics()->create(['session_id' => 'two-months', 'viewed_at' => now()->subMonths(2)]);
+        $restaurant->menuSessions()->create(['session_id' => 'two-months', 'viewed_at' => now()->subMonths(2)]);
 
         $this->artisan('stats:rollup', ['--prune-months' => 1])->assertSuccessful();
 
@@ -48,7 +48,7 @@ class ScheduledTasksTest extends TestCase
     public function test_zero_retention_disables_pruning(): void
     {
         $restaurant = Restaurant::factory()->create();
-        $restaurant->statistics()->create(['session_id' => 'ancient', 'viewed_at' => now()->subYears(3)]);
+        $restaurant->menuSessions()->create(['session_id' => 'ancient', 'viewed_at' => now()->subYears(3)]);
 
         $this->artisan('stats:rollup', ['--prune-months' => 0])->assertSuccessful();
 

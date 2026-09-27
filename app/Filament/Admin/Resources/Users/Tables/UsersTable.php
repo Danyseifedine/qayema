@@ -79,7 +79,7 @@ class UsersTable
 
                 TextColumn::make('views_count')
                     ->label('Total Views')
-                    ->getStateUsing(fn (User $record): string => (string) ($record->restaurant?->statistics()->count() ?? '—'))
+                    ->getStateUsing(fn (User $record): string => (string) ($record->restaurant?->menuSessions()->count() ?? '—'))
                     ->placeholder('—')
                     ->badge()
                     ->color('info')

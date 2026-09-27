@@ -28,7 +28,7 @@ model.
 ## Step 4 — API for the SPA
 - [x] C1 `GET /api/user` shell payload (limits, features, urls; the balance it
       carried became the package block)
-- [x] C8 `GET /api/stats`
+- [x] C8 `GET /api/analytics`
 - [x] C9 `PUT /api/password`, `PUT /api/account`
 - [x] C7 wallet pagination *(removed with coins)*
 

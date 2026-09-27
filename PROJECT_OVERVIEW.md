@@ -22,12 +22,12 @@ short human-facing map.
 
 ## Core domain
 
-- **Restaurant** — one per owner. Translatable name/description/address, logo and
+- **Restaurant** — one per owner. Translatable name/description, a Google Maps link, logo and
   cover via Spatie medialibrary on Cloudflare R2, plus phone, currency, timezone
   and the Google Maps link.
-- **Menu** — categories (name + order) containing dishes (name, price,
-  ingredients, one image, availability, order). Deliberately minimal: no
-  descriptions, no category images, no tags.
+- **Menu** — categories (name, an optional one-line description, order)
+  containing dishes (name, price, ingredients, one image, availability, order).
+  Deliberately minimal: no category images, no tags.
 - **Templates** — the menu designs. A new restaurant has none until the owner
   picks one, and the dashboard stays locked until they do.
 

@@ -7,7 +7,7 @@ return [
     | Image optimization presets
     |--------------------------------------------------------------------------
     |
-    | Per-context presets applied by App\Services\Global\MediaService::optimize().
+    | Per-context presets applied by App\Services\Media\MediaService::optimize().
     | These dimensions are app-specific, so they live here rather than in the
     | reusable service. 'fit' is 'cover' (crop to fill the box) or 'contain'
     | (scale down within the box, never upscaling). Provide 'quality' for a
