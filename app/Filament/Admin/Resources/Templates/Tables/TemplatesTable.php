@@ -36,6 +36,8 @@ class TemplatesTable
                     ->sortable(),
                 ToggleColumn::make('is_active')
                     ->label('Active'),
+                ToggleColumn::make('is_premium')
+                    ->label('Premium'),
                 TextColumn::make('created_at')
                     ->placeholder('N/A')
                     ->dateTime()

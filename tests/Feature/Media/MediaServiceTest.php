@@ -23,7 +23,7 @@ class MediaServiceTest extends TestCase
 
     protected function tearDown(): void
     {
-        $temp = storage_path('app/temp');
+        $temp = app(MediaService::class)->tempRoot();
         if (is_dir($temp)) {
             foreach (glob($temp.'/{*,*/*}.webp', GLOB_BRACE) ?: [] as $file) {
                 @unlink($file);

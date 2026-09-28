@@ -11,11 +11,10 @@ return [
     | any grants in `feature_grants` that stack on top. The registry of
     | what a feature IS lives in App\Enums\Feature; the numbers live in the
     | `packages` table so they're editable from /admin → Packages without a
-    | deploy. Templates are pure design and grant nothing.
+    | deploy. A template grants nothing; one marked premium needs the
+    | premium_designs flag.
     |
     */
-
-    'default' => 'free',
 
     /*
     |--------------------------------------------------------------------------

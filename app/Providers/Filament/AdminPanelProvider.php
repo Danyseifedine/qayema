@@ -51,7 +51,6 @@ class AdminPanelProvider extends PanelProvider
                 PackageResource::class,
                 BlockedIpResource::class,
             ])
-            ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\Filament\Admin\Pages')
             ->pages([
                 Dashboard::class,
             ])

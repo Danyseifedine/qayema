@@ -120,7 +120,7 @@
             --page: color-mix(in srgb, var(--text) 4.5%, var(--bg));
             --soft: color-mix(in srgb, var(--text) 6%, var(--bg));
             --line: color-mix(in srgb, var(--text) 11%, var(--bg));
-            --muted: color-mix(in srgb, var(--text) 58%, var(--bg));
+            --muted: color-mix(in srgb, var(--text) 64%, var(--bg));
             /* The phone top bar's height, which the sticky category tabs sit
                under. .topbar-inner holds it, so a bigger logo or no cart
                button can never make the tabs slide beneath the bar. */
@@ -194,6 +194,12 @@
                 <span class="icon">{!! $icons['language'] !!}</span>
             </button>
         @endif
+
+        {{-- A guest at a laptop scans this to carry the menu to their phone. --}}
+        <button type="button" class="top-action dockface" data-pop-open="qr" aria-haspopup="dialog"
+                aria-label="{{ __('Share menu') }}">
+            <span class="icon">{!! $icons['qr'] !!}</span>
+        </button>
 
     </div>
 </header>

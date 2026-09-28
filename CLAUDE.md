@@ -461,7 +461,7 @@ Bilingual (ar/en) restaurant-menu SaaS. Two codebases in this folder:
 - **`qayema-dashboard/` (separate repo)** — the owner dashboard SPA. React 19 +
   Vite + TS, Sanctum **session-cookie** auth (no tokens), CSRF primed from
   `GET /api/csrf-token` (the body, because a cross-subdomain SPA can't read the
-  cookie). **Currently only an auth bootstrap — the UI is unbuilt.**
+  cookie). It also holds the Playwright end-to-end suite for both apps (`e2e/`).
 
 ## Packages
 
@@ -472,8 +472,22 @@ Nothing is sold in-app yet: an owner asks for a package and an admin assigns it.
 ```
 Owner → POST /api/packages/request → ContactService::submit()
     → contact_messages row (user_id + package_id) + email to the admin
-Admin → /admin → Restaurants → set package_id → limits move immediately
+Admin → /admin → the request → "Apply this package" (or Restaurants →
+    Package → Change package / Extend) → PackageAssigner → in force at its start
 ```
+
+What each ships with (`config/package.php`, pinned by `PackageCatalogTest`;
+the admin owns the numbers after install):
+
+| | Free | Pro | Premium | Custom |
+|---|---|---|---|---|
+| dishes / categories / social links | 40 / 8 / 1 | 150 / 15 / 2 | 500 / 30 / 10 | unlimited |
+| `multiple_languages`, `appearance`, `analytics` | — | ✓ | ✓ | ✓ |
+| `premium_designs`, `qr_studio`, `ordering`, `advanced_analytics` | — | — | ✓ | ✓ |
+
+Pro is `is_featured` ("Most popular" on the dashboard). Prices are still
+placeholders. The landing page's pricing (`lang/{en,ar}/portal.php`) is **not**
+in step with this yet.
 
 - `packages.features` is a JSON map of `App\Enums\Feature` slug => value:
   an integer allowance, **null for unlimited**, or 0/1 for a flag. A key the map
@@ -483,28 +497,70 @@ Admin → /admin → Restaurants → set package_id → limits move immediately
   `config('package.catalog')`, edited at **/admin → Packages**, never created or
   deleted there. `PackageSeeder` is `firstOrCreate`, so seeding a live database
   cannot overwrite an admin's edits.
-- `package_ends_at` is an admin-set expiry. Once it passes, `effectivePackage()`
-  returns the default package while the assignment stays on the row so an admin
-  can still see what lapsed. A restaurant with no write between expiry and the
-  next read is stale for up to `package.cache_ttl` (300 s).
+- **Dates:** the assigned package is in force from `package_started_at` (null =
+  always) until `package_ends_at` (null = forever) — `Restaurant::packageStatus()`
+  (`PackageStatus` Active / Scheduled / Expired). Outside that window
+  `effectivePackage()` is the default package, and the assignment stays on the
+  row so an admin sees what is coming or what lapsed. `/api/user` sends the
+  package in force with `starts_at`, `ends_at`, `days_left`, plus `lapsed` or
+  `upcoming` for the assigned one. Query scopes: `packageActive()`,
+  `packageScheduled()`, `packageExpired()`, `packageEndingWithin($days)`,
+  `onPackage($id)` (in force, including restaurants fallen back to the default).
+- **`App\Services\Packages\PackageAssigner` is the one way an admin changes a
+  package**: `assign()` (package, start, end|null, note), `extend()` (months
+  added to the end, or to today once ended; null = forever), `reset()` (default,
+  forever). Every admin action calls it: Change package (row, bulk, the
+  ending-soon widget, "Apply this package" on a request), Extend, Back to
+  default. The restaurant form's Package section uses the same fields
+  (`Restaurants\Schemas\PackageFields`: package, starts, forever / N months /
+  until a date, note).
+- **History:** `package_changes` (model `PackageChange`) gets a row for every
+  write to `Restaurant::PACKAGE_FIELDS`, from the model's own `created`/`saved`
+  hooks, so no path skips it: from → to, dates, `changed_by` (the signed-in
+  admin), and the note (`$restaurant->packageChangeNote`, set before the save).
+  Read-only "Package history" relation manager on the restaurant.
+- The admin home is the `PackagesEndingSoon` widget: ending in 14 days or
+  ended in the last 30, with Extend / Change package.
 - A package request shares the public contact form's durable per-IP quota of
   3/day, and comes back as a **429** carrying `retry_after` when it is hit.
-- **Templates grant nothing.** They are pure design, free, and every active one
-  is available on every package.
+- **Premium designs:** a template with `is_premium` needs the
+  `premium_designs` flag to be chosen (`TemplateController::select` 403s, the
+  list sends `is_premium` and `locked`). A restaurant that loses the flag keeps
+  its `template_id`; `Restaurant::menuTemplate()` draws the menu (and
+  Appearance, the QR brand colour) in `Template::fallback()`, the first active
+  non-premium design, until it is back. `meta.shown` tells the dashboard.
+- **What each flag gates** (all "package allows AND owner did not switch it
+  off" where the owner has a switch):
+  `analytics` → `GET /api/analytics` (403) and the QR page's scan counts
+  (`GET /api/analytics/teaser`, this week's views, is open to all);
+  `appearance` → `PUT /api/appearance` (403), and without it the menu draws the
+  design's defaults and default fonts (`designSettings()`, `MenuFonts::family()`;
+  `MenuFonts::chosen()` is the owner's pick for the dashboard) — choices kept;
+  `multiple_languages` → `showsSecondLanguage()` / `MenuLanguages::for()`
+  (English-only, the second language kept) and choosing one in
+  `PUT /api/menu-languages` (403);
+  `qr_studio`, `ordering`, `advanced_analytics` as below.
 
 ## Limits / entitlements
 
 One rule: **effective value = the package's value + Σ active grants** (limits
 add, flags OR, unlimited stays unlimited). Resolved by
-`App\Services\Packages\Entitlements`, cached `entitlements:{id}` 300s.
+`App\Services\Packages\Entitlements`, cached `entitlements:{id}` for 300 s or
+until the next start/end of the package or a grant, whichever is sooner — a
+date passing never leaves a stale answer, and no scheduler is needed.
 
-- `App\Enums\Feature` is the registry — adding a limit is one enum case. The
-  admin form and the packages table both render from `Feature::cases()`.
+- `App\Enums\Feature` is the registry — adding a limit or a flag is one enum
+  case (`kind()`, `defaultValue()` and `label()`/`hint()` in
+  `lang/{en,ar}/features.php` list every case, no default arm). The admin form,
+  the packages table and `/api/user`'s `plan` (`Feature::flags()`) all render
+  from it. A package that does not carry a new key reads it as its default,
+  and the admin form fills it so a save never turns it unlimited.
 - Saving a package flushes **every** restaurant's cache (`Entitlements::flushAll()`
   via the model's `saved` hook); changing one restaurant's package or expiry
   flushes only that one.
 - `feature_grants` = per-restaurant grants, managed on the restaurant's
-  "Extra slots & add-ons" tab, with source `admin` or `purchase`.
+  "Extra slots & add-ons" tab, with source `admin` or `purchase`, an optional
+  end and a `note`.
 - A limit of **null is unlimited**: `hasReachedXLimit()` is false, the API sends
   `limit: null`, and a grant on top of it leaves it unlimited.
 
@@ -581,7 +637,8 @@ One name per thing, shared with the dashboard (`../qayema-dashboard`):
 | Account | `/api/account` |
 
 Three words that are never swapped: **plan** = what a restaurant may use
-(`restaurant.plan.{qr_studio, ordering, advanced_analytics}` in `/api/user`,
+(`restaurant.plan.{multiple_languages, appearance, premium_designs, qr_studio,
+ordering, analytics, advanced_analytics}` in `/api/user`,
 resolved by `Entitlements`); **grant** = an admin giving one restaurant more
 than its package (`FeatureGrant`, table `feature_grants`); **switched off** =
 what the owner turned off on the Features page (`restaurant.switched_off`).
@@ -590,7 +647,7 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
 - `app/Services/<Group>/`: `Analytics` (MenuStats, MenuEventRecorder,
   MenuVisitRecorder), `Menu` (MenuLanguages, OpeningHours, MapPoint,
   DisplayOrder), `Orders` (OrderPlacer, WhatsAppLink), `Packages`
-  (Entitlements), `Qr` (QrStyle), `Media` (MediaService, UploadLimits),
+  (Entitlements, PackageAssigner), `Qr` (QrStyle), `Media` (MediaService, UploadLimits),
   `Security` (AbuseGuard, Captcha), `Contact` (ContactService), `Portal`
   (OnboardingService). A new service goes in the group it serves.
 - `app/Support/` is for value helpers with no dependencies (`Color`).
@@ -620,8 +677,8 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
   content) stay `{en, ar}`, shown in the dashboard's interface language.
 - **Media:** Spatie medialibrary on Cloudflare R2, the `r2` disk in
   `config/filesystems.php`, chosen by `MEDIA_DISK=r2`. Temp-upload flow: POST
-  an image → optimized to WebP → parked per-user on local disk
-  (`storage/app/temp/{user}`) → promoted by key into the media library on the
+  an image → optimized to WebP → parked per-user on the private `local` disk
+  (`temp/{user}`, `MediaService::tempRoot()`) → promoted by key into the media library on the
   next create/update. The raw upload is never stored. The `r2` disk sets no
   `visibility` (R2 has no per-object ACLs; the bucket is public through its
   domain). `phpunit.xml` pins `MEDIA_DISK=public`, so tests can never reach the
@@ -664,6 +721,12 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
   `locales.supported`. Arabic API text: `lang/ar.json` and
   `lang/ar/validation.php` (only the rules the API uses; anything else falls
   back to Laravel's English).
+- **Admin forms of translatable models** (Restaurant, Category, Dish, Package,
+  Template) edit one field per language (`name.en`, and `name.ar` for platform
+  text) and use `App\Filament\Admin\Concerns\KeepsTranslations` on their
+  create/edit pages: filling gives the form every language, saving merges what
+  the form sent over the languages it does not show. Never bind a translatable
+  column to a single input (it shows `[object Object]` and overwrites the text).
 - Filament v4 testing: table **header** actions need
   `callAction(TestAction::make('create')->table())`, not `callAction('create')`.
 - `Restaurant::RESERVED_SLUGS` is the single list behind both the public menu
@@ -686,9 +749,8 @@ reaches the owner.
   `order_items.dish_id` is `nullOnDelete`.
 - `POST /{slug}/order` is public, on the `web` group (session + CSRF), limited
   to 10/min per IP with **`autoBan: false`**: a dining room is one IP.
-- Gated on the `ordering` package flag, which `config/package.php` ships **on**
-  for all four tiers. Off means the menu renders with no cart
-  and the endpoint 404s.
+- Gated on the `ordering` package flag (Premium and Custom). Off means the menu
+  renders with no cart and the endpoint 404s.
 - The owner reads them at `GET /api/orders`; only `status` is writable.
 
 ## Maps
@@ -718,9 +780,10 @@ The owner's QR code: a plain black-on-white code by default, customizable from
 the dashboard's QR page. The link it encodes (`/{slug}?qr=1`) **never changes
 with the design**, so a printed code keeps working whatever is saved.
 
-- Gated on `qr_studio`, which `config/package.php` ships **on for every tier**
-  for now — per-package customization is to be decided later. When it is, give
-  each editor group (colours, shapes, logo, card) its own flag then.
+- Styling, the logo and the printable card are gated on `qr_studio` (Premium
+  and Custom); the scan counts follow `analytics`. Should one package ever get
+  only part of the studio, give each editor group (colours, shapes, logo, card)
+  its own flag then.
 - `restaurants.qr_settings` is a **flat design we own** (`dot_style`,
   `dot_color`, `dot_gradient`, …), not the drawing library's option tree.
   `Restaurant::qrDesign()` merges it over `qrDefaultDesign()` (the simple QR)
@@ -762,10 +825,12 @@ with the design**, so a printed code keeps working whatever is saved.
   Recorded on **every** package, so moving up shows history at once. Owner
   previews load no tracker.
 - **Reading:** `App\Services\Analytics\MenuStats`. `summary()` (`GET /api/analytics`)
-  is every package, ranges `7d`/`30d`; `advanced()` (`GET /api/analytics/advanced`)
-  and the `90d`/`all` ranges need the `advanced_analytics` flag — **on for
-  every package for now**, by the owner's choice, until they decide which
-  packages keep it; tests of the locked path switch it off themselves. Days and hours are the restaurant's `timezone` (UTC when
+  needs `analytics` (Pro and up), ranges `7d`/`30d`; `advanced()` (`GET /api/analytics/advanced`)
+  and the `90d`/`all` ranges need `advanced_analytics` (Premium and up);
+  `teaser()` (`GET /api/analytics/teaser`, this week's views) is every package.
+  Tests about a feature itself put it on the default package with
+  `defaultPackageIncludes()` (`CreatesOwners`); which package has what is
+  tested in `tests/Feature/Packages`. Days and hours are the restaurant's `timezone` (UTC when
   unset): rows are grouped by UTC hour with `SUBSTR(ts, 1, 13)` — portable
   across MySQL and SQLite — and shifted in PHP. The funnel (visit → cart → order)
   is null when the package does not take orders. Devices, browsers, systems
@@ -824,19 +889,38 @@ close is at or before its open, which runs past midnight.
 - **Taking payment.** Pro/Premium/Custom are requested, not bought: there is no
   checkout, no subscription and no billing provider. An admin assigns a package
   by hand.
-- **What each package actually contains.** The numbers in
-  `config/package.php` and the copy in `lang/{en,ar}/portal.php` are marked
-  `TODO(packages)` placeholders and must be decided together.
+- **Prices and the landing page.** Package contents are decided (see
+  Packages); the prices are still placeholders and `lang/{en,ar}/portal.php`
+  still shows the old copy.
+- **A Free menu in a language other than English.** English is required on
+  every menu, so Free (one language) is English-only for now.
 
 ## Testing
 
-PHPUnit, ~770 tests. `tests/Unit/Services/<Group>/` mirrors `app/Services/<Group>/`
+Three layers, and a change is done when all three are green:
+
+- **PHPUnit here** (`composer test`; `composer test:coverage` fails under the
+  coverage floor — needs the `pcov` extension). Tests never touch real storage:
+  `tests/TestCase.php` fakes the `local` and `public` disks.
+- **Vitest** in the dashboard repo.
+- **Playwright end-to-end** in `../qayema-dashboard/e2e` (`npm run e2e` there),
+  against this app with `APP_ENV=e2e`: `.env.e2e` (committed, no secrets),
+  SQLite at `database/e2e.sqlite`, media on the `e2e` disk, port 8001
+  (`composer serve:e2e`). `php artisan e2e:reset` rebuilds that database and
+  refuses anywhere else. `routes/e2e.php` exists only in that environment
+  (`E2eGuardTest` proves it): `POST /__e2e/scenario` builds an owner with
+  whatever a test needs (package and dates, design, languages, content,
+  orders, visits, grants — `E2eController`), `/__e2e/login` signs a user in,
+  `/__e2e/package`, `/__e2e/password-reset-token`. `E2eSeeder`: Classic, the
+  premium Midnight design, `admin@e2e.test` / `e2e-password`.
+
+PHPUnit layout: `tests/Unit/Services/<Group>/` mirrors `app/Services/<Group>/`
 and holds only tests that extend `PHPUnit\Framework\TestCase` (no container,
 no database); anything that boots the app or touches the DB is a Feature test.
 `tests/Feature/<Area>/` groups by area — `Api/` is every `/api/*` endpoint, then
 `Admin`, `Auth`, `Console`, `Journeys`, `Media`, `Menu`, `Onboarding`, `Orders`
 (public ordering), `Packages`, `Portal`, `Security`. Names are `<Thing>Test` and
 `<Thing>EdgeTest`, never `<Thing>ApiTest`. Shared fixtures: `Tests\Concerns\CreatesOwners` (`owner()`,
-`ownerOn('pro')`, `published()`, `admin()`).
+`ownerOn('pro')`, `published()`, `admin()`, `defaultPackageIncludes()`).
 Run `php artisan test`; format with `vendor/bin/pint --dirty`. Switching `actingAs()`
 users inside one test trips Filament's session-hash check — use separate tests.

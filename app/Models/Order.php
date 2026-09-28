@@ -70,11 +70,6 @@ class Order extends Model
         return $reference;
     }
 
-    public function totalQuantity(): int
-    {
-        return (int) $this->items->sum('quantity');
-    }
-
     /** @return string the human title used in lists and emails */
     public function title(): string
     {

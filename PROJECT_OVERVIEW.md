@@ -28,20 +28,23 @@ short human-facing map.
 - **Menu** — categories (name, an optional one-line description, order)
   containing dishes (name, price, ingredients, one image, availability, order).
   Deliberately minimal: no category images, no tags.
-- **Templates** — the menu designs. A new restaurant has none until the owner
-  picks one, and the dashboard stays locked until they do.
+- **Designs** (`Template` rows) — how the menu looks. A new restaurant has none
+  until the owner picks one, and the dashboard stays locked until they do. A
+  design marked premium needs a package with premium designs.
 
 ## Packages
 
 Four of them — **Free, Pro, Premium and Custom** — each holding its own limits
 and features in a JSON map, edited at **/admin → Packages**. Every restaurant
-points at one and starts on Free. Templates carry no price: every design is
-available on every package.
+points at one and starts on Free. Free is a plain English menu; Pro adds a
+second language, the owner's own look and analytics; Premium adds ordering,
+the QR studio, premium designs and advanced analytics; Custom is unlimited.
 
 Nothing is sold in the app yet. An owner asks for a package from the dashboard,
 the request lands in **/admin → Contact Messages** with the package on it and an
-email goes out, and an admin assigns it on the restaurant. An admin-set
-`package_ends_at` drops the restaurant back to Free when it passes.
+email goes out, and an admin applies it — from a date, for some months or
+forever. Every change is kept in the restaurant's package history, and the
+admin home lists the packages ending soon.
 
 ## Limits
 
@@ -72,16 +75,17 @@ with a cross-domain CSRF token endpoint.
 
 ## Testing
 
-About 580 PHPUnit tests: unit (`tests/Unit`) plus feature, admin and end-to-end
-journey tests (`tests/Feature`). Run `php artisan test`; format with
-`vendor/bin/pint --dirty`.
+- PHPUnit here: unit (`tests/Unit`) plus feature, admin and journey tests
+  (`tests/Feature`). `composer test`, `composer test:coverage` (fails under the
+  coverage floor); format with `vendor/bin/pint --dirty`.
+- Vitest in the dashboard repo for its components, hooks and pages.
+- Playwright end-to-end in `../qayema-dashboard/e2e`, against this app running
+  with `APP_ENV=e2e` on its own SQLite database (see README).
 
 ## Known gaps
 
-- The dashboard SPA is partially built — the API it consumes is complete.
-- Only the `classic` template design exists.
+- Only the `classic` design has a view of its own.
 - **No payment.** Pro, Premium and Custom are requested, not bought; an admin
   assigns them by hand. There is no checkout or billing provider.
-- **What each package contains is undecided.** The seeded numbers in
-  `config/package.php` and the landing copy in `lang/{en,ar}/portal.php` are
-  marked `TODO(packages)` placeholders.
+- **Prices and the landing page.** Package prices are placeholders, and the
+  pricing copy in `lang/{en,ar}/portal.php` does not match the packages yet.

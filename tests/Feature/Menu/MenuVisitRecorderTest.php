@@ -7,6 +7,7 @@ use App\Services\Analytics\MenuVisitRecorder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class MenuVisitRecorderTest extends TestCase
@@ -40,7 +41,7 @@ class MenuVisitRecorderTest extends TestCase
         ];
     }
 
-    /** @dataProvider userAgents */
+    #[DataProvider('userAgents')]
     public function test_user_agents_are_classified(string $agent, string $device, ?string $browser, ?string $os): void
     {
         $this->assertSame(

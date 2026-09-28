@@ -4,18 +4,16 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | SEO Default Settings - MenuX by Lebify
+    | SEO Default Settings
     |--------------------------------------------------------------------------
     |
-    | Default SEO settings for MenuX digital menu platform (by Lebify Group).
+    | Default SEO settings for the Qayema portal (by Lebify Group).
     |
     */
 
     'default_author' => 'Lebify Group',
 
     'title_separator' => '|',
-
-    'twitter_username' => env('TWITTER_USERNAME'),
 
     'facebook_app_id' => env('FACEBOOK_APP_ID'),
 
@@ -59,26 +57,15 @@ return [
 
     'defaults' => [
         'title' => [
-            'en' => 'MenuX by Lebify - Create Beautiful Digital Menus',
+            'en' => 'Qayema by Lebify - Digital Menus for Restaurants',
         ],
         'description' => [
-            'en' => 'MenuX by Lebify Group: create beautiful digital menus for your restaurant. Free to start, easy to use. Built by the Lebify team in Lebanon.',
+            'en' => 'Qayema by Lebify Group: bilingual digital menus for your restaurant, shared as a QR code. Free to start, easy to use. Built by the Lebify team in Lebanon.',
         ],
         'keywords' => [
-            'en' => 'MenuX, Lebify, Lebify Group, Lebify team, digital menu, restaurant menu, online menu, menu creator, food menu, Lebanon, Barja',
+            'en' => 'Qayema, Lebify, Lebify Group, Lebify team, digital menu, restaurant menu, online menu, menu creator, food menu, Lebanon, Barja',
         ],
         'image' => '/images/logo/logo.png',
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Product-Specific Defaults (e.g. for dish/menu schema)
-    |--------------------------------------------------------------------------
-    */
-
-    'product' => [
-        'default_currency' => 'USD',
-        'default_availability' => 'InStock',
     ],
 
 ];

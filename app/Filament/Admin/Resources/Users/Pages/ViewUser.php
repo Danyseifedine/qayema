@@ -113,7 +113,7 @@ class ViewUser extends ViewRecord
                 ->schema([
                     TextEntry::make('stat_total_views')
                         ->label('Total Views')
-                        ->getStateUsing(fn () => number_format($restaurant?->menuSessions()->count() ?? 0))
+                        ->getStateUsing(fn () => number_format($restaurant?->getTotalViews() ?? 0))
                         ->badge()
                         ->color('info'),
 

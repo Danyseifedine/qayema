@@ -4,6 +4,7 @@ namespace Tests\Unit\Enums;
 
 use App\Enums\Feature;
 use App\Enums\FeatureKind;
+use Illuminate\Support\Facades\Lang;
 use Tests\TestCase;
 
 class FeatureTest extends TestCase
@@ -50,5 +51,89 @@ class FeatureTest extends TestCase
 
         $this->assertNotSame($en, $ar);
         $this->assertNotSame('features.dish_limit', $ar, 'Arabic key is present, not echoed back.');
+    }
+
+    public function test_the_registry_is_exactly_these_slugs(): void
+    {
+        $this->assertSame([
+            'dish_limit', 'category_limit', 'social_link_limit', 'multiple_languages', 'appearance',
+            'premium_designs', 'qr_studio', 'ordering', 'analytics', 'advanced_analytics',
+        ], array_map(fn (Feature $feature): string => $feature->value, Feature::cases()));
+    }
+
+    public function test_the_three_limits_and_the_seven_flags(): void
+    {
+        $this->assertSame([Feature::DishLimit, Feature::CategoryLimit, Feature::SocialLinkLimit], Feature::limits());
+        $this->assertSame([
+            Feature::MultipleLanguages, Feature::Appearance, Feature::PremiumDesigns, Feature::QrStudio,
+            Feature::Ordering, Feature::Analytics, Feature::AdvancedAnalytics,
+        ], Feature::flags());
+    }
+
+    public function test_limits_and_flags_split_every_case_between_them(): void
+    {
+        $this->assertCount(count(Feature::cases()), [...Feature::limits(), ...Feature::flags()]);
+
+        foreach (Feature::limits() as $feature) {
+            $this->assertSame(FeatureKind::Limit, $feature->kind());
+            $this->assertTrue($feature->isLimit());
+        }
+
+        foreach (Feature::flags() as $feature) {
+            $this->assertSame(FeatureKind::Flag, $feature->kind());
+            $this->assertFalse($feature->isLimit());
+        }
+    }
+
+    public function test_the_default_values_are_the_free_package(): void
+    {
+        $this->assertSame(40, Feature::DishLimit->defaultValue());
+        $this->assertSame(8, Feature::CategoryLimit->defaultValue());
+        $this->assertSame(1, Feature::SocialLinkLimit->defaultValue());
+
+        foreach (Feature::flags() as $feature) {
+            $this->assertSame(0, $feature->defaultValue(), "{$feature->value} is on by default.");
+        }
+    }
+
+    public function test_every_label_and_hint_is_written_in_english_and_arabic(): void
+    {
+        foreach (['en', 'ar'] as $locale) {
+            foreach (Feature::cases() as $feature) {
+                $this->assertTrue(Lang::has('features.'.$feature->value, $locale, false), "No {$locale} label for {$feature->value}.");
+                $this->assertTrue(Lang::has('features.hints.'.$feature->value, $locale, false), "No {$locale} hint for {$feature->value}.");
+            }
+        }
+    }
+
+    public function test_labels_and_hints_read_from_the_lang_files(): void
+    {
+        app()->setLocale('en');
+
+        $this->assertSame('Second menu language', Feature::MultipleLanguages->label());
+        $this->assertSame('How many dishes the menu can hold.', Feature::DishLimit->hint());
+
+        app()->setLocale('ar');
+
+        $this->assertSame('استوديو QR', Feature::QrStudio->label());
+        $this->assertSame('لغة ثانية في القائمة إلى جانب الإنجليزية.', Feature::MultipleLanguages->hint());
+    }
+
+    public function test_options_are_slug_to_label_in_case_order(): void
+    {
+        app()->setLocale('en');
+
+        $this->assertSame([
+            'dish_limit' => 'Dishes',
+            'category_limit' => 'Categories',
+            'social_link_limit' => 'Social links',
+            'multiple_languages' => 'Second menu language',
+            'appearance' => 'Appearance',
+            'premium_designs' => 'Premium designs',
+            'qr_studio' => 'QR Studio',
+            'ordering' => 'Ordering',
+            'analytics' => 'Analytics',
+            'advanced_analytics' => 'Advanced analytics',
+        ], Feature::options());
     }
 }

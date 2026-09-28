@@ -92,9 +92,9 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::get('/restaurant', [RestaurantController::class, 'show'])->name('api.restaurant.show');
     Route::match(['put', 'patch'], '/restaurant', [RestaurantController::class, 'update'])->name('api.restaurant.update');
 
-    // Menu templates — the store. A new restaurant has none and must choose
-    // before the dashboard unlocks. Every active design is free: what a package
-    // grants is limits and features, never a template.
+    // Menu designs (Template rows). A new restaurant has none and must choose
+    // before the dashboard unlocks. A design marked premium needs a package
+    // with premium designs.
     Route::get('/templates', [TemplateController::class, 'index'])->name('api.templates.index');
     Route::post('/templates/select', [TemplateController::class, 'select'])->name('api.templates.select');
 

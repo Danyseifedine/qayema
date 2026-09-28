@@ -48,6 +48,12 @@ class PackageAssigner
      */
     public function extend(Restaurant $restaurant, ?int $months, ?string $note = null): Restaurant
     {
+        // A package that runs forever has nothing to extend; months would
+        // give it an end and cut it short.
+        if ($restaurant->package_ends_at === null) {
+            return $restaurant;
+        }
+
         $restaurant->packageChangeNote = $note;
 
         if ($restaurant->packageExpired()) {

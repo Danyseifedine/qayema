@@ -34,6 +34,25 @@ class SecurityHeadersTest extends TestCase
 
         $response->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->assertHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+    }
+
+    public function test_forms_may_lead_to_the_dashboard_origin(): void
+    {
+        // Signing in POSTs to this origin and redirects to the dashboard;
+        // browsers block that redirect unless form-action allows its origin.
+        config(['app.dashboard_url' => 'https://app.qayema.test:8443/some/path']);
+
+        $response = $this->get('/__headers-test');
+
+        $response->assertHeader('Content-Security-Policy', "frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self' https://app.qayema.test:8443");
+    }
+
+    public function test_form_action_stays_self_without_a_usable_dashboard_url(): void
+    {
+        config(['app.dashboard_url' => 'not a url']);
+
+        $response = $this->get('/__headers-test');
+
         $response->assertHeader('Content-Security-Policy', "frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'");
     }
 

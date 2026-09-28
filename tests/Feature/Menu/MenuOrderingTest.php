@@ -201,6 +201,19 @@ class MenuOrderingTest extends TestCase
         $this->assertStringContainsString('class="top-action dockface" data-pop-open="contact"', $header);
     }
 
+    public function test_the_wide_screen_header_opens_the_qr_popup(): void
+    {
+        // The Share item lives in the dock, which a wide screen hides; the
+        // header carries it there, even with nothing else to show.
+        $shop = $this->shop(true, ['google_maps_url' => null, 'phone' => null]);
+
+        $html = $this->get(route('public.menu', $shop->slug))->assertOk()->getContent();
+
+        $header = substr($html, 0, strpos($html, '</header>'));
+        $this->assertStringContainsString('class="top-action dockface" data-pop-open="qr"', $header);
+        $this->assertSame(1, substr_count($html, 'id="pop-qr"'));
+    }
+
     public function test_no_header_contact_button_when_there_is_nothing_to_contact(): void
     {
         $shop = $this->shop(true, ['phone' => null]);

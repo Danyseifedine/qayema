@@ -21,6 +21,7 @@ use App\Filament\Admin\Resources\Users\Pages\CreateUser;
 use App\Filament\Admin\Resources\Users\Pages\EditUser;
 use App\Filament\Admin\Resources\Users\Pages\ListUsers;
 use App\Filament\Admin\Resources\Users\UserResource;
+use App\Filament\Admin\Widgets\PackagesEndingSoon;
 use App\Models\Category;
 use App\Models\Restaurant;
 use App\Models\Template;
@@ -28,6 +29,7 @@ use App\Models\User;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Concerns\CreatesOwners;
 use Tests\TestCase;
 
@@ -55,30 +57,32 @@ class AdminResourcesTest extends TestCase
         ];
     }
 
-    public function test_the_dashboard_opens_and_carries_no_stats(): void
+    public function test_the_dashboard_opens_on_packages_ending_soon_and_carries_no_stats(): void
     {
         // The admin keeps no stats of its own. The owner dashboard's numbers
-        // come from the API, which still reads menu_sessions.
+        // come from the API, which still reads menu_sessions. Its home is the
+        // list of packages to renew.
         $this->actingAs($this->admin())
             ->get(route('filament.admin.pages.dashboard'))
             ->assertOk()
+            ->assertSeeLivewire(PackagesEndingSoon::class)
             ->assertDontSee('fi-wi-stats-overview', false)
             ->assertDontSee('Statistics');
     }
 
-    /** @dataProvider resources */
+    #[DataProvider('resources')]
     public function test_every_resource_index_renders_for_an_admin(string $resource): void
     {
         $this->actingAs($this->admin())->get($resource::getUrl('index'))->assertOk();
     }
 
-    /** @dataProvider resources */
+    #[DataProvider('resources')]
     public function test_every_resource_is_closed_to_owners(string $resource): void
     {
         $this->actingAs($this->owner()->user)->get($resource::getUrl('index'))->assertForbidden();
     }
 
-    /** @dataProvider resources */
+    #[DataProvider('resources')]
     public function test_every_resource_sends_guests_to_the_login_page(string $resource): void
     {
         $this->get($resource::getUrl('index'))->assertRedirect();
@@ -155,7 +159,7 @@ class AdminResourcesTest extends TestCase
         $this->actingAs($this->admin());
 
         Livewire::test(CreateRestaurant::class)
-            ->fillForm(['user_id' => $owner->id, 'name' => 'Admin Made', 'slug' => 'admin-made', 'phone' => '+96170123456'])
+            ->fillForm(['user_id' => $owner->id, 'name.en' => 'Admin Made', 'slug' => 'admin-made', 'phone' => '+96170123456'])
             ->call('create')
             ->assertHasNoFormErrors();
 
@@ -168,7 +172,7 @@ class AdminResourcesTest extends TestCase
         $this->actingAs($this->admin());
 
         Livewire::test(CreateRestaurant::class)
-            ->fillForm(['user_id' => $restaurant->user_id, 'name' => 'Second', 'slug' => 'second-one', 'phone' => '+96170123456'])
+            ->fillForm(['user_id' => $restaurant->user_id, 'name.en' => 'Second', 'slug' => 'second-one', 'phone' => '+96170123456'])
             ->call('create')
             ->assertHasFormErrors();
     }
@@ -193,7 +197,7 @@ class AdminResourcesTest extends TestCase
 
         Livewire::test(CreateTemplate::class)
             ->fillForm([
-                'name' => 'Midnight', 'slug' => 'midnight', 'is_active' => true, 'sort_order' => 3,
+                'name.en' => 'Midnight', 'slug' => 'midnight', 'is_active' => true, 'sort_order' => 3,
                 'settings_schema' => [['key' => 'accent', 'type' => 'color', 'default' => '#ABCDEF']],
             ])
             ->call('create')
@@ -210,7 +214,7 @@ class AdminResourcesTest extends TestCase
 
         Livewire::test(CreateTemplate::class)
             ->fillForm([
-                'name' => 'Midnight', 'slug' => 'midnight', 'is_active' => true, 'sort_order' => 3,
+                'name.en' => 'Midnight', 'slug' => 'midnight', 'is_active' => true, 'sort_order' => 3,
                 'settings_schema' => [
                     ['key' => 'ink', 'type' => 'color', 'default' => '#F5F1E8', 'label' => ['en' => 'Ink', 'ar' => 'الحبر'], 'contrast_with' => 'paper'],
                     ['key' => 'paper', 'type' => 'color', 'default' => '#101010', 'label' => ['en' => 'Paper', 'ar' => null]],
@@ -230,7 +234,7 @@ class AdminResourcesTest extends TestCase
 
         foreach ([['key' => 'main colour', 'type' => 'color', 'default' => '#FFFFFF'], ['key' => 'main', 'type' => 'color', 'default' => 'red']] as $row) {
             Livewire::test(CreateTemplate::class)
-                ->fillForm(['name' => 'Midnight', 'slug' => 'midnight', 'is_active' => true, 'sort_order' => 3, 'settings_schema' => [$row]])
+                ->fillForm(['name.en' => 'Midnight', 'slug' => 'midnight', 'is_active' => true, 'sort_order' => 3, 'settings_schema' => [$row]])
                 ->call('create')
                 ->assertHasFormErrors();
         }
@@ -242,7 +246,7 @@ class AdminResourcesTest extends TestCase
         $this->actingAs($this->admin());
 
         Livewire::test(CreateTemplate::class)
-            ->fillForm(['name' => 'Taken', 'slug' => 'taken'])
+            ->fillForm(['name.en' => 'Taken', 'slug' => 'taken'])
             ->call('create')
             ->assertHasFormErrors(['slug']);
     }
@@ -253,14 +257,14 @@ class AdminResourcesTest extends TestCase
         $this->actingAs($this->admin());
 
         Livewire::test(CreateCategory::class)
-            ->fillForm(['restaurant_id' => $restaurant->id, 'name' => 'Grills', 'display_order' => 1])
+            ->fillForm(['restaurant_id' => $restaurant->id, 'name.en' => 'Grills', 'display_order' => 1])
             ->call('create')
             ->assertHasNoFormErrors();
 
         $category = Category::firstWhere('restaurant_id', $restaurant->id);
 
         Livewire::test(CreateDish::class)
-            ->fillForm(['restaurant_id' => $restaurant->id, 'category_id' => $category->id, 'name' => 'Kafta', 'price' => 12.5, 'display_order' => 1, 'is_available' => true])
+            ->fillForm(['restaurant_id' => $restaurant->id, 'category_id' => $category->id, 'name.en' => 'Kafta', 'price' => 12.5, 'display_order' => 1, 'is_available' => true])
             ->call('create')
             ->assertHasNoFormErrors();
 
@@ -278,6 +282,20 @@ class AdminResourcesTest extends TestCase
 
         $this->post(route('logout'));
         $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.9'])->get('/')->assertForbidden();
+    }
+
+    public function test_unblocking_in_the_admin_takes_effect_on_the_next_request(): void
+    {
+        $guard = app(\App\Services\Security\AbuseGuard::class);
+        $guard->block('203.0.113.10', 'spam');
+        $this->assertTrue($guard->isBlocked('203.0.113.10'), 'The answer is now cached.');
+        $this->actingAs($this->admin());
+
+        Livewire::test(\App\Filament\Admin\Resources\BlockedIps\Pages\EditBlockedIp::class, [
+            'record' => \App\Models\BlockedIp::query()->where('ip', '203.0.113.10')->sole()->id,
+        ])->callAction('delete');
+
+        $this->assertFalse($guard->isBlocked('203.0.113.10'));
     }
 
     public function test_restaurant_search_finds_by_name(): void

@@ -35,12 +35,20 @@ class RestaurantForm
                             ->unique(ignoreRecord: true)
                             ->validationMessages(['unique' => 'This owner already has a restaurant.'])
                             ->helperText('The user account that owns this restaurant.'),
-                        TextInput::make('name')
+                        // Menu text is kept per language; the admin edits the
+                        // English, which every menu has, and the other
+                        // languages are kept (EditRestaurant merges them).
+                        TextInput::make('name.en')
+                            ->label('Name (English)')
                             ->placeholder('e.g. The Golden Spoon')
                             ->required()
                             ->maxLength(255)
+                            // Only a new restaurant takes its address from its
+                            // name: once live, the slug is on printed QR codes.
                             ->live(onBlur: true)
-                            ->afterStateUpdated(fn ($state, callable $set) => $set('slug', \Illuminate\Support\Str::slug((string) ($state ?? ''))))
+                            ->afterStateUpdated(fn ($state, callable $set, string $operation) => $operation === 'create'
+                                ? $set('slug', \Illuminate\Support\Str::slug((string) ($state ?? '')))
+                                : null)
                             ->helperText('Shown on the public menu page.'),
                         TextInput::make('slug')
                             ->placeholder('the-golden-spoon')
@@ -52,7 +60,8 @@ class RestaurantForm
                             ->dehydrateStateUsing(fn ($state) => \Illuminate\Support\Str::slug((string) ($state ?? '')))
                             ->helperText('Used in the public URL. Lowercase letters, numbers and hyphens only — invalid characters are removed automatically.')
                             ->columnSpanFull(),
-                        Textarea::make('description')
+                        Textarea::make('description.en')
+                            ->label('Description (English)')
                             ->placeholder('A short description of your restaurant…')
                             ->rows(3)
                             ->helperText('Optional. Shown on the public menu page.')

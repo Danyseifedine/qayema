@@ -4,6 +4,7 @@ namespace Tests\Feature\Admin;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Auth;
 use Tests\TestCase;
 
 class ImpersonateTest extends TestCase
@@ -63,5 +64,38 @@ class ImpersonateTest extends TestCase
 
         $response->assertRedirect('/');
         $this->assertAuthenticatedAs($admin);
+    }
+
+    public function test_the_session_follows_the_owner_so_authenticate_session_keeps_them_in(): void
+    {
+        $admin = User::factory()->admin()->create();
+        // Factory users share one password hash; this owner's must differ.
+        $menuOwner = User::factory()->create(['password' => 'another-password']);
+
+        // The admin panel's AuthenticateSession left the admin's hash in the
+        // session; left there, the dashboard's first request signs the owner out.
+        $this->actingAs($admin)
+            ->withSession(['password_hash_web' => Auth::guard('web')->hashPasswordForCookie($admin->getAuthPassword())])
+            ->get(route('impersonate', $menuOwner->id))
+            ->assertRedirect('/');
+
+        $this->assertSame(
+            Auth::guard('web')->hashPasswordForCookie($menuOwner->getAuthPassword()),
+            session('password_hash_web'),
+        );
+    }
+
+    public function test_leaving_hands_the_session_back_to_the_admin(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $menuOwner = User::factory()->create(['password' => 'another-password']);
+
+        $this->actingAs($admin)->get(route('impersonate', $menuOwner->id));
+        $this->get(route('impersonate.leave'))->assertRedirect('/');
+
+        $this->assertSame(
+            Auth::guard('web')->hashPasswordForCookie($admin->getAuthPassword()),
+            session('password_hash_web'),
+        );
     }
 }

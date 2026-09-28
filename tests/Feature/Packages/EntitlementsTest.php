@@ -76,7 +76,6 @@ class EntitlementsTest extends TestCase
         ]);
 
         $this->assertNull($restaurant->dish_limit);
-        $this->assertTrue($restaurant->entitlements()->isUnlimited(Feature::DishLimit));
         $this->assertFalse($restaurant->hasReachedDishLimit());
 
         FeatureGrant::factory()
@@ -186,5 +185,14 @@ class EntitlementsTest extends TestCase
         $this->assertSame(Package::default()->id, $restaurant->package_id);
         $this->assertNotNull($restaurant->package_started_at);
         $this->assertNull($restaurant->package_ends_at);
+    }
+
+    public function test_a_flag_stored_as_null_reads_as_on(): void
+    {
+        // Null means unlimited, which for a flag is on.
+        $package = Package::factory()->create(['features' => ['qr_studio' => null]]);
+        $restaurant = Restaurant::factory()->create(['template_id' => null, 'package_id' => $package->id]);
+
+        $this->assertTrue($restaurant->entitlements()->can(Feature::QrStudio));
     }
 }

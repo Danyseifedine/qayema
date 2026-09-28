@@ -14,14 +14,17 @@ class ContactService
 {
     private const MAX_PER_DAY = 3;
 
+    /**
+     * Trusted IPs (config/security.php) are never throttled, as AbuseGuard
+     * never bans them: a shared office NAT must not lock its own people out.
+     */
     public function isThrottled(string $ip): bool
     {
-        return $this->recentMessages($ip)->count() >= self::MAX_PER_DAY;
-    }
+        if (in_array($ip, (array) config('security.trusted_ips', []), true)) {
+            return false;
+        }
 
-    public function dailyLimit(): int
-    {
-        return self::MAX_PER_DAY;
+        return $this->recentMessages($ip)->count() >= self::MAX_PER_DAY;
     }
 
     public function availableInHours(string $ip): int

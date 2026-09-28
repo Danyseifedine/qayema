@@ -62,6 +62,10 @@
             "@php artisan config:clear --ansi",
             "@php artisan test"
         ],
+        "test:coverage": [
+            "@php artisan config:clear --ansi",
+            "@php -d memory_limit=2G artisan test --coverage --min=99"
+        ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi",
@@ -84,6 +88,18 @@
         "serve": [
             "Composer\\Config::disableProcessTimeout",
             "cd public && php -d upload_max_filesize=20M -d post_max_size=25M -d memory_limit=512M -S 127.0.0.1:8000 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php"
+        ],
+        "serve:e2e": [
+            "Composer\\Config::disableProcessTimeout",
+            "cd public && APP_ENV=e2e PHP_CLI_SERVER_WORKERS=8 php -d upload_max_filesize=20M -d post_max_size=25M -d memory_limit=512M -S 127.0.0.1:8001 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php"
+        ],
+        "e2e:reset": [
+            "@putenv APP_ENV=e2e",
+            "@php artisan e2e:reset --ansi"
+        ],
+        "check": [
+            "vendor/bin/pint --test",
+            "@test:coverage"
         ]
     },
     "extra": {

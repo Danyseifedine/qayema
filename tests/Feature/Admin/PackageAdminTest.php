@@ -101,4 +101,31 @@ class PackageAdminTest extends TestCase
         Livewire::test(EditPackage::class, ['record' => Package::findBySlug('custom')->id])
             ->assertFormSet(['features.dish_limit' => null, 'features.qr_studio' => true]);
     }
+
+    public function test_a_limit_the_package_does_not_carry_yet_opens_on_its_default_not_as_unlimited(): void
+    {
+        $package = Package::findBySlug('pro');
+        $package->forceFill(['features' => collect($package->features)->except('category_limit')->all()])->save();
+        $this->actingAs($this->admin());
+
+        Livewire::test(EditPackage::class, ['record' => $package->id])
+            ->assertFormSet(['features.category_limit' => Feature::CategoryLimit->defaultValue()])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(Feature::CategoryLimit->defaultValue(), $package->fresh()->features['category_limit']);
+    }
+
+    public function test_a_package_can_be_marked_most_popular(): void
+    {
+        $premium = Package::findBySlug('premium');
+        $this->actingAs($this->admin());
+
+        Livewire::test(EditPackage::class, ['record' => $premium->id])
+            ->fillForm(['is_featured' => true])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertTrue($premium->fresh()->is_featured);
+    }
 }

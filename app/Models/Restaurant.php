@@ -338,12 +338,6 @@ class Restaurant extends Model implements HasMedia
         return $this->entitlements()->can(Feature::QrStudio) && ! $this->isSwitchedOff('qr');
     }
 
-    /** The owner reads their numbers: in the package and not switched off. */
-    public function hasAnalytics(): bool
-    {
-        return $this->entitlements()->can(Feature::Analytics) && ! $this->isSwitchedOff('analytics');
-    }
-
     /** The menu shows its second language: in the package and not switched off. */
     public function showsSecondLanguage(): bool
     {

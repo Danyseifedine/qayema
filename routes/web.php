@@ -52,6 +52,11 @@ Route::middleware('portal.locale')->group(function () {
     Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:contact')->name('contact.store');
 });
 
+// Test-only endpoints for the Playwright suite; they exist nowhere else.
+if (app()->environment('e2e')) {
+    require __DIR__.'/e2e.php';
+}
+
 // Public, shareable QR table card (qr_studio owners only — 404 otherwise).
 Route::get('/{restaurant:slug}/qr', [QrCardController::class, 'show'])->name('public.qr');
 

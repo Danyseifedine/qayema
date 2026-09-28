@@ -19,9 +19,7 @@
     // A logged-in owner must be sent into the app, never the guest sign-up funnel:
     // the register/login routes are guest-only and bounce an authed user back here.
     $owner = auth()->user();
-    $ctaAuthedHref = $owner
-        ? ($owner->hasCompletedOnboarding() ? config('app.dashboard_url') : route('onboarding'))
-        : null;
+    $ctaAuthedHref = $owner?->afterLoginUrl();
     $ctaAuthedLabel = $owner
         ? ($owner->hasCompletedOnboarding() ? __('portal.nav.cta_dashboard') : __('portal.nav.cta_continue'))
         : null;

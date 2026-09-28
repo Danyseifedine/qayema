@@ -25,9 +25,7 @@ class RestaurantController extends Controller
 
     public function show(Request $request): RestaurantResource
     {
-        return (new RestaurantResource($this->restaurant($request)))->additional([
-            'meta' => $this->meta(),
-        ]);
+        return new RestaurantResource($this->restaurant($request));
     }
 
     public function update(UpdateRestaurantRequest $request): RestaurantResource
@@ -54,33 +52,6 @@ class RestaurantController extends Controller
         $this->media->sync($restaurant, $request->input('logo_key'), false, 'logo', 'logo');
         $this->media->sync($restaurant, $request->input('cover_image_key'), $request->boolean('delete_cover_image'), 'cover_image', 'cover');
 
-        return (new RestaurantResource($restaurant->fresh()))->additional([
-            'meta' => $this->meta(),
-        ]);
-    }
-
-    /**
-     * @return array{currencies: array<int, array<string, string>>}
-     */
-    private function meta(): array
-    {
-        return [
-            'currencies' => $this->currencies(),
-        ];
-    }
-
-    /**
-     * @return array<int, array{code: string, name: string, symbol: string}>
-     */
-    private function currencies(): array
-    {
-        return collect(config('currencies', []))
-            ->map(fn (array $info, string $code): array => [
-                'code' => $code,
-                'name' => $info['name'],
-                'symbol' => $info['symbol'],
-            ])
-            ->values()
-            ->all();
+        return new RestaurantResource($restaurant->fresh());
     }
 }

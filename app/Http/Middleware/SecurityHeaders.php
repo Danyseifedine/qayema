@@ -31,7 +31,7 @@ class SecurityHeaders
         // form-action exfiltration, plus the existing anti-framing.
         $response->headers->set(
             'Content-Security-Policy',
-            "frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'"
+            "frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action ".$this->formActionSources()
         );
 
         if ($request->secure()) {
@@ -42,5 +42,23 @@ class SecurityHeaders
         }
 
         return $response;
+    }
+
+    /**
+     * Where a form may send the browser. Browsers check form-action against
+     * every redirect a submission follows, and signing in redirects to the
+     * dashboard on its own origin, so that origin must be allowed too.
+     */
+    private function formActionSources(): string
+    {
+        $dashboard = parse_url((string) config('app.dashboard_url'));
+
+        if (! isset($dashboard['scheme'], $dashboard['host'])) {
+            return "'self'";
+        }
+
+        $origin = $dashboard['scheme'].'://'.$dashboard['host'].(isset($dashboard['port']) ? ':'.$dashboard['port'] : '');
+
+        return "'self' ".$origin;
     }
 }

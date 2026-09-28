@@ -93,7 +93,7 @@ class UploadEdgeTest extends TestCase
     {
         $key = $this->upload(UploadedFile::fake()->image('logo.png', 300, 300), 'logo')->assertOk()->json('key');
 
-        $path = storage_path('app/temp/'.$this->lastUserId().'/'.$key.'.webp');
+        $path = app(\App\Services\Media\MediaService::class)->tempPath($this->lastUserId(), $key);
         $this->assertFileExists($path);
         $this->assertSame('image/webp', mime_content_type($path));
     }

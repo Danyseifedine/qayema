@@ -87,27 +87,6 @@ class OpeningHoursTest extends TestCase
         $this->assertSame(['open' => '09:00', 'close' => '17:00'], $hours->todayRange());
     }
 
-    public function test_the_next_opening_skips_closed_days(): void
-    {
-        $hours = $this->hours([
-            'wed' => null,
-            'thu' => null,
-            'fri' => ['open' => '08:00', 'close' => '16:00'],
-        ]);
-
-        $this->atUtc('2026-01-07 08:00');
-        $next = $hours->nextOpening();
-
-        $this->assertNotNull($next);
-        $this->assertSame('2026-01-09 08:00', $next->format('Y-m-d H:i'));
-    }
-
-    public function test_a_week_with_no_hours_has_no_next_opening(): void
-    {
-        $this->atUtc('2026-01-07 08:00');
-        $this->assertNull($this->hours([])->nextOpening());
-    }
-
     public function test_rubbish_is_dropped_rather_than_stored(): void
     {
         $week = OpeningHours::normalise([
@@ -125,5 +104,63 @@ class OpeningHoursTest extends TestCase
         $this->assertNull($week['wed'], 'A range needs both ends.');
         $this->assertNull($week['thu']);
         $this->assertNull($week['sat'], 'H:i means 09:00, not 9:00.');
+    }
+
+    public function test_it_reports_the_timezone_it_judges_in(): void
+    {
+        $this->assertSame('Asia/Beirut', $this->hours([])->timezone());
+        $this->assertSame('America/New_York', $this->hours([], 'America/New_York')->timezone());
+    }
+
+    public function test_the_week_is_all_seven_days_monday_first_with_rubbish_dropped(): void
+    {
+        $week = $this->hours([
+            'sun' => ['open' => '12:00', 'close' => '23:00'],
+            'mon' => ['open' => '09:00', 'close' => '17:00'],
+            'tue' => ['open' => 'noon', 'close' => '17:00'],
+            'holiday' => ['open' => '10:00', 'close' => '11:00'],
+        ])->toArray();
+
+        $this->assertSame([
+            'mon' => ['open' => '09:00', 'close' => '17:00'],
+            'tue' => null,
+            'wed' => null,
+            'thu' => null,
+            'fri' => null,
+            'sat' => null,
+            'sun' => ['open' => '12:00', 'close' => '23:00'],
+        ], $week);
+    }
+
+    public function test_a_range_is_open_at_both_ends_and_shut_a_minute_either_side(): void
+    {
+        $hours = $this->hours(['wed' => ['open' => '09:00', 'close' => '17:00']], 'UTC');
+
+        $this->atUtc('2026-01-07 09:00');
+        $this->assertTrue($hours->isOpenNow());
+
+        $this->atUtc('2026-01-07 17:00');
+        $this->assertTrue($hours->isOpenNow());
+
+        $this->atUtc('2026-01-07 08:59');
+        $this->assertFalse($hours->isOpenNow());
+
+        $this->atUtc('2026-01-07 17:01');
+        $this->assertFalse($hours->isOpenNow());
+    }
+
+    /** An open equal to its close runs the full day round, into tomorrow. */
+    public function test_open_equal_to_close_means_round_the_clock(): void
+    {
+        $hours = $this->hours(['wed' => ['open' => '06:00', 'close' => '06:00']], 'UTC');
+
+        $this->atUtc('2026-01-07 23:59');
+        $this->assertTrue($hours->isOpenNow());
+
+        $this->atUtc('2026-01-08 05:59');
+        $this->assertTrue($hours->isOpenNow(), 'Thursday 05:59 is still inside Wednesday.');
+
+        $this->atUtc('2026-01-07 05:59');
+        $this->assertFalse($hours->isOpenNow(), 'Tuesday has no range of its own.');
     }
 }

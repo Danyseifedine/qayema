@@ -78,7 +78,6 @@ class RestaurantTest extends TestCase
                     'country_code', 'currency', 'opening_hours', 'timezone',
                     'logo_url', 'cover_url',
                 ],
-                'meta' => ['currencies' => [['code', 'name', 'symbol']]],
             ])
             ->assertJsonPath('data.slug', $restaurant->slug);
     }

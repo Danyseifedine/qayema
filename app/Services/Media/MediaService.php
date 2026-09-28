@@ -5,6 +5,7 @@ namespace App\Services\Media;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\Image;
@@ -164,7 +165,16 @@ class MediaService
 
     public function tempDir(int $userId): string
     {
-        return storage_path('app/temp/'.$userId);
+        return $this->tempRoot().'/'.$userId;
+    }
+
+    /**
+     * Where uploads wait before promotion: `temp/` on the private `local`
+     * disk, so a test that fakes the disk never writes into real storage.
+     */
+    public function tempRoot(): string
+    {
+        return Storage::disk('local')->path('temp');
     }
 
     public function tempPath(int $userId, string $key): string
@@ -275,7 +285,7 @@ class MediaService
      */
     private function scratchPath(string $prefix): string
     {
-        $dir = storage_path('app/temp');
+        $dir = $this->tempRoot();
         $this->ensureDir($dir);
 
         return $dir.'/'.$prefix.'_'.uniqid().'.webp';
@@ -288,7 +298,7 @@ class MediaService
      */
     private function purgeStaleTemps(): void
     {
-        $base = storage_path('app/temp');
+        $base = $this->tempRoot();
 
         if (! is_dir($base)) {
             return;

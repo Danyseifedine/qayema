@@ -72,13 +72,14 @@ class BlockedIpTest extends TestCase
         $this->assertTrue($guard->isBlocked(self::TEST_CLIENT_IP));
     }
 
-    public function test_abuse_guard_unblock_clears_block(): void
+    public function test_deleting_a_block_clears_it_at_once(): void
     {
         $guard = app(AbuseGuard::class);
         $guard->block(self::TEST_CLIENT_IP, 'manual test block');
         $this->assertTrue($guard->isBlocked(self::TEST_CLIENT_IP));
 
-        $guard->unblock(self::TEST_CLIENT_IP);
+        // What the admin's "Unblock" does: the cached answer must go too.
+        \App\Models\BlockedIp::query()->where('ip', self::TEST_CLIENT_IP)->sole()->delete();
 
         $this->assertFalse($guard->isBlocked(self::TEST_CLIENT_IP));
     }

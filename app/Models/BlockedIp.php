@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Security\AbuseGuard;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -24,6 +25,14 @@ class BlockedIp extends Model
         return [
             'expires_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        $forget = fn (self $block) => app(AbuseGuard::class)->forgetBlockCache($block->ip);
+
+        static::saved($forget);
+        static::deleted($forget);
     }
 
     /**

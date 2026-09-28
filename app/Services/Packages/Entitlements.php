@@ -37,11 +37,6 @@ class Entitlements
             : $feature->defaultValue();
     }
 
-    public function isUnlimited(Feature $feature): bool
-    {
-        return $this->limit($feature) === null;
-    }
-
     public function can(Feature $feature): bool
     {
         $all = $this->all();

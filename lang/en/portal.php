@@ -263,13 +263,6 @@ return [
             ],
         ],
     ],
-    'final' => [
-        'title' => 'Turn your menu into a',
-        'title_gold' => 'QR experience today.',
-        'sub' => 'Photograph it, let AI design it, and share one QR your guests will love — in both languages.',
-        'cta_primary' => 'Get started free',
-        'cta_secondary' => 'See how it works',
-    ],
     'footer' => [
         'tagline' => 'The AI menu studio for modern restaurants. Photograph, generate, and serve — one QR, two languages.',
         'product' => 'Product',

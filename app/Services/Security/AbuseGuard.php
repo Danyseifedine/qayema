@@ -48,15 +48,6 @@ class AbuseGuard
             ['ip' => $ip],
             ['reason' => $reason, 'expires_at' => $expiresAt],
         );
-
-        $this->forgetBlockCache($ip);
-    }
-
-    public function unblock(string $ip): void
-    {
-        BlockedIp::query()->where('ip', $ip)->delete();
-
-        $this->forgetBlockCache($ip);
     }
 
     public function recordViolation(string $ip): void
@@ -85,7 +76,12 @@ class AbuseGuard
         return in_array($ip, (array) config('security.trusted_ips', []), true);
     }
 
-    private function forgetBlockCache(string $ip): void
+    /**
+     * Drop the cached answer for an IP. The BlockedIp model calls this on
+     * every write and delete, so an admin's "Unblock" (or a new expiry) takes
+     * effect on the next request rather than when the cache runs out.
+     */
+    public function forgetBlockCache(string $ip): void
     {
         Cache::forget($this->blockCacheKey($ip));
     }

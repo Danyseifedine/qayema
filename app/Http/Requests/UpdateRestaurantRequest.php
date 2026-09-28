@@ -52,7 +52,10 @@ class UpdateRestaurantRequest extends FormRequest
             'opening_hours.*' => ['nullable', 'array'],
             'opening_hours.*.open' => ['required_with:opening_hours.*.close', 'nullable', 'date_format:H:i'],
             'opening_hours.*.close' => ['required_with:opening_hours.*.open', 'nullable', 'date_format:H:i'],
-            'timezone' => ['nullable', 'string', 'timezone'],
+            // With the backward-compatible names: browsers still list some
+            // zones only by them (Asia/Calcutta, Europe/Kiev), and the
+            // dashboard offers the browser's list.
+            'timezone' => ['nullable', 'string', 'timezone:all_with_bc'],
         ];
 
         foreach ($languages as $code) {

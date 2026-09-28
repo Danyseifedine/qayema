@@ -85,7 +85,8 @@
 
 .ui-input-wrap .prefix {
     padding: 0 0 0 14px;
-    color: var(--muted-2);
+    /* Part of the value (the menu's address), so it keeps body-text contrast. */
+    color: var(--muted);
     font-size: 14px;
     user-select: none;
     flex-shrink: 0;

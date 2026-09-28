@@ -435,7 +435,13 @@ document.addEventListener('alpine:init', () => {
         },
 
         onSlugBlur() {
-            this.s1.slug = this.s1.slug.replace(/-+$/, '');
+            // Only a blur that changes the link needs a new check. Re-checking
+            // an unchanged one flips a settled answer back to "checking" just
+            // as Continue is clicked (clicking it is what blurs the field),
+            // and the step then refuses to advance.
+            const trimmed = this.s1.slug.replace(/-+$/, '');
+            if (trimmed === this.s1.slug) return;
+            this.s1.slug = trimmed;
             this.checkSlugAvailability();
         },
 

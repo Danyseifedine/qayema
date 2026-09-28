@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\Restaurants\Pages;
 
+use App\Filament\Admin\Concerns\KeepsTranslations;
 use App\Filament\Admin\Resources\Restaurants\RestaurantResource;
 use App\Filament\Admin\Resources\Restaurants\Schemas\PackageFields;
 use App\Models\Restaurant;
@@ -10,6 +11,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class CreateRestaurant extends CreateRecord
 {
+    use KeepsTranslations;
+
     protected static string $resource = RestaurantResource::class;
 
     private ?string $packageNote = null;
@@ -20,7 +23,7 @@ class CreateRestaurant extends CreateRecord
         $data['package_ends_at'] = PackageFields::endsAt($data);
         $this->packageNote = $data['note'] ?? null;
 
-        return collect($data)->except(PackageFields::EXTRA)->all();
+        return $this->mergeTranslations(collect($data)->except(PackageFields::EXTRA)->all());
     }
 
     protected function handleRecordCreation(array $data): Model

@@ -17,8 +17,8 @@ use Illuminate\Support\Str;
 
 /**
  * Everything that makes a template a template: its identity and the list of
- * settings its owner may change. Templates carry no price and grant nothing —
- * limits and features come from the restaurant's package. Publishing a new
+ * settings its owner may change. A template grants nothing; one marked premium
+ * needs a package with premium designs. Publishing a new
  * template is this form plus a Blade view named after the slug.
  */
 class TemplateForm
@@ -44,13 +44,18 @@ class TemplateForm
                     ->description('Name, slug and ordering.')
                     ->columns(2)
                     ->schema([
-                        TextInput::make('name')
+                        TextInput::make('name.en')
+                            ->label('Name (English)')
                             ->placeholder('e.g. Simple, Elegant, Dark')
                             ->required()
                             ->maxLength(255)
                             ->live(onBlur: true)
                             ->afterStateUpdated(fn ($state, callable $set) => $set('slug', Str::slug((string) ($state ?? ''))))
-                            ->helperText('Human-readable name shown to admins and owners.'),
+                            ->helperText('Shown to owners on the Design page.'),
+                        TextInput::make('name.ar')
+                            ->label('Name (Arabic)')
+                            ->maxLength(255)
+                            ->helperText('Owners reading the dashboard in Arabic see this; English otherwise.'),
                         TextInput::make('slug')
                             ->placeholder('simple')
                             ->required()
@@ -64,8 +69,16 @@ class TemplateForm
                         Toggle::make('is_active')
                             ->label('Template is active (owners can pick it)')
                             ->default(true),
-                        Textarea::make('description')
-                            ->placeholder('Describe what this template looks like and when to use it…')
+                        Toggle::make('is_premium')
+                            ->label('Premium design')
+                            ->helperText('Only packages with "Premium designs" can use it. A restaurant that loses the package keeps its choice, and its menu shows the first free design until it is back.'),
+                        Textarea::make('description.en')
+                            ->label('Description (English)')
+                            ->placeholder('Describe what this design looks like and when to use it…')
+                            ->rows(3)
+                            ->columnSpanFull(),
+                        Textarea::make('description.ar')
+                            ->label('Description (Arabic)')
                             ->rows(3)
                             ->columnSpanFull(),
                     ]),

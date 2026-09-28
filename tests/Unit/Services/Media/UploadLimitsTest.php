@@ -3,6 +3,7 @@
 namespace Tests\Unit\Services\Media;
 
 use App\Services\Media\UploadLimits;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class UploadLimitsTest extends TestCase
@@ -24,9 +25,7 @@ class UploadLimitsTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider shorthandProvider
-     */
+    #[DataProvider('shorthandProvider')]
     public function test_it_reads_php_size_shorthand(string $value, int $expected): void
     {
         $this->assertSame($expected, UploadLimits::toBytes($value));

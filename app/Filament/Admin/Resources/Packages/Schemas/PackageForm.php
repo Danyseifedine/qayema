@@ -3,7 +3,6 @@
 namespace App\Filament\Admin\Resources\Packages\Schemas;
 
 use App\Enums\Feature;
-use App\Enums\FeatureKind;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -26,9 +25,14 @@ class PackageForm
                 ->description('How this plan is presented. The slug is fixed: code and seeds refer to it.')
                 ->columns(2)
                 ->schema([
-                    TextInput::make('name')
+                    TextInput::make('name.en')
+                        ->label('Name (English)')
                         ->required()
                         ->maxLength(255),
+                    TextInput::make('name.ar')
+                        ->label('Name (Arabic)')
+                        ->maxLength(255)
+                        ->helperText('Owners reading the dashboard in Arabic see this; English otherwise.'),
                     TextInput::make('slug')
                         ->disabled()
                         ->dehydrated(false)
@@ -47,8 +51,16 @@ class PackageForm
                     TextInput::make('sort_order')
                         ->numeric()
                         ->default(0)
-                        ->helperText('Order on the pricing page and in the dashboard.'),
-                    Textarea::make('description')
+                        ->helperText('Order in the dashboard. The lowest package that includes a feature is the one a locked feature points owners to.'),
+                    Toggle::make('is_featured')
+                        ->label('Mark as "Most popular"')
+                        ->helperText('Highlighted on the dashboard\'s Package page.'),
+                    Textarea::make('description.en')
+                        ->label('Description (English)')
+                        ->rows(2)
+                        ->columnSpanFull(),
+                    Textarea::make('description.ar')
+                        ->label('Description (Arabic)')
                         ->rows(2)
                         ->columnSpanFull(),
                 ]),
@@ -72,11 +84,7 @@ class PackageForm
     {
         $fields = [];
 
-        foreach (Feature::cases() as $feature) {
-            if ($feature->kind() !== FeatureKind::Limit) {
-                continue;
-            }
-
+        foreach (Feature::limits() as $feature) {
             $fields[] = TextInput::make("features.{$feature->value}")
                 ->label($feature->label())
                 ->numeric()
@@ -85,7 +93,7 @@ class PackageForm
                 // Empty means unlimited, so this must reach the database as
                 // null rather than an empty string or a zero.
                 ->dehydrateStateUsing(fn ($state): ?int => $state === null || $state === '' ? null : (int) $state)
-                ->helperText('Leave empty for unlimited.');
+                ->helperText($feature->hint().' Leave empty for unlimited.');
         }
 
         return $fields;
@@ -98,13 +106,10 @@ class PackageForm
     {
         $fields = [];
 
-        foreach (Feature::cases() as $feature) {
-            if ($feature->kind() !== FeatureKind::Flag) {
-                continue;
-            }
-
+        foreach (Feature::flags() as $feature) {
             $fields[] = Toggle::make("features.{$feature->value}")
                 ->label($feature->label())
+                ->helperText($feature->hint())
                 ->dehydrateStateUsing(fn ($state): int => (int) (bool) $state);
         }
 

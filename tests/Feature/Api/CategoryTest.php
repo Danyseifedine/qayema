@@ -255,7 +255,7 @@ class CategoryTest extends TestCase
         $response->assertOk()->assertJsonStructure(['key', 'original_size', 'optimized_size', 'saved_percent']);
 
         // The endpoint actually wrote the optimized WebP to the user's temp area.
-        $path = storage_path('app/temp/'.$user->id.'/'.$response->json('key').'.webp');
+        $path = app(\App\Services\Media\MediaService::class)->tempPath($user->id, $response->json('key'));
         $this->assertFileExists($path);
         @unlink($path);
     }

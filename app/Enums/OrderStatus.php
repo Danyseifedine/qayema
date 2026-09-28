@@ -24,12 +24,6 @@ enum OrderStatus: string
         };
     }
 
-    /** True while the order still needs the owner's attention. */
-    public function isOpen(): bool
-    {
-        return $this === self::Placed;
-    }
-
     /**
      * @return array<string, string> value => label, for admin selects.
      */

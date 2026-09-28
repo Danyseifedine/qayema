@@ -16,6 +16,12 @@
         <include>
             <directory>app</directory>
         </include>
+        <exclude>
+            <!-- Registered only in the local environment, never under test. -->
+            <file>app/Providers/TelescopeServiceProvider.php</file>
+            <!-- Loaded only with APP_ENV=e2e; exercised by the Playwright suite. -->
+            <file>app/Http/Controllers/E2e/E2eController.php</file>
+        </exclude>
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>

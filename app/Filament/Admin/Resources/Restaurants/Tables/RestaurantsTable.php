@@ -33,6 +33,10 @@ class RestaurantsTable
                     ->collection('logo')
                     ->label('Logo')
                     ->circular()
+                    // The name beside it already links to the record; a
+                    // second, textless link on the picture helps nobody.
+                    ->disabledClick()
+                    ->extraImgAttributes(fn (Restaurant $record): array => ['alt' => 'Logo of '.$record->name])
                     ->toggleable(),
 
                 TextColumn::make('name')
@@ -86,7 +90,7 @@ class RestaurantsTable
 
                 TextColumn::make('total_views')
                     ->label('Total Views')
-                    ->getStateUsing(fn (Restaurant $record): int => $record->menuSessions()->count())
+                    ->getStateUsing(fn (Restaurant $record): int => $record->getTotalViews())
                     ->badge()
                     ->color('info')
                     ->sortable(false),

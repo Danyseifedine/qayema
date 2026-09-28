@@ -26,16 +26,10 @@ class PackagesTable
                 TextColumn::make('price_cents')
                     ->label('Price')
                     ->badge()
-                    ->color(fn (?int $state): string => match (true) {
-                        $state === null => 'warning',
-                        $state === 0 => 'gray',
-                        default => 'success',
-                    })
-                    ->formatStateUsing(fn (?int $state): string => match (true) {
-                        $state === null => 'Contact us',
-                        $state === 0 => 'Free',
-                        default => number_format($state / 100, 2),
-                    })
+                    ->color(fn (int $state): string => $state === 0 ? 'gray' : 'success')
+                    ->formatStateUsing(fn (int $state): string => $state === 0 ? 'Free' : number_format($state / 100, 2))
+                    // A null price is never formatted: Filament shows the placeholder instead.
+                    ->placeholder('Contact us')
                     ->sortable(),
                 TextColumn::make('restaurants_count')
                     ->label('Restaurants')

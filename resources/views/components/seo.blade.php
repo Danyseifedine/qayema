@@ -84,10 +84,10 @@
 <meta name="twitter:image" content="{{ $image }}">
 <meta name="twitter:image:alt" content="{{ $imageAlt }}">
 @if ($twitterSite)
-    <meta name="twitter:site" content="@{{ $twitterSite }}">
+    <meta name="twitter:site" content="{{ '@'.ltrim($twitterSite, '@') }}">
 @endif
 @if ($twitterCreator)
-    <meta name="twitter:creator" content="@{{ $twitterCreator }}">
+    <meta name="twitter:creator" content="{{ '@'.ltrim($twitterCreator, '@') }}">
 @endif
 
 {{-- Video Meta (if video) --}}

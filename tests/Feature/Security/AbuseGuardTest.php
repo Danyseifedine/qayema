@@ -86,7 +86,7 @@ class AbuseGuardTest extends TestCase
         $guard->block(self::IP);
         $this->assertTrue($guard->isBlocked(self::IP));
 
-        $guard->unblock(self::IP);
+        \App\Models\BlockedIp::query()->where('ip', self::IP)->sole()->delete();
 
         $this->assertFalse($guard->isBlocked(self::IP));
     }

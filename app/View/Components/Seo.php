@@ -153,19 +153,18 @@ class Seo extends Component
         ?array $additionalMeta = null,
         ?array $hreflang = null
     ) {
-        // MenuX defaults
         $currentLocale = app()->getLocale();
 
         $defaultTitles = [
-            'en' => config('seo.defaults.title.en', 'MenuX by Lebify - Create Beautiful Digital Menus'),
+            'en' => config('seo.defaults.title.en', 'Qayema by Lebify - Digital Menus for Restaurants'),
         ];
 
         $defaultDescriptions = [
-            'en' => config('seo.defaults.description.en', 'MenuX by Lebify Group: create beautiful digital menus. Built by the Lebify team in Lebanon.'),
+            'en' => config('seo.defaults.description.en', 'Qayema by Lebify Group: bilingual digital menus for restaurants. Built by the Lebify team in Lebanon.'),
         ];
 
         $defaultKeywords = [
-            'en' => config('seo.defaults.keywords.en', 'MenuX, Lebify, Lebify Group, digital menu, restaurant menu'),
+            'en' => config('seo.defaults.keywords.en', 'Qayema, Lebify, Lebify Group, digital menu, restaurant menu'),
         ];
 
         $defaultSiteName = [
@@ -177,7 +176,7 @@ class Seo extends Component
         ];
 
         $defaultImageAlt = [
-            'en' => 'MenuX by Lebify - Create Beautiful Digital Menus',
+            'en' => 'Qayema by Lebify - Digital Menus for Restaurants',
         ];
 
         $defaultTwitterSite = [
@@ -188,9 +187,10 @@ class Seo extends Component
             'en' => env('TWITTER_USERNAME', ''),
         ];
 
+        // schema.org ItemAvailability name and ISO 4217 code: machine values,
+        // never translated, or the Offer is invalid structured data.
         $defaultAvailability = [
-            'ar' => 'متوفر',
-            'en' => 'In Stock',
+            'en' => 'InStock',
         ];
 
         $defaultSection = [
@@ -198,7 +198,6 @@ class Seo extends Component
         ];
 
         $defaultCurrency = [
-            'ar' => 'دولار',
             'en' => 'USD',
         ];
 
@@ -300,7 +299,7 @@ class Seo extends Component
 
     public function generateSchema(): ?string
     {
-        if (! $this->schema && ! $this->enableBreadcrumbs && $this->type === 'website') {
+        if (! $this->schema && ! $this->enableBreadcrumbs && ! $this->videoUrl && $this->type === 'website') {
             return null;
         }
 

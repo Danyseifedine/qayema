@@ -11,7 +11,7 @@ return [
         'upload_error' => 'Upload failed. Please try again.',
         'something_wrong' => 'Something went wrong. Please try again.',
         'step1_title' => 'Your restaurant',
-        'step1_desc' => 'What\'s your restaurant called? Choose the language for your dashboard.',
+        'step1_desc' => 'What\'s your restaurant called, and what link will guests open?',
         'name_label' => 'Restaurant name',
         'name_placeholder' => 'e.g. Joe\'s Burgers',
         'name_required' => 'Restaurant name is required.',

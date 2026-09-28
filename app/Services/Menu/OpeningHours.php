@@ -77,29 +77,6 @@ class OpeningHours
         return false;
     }
 
-    /** The next time it opens, looking a week ahead. Null when never. */
-    public function nextOpening(): ?Carbon
-    {
-        $now = $this->now();
-
-        for ($offset = 0; $offset <= 7; $offset++) {
-            $day = $now->copy()->addDays($offset);
-            $range = $this->week[$this->dayKey($day)] ?? null;
-
-            if ($range === null) {
-                continue;
-            }
-
-            [$opens] = $this->boundsFor($day, $range);
-
-            if ($opens->greaterThan($now)) {
-                return $opens;
-            }
-        }
-
-        return null;
-    }
-
     /**
      * The whole week, for an API payload.
      *

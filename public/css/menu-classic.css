@@ -3,6 +3,11 @@
 
 * { box-sizing: border-box; }
 
+/* The search and the category tabs hide dishes and sections with the hidden
+   attribute; without this, `.dish { display: flex }` below overrides it and a
+   dish that does not match stays on screen. */
+[hidden] { display: none !important; }
+
 html { scroll-behavior: smooth; }
 
 body {

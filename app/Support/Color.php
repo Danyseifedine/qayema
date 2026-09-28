@@ -11,11 +11,12 @@ use App\Models\Template;
 final class Color
 {
     /** Six-digit hex, which is what the dashboard's colour inputs emit. */
-    public const RULE = 'regex:/^#[0-9A-Fa-f]{6}$/';
+    // `D`: `$` must be the true end, so "#abcdef\n" is not a colour.
+    public const RULE = 'regex:/^#[0-9A-Fa-f]{6}$/D';
 
     public static function isHex(mixed $value): bool
     {
-        return is_string($value) && preg_match('/^#[0-9A-Fa-f]{6}$/', $value) === 1;
+        return is_string($value) && preg_match('/^#[0-9A-Fa-f]{6}$/D', $value) === 1;
     }
 
     /**

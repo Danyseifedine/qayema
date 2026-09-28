@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -11,6 +12,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class MenuSession extends Model
 {
+    /** @use HasFactory<\Database\Factories\MenuSessionFactory> */
+    use HasFactory;
+
     protected $fillable = [
         'restaurant_id',
         'session_id',

@@ -4,7 +4,6 @@ namespace Tests\Feature\Api;
 
 use App\Models\Category;
 use App\Models\Restaurant;
-use App\Models\Template;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;

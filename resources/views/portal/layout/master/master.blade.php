@@ -61,7 +61,7 @@
         <script src="{{ $ver('portal/js/landing.js') }}"></script>
     @else
         {{-- Bare pages (login, onboarding) are Alpine apps, not GSAP marketing pages --}}
-        <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js"></script>
+        <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.17.4/dist/cdn.min.js"></script>
         <script>
             (function () {
                 function wire() {

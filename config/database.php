@@ -34,13 +34,26 @@ return [
         'sqlite' => [
             'driver' => 'sqlite',
             'url' => env('DB_URL'),
-            'database' => env('DB_DATABASE', database_path('database.sqlite')),
+            // A relative path is the project's (database/e2e.sqlite), whatever
+            // directory the process runs from — the built-in server runs in
+            // public/.
+            'database' => (static function (): string {
+                $database = (string) env('DB_DATABASE', database_path('database.sqlite'));
+
+                return $database === ':memory:' || str_starts_with($database, '/') ? $database : base_path($database);
+            })(),
             'prefix' => '',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
-            'busy_timeout' => null,
-            'journal_mode' => null,
+            // Several e2e server workers share one file: wait for a lock
+            // rather than fail, and let readers run beside a writer.
+            'busy_timeout' => env('DB_BUSY_TIMEOUT'),
+            'journal_mode' => env('DB_JOURNAL_MODE'),
             'synchronous' => null,
-            'transaction_mode' => 'DEFERRED',
+            // Take the write lock when a transaction begins: in WAL mode a
+            // transaction that read first and writes after another worker
+            // committed fails at once ("database is locked") instead of
+            // waiting out the busy timeout.
+            'transaction_mode' => 'IMMEDIATE',
         ],
 
         'mysql' => [

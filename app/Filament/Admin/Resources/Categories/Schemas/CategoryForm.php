@@ -25,12 +25,16 @@ class CategoryForm
                             ->preload()
                             ->required()
                             ->helperText('The restaurant this category belongs to.'),
-                        TextInput::make('name')
+                        // Menu text: the English, which every menu has. The
+                        // other languages are kept on save (KeepsTranslations).
+                        TextInput::make('name.en')
+                            ->label('Name (English)')
                             ->placeholder('e.g. Starters, Mains, Desserts')
                             ->required()
                             ->maxLength(255)
                             ->helperText('Displayed as a section heading on the public menu.'),
-                        Textarea::make('description')
+                        Textarea::make('description.en')
+                            ->label('Description (English)')
                             ->placeholder('e.g. Served from noon until close')
                             ->rows(2)
                             ->maxLength(300)

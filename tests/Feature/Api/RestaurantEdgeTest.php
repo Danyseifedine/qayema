@@ -139,6 +139,21 @@ class RestaurantEdgeTest extends TestCase
         $this->assertSame('fr', $owner->fresh()->default_locale);
     }
 
+    public function test_a_timezone_the_browser_lists_by_its_older_name_is_accepted(): void
+    {
+        // Chrome's Intl.supportedValuesOf('timeZone') has India only as
+        // Asia/Calcutta and Ukraine only as Europe/Kiev.
+        $owner = $this->owner();
+
+        foreach (['Asia/Calcutta', 'Europe/Kiev', 'America/Buenos_Aires', 'Asia/Saigon'] as $timezone) {
+            $this->actingAs($owner->user)->putJson(route('api.restaurant.update'), $this->payload(['timezone' => $timezone]))
+                ->assertOk()->assertJsonPath('data.timezone', $timezone);
+        }
+
+        $this->actingAs($owner->user)->putJson(route('api.restaurant.update'), $this->payload(['timezone' => 'Mars/Olympus']))
+            ->assertStatus(422)->assertJsonValidationErrors('timezone');
+    }
+
     public function test_is_active_cannot_be_flipped_by_the_owner(): void
     {
         $owner = $this->owner(['is_active' => true]);

@@ -32,7 +32,10 @@ class OnboardingService
             $restaurant->setTranslation('name', MenuLanguages::MAIN, $name);
             $restaurant->fill([
                 'slug' => $slug,
-                'default_locale' => $this->openingLanguage($locale, $restaurant->menuLanguages()),
+                // written(), like the create below: the package does not
+                // decide which language the owner opens in, only whether the
+                // menu shows it yet.
+                'default_locale' => $this->openingLanguage($locale, MenuLanguages::written($restaurant)),
             ])->save();
 
             return;

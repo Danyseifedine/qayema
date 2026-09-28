@@ -2,12 +2,14 @@
 
 namespace App\Filament\Admin\Resources\Dishes\Schemas;
 
+use App\Models\Restaurant;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 
 class DishForm
@@ -42,20 +44,24 @@ class DishForm
                     ->description('Name, price and ingredients.')
                     ->columns(2)
                     ->schema([
-                        TextInput::make('name')
+                        // Menu text: the English, which every menu has. The
+                        // other languages are kept on save (KeepsTranslations).
+                        TextInput::make('name.en')
+                            ->label('Name (English)')
                             ->placeholder('e.g. Grilled Salmon')
                             ->required()
                             ->maxLength(255)
                             ->helperText('Displayed on the public menu.'),
                         TextInput::make('price')
                             ->numeric()
-                            ->prefix('$')
+                            // The restaurant's own currency.
+                            ->prefix(fn (Get $get): ?string => Restaurant::query()->find($get('restaurant_id'))?->currency)
                             ->placeholder('0.00')
                             ->step(0.01)
                             ->minValue(0)
                             ->helperText('Leave empty to hide the price.'),
-                        Textarea::make('ingredients')
-                            ->label('Ingredients')
+                        Textarea::make('ingredients.en')
+                            ->label('Ingredients (English)')
                             ->placeholder('e.g. Salmon, lemon, garlic, olive oil…')
                             ->rows(3)
                             ->helperText('Optional. Shown under the dish name on the menu.')
