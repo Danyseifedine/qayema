@@ -10,18 +10,18 @@ use App\Models\Order;
 use App\Models\Package;
 use App\Models\Restaurant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\CreatesOwners;
 use Tests\TestCase;
 
 class AdvancedAnalyticsTest extends TestCase
 {
-    use RefreshDatabase;
+    use CreatesOwners, RefreshDatabase;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        Package::default()->setFeature(Feature::AdvancedAnalytics, 1);
-        Package::default()->setFeature(Feature::Ordering, 1);
+        $this->defaultPackageIncludes(Feature::Analytics, Feature::AdvancedAnalytics, Feature::Ordering, Feature::MultipleLanguages);
     }
 
     private function restaurant(array $attributes = []): Restaurant

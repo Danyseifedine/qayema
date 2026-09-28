@@ -24,6 +24,8 @@ return new class extends Migration
             $table->json('description')->nullable();
             $table->json('settings_schema')->nullable();
             $table->boolean('is_active')->default(true);
+            // Only packages with the premium_designs flag may use it.
+            $table->boolean('is_premium')->default(false);
             $table->integer('sort_order')->default(0);
             $table->timestamps();
         });

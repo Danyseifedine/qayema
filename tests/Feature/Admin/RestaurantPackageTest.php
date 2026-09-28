@@ -40,29 +40,25 @@ class RestaurantPackageTest extends TestCase
 
         $owner = $owner->fresh();
         $this->assertSame('premium', $owner->package->slug);
-        $this->assertSame(300, $owner->dish_limit);
+        $this->assertSame(500, $owner->dish_limit);
         $this->assertTrue($owner->entitlements()->can(Feature::QrStudio));
     }
 
     public function test_an_expiry_in_the_past_drops_the_restaurant_back_to_free(): void
     {
-        // Free ships with the QR studio open for now; this test needs a flag
-        // the default package lacks, so it closes that one first.
-        Package::default()->setFeature(Feature::QrStudio, 0);
-
         $owner = $this->ownerOn('pro');
-        $this->assertSame(120, $owner->dish_limit);
+        $this->assertSame(150, $owner->dish_limit);
         $this->actingAs($this->admin());
 
         Livewire::test(EditRestaurant::class, ['record' => $owner->id])
-            ->fillForm(['package_ends_at' => now()->subDay()])
+            ->fillForm(['package_started_at' => now()->subMonth(), 'duration' => 'until', 'package_ends_at' => now()->subDay()])
             ->call('save')
             ->assertHasNoFormErrors();
 
         $owner = $owner->fresh();
         $this->assertTrue($owner->packageExpired());
         $this->assertSame(40, $owner->dish_limit);
-        $this->assertFalse($owner->entitlements()->can(Feature::QrStudio));
+        $this->assertFalse($owner->entitlements()->can(Feature::Appearance));
     }
 
     public function test_a_grant_stacks_on_top_of_the_package(): void
@@ -81,6 +77,6 @@ class RestaurantPackageTest extends TestCase
             ])
             ->assertHasNoActionErrors();
 
-        $this->assertSame(150, $owner->fresh()->dish_limit, '120 from Pro + 30 granted.');
+        $this->assertSame(180, $owner->fresh()->dish_limit, '150 from Pro + 30 granted.');
     }
 }

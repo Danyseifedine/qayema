@@ -15,15 +15,11 @@ class EntitlementsTest extends TestCase
 
     public function test_limits_come_from_the_default_package(): void
     {
-        // Free ships with the QR studio open for now; this test needs a flag
-        // the default package lacks, so it closes that one first.
-        Package::default()->setFeature(Feature::QrStudio, 0);
-
         $restaurant = Restaurant::factory()->create(['template_id' => null]);
 
         $this->assertSame(40, $restaurant->dish_limit);
-        $this->assertSame(10, $restaurant->category_limit);
-        $this->assertSame(2, $restaurant->social_link_limit);
+        $this->assertSame(8, $restaurant->category_limit);
+        $this->assertSame(1, $restaurant->social_link_limit);
         $this->assertFalse($restaurant->entitlements()->can(Feature::QrStudio));
     }
 
@@ -45,8 +41,8 @@ class EntitlementsTest extends TestCase
 
         $restaurant->update(['package_id' => Package::findBySlug('pro')->id]);
 
-        $this->assertSame(120, $restaurant->fresh()->dish_limit);
-        $this->assertTrue($restaurant->fresh()->entitlements()->can(Feature::QrStudio));
+        $this->assertSame(150, $restaurant->fresh()->dish_limit);
+        $this->assertTrue($restaurant->fresh()->entitlements()->can(Feature::Appearance));
     }
 
     public function test_an_expired_package_falls_back_to_the_default_one(): void
@@ -57,7 +53,7 @@ class EntitlementsTest extends TestCase
             'package_ends_at' => now()->addDay(),
         ]);
 
-        $this->assertSame(300, $restaurant->dish_limit);
+        $this->assertSame(500, $restaurant->dish_limit);
 
         $restaurant->update(['package_ends_at' => now()->subDay()]);
         $restaurant = $restaurant->fresh();
@@ -117,10 +113,6 @@ class EntitlementsTest extends TestCase
 
     public function test_a_flag_grant_unlocks_the_feature(): void
     {
-        // Free ships with the QR studio open for now; this test needs a flag
-        // the default package lacks, so it closes that one first.
-        Package::default()->setFeature(Feature::QrStudio, 0);
-
         $restaurant = Restaurant::factory()->create(['template_id' => null]);
 
         $this->assertFalse($restaurant->entitlements()->can(Feature::QrStudio));
@@ -135,10 +127,6 @@ class EntitlementsTest extends TestCase
 
     public function test_an_expired_grant_does_not_apply(): void
     {
-        // Free ships with the QR studio open for now; this test needs a flag
-        // the default package lacks, so it closes that one first.
-        Package::default()->setFeature(Feature::QrStudio, 0);
-
         $restaurant = Restaurant::factory()->create(['template_id' => null]);
 
         FeatureGrant::factory()
@@ -179,16 +167,12 @@ class EntitlementsTest extends TestCase
         ]);
 
         $this->assertSame(500, $restaurant->dish_limit);
-        $this->assertSame(10, $restaurant->category_limit, 'Feature::defaultValue() fills the gap.');
+        $this->assertSame(8, $restaurant->category_limit, 'Feature::defaultValue() fills the gap.');
         $this->assertFalse($restaurant->entitlements()->can(Feature::QrStudio));
     }
 
     public function test_templates_grant_nothing(): void
     {
-        // Free ships with the QR studio open for now; this test needs a flag
-        // the default package lacks, so it closes that one first.
-        Package::default()->setFeature(Feature::QrStudio, 0);
-
         $restaurant = Restaurant::factory()->create();
 
         $this->assertSame(40, $restaurant->dish_limit);

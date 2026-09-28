@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\PackageStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PackageResource;
 use App\Models\Package;
@@ -26,7 +27,9 @@ class PackageController extends Controller
         return PackageResource::collection($packages)->additional([
             'meta' => [
                 'current' => $current?->slug,
-                'ends_at' => $restaurant?->packageExpired() ? null : $restaurant?->package_ends_at?->toIso8601String(),
+                'ends_at' => $restaurant?->packageStatus() === PackageStatus::Active
+                    ? $restaurant->package_ends_at?->toIso8601String()
+                    : null,
             ],
         ]);
     }

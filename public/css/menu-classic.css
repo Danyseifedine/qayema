@@ -367,7 +367,7 @@ dialog.pop[open]::backdrop { animation: fade-in .2s ease; }
 .pop-item[aria-current="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--bg)); font-weight: 600; }
 
 .qr-code { display: flex; justify-content: center; min-height: 196px; margin-top: 14px; }
-.qr-code svg { width: 196px; height: 196px; shape-rendering: crispEdges; }
+.qr-code svg { width: 196px; height: 196px; }
 .qr-code + .pop-note { margin-top: 12px; font-size: 12px; }
 
 /* The header copy, which only a wide screen shows. Its menu drops down

@@ -23,6 +23,7 @@ class FeatureGrant extends Model
         'value',
         'source',
         'reference',
+        'note',
         'ends_at',
     ];
 

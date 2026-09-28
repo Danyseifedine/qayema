@@ -19,6 +19,13 @@ class MenuOrderingTest extends TestCase
 {
     use CreatesOwners, RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->defaultPackageIncludes(Feature::MultipleLanguages, Feature::Ordering);
+    }
+
     private function shop(bool $ordering, array $attributes = []): Restaurant
     {
         Package::default()->setFeature(Feature::Ordering, $ordering ? 1 : 0);
@@ -100,9 +107,11 @@ class MenuOrderingTest extends TestCase
         $this->assertStringContainsString('data-scroll-top', $html);
         $this->assertStringContainsString('Back to top', $html);
 
-        // The 56 KB generator is fetched on demand, not on every menu render.
-        $this->assertStringNotContainsString('<script src="'.asset('js/qrcode-generator.js'), $html);
-        $this->assertStringContainsString('data-lib="'.asset('js/qrcode-generator.js').'"', $html);
+        // The QR library and the owner's design are fetched on demand, not on
+        // every menu render.
+        $this->assertStringNotContainsString('<script src="'.asset('js/qr-code-styling.js'), $html);
+        $this->assertStringContainsString('data-lib="'.asset('js/qr-code-styling.js').'"', $html);
+        $this->assertStringContainsString('data-options="'.route('public.qr.options', $shop->slug).'"', $html);
     }
 
     public function test_the_find_us_popup_shows_a_map_when_the_link_carries_one(): void

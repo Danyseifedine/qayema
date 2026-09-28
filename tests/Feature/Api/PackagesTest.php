@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Api;
 
-use App\Enums\Feature;
 use App\Models\Package;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -39,10 +38,6 @@ class PackagesTest extends TestCase
 
     public function test_an_unlimited_limit_comes_through_as_null_and_a_flag_as_a_boolean(): void
     {
-        // Free ships with the QR studio open for now; this test needs a flag
-        // the default package lacks, so it closes that one first.
-        Package::default()->setFeature(Feature::QrStudio, 0);
-
         $owner = $this->owner();
 
         $packages = collect($this->actingAs($owner->user)->getJson(route('api.packages.index'))->json('data'))
@@ -54,7 +49,8 @@ class PackagesTest extends TestCase
 
         $this->assertSame(40, $packages['free']['features']['dish_limit']);
         $this->assertFalse($packages['free']['features']['qr_studio']);
-        $this->assertTrue($packages['pro']['features']['qr_studio']);
+        $this->assertFalse($packages['pro']['features']['qr_studio']);
+        $this->assertTrue($packages['premium']['features']['qr_studio']);
     }
 
     public function test_the_meta_reports_the_package_in_force(): void

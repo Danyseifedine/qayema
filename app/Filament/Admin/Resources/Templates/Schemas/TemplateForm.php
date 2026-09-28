@@ -24,9 +24,8 @@ use Illuminate\Support\Str;
 class TemplateForm
 {
     /**
-     * The setting types a template may expose. Only colours have an editor in
-     * the dashboard (Colors & fonts); the others are read by the view at
-     * their default until an owner-facing editor exists.
+     * The setting types a template may expose, each with its own field on the
+     * dashboard's Appearance page (Template::SETTING_TYPES).
      *
      * @var array<string, string>
      */
@@ -83,7 +82,7 @@ class TemplateForm
                     ]),
 
                 Section::make('Owner Settings')
-                    ->description('What the owner may customize on this template. Each colour shows on the dashboard\'s Colors & fonts page with its label, and reaches the view as a CSS variable: primary_color becomes var(--primary-color). Leave empty to make the design fixed.')
+                    ->description('What the owner may customize on this template. Each setting shows on the dashboard\'s Appearance page with its label; the view reads it as $settings[\'key\'], and a colour also becomes a CSS variable (primary_color → var(--primary-color)). Leave empty to make the design fixed.')
                     ->schema([
                         Repeater::make('settings_schema')
                             ->label('')
@@ -106,6 +105,7 @@ class TemplateForm
                                     ->required(),
                                 TextInput::make('default')
                                     ->placeholder(Template::DEFAULT_PRIMARY_COLOR)
+                                    // An on/off default is written "true" or "false".
                                     ->rules(fn ($get): array => $get('type') === 'color' ? [Color::RULE] : [])
                                     ->helperText('Applied when the owner has not chosen one.'),
                                 TextInput::make('label.en')

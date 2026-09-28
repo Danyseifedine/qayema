@@ -53,7 +53,7 @@ class PackageAdminTest extends TestCase
             ->assertHasNoFormErrors();
 
         $this->assertSame(75, $onFree->fresh()->dish_limit);
-        $this->assertSame(120, $onPro->fresh()->dish_limit, 'Another package is untouched.');
+        $this->assertSame(150, $onPro->fresh()->dish_limit, 'Another package is untouched.');
     }
 
     public function test_an_empty_limit_saves_as_unlimited(): void

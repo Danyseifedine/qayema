@@ -188,6 +188,8 @@ class MediaService
      */
     public function optimize(UploadedFile $file, array $preset, string $label = 'img'): string
     {
+        self::ensureMemoryFor($file->getRealPath());
+
         $image = $this->manager->read($file->getRealPath());
 
         if (($preset['fit'] ?? 'contain') === 'cover') {
@@ -205,6 +207,28 @@ class MediaService
         }
 
         return $path;
+    }
+
+    /**
+     * GD decodes the whole picture into memory — about 5 bytes a pixel, plus
+     * a working copy while it resizes — so a 6000 x 6000 photo needs well over
+     * the 128 MB PHP-FPM gives a request by default. Raise the limit for this
+     * request only, and only when it is lower than what the image needs; a
+     * server already set higher (or to unlimited) is left alone.
+     */
+    public static function ensureMemoryFor(string $path): void
+    {
+        $size = @getimagesize($path);
+        if ($size === false) {
+            return;
+        }
+
+        $needed = (int) ($size[0] * $size[1] * 5 * 2) + 64 * 1024 * 1024;
+        $current = UploadLimits::toBytes((string) ini_get('memory_limit'));
+
+        if ($current !== -1 && $current < $needed) {
+            ini_set('memory_limit', (string) $needed);
+        }
     }
 
     /**

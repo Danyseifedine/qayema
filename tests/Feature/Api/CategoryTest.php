@@ -10,11 +10,19 @@ use App\Models\Restaurant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Tests\Concerns\CreatesOwners;
 use Tests\TestCase;
 
 class CategoryTest extends TestCase
 {
-    use RefreshDatabase;
+    use CreatesOwners, RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->defaultPackageIncludes(Feature::MultipleLanguages);
+    }
 
     /**
      * @return array{0: User, 1: Restaurant}

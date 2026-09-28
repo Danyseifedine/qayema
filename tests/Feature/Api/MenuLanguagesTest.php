@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api;
 
+use App\Enums\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreatesOwners;
 use Tests\TestCase;
@@ -12,6 +13,13 @@ use Tests\TestCase;
 class MenuLanguagesTest extends TestCase
 {
     use CreatesOwners, RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->defaultPackageIncludes(Feature::MultipleLanguages);
+    }
 
     private function save(array $languages)
     {

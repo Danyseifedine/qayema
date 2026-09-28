@@ -40,16 +40,17 @@ class MenuLanguages
 
     /**
      * The languages the menu is shown in: English, then the second language —
-     * unless the owner switched "Menu languages" off on the Features page,
-     * which makes the menu English-only without forgetting the second one.
+     * unless the package has no `multiple_languages` or the owner switched
+     * "Menu languages" off on the Features page, which makes the menu
+     * English-only without forgetting the second one.
      *
      * @return array<int, string>
      */
     public static function for(Restaurant $restaurant): array
     {
-        return $restaurant->isSwitchedOff('languages')
-            ? [self::MAIN]
-            : self::written($restaurant);
+        return $restaurant->showsSecondLanguage()
+            ? self::written($restaurant)
+            : [self::MAIN];
     }
 
     /**

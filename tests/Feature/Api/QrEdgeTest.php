@@ -16,6 +16,13 @@ class QrEdgeTest extends TestCase
 {
     use CreatesOwners, RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->defaultPackageIncludes(Feature::QrStudio, Feature::Analytics, Feature::Appearance);
+    }
+
     /** @return array<string, mixed> */
     private function design(array $overrides = []): array
     {
@@ -41,7 +48,7 @@ class QrEdgeTest extends TestCase
         $data = $this->actingAs($owner->user)->getJson(route('api.qr.show'))->assertOk()->json('data');
 
         $this->assertFalse($data['unlocked']);
-        $this->assertNull($data['stats']);
+        $this->assertNotNull($data['stats'], 'Scan counts follow analytics, not the studio.');
         $this->assertNull($data['card_url']);
         $this->assertNull($data['logo_data_url']);
         $this->assertSame('square', $data['settings']['dot_style'], 'The saved design is hidden while locked.');

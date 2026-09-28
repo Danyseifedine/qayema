@@ -28,6 +28,9 @@ class TemplateResource extends JsonResource
                 'ar' => $this->getTranslation('description', 'ar', false) ?: null,
             ],
             'thumbnail_url' => $this->getFirstMediaUrl('thumbnail') ?: null,
+            'is_premium' => $this->is_premium,
+            // Needs a package this restaurant is not on.
+            'locked' => ! ($request->user()?->restaurant?->mayUseTemplate($this->resource) ?? true),
             // What the owner may customize on this template, as declared rows.
             'settings_schema' => $this->settingsSchema(),
         ];

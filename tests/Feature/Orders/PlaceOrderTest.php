@@ -17,6 +17,13 @@ class PlaceOrderTest extends TestCase
 {
     use CreatesOwners, RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->defaultPackageIncludes(Feature::MultipleLanguages);
+    }
+
     /** A live restaurant whose package includes ordering. */
     private function shop(array $attributes = []): Restaurant
     {

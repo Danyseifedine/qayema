@@ -22,10 +22,11 @@ return [
     | Catalog
     |--------------------------------------------------------------------------
     |
-    | TODO(packages): PLACEHOLDER contents. What each package includes is not
-    | decided yet. This seeds a fresh database only — after that /admin →
-    | Packages owns the numbers, and changing this file does not move them.
-    | Keep the marketing copy in lang/{en,ar}/portal.php in step with it.
+    | What each package includes, as decided with the owner (2026-09). Prices
+    | are still placeholders. This seeds a fresh database only — after that
+    | /admin → Packages owns the numbers, and changing this file does not move
+    | them. The landing page's pricing (lang/{en,ar}/portal.php) is separate
+    | and not yet in step with it.
     |
     | A feature value of null means unlimited. A flag is 0 or 1. A key left out
     | falls back to App\Enums\Feature::defaultValue().
@@ -46,50 +47,63 @@ return [
             'sort_order' => 0,
             'features' => [
                 'dish_limit' => 40,
-                'category_limit' => 10,
-                'social_link_limit' => 2,
-                'qr_studio' => 1,
-                'ordering' => 1,
-                'advanced_analytics' => 1,
+                'category_limit' => 8,
+                'social_link_limit' => 1,
+                'multiple_languages' => 0,
+                'appearance' => 0,
+                'premium_designs' => 0,
+                'qr_studio' => 0,
+                'ordering' => 0,
+                'analytics' => 0,
+                'advanced_analytics' => 0,
             ],
         ],
         [
             'slug' => 'pro',
             'name' => ['en' => 'Pro', 'ar' => 'برو'],
             'description' => [
-                'en' => 'More room on the menu, plus the QR studio.',
-                'ar' => 'مساحة أكبر للقائمة، مع استوديو رمز QR.',
+                'en' => 'Your own look, two languages and your numbers.',
+                'ar' => 'مظهرك الخاص ولغتان وأرقامك.',
             ],
             'price_cents' => 1200,
             'is_contact_only' => false,
             'is_default' => false,
             'sort_order' => 1,
+            'is_featured' => true,
             'features' => [
-                'dish_limit' => 120,
-                'category_limit' => 25,
-                'social_link_limit' => 6,
-                'qr_studio' => 1,
-                'ordering' => 1,
-                'advanced_analytics' => 1,
+                'dish_limit' => 150,
+                'category_limit' => 15,
+                'social_link_limit' => 2,
+                'multiple_languages' => 1,
+                'appearance' => 1,
+                'premium_designs' => 0,
+                'qr_studio' => 0,
+                'ordering' => 0,
+                'analytics' => 1,
+                'advanced_analytics' => 0,
             ],
         ],
         [
             'slug' => 'premium',
             'name' => ['en' => 'Premium', 'ar' => 'مميّز'],
             'description' => [
-                'en' => 'For a large menu that changes often.',
-                'ar' => 'لقائمة كبيرة تتغيّر باستمرار.',
+                'en' => 'Everything, with ordering and the QR studio.',
+                'ar' => 'كل شيء، مع الطلبات واستوديو QR.',
             ],
             'price_cents' => 2900,
             'is_contact_only' => false,
             'is_default' => false,
             'sort_order' => 2,
             'features' => [
-                'dish_limit' => 300,
-                'category_limit' => 50,
-                'social_link_limit' => 12,
+                'dish_limit' => 500,
+                'category_limit' => 30,
+                'social_link_limit' => 10,
+                'multiple_languages' => 1,
+                'appearance' => 1,
+                'premium_designs' => 1,
                 'qr_studio' => 1,
                 'ordering' => 1,
+                'analytics' => 1,
                 'advanced_analytics' => 1,
             ],
         ],
@@ -108,8 +122,12 @@ return [
                 'dish_limit' => null,
                 'category_limit' => null,
                 'social_link_limit' => null,
+                'multiple_languages' => 1,
+                'appearance' => 1,
+                'premium_designs' => 1,
                 'qr_studio' => 1,
                 'ordering' => 1,
+                'analytics' => 1,
                 'advanced_analytics' => 1,
             ],
         ],

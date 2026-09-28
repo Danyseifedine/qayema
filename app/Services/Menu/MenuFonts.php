@@ -6,7 +6,7 @@ use App\Models\Restaurant;
 
 /**
  * The fonts a menu is drawn in: one per writing system its languages use
- * (config/fonts.php), picked by the owner on the dashboard's Colors & fonts
+ * (config/fonts.php), picked by the owner on the dashboard's Appearance
  * page and stored in `restaurants.menu_fonts` as {script: family}. Fonts
  * belong to the restaurant, so every design uses the same ones.
  */
@@ -54,14 +54,28 @@ class MenuFonts
         return array_keys(self::catalogue()[$script]['fonts'] ?? []);
     }
 
-    /** The owner's pick for a script, else that script's default. */
+    /**
+     * The font the menu draws a script in: the owner's pick while their
+     * package includes Appearance, else the script's default.
+     */
     public static function family(Restaurant $restaurant, string $script): string
+    {
+        return $restaurant->hasAppearance() ? self::chosen($restaurant, $script) : self::default($script);
+    }
+
+    /** The owner's pick for a script, else its default — whatever the package. */
+    public static function chosen(Restaurant $restaurant, string $script): string
     {
         $picked = ((array) $restaurant->menu_fonts)[$script] ?? null;
 
         return is_string($picked) && in_array($picked, self::choices($script), true)
             ? $picked
-            : (string) (self::catalogue()[$script]['default'] ?? 'Inter');
+            : self::default($script);
+    }
+
+    private static function default(string $script): string
+    {
+        return (string) (self::catalogue()[$script]['default'] ?? 'Inter');
     }
 
     /**

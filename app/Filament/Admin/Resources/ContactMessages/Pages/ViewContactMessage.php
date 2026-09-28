@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\ContactMessages\Pages;
 
+use App\Filament\Admin\Actions\ChangePackageAction;
 use App\Filament\Admin\Resources\ContactMessages\ContactMessageResource;
 use App\Filament\Admin\Resources\Restaurants\RestaurantResource;
 use Filament\Infolists\Components\TextEntry;
@@ -12,6 +13,13 @@ use Filament\Schemas\Schema;
 class ViewContactMessage extends ViewRecord
 {
     protected static string $resource = ContactMessageResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            ChangePackageAction::forRequest(),
+        ];
+    }
 
     public function infolist(Schema $schema): Schema
     {

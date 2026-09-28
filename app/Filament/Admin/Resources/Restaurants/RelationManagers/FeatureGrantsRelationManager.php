@@ -18,8 +18,8 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * Extra slots (or unlocked add-ons) for this one restaurant, stacked on top of
- * the global Plan Limits. Use this to give a single restaurant more room
- * without moving everyone else's floor.
+ * its package. Use this to give a single restaurant more room, or one add-on
+ * for a while, without moving it to another package.
  */
 class FeatureGrantsRelationManager extends RelationManager
 {
@@ -56,6 +56,11 @@ class FeatureGrantsRelationManager extends RelationManager
             DateTimePicker::make('ends_at')
                 ->label('Expires at')
                 ->helperText('Leave empty for a grant that never expires.'),
+            TextInput::make('note')
+                ->label('Note')
+                ->maxLength(255)
+                ->placeholder('e.g. Trial of ordering for the summer')
+                ->columnSpanFull(),
         ]);
     }
 
@@ -76,6 +81,10 @@ class FeatureGrantsRelationManager extends RelationManager
                 TextColumn::make('source')
                     ->badge()
                     ->color(fn (string $state): string => $state === 'admin' ? 'gray' : 'success'),
+                TextColumn::make('note')
+                    ->label('Note')
+                    ->placeholder('—')
+                    ->wrap(),
                 TextColumn::make('reference')
                     ->label('Reference')
                     ->placeholder('—')

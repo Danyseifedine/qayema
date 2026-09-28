@@ -24,6 +24,8 @@ return new class extends Migration
             $table->foreignId('user_id')->unique()->constrained()->cascadeOnDelete();
             $table->foreignId('template_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('package_id')->nullable()->constrained()->nullOnDelete();
+            // The package is in force from package_started_at (null = always
+            // has been) until package_ends_at (null = forever).
             $table->timestamp('package_started_at')->nullable();
             $table->timestamp('package_ends_at')->nullable();
 

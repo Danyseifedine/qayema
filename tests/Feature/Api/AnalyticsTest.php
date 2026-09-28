@@ -8,11 +8,19 @@ use App\Models\Package;
 use App\Models\Restaurant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\CreatesOwners;
 use Tests\TestCase;
 
 class AnalyticsTest extends TestCase
 {
-    use RefreshDatabase;
+    use CreatesOwners, RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->defaultPackageIncludes(Feature::Analytics);
+    }
 
     private function visit(Restaurant $restaurant, int $daysAgo = 0, bool $qr = false, string $session = 's', ?string $device = 'mobile'): void
     {
@@ -22,13 +30,6 @@ class AnalyticsTest extends TestCase
             'via_qr' => $qr,
             'viewed_at' => now()->subDays($daysAgo),
         ]);
-    }
-
-    public function test_every_package_ships_with_advanced_analytics_open(): void
-    {
-        foreach (Package::all() as $package) {
-            $this->assertSame(1, (int) $package->features['advanced_analytics'], "{$package->slug} should ship with advanced analytics open.");
-        }
     }
 
     public function test_stats_require_authentication(): void

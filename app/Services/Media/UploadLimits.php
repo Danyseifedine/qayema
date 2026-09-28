@@ -5,16 +5,21 @@ namespace App\Services\Media;
 /**
  * How large an upload this installation can actually take.
  *
- * The app asks for 10 MB, but PHP refuses a file larger than
- * `upload_max_filesize` before a single line of Laravel runs, so the real
- * ceiling is the smaller of the two. Telling an owner "images must be 10 MB
- * or smaller" while the server drops everything over 2 MB sends them looking
- * for a problem in their photo that is not there.
+ * The app asks for 20 MB — a phone photo straight off the camera — and every
+ * upload is then cut down to a small WebP by MediaService. But PHP refuses a
+ * file larger than `upload_max_filesize` before a single line of Laravel runs,
+ * so the real ceiling is the smaller of the two. Telling an owner "images must
+ * be 20 MB or smaller" while the server drops everything over 2 MB sends them
+ * looking for a problem in their photo that is not there.
+ *
+ * The server side is set in three places, all to the same numbers:
+ * `public/.user.ini` (PHP-FPM in production), `composer serve` (local), and
+ * the web server's own body limit (nginx `client_max_body_size 25m`).
  */
 class UploadLimits
 {
     /** What the validation rules ask for. */
-    public const APP_MAX_BYTES = 10 * 1024 * 1024;
+    public const APP_MAX_BYTES = 20 * 1024 * 1024;
 
     /** The smallest of the app's limit and PHP's two. */
     public static function effectiveBytes(): int
@@ -39,7 +44,7 @@ class UploadLimits
         return self::serverBytes() < self::APP_MAX_BYTES;
     }
 
-    /** The effective ceiling as a person would write it, e.g. "10 MB". */
+    /** The effective ceiling as a person would write it, e.g. "20 MB". */
     public static function describe(): string
     {
         $megabytes = self::effectiveBytes() / (1024 * 1024);

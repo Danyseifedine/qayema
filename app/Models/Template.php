@@ -12,8 +12,9 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\Translatable\HasTranslations;
 
 /**
- * A menu layout. Pure design — it grants no features and costs nothing: every
- * active template is open to every restaurant. The only variable part is
+ * A menu layout. It grants no features. Every active template is open to
+ * every restaurant, except one marked `is_premium`, which needs the
+ * premium_designs flag (Restaurant::menuTemplate()). The only variable part is
  * `settings_schema`, the list of knobs the owner may turn. Adding a template
  * is a row plus a Blade view of the same slug.
  */
@@ -29,10 +30,10 @@ class Template extends Model implements HasMedia
     /**
      * The knobs the classic design exposes, and what a scaffolded template
      * starts from (TemplateSeeder, make:menu-template). `label` is what the
-     * owner reads on Colors & fonts; `contrast_with` names the colour this
-     * one is read against, so the dashboard can warn when they clash.
+     * owner reads on the Appearance page; `contrast_with` names the colour
+     * this one is read against, so the dashboard can warn when they clash.
      *
-     * @var array<int, array{key: string, type: string, default: string, label: array{en: string, ar: string}, contrast_with?: string}>
+     * @var array<int, array{key: string, type: string, default: string|bool, label: array{en: string, ar: string}, contrast_with?: string}>
      */
     public const CLASSIC_SCHEMA = [
         ['key' => 'primary_color', 'type' => 'color', 'default' => self::DEFAULT_PRIMARY_COLOR,
@@ -41,7 +42,12 @@ class Template extends Model implements HasMedia
             'label' => ['en' => 'Background', 'ar' => 'الخلفية']],
         ['key' => 'text_color', 'type' => 'color', 'default' => '#111418',
             'label' => ['en' => 'Text', 'ar' => 'النص'], 'contrast_with' => 'background_color'],
+        ['key' => 'show_name', 'type' => 'boolean', 'default' => true,
+            'label' => ['en' => 'Name in the top bar', 'ar' => 'الاسم في الشريط العلوي']],
     ];
+
+    /** The kinds of setting an owner can edit on the Appearance page. */
+    public const SETTING_TYPES = ['color', 'boolean', 'select', 'text'];
 
     /**
      * A setting's key: it becomes a CSS variable, a form path and a validation
@@ -58,6 +64,7 @@ class Template extends Model implements HasMedia
         'description',
         'settings_schema',
         'is_active',
+        'is_premium',
         'sort_order',
     ];
 
@@ -66,6 +73,7 @@ class Template extends Model implements HasMedia
         return [
             'settings_schema' => 'array',
             'is_active' => 'boolean',
+            'is_premium' => 'boolean',
             'sort_order' => 'integer',
         ];
     }
@@ -85,6 +93,15 @@ class Template extends Model implements HasMedia
     }
 
     /**
+     * The design a menu shows when the one its owner chose needs a package
+     * they no longer have: the first active design every package may use.
+     */
+    public static function fallback(): ?self
+    {
+        return self::query()->active()->where('is_premium', false)->first();
+    }
+
+    /**
      * The settings this template exposes, as declared rows.
      *
      * @return array<int, array{key: string, type: string, default: mixed, label?: array<string, string|null>, contrast_with?: string|null, options?: array<int, string>}>
@@ -95,18 +112,31 @@ class Template extends Model implements HasMedia
     }
 
     /**
-     * The colour rows alone, with a usable key: what the owner edits on the
-     * dashboard's Colors & fonts page and what the menu gets as CSS variables.
+     * Every row an owner can edit on the Appearance page: a usable key and a
+     * known type.
+     *
+     * @return array<int, array{key: string, type: string, default: mixed, label?: array<string, string|null>, contrast_with?: string|null, options?: array<int, string>}>
+     */
+    public function editableSettings(): array
+    {
+        return array_values(array_filter(
+            $this->settingsSchema(),
+            fn (array $row): bool => in_array($row['type'] ?? null, self::SETTING_TYPES, true)
+                && is_string($row['key'] ?? null)
+                && preg_match(self::SETTING_KEY_PATTERN, $row['key']) === 1,
+        ));
+    }
+
+    /**
+     * The colour rows alone: what the menu gets as CSS variables.
      *
      * @return array<int, array{key: string, type: string, default: mixed, label?: array<string, string|null>, contrast_with?: string|null}>
      */
     public function colorSettings(): array
     {
         return array_values(array_filter(
-            $this->settingsSchema(),
-            fn (array $row): bool => ($row['type'] ?? null) === 'color'
-                && is_string($row['key'] ?? null)
-                && preg_match(self::SETTING_KEY_PATTERN, $row['key']) === 1,
+            $this->editableSettings(),
+            fn (array $row): bool => $row['type'] === 'color',
         ));
     }
 
@@ -120,7 +150,7 @@ class Template extends Model implements HasMedia
     {
         return collect($this->settingsSchema())
             ->filter(fn (array $field): bool => isset($field['key']))
-            ->mapWithKeys(fn (array $field): array => [$field['key'] => $field['default'] ?? null])
+            ->mapWithKeys(fn (array $field): array => [$field['key'] => self::cast($field, $field['default'] ?? null)])
             ->all();
     }
 
@@ -135,18 +165,48 @@ class Template extends Model implements HasMedia
      */
     public function resolveSettings(array $stored = []): array
     {
-        $defaults = $this->defaultSettings();
-        $colors = array_column($this->colorSettings(), 'key');
+        $rows = collect($this->settingsSchema())->filter(fn (array $row): bool => isset($row['key']))->keyBy('key');
+        $resolved = $this->defaultSettings();
 
-        return array_merge(
-            $defaults,
-            array_filter(
-                array_intersect_key($stored, $defaults),
-                fn ($value, string $key): bool => $value !== null
-                    && (! in_array($key, $colors, true) || Color::isHex($value)),
-                ARRAY_FILTER_USE_BOTH,
-            )
-        );
+        foreach (array_intersect_key($stored, $resolved) as $key => $value) {
+            if (self::accepts($rows[$key], $value)) {
+                $resolved[$key] = self::cast($rows[$key], $value);
+            }
+        }
+
+        return $resolved;
+    }
+
+    /**
+     * Whether a stored value still fits its row: the schema may have changed
+     * since it was saved (a choice removed, a type changed), and anything
+     * that no longer fits falls back to the default.
+     *
+     * @param  array<string, mixed>  $row
+     */
+    public static function accepts(array $row, mixed $value): bool
+    {
+        return match ($row['type'] ?? null) {
+            'color' => Color::isHex($value),
+            'boolean' => is_bool($value) || in_array($value, [0, 1, '0', '1', 'true', 'false'], true),
+            'select' => in_array($value, $row['options'] ?? [], true),
+            default => is_string($value) && $value !== '' && mb_strlen($value) <= 255,
+        };
+    }
+
+    /**
+     * An on/off value as a real boolean, whatever the admin typed as its
+     * default ("false" as text would otherwise read as on).
+     *
+     * @param  array<string, mixed>  $row
+     */
+    public static function cast(array $row, mixed $value): mixed
+    {
+        if (($row['type'] ?? null) !== 'boolean' || $value === null) {
+            return $value;
+        }
+
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
     }
 
     public function registerMediaCollections(): void

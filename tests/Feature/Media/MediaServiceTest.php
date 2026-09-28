@@ -4,6 +4,7 @@ namespace Tests\Feature\Media;
 
 use App\Models\Dish;
 use App\Services\Media\MediaService;
+use App\Services\Media\UploadLimits;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -143,5 +144,29 @@ class MediaServiceTest extends TestCase
         $service->storeTempUpload(UploadedFile::fake()->image('new.png'), 'dish', 6);
 
         $this->assertFileDoesNotExist($oldPath);
+    }
+
+    public function test_the_optimizer_raises_memory_for_a_big_photo_and_never_lowers_it(): void
+    {
+        $previous = ini_get('memory_limit');
+        $path = tempnam(sys_get_temp_dir(), 'big').'.png';
+        imagepng(imagecreatetruecolor(6000, 4000), $path);
+
+        try {
+            // Too little for 6000 x 4000 (like PHP-FPM's usual 128 MB), but
+            // above what this test process already uses, or PHP refuses it.
+            $low = memory_get_usage(true) + 16 * 1024 * 1024;
+            ini_set('memory_limit', (string) $low);
+            MediaService::ensureMemoryFor($path);
+            $this->assertGreaterThan($low, UploadLimits::toBytes((string) ini_get('memory_limit')));
+
+            // Already unlimited: left alone.
+            ini_set('memory_limit', '-1');
+            MediaService::ensureMemoryFor($path);
+            $this->assertSame('-1', ini_get('memory_limit'));
+        } finally {
+            ini_set('memory_limit', (string) $previous);
+            @unlink($path);
+        }
     }
 }

@@ -23,6 +23,8 @@ return new class extends Migration
             $table->unsignedInteger('value')->default(1);
             $table->string('source', 12)->default('admin');
             $table->string('reference')->nullable();
+            // Why an admin gave it, for whoever reads the grant later.
+            $table->string('note')->nullable();
             // Null means the grant never expires, which is the norm.
             $table->timestamp('ends_at')->nullable();
             $table->timestamps();

@@ -2,12 +2,15 @@
 
 namespace App\Filament\Admin\Resources\Restaurants\Schemas;
 
-use Filament\Forms\Components\DateTimePicker;
+use App\Enums\Feature;
+use App\Enums\PackageStatus;
+use App\Models\Restaurant;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
@@ -70,26 +73,19 @@ class RestaurantForm
                     ]),
 
                 Section::make('Package')
-                    ->description('The plan this restaurant\'s limits and features come from. Extra slots granted below stack on top of it.')
-                    ->columns(3)
+                    ->description('The package this restaurant\'s limits and features come from, and for how long. Extra slots & add-ons below stack on top of it; every change is kept in the package history.')
+                    ->columns(2)
                     ->schema([
-                        Select::make('package_id')
-                            ->label('Package')
-                            ->relationship('package', 'name')
-                            ->getOptionLabelFromRecordUsing(fn ($record): string => (string) $record->name)
-                            ->preload()
-                            ->required()
-                            ->default(fn (): ?int => \App\Models\Package::default()?->id),
-                        DateTimePicker::make('package_started_at')
-                            ->label('Started at')
-                            ->helperText('When this package was assigned.'),
-                        DateTimePicker::make('package_ends_at')
-                            ->label('Expires at')
-                            ->helperText('Leave empty for no expiry. Past this date the restaurant falls back to the default package.'),
+                        ...PackageFields::components(),
+                        TextEntry::make('gets_now')
+                            ->label('What it gets now')
+                            ->state(fn (?Restaurant $record): ?string => $record === null ? null : self::entitlementsSummary($record))
+                            ->visibleOn('edit')
+                            ->columnSpanFull(),
                     ]),
 
                 Section::make('Template')
-                    ->description('The public menu design. Templates are pure design — every active one is available on every package.')
+                    ->description('The public menu design. A design marked premium needs a package with premium designs; without one the menu shows the first free design and keeps this choice.')
                     ->schema([
                         Select::make('template_id')
                             ->label('Template')
@@ -126,5 +122,31 @@ class RestaurantForm
                             ->helperText('Recommended 1920×600 px. Max 5 MB.'),
                     ]),
             ]);
+    }
+
+    /**
+     * The package in force and every feature it resolves to with grants, as
+     * one line an admin can read at a glance.
+     */
+    private static function entitlementsSummary(Restaurant $restaurant): string
+    {
+        $entitlements = $restaurant->entitlements();
+
+        $features = collect(Feature::cases())
+            ->map(fn (Feature $feature): ?string => match (true) {
+                $feature->isLimit() => $feature->label().' '.($entitlements->limit($feature) ?? '∞'),
+                $entitlements->can($feature) => $feature->label(),
+                default => null,
+            })
+            ->filter()
+            ->implode(' · ');
+
+        $status = match ($restaurant->packageStatus()) {
+            PackageStatus::Scheduled => $restaurant->package?->name.' starts '.$restaurant->package_started_at->toFormattedDayDateString().'; until then '.$restaurant->effectivePackage()?->name,
+            PackageStatus::Expired => $restaurant->package?->name.' ended '.$restaurant->package_ends_at->toFormattedDayDateString().'; now '.$restaurant->effectivePackage()?->name,
+            default => $restaurant->package?->name.($restaurant->package_ends_at === null ? ', forever' : ' until '.$restaurant->package_ends_at->toFormattedDayDateString()),
+        };
+
+        return $status.' — '.$features;
     }
 }

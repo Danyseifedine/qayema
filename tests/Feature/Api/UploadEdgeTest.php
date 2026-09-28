@@ -21,15 +21,17 @@ class UploadEdgeTest extends TestCase
         );
     }
 
-    public function test_a_file_over_ten_megabytes_is_rejected(): void
+    public function test_a_file_over_twenty_megabytes_is_rejected(): void
     {
-        $this->upload(UploadedFile::fake()->image('huge.jpg')->size(10241))
+        $this->upload(UploadedFile::fake()->image('huge.jpg')->size(20481))
             ->assertStatus(422)->assertJsonValidationErrors('file');
     }
 
     public function test_a_file_at_the_limit_is_accepted(): void
     {
-        $this->upload(UploadedFile::fake()->image('ok.jpg', 100, 100)->size(10240))->assertOk();
+        // 20 MB: a phone photo straight off the camera. It is then optimized
+        // down to a small WebP, so the size never reaches storage.
+        $this->upload(UploadedFile::fake()->image('ok.jpg', 100, 100)->size(20480))->assertOk();
     }
 
     public function test_a_file_php_itself_dropped_explains_that_it_was_too_large(): void

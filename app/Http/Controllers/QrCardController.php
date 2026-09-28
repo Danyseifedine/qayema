@@ -6,6 +6,7 @@ use App\Models\Restaurant;
 use App\Services\Menu\MenuFonts;
 use App\Services\Qr\QrStyle;
 use App\Support\Color;
+use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 
 class QrCardController extends Controller
@@ -22,7 +23,7 @@ class QrCardController extends Controller
 
         $base = rtrim((string) config('app.url'), '/');
         $host = (string) (parse_url($base, PHP_URL_HOST) ?: $base);
-        $url = "{$base}/{$restaurant->slug}?qr=1";
+        $url = $restaurant->qrUrl();
         $design = $restaurant->qrDesign();
         $accent = QrStyle::brandColor($restaurant);
         // The card's text is the owner's own, in any of the menu's languages,
@@ -41,5 +42,23 @@ class QrCardController extends Controller
                 'font' => MenuFonts::css($fonts),
             ],
         ]);
+    }
+
+    /**
+     * The code the menu's "Scan to open this menu" pop-up draws: the same
+     * options the dashboard previews and the card prints, for the same
+     * link, so a guest sees the owner's design. Without the studio (package
+     * or Features switch) that is the plain black code, as on the dashboard.
+     * Fetched when the pop-up first opens, because the logo is inlined as a
+     * data URL and would otherwise weigh down every menu page.
+     */
+    public function options(Restaurant $restaurant): JsonResponse
+    {
+        abort_unless($restaurant->is_active, 404);
+
+        $design = $restaurant->hasQrStudio() ? $restaurant->qrDesign() : $restaurant->qrDefaultDesign();
+        $logo = $design['logo'] ? QrStyle::logoDataUrl($restaurant) : null;
+
+        return response()->json(['data' => QrStyle::options($design, $restaurant->qrUrl(), $logo)]);
     }
 }

@@ -31,6 +31,8 @@ return new class extends Migration
             // expired package falls back to.
             $table->boolean('is_default')->default(false);
             $table->integer('sort_order')->default(0);
+            // Marked "Most popular" on the dashboard's Package page.
+            $table->boolean('is_featured')->default(false);
             $table->json('features');
             $table->timestamps();
         });
@@ -48,6 +50,7 @@ return new class extends Migration
                     'is_contact_only' => $package['is_contact_only'] ?? false,
                     'is_default' => $package['is_default'] ?? false,
                     'sort_order' => $package['sort_order'] ?? 0,
+                    'is_featured' => $package['is_featured'] ?? false,
                     'features' => json_encode($package['features'] ?? []),
                     'created_at' => $now,
                     'updated_at' => $now,

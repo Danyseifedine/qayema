@@ -56,7 +56,7 @@
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
-            "npx concurrently -c \"#93c5fd,#c4b5fd\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" --names='server,queue'"
+            "npx concurrently -c \"#93c5fd,#c4b5fd\" \"composer serve\" \"php artisan queue:listen --tries=1\" --names='server,queue'"
         ],
         "test": [
             "@php artisan config:clear --ansi",
@@ -81,7 +81,10 @@
         "pre-package-uninstall": [
             "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
         ],
-        "serve": "php -d upload_max_filesize=12M -d post_max_size=16M -d memory_limit=512M artisan serve"
+        "serve": [
+            "Composer\\Config::disableProcessTimeout",
+            "cd public && php -d upload_max_filesize=20M -d post_max_size=25M -d memory_limit=512M -S 127.0.0.1:8000 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php"
+        ]
     },
     "extra": {
         "laravel": {

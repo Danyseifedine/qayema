@@ -34,7 +34,7 @@ class PublicMenuController extends Controller
         // owner may still preview it while setting up.
         abort_unless($restaurant->is_active || $preview !== null, 404);
 
-        $template = $preview ?? $restaurant->template;
+        $template = $preview ?? $restaurant->menuTemplate();
 
         // No template chosen yet (and not previewing one): nothing to render.
         abort_unless($template !== null && $template->is_active, 404);

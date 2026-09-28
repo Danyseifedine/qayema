@@ -524,16 +524,21 @@ Scaffold all of it with:
 php artisan make:menu-template midnight
 ```
 
-**A design's colours are data, not code.** `templates.settings_schema`
-declares them: `[{key, type: "color", default, label: {en, ar}, contrast_with?}]`
-(edited in the admin panel; `key` is `^[a-z][a-z0-9_]*$`, a colour default must
-be hex). To give a design another colour: add a row, use `var(--the-key)` in
-its view — nothing else. The dashboard's **Colors & fonts** page lists exactly
-the colour rows (`Template::colorSettings()`), labelled, with a contrast
-warning against `contrast_with`. `UpdateColorsFontsRequest` builds its rules
-from those rows and rejects anything else. text/boolean/select rows still
-resolve to their defaults but have no owner UI. An empty schema = a fixed
-design.
+**A design's settings are data, not code.** `templates.settings_schema`
+declares them: `[{key, type, default, label: {en, ar}, contrast_with?, options?}]`,
+type `color` | `boolean` | `select` | `text` (edited in the admin panel; `key`
+is `^[a-z][a-z0-9_]*$`, a colour default must be hex, an on/off default is
+written `true`/`false`). To give a design a new setting: add a row, then use it
+in the view — `$settings['key']` for any type, and a colour is also
+`var(--the-key)`. Nothing else. The dashboard's **Appearance** page shows
+every row (`Template::editableSettings()`) with the field its type needs:
+colour picker (with a contrast warning against `contrast_with`), switch,
+choice, short text. `UpdateAppearanceRequest` builds its rules from those rows
+and rejects anything else. `Template::accepts()` / `cast()` keep stored values
+honest: a value that no longer fits its row (a removed choice, a non-hex
+colour) falls back to the default, and on/off is always a real boolean.
+Classic's rows: three colours and `show_name` (the name beside the logo in the
+top bar). An empty schema = a fixed design.
 
 **Each design remembers its colours.** `restaurants.template_settings` is
 `{template_id: {key: value}}` holding only what the owner changed
@@ -553,7 +558,8 @@ dish name, and `latin_first`); each menu language names its `script` in
 Fonts URL. Arabic and Chinese stack the Latin pick first (their fonts also
 carry Latin, which would win for prices); Cyrillic and Devanagari put their
 own first (Latin fonts also carry them). The QR card loads every font the
-menu uses. API: `GET/PUT /api/colors-fonts` (`ColorsFontsController`).
+menu uses. API: `GET/PUT /api/appearance` (`AppearanceController`), body
+`{settings?: {key: value}, fonts?: {script: family}}`, null = back to default.
 
 The public menu controller falls back to `classic` when a template row exists
 without its Blade file, so a half-finished template never 500s a guest. The
@@ -568,7 +574,7 @@ One name per thing, shared with the dashboard (`../qayema-dashboard`):
 |---|---|
 | Analytics | `AnalyticsController`, `GET /api/analytics[/advanced]`, `Services/Analytics/MenuStats`, model `MenuSession` (table `menu_sessions`) |
 | Design | `TemplateController`, `/api/templates` — a *design* is a `Template` row; the model keeps its name |
-| Colors & fonts | `ColorsFontsController`, `GET/PUT /api/colors-fonts`, `Restaurant::designSettings()`, `MenuFonts`, `config/fonts.php` |
+| Appearance | `AppearanceController`, `GET/PUT /api/appearance`, `Restaurant::designSettings()`, `MenuFonts`, `config/fonts.php` |
 | Restaurant | `RestaurantController`, `GET/PUT /api/restaurant`, `RestaurantResource`, `UpdateRestaurantRequest` |
 | Features | `FeaturesController`, `PUT /api/features`, column `switched_off` |
 | Package | `/api/packages` |
@@ -620,6 +626,12 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
   `visibility` (R2 has no per-object ACLs; the bucket is public through its
   domain). `phpunit.xml` pins `MEDIA_DISK=public`, so tests can never reach the
   bucket.
+- **Uploads are up to 20 MB** (`UploadLimits::APP_MAX_BYTES`, the dashboard's
+  `MAX_IMAGE_BYTES`) and always come out as a small WebP (presets in
+  `config/image-optimization.php`). PHP must allow it too: `composer serve`
+  locally (never `php artisan serve` — its child process ignores `-d`),
+  `public/.user.ini` under PHP-FPM, nginx `client_max_body_size 25m`.
+  `MediaService::ensureMemoryFor()` raises `memory_limit` for a big photo.
 - **Every promotion goes through `MediaService::replace()`** — the dashboard's
   `sync()` and onboarding's `saveBranding()` alike. It stores on `MEDIA_DISK`
   and, if that disk is down or not configured, **falls back to the local
@@ -719,9 +731,13 @@ with the design**, so a printed code keeps working whatever is saved.
   cases (`tests/Unit/Services/Qr/QrStyleTest.php`) — change one, change both.
   Hex checks and the ink-on-a-colour rule live in `App\Support\Color`. The allowed shapes are QrStyle's constants, which
   `QrSettingsRequest` validates against.
-- Drawn by `qr-code-styling` 1.9.2 on both sides: npm in the dashboard, and a
+- Drawn by `qr-code-styling` 1.9.2 everywhere: npm in the dashboard, and a
   vendored copy at `public/js/qr-code-styling.js` for the printable card at
-  `/{slug}/qr`. Same library, same options, same code on the table.
+  `/{slug}/qr` and the menu's own "Scan to open this menu" pop-up. The pop-up
+  fetches its options from `GET /{slug}/qr-options` on first open (the logo is
+  inlined, too heavy for every menu page) — the studio design, or the plain
+  code without the studio, exactly as the dashboard shows it. Every code
+  encodes `Restaurant::qrUrl()` (`?qr=1`, which counts the visit as a scan).
 - The logo is sent **inline as a data URL** (`QrStyle::logoDataUrl()`), not as
   its CDN link: a browser only draws a cross-origin image into a PNG when that
   domain sends CORS headers, and R2 does not by default.

@@ -7,11 +7,19 @@ use App\Models\Package;
 use App\Models\Restaurant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\CreatesOwners;
 use Tests\TestCase;
 
 class QrTest extends TestCase
 {
-    use RefreshDatabase;
+    use CreatesOwners, RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->defaultPackageIncludes(Feature::QrStudio, Feature::Analytics);
+    }
 
     /**
      * Every package ships with the studio open for now, so the gated paths
@@ -57,12 +65,8 @@ class QrTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_every_package_ships_with_the_studio_open(): void
+    public function test_a_package_with_the_studio_opens_it(): void
     {
-        foreach (Package::all() as $package) {
-            $this->assertSame(1, (int) $package->features['qr_studio'], "{$package->slug} should ship with the studio open.");
-        }
-
         $restaurant = Restaurant::factory()->create(['template_id' => null]);
 
         $this->actingAs($restaurant->user)
@@ -116,8 +120,8 @@ class QrTest extends TestCase
             // The saved design is not served while locked — defaults only.
             ->assertJsonPath('data.settings.dot_style', 'square')
             ->assertJsonPath('data.settings.dot_color', '#000000')
-            // No scan counts and no logo while locked.
-            ->assertJsonPath('data.stats', null)
+            // No logo while locked; scan counts follow analytics, not the studio.
+            ->assertJsonPath('data.stats.today', 1)
             ->assertJsonPath('data.logo_data_url', null);
 
         $this->assertStringEndsWith('/maison-aran?qr=1', $response->json('data.url'));

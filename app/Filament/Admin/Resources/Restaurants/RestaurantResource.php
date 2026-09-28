@@ -6,6 +6,7 @@ use App\Filament\Admin\Resources\Restaurants\Pages\CreateRestaurant;
 use App\Filament\Admin\Resources\Restaurants\Pages\EditRestaurant;
 use App\Filament\Admin\Resources\Restaurants\Pages\ListRestaurants;
 use App\Filament\Admin\Resources\Restaurants\RelationManagers\FeatureGrantsRelationManager;
+use App\Filament\Admin\Resources\Restaurants\RelationManagers\PackageChangesRelationManager;
 use App\Filament\Admin\Resources\Restaurants\Schemas\RestaurantForm;
 use App\Filament\Admin\Resources\Restaurants\Tables\RestaurantsTable;
 use App\Models\Restaurant;
@@ -41,6 +42,7 @@ class RestaurantResource extends Resource
     {
         return [
             FeatureGrantsRelationManager::class,
+            PackageChangesRelationManager::class,
         ];
     }
 

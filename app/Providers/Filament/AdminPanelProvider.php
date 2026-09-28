@@ -11,6 +11,7 @@ use App\Filament\Admin\Resources\Restaurants\RestaurantResource;
 use App\Filament\Admin\Resources\RestaurantSocialLinks\RestaurantSocialLinkResource;
 use App\Filament\Admin\Resources\Templates\TemplateResource;
 use App\Filament\Admin\Resources\Users\UserResource;
+use App\Filament\Admin\Widgets\PackagesEndingSoon;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -53,6 +54,9 @@ class AdminPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\Filament\Admin\Pages')
             ->pages([
                 Dashboard::class,
+            ])
+            ->widgets([
+                PackagesEndingSoon::class,
             ])
             ->middleware([
                 EncryptCookies::class,

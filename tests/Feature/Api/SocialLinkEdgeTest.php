@@ -87,6 +87,6 @@ class SocialLinkEdgeTest extends TestCase
         RestaurantSocialLink::factory()->create(['restaurant_id' => $owner->id, 'platform' => 'tiktok']);
 
         $this->actingAs($owner->user)->getJson(route('api.social-links.index'))
-            ->assertOk()->assertJsonPath('meta.used', 1)->assertJsonPath('meta.limit', 2);
+            ->assertOk()->assertJsonPath('meta.used', 1)->assertJsonPath('meta.limit', 1);
     }
 }

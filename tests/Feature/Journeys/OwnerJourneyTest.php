@@ -34,6 +34,9 @@ class OwnerJourneyTest extends TestCase
     {
         parent::setUp();
         Mail::fake();
+        // The journeys walk through every feature; which package has which
+        // is covered in Tests\Feature\Packages.
+        $this->defaultPackageIncludes(...Feature::flags());
         Template::factory()->withSettings([['key' => 'primary_color', 'type' => 'color', 'default' => '#C8A85A']])->create(['slug' => 'classic', 'sort_order' => 0]);
     }
 
@@ -138,8 +141,9 @@ class OwnerJourneyTest extends TestCase
         // The owner's allowance moves immediately.
         $this->actingAs($owner->user)->getJson(route('api.user'))
             ->assertJsonPath('data.restaurant.package.slug', 'pro')
-            ->assertJsonPath('data.restaurant.limits.dishes.limit', 120)
-            ->assertJsonPath('data.restaurant.plan.qr_studio', true);
+            ->assertJsonPath('data.restaurant.limits.dishes.limit', 150)
+            ->assertJsonPath('data.restaurant.plan.appearance', true)
+            ->assertJsonPath('data.restaurant.plan.qr_studio', false);
     }
 
     public function test_a_design_can_be_customised_and_switched_freely(): void
@@ -152,7 +156,7 @@ class OwnerJourneyTest extends TestCase
         // Preview, choose, recolour.
         $this->actingAs($owner->user)->get('/designer?preview='.$midnight->id)->assertOk()->assertSee('--accent: #ABCDEF', false);
         $this->actingAs($owner->user)->postJson(route('api.templates.select'), ['template_id' => $midnight->id])->assertOk();
-        $this->actingAs($owner->user)->putJson(route('api.colors-fonts.update'), ['colors' => ['primary_color' => '#112233']])->assertOk();
+        $this->actingAs($owner->user)->putJson(route('api.appearance.update'), ['settings' => ['primary_color' => '#112233']])->assertOk();
         $this->get('/designer')->assertOk()->assertSee('--accent: #112233', false);
 
         // Switch away and back: free both ways, and each design keeps its colours.
@@ -208,7 +212,9 @@ class OwnerJourneyTest extends TestCase
             ->fillForm(['features.dish_limit' => 10])
             ->call('save')
             ->assertHasNoFormErrors();
-        $this->actingAs($owner->user)->postJson(route('api.dishes.store'), ['name' => ['en' => 'x'], 'price' => 1, 'category_id' => $category->id])->assertCreated();
+        // A fresh user: the one above still holds the restaurant it loaded,
+        // with the package as it was then.
+        $this->actingAs($owner->user->fresh())->postJson(route('api.dishes.store'), ['name' => ['en' => 'x'], 'price' => 1, 'category_id' => $category->id])->assertCreated();
     }
 
     public function test_deleting_a_restaurant_cascades_content_but_keeps_the_user_and_the_packages(): void

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api;
 
+use App\Enums\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreatesOwners;
 use Tests\TestCase;
@@ -9,6 +10,13 @@ use Tests\TestCase;
 class FeaturesTest extends TestCase
 {
     use CreatesOwners, RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->defaultPackageIncludes(Feature::MultipleLanguages);
+    }
 
     public function test_every_feature_is_on_until_the_owner_switches_one_off(): void
     {

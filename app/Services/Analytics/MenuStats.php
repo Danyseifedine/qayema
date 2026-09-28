@@ -83,6 +83,20 @@ class MenuStats
     }
 
     /**
+     * The one number a package without analytics still sees: menu views in
+     * the range.
+     *
+     * @return array{range: string, views: int}
+     */
+    public function teaser(): array
+    {
+        return [
+            'range' => $this->range,
+            'views' => $this->inRange($this->restaurant->menuSessions(), 'viewed_at')->count(),
+        ];
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function advanced(): array

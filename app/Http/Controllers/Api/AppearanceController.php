@@ -4,19 +4,25 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Concerns\ResolvesRestaurant;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\UpdateColorsFontsRequest;
+use App\Http\Requests\UpdateAppearanceRequest;
 use App\Models\Restaurant;
 use App\Services\Menu\MenuFonts;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * The dashboard's Colors & fonts page. Colours belong to the design in use —
- * each design declares its own (Template::colorSettings()) and remembers what
- * the owner picked for it. Fonts belong to the restaurant: one per writing
- * system the menu uses, the same in every design.
+ * The dashboard's Appearance page. The design's settings belong to the design
+ * in use — each design declares its own (Template::editableSettings(): colours,
+ * on/off switches, choices, short text) and remembers what the owner picked
+ * for it. Fonts belong to the restaurant: one per writing system the menu
+ * uses, the same in every design.
+ *
+ * Reading is open so the page can show what an upgrade would unlock; saving
+ * needs the package's `appearance` flag. The design is the one the menu is
+ * drawn in (Restaurant::menuTemplate()), which is the owner's choice unless
+ * their package no longer allows it.
  */
-class ColorsFontsController extends Controller
+class AppearanceController extends Controller
 {
     use ResolvesRestaurant;
 
@@ -25,12 +31,13 @@ class ColorsFontsController extends Controller
         return response()->json(['data' => $this->payload($this->withDesign($request))]);
     }
 
-    public function update(UpdateColorsFontsRequest $request): JsonResponse
+    public function update(UpdateAppearanceRequest $request): JsonResponse
     {
         $restaurant = $this->withDesign($request);
+        abort_unless($restaurant->hasAppearance(), 403, __('Appearance is not on your package.'));
 
-        if ($request->has('colors')) {
-            $restaurant->saveDesignSettings($restaurant->template, (array) $request->validated('colors'));
+        if ($request->has('settings')) {
+            $restaurant->saveDesignSettings($restaurant->menuTemplate(), $request->settings());
         }
 
         if ($request->has('fonts')) {
@@ -46,9 +53,11 @@ class ColorsFontsController extends Controller
      */
     private function payload(Restaurant $restaurant): array
     {
-        $design = $restaurant->template;
-        $values = $restaurant->designSettings();
+        $design = $restaurant->menuTemplate();
+        // What the owner chose, even while the package keeps it off the menu.
+        $values = $design->resolveSettings($restaurant->chosenDesignSettings($design));
         $catalogue = MenuFonts::catalogue();
+        $scripts = MenuFonts::scripts($restaurant);
 
         return [
             'design' => [
@@ -58,20 +67,22 @@ class ColorsFontsController extends Controller
                     'ar' => $design->getTranslation('name', 'ar', false) ?: null,
                 ],
             ],
-            'colors' => array_map(fn (array $row): array => [
+            'settings' => array_map(fn (array $row): array => [
                 'key' => $row['key'],
+                'type' => $row['type'],
                 'label' => [
                     'en' => $row['label']['en'] ?? null,
                     'ar' => $row['label']['ar'] ?? null,
                 ],
-                'default' => $row['default'] ?? null,
+                'default' => $design->defaultSettings()[$row['key']] ?? null,
                 'value' => $values[$row['key']] ?? null,
                 'contrast_with' => $row['contrast_with'] ?? null,
-            ], $design->colorSettings()),
+                'options' => array_values($row['options'] ?? []),
+            ], $design->editableSettings()),
             'fonts' => array_map(fn (string $script, array $languages): array => [
                 'script' => $script,
                 'languages' => $languages,
-                'value' => MenuFonts::family($restaurant, $script),
+                'value' => MenuFonts::chosen($restaurant, $script),
                 'default' => $catalogue[$script]['default'],
                 'sample' => $catalogue[$script]['sample'],
                 'options' => array_map(
@@ -79,16 +90,16 @@ class ColorsFontsController extends Controller
                     array_keys($catalogue[$script]['fonts']),
                     $catalogue[$script]['fonts'],
                 ),
-            ], array_keys(MenuFonts::scripts($restaurant)), MenuFonts::scripts($restaurant)),
+            ], array_keys($scripts), $scripts),
         ];
     }
 
-    /** The restaurant, once it has a design: colours are that design's. */
+    /** The restaurant, once it has a design: the settings are that design's. */
     private function withDesign(Request $request): Restaurant
     {
         $restaurant = $this->restaurant($request);
 
-        abort_if($restaurant->template === null, 403, __('Choose a template first.'));
+        abort_if($restaurant->menuTemplate() === null, 403, __('Choose a template first.'));
 
         return $restaurant;
     }

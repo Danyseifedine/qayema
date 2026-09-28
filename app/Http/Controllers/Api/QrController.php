@@ -17,10 +17,10 @@ class QrController extends Controller
 
     /**
      * The QR studio payload. The link and a basic black-on-white code are
-     * always there; saved designs, customization, the centre logo and the scan
-     * counts follow the qr_studio flag. Every package ships with it on for
-     * now; when it is off the payload carries defaults and no stats, so
-     * nothing gated leaks.
+     * always there; saved designs, customization and the centre logo follow
+     * the qr_studio flag, and the scan counts follow `analytics` (they are
+     * numbers, not styling). Without a flag the payload carries defaults or
+     * no stats, so nothing gated leaks.
      */
     public function show(Request $request): JsonResponse
     {
@@ -60,7 +60,7 @@ class QrController extends Controller
             // Locked by the owner's own switch rather than the package, so the
             // dashboard can point to Features instead of to an upgrade.
             'switched_off' => $restaurant->isSwitchedOff('qr'),
-            'url' => "{$base}/{$restaurant->slug}?qr=1",
+            'url' => $restaurant->qrUrl(),
             'display_url' => "{$host}/{$restaurant->slug}",
             'card_url' => $unlocked ? route('public.qr', $restaurant->slug) : null,
             // Inlined, not linked: see QrStyle::logoDataUrl().
@@ -71,7 +71,7 @@ class QrController extends Controller
             // What "Reset to simple" goes back to, so the dashboard never
             // keeps its own copy of the defaults.
             'defaults' => $restaurant->qrDefaultDesign(),
-            'stats' => $unlocked
+            'stats' => $restaurant->entitlements()->can(Feature::Analytics)
                 ? [
                     'today' => $restaurant->getQrScanCount('today'),
                     'week' => $restaurant->getQrScanCount('week'),

@@ -153,21 +153,50 @@
 
     var qrCode = document.querySelector('[data-qr-canvas]');
 
-    /** Pull in the generator on first use — it is far too big to ship eagerly. */
-    function withGenerator(then, otherwise) {
-        if (window.qrcode) {
-            then();
+    /**
+     * The owner's QR design, drawn by the same library the dashboard previews
+     * with and the printable card uses (qr-code-styling), from the same
+     * options (App\Services\Qr\QrStyle). Both are fetched on first use —
+     * far too big to ship with every menu.
+     */
+    var qrOptions = null;
 
-            return;
+    function loadLibrary() {
+        if (window.QRCodeStyling) {
+            return Promise.resolve();
         }
 
-        var tag = document.createElement('script');
-        tag.src = qrCode.dataset.lib;
-        tag.onload = then;
+        return new Promise(function (resolve, reject) {
+            var tag = document.createElement('script');
+            tag.src = qrCode.dataset.lib;
+            tag.onload = resolve;
+            tag.onerror = reject;
+            document.head.appendChild(tag);
+        });
+    }
+
+    function loadOptions() {
+        if (qrOptions) {
+            return Promise.resolve();
+        }
+
+        return fetch(qrCode.dataset.options, { headers: { Accept: 'application/json' } })
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error('QR options ' + response.status);
+                }
+
+                return response.json();
+            })
+            .then(function (body) {
+                qrOptions = body.data;
+            });
+    }
+
+    function withGenerator(then, otherwise) {
         // A guest on a bad connection must not be left with a lit button and
         // no popup, so a failed fetch puts the dock back as it was.
-        tag.onerror = otherwise;
-        document.head.appendChild(tag);
+        Promise.all([loadLibrary(), loadOptions()]).then(then, otherwise);
     }
 
     function drawCode() {
@@ -175,10 +204,8 @@
             return;
         }
 
-        var code = window.qrcode(0, 'M');
-        code.addData(qrCode.dataset.url);
-        code.make();
-        qrCode.innerHTML = code.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+        var options = Object.assign({}, qrOptions, { width: 196, height: 196, type: 'svg' });
+        new window.QRCodeStyling(options).append(qrCode);
     }
 
     var dockItems = Array.prototype.slice.call(document.querySelectorAll('.dockitem'));

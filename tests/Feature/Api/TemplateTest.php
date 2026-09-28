@@ -2,15 +2,24 @@
 
 namespace Tests\Feature\Api;
 
+use App\Enums\Feature;
 use App\Models\Restaurant;
 use App\Models\Template;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\CreatesOwners;
 use Tests\TestCase;
 
 class TemplateTest extends TestCase
 {
-    use RefreshDatabase;
+    use CreatesOwners, RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->defaultPackageIncludes(Feature::Appearance);
+    }
 
     /**
      * @return array{0: User, 1: Restaurant}

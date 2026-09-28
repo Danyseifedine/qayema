@@ -6,11 +6,19 @@ use App\Enums\Feature;
 use App\Models\Restaurant;
 use App\Models\Template;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\CreatesOwners;
 use Tests\TestCase;
 
 class MenuTrackingTest extends TestCase
 {
-    use RefreshDatabase;
+    use CreatesOwners, RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->defaultPackageIncludes(Feature::Analytics);
+    }
 
     private function published(): Restaurant
     {

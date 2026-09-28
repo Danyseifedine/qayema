@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api;
 
+use App\Enums\Feature;
 use App\Models\Category;
 use App\Models\Dish;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -11,6 +12,13 @@ use Tests\TestCase;
 class CategoryEdgeTest extends TestCase
 {
     use CreatesOwners, RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->defaultPackageIncludes(Feature::MultipleLanguages);
+    }
 
     public function test_names_accept_unicode_and_the_exact_length_limit(): void
     {

@@ -2,8 +2,6 @@
 
 namespace Tests\Feature\Api;
 
-use App\Enums\Feature;
-use App\Models\Package;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -83,11 +81,6 @@ class AuthTest extends TestCase
 
     public function test_the_shell_payload_carries_the_restaurant_package_limits_plan_and_urls(): void
     {
-        // Free ships with the QR studio and advanced analytics open for now;
-        // this test needs flags the default package lacks, so it closes them.
-        Package::default()->setFeature(Feature::QrStudio, 0);
-        Package::default()->setFeature(Feature::AdvancedAnalytics, 0);
-
         $restaurant = \App\Models\Restaurant::factory()->create(['slug' => 'shell-test', 'template_id' => null]);
         \App\Models\Dish::factory()->count(3)->create(['restaurant_id' => $restaurant->id]);
 
@@ -102,7 +95,7 @@ class AuthTest extends TestCase
         $this->assertSame('shell-test', $data['restaurant']['slug']);
         $this->assertNull($data['restaurant']['template_id']);
         $this->assertSame(['used' => 3, 'limit' => 40], $data['restaurant']['limits']['dishes']);
-        $this->assertSame(['used' => 0, 'limit' => 10], $data['restaurant']['limits']['categories']);
+        $this->assertSame(['used' => 0, 'limit' => 8], $data['restaurant']['limits']['categories']);
         $this->assertFalse($data['restaurant']['plan']['qr_studio']);
         $this->assertFalse($data['restaurant']['plan']['advanced_analytics']);
         $this->assertStringEndsWith('/shell-test', $data['restaurant']['public_url']);

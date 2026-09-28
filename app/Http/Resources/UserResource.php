@@ -3,6 +3,8 @@
 namespace App\Http\Resources;
 
 use App\Enums\Feature;
+use App\Enums\PackageStatus;
+use App\Models\Package;
 use App\Models\Restaurant;
 use App\Services\Menu\MenuLanguages;
 use Illuminate\Http\Request;
@@ -44,6 +46,8 @@ class UserResource extends JsonResource
     {
         $entitlements = $restaurant->entitlements();
         $package = $restaurant->effectivePackage();
+        $status = $restaurant->packageStatus();
+        $active = $status === PackageStatus::Active;
         $base = rtrim((string) config('app.url'), '/');
 
         return [
@@ -63,18 +67,32 @@ class UserResource extends JsonResource
             'template_id' => $restaurant->template_id,
             'logo_url' => $restaurant->getFirstMediaUrl('logo') ?: null,
             'public_url' => "{$base}/{$restaurant->slug}",
-            'qr_url' => "{$base}/{$restaurant->slug}?qr=1",
-            // The package actually in force: an expired assignment reports
-            // as the default, because that is what the limits below came from.
+            'qr_url' => $restaurant->qrUrl(),
+            // The package actually in force: an assignment that has not
+            // started or has ended reports as the default, because that is
+            // what the limits below came from. Its dates are null when it
+            // runs forever.
             'package' => [
-                'slug' => $package?->slug,
-                'name' => [
-                    'en' => $package?->getTranslation('name', 'en', false) ?: null,
-                    'ar' => $package?->getTranslation('name', 'ar', false) ?: null,
-                ],
+                ...$this->packageSummary($package),
                 'is_contact_only' => (bool) $package?->is_contact_only,
-                'ends_at' => $restaurant->packageExpired() ? null : $restaurant->package_ends_at?->toIso8601String(),
+                'starts_at' => $active ? $restaurant->package_started_at?->toIso8601String() : null,
+                'ends_at' => $active ? $restaurant->package_ends_at?->toIso8601String() : null,
+                // Whole days left, rounded up: "ends today" is 0.
+                'days_left' => $active && $restaurant->package_ends_at !== null
+                    ? (int) max(0, ceil(now()->diffInSeconds($restaurant->package_ends_at) / 86400))
+                    : null,
             ],
+            // The assigned package when it is not the one in force: ended
+            // ("your Pro ended on …") or still to start ("Pro starts on …").
+            'lapsed' => $status === PackageStatus::Expired && $restaurant->package !== null ? [
+                ...$this->packageSummary($restaurant->package),
+                'ended_at' => $restaurant->package_ends_at?->toIso8601String(),
+            ] : null,
+            'upcoming' => $status === PackageStatus::Scheduled && $restaurant->package !== null ? [
+                ...$this->packageSummary($restaurant->package),
+                'starts_at' => $restaurant->package_started_at?->toIso8601String(),
+                'ends_at' => $restaurant->package_ends_at?->toIso8601String(),
+            ] : null,
             // A null limit is unlimited on this package.
             'limits' => [
                 'dishes' => ['used' => $restaurant->dishes()->count(), 'limit' => $entitlements->limit(Feature::DishLimit)],
@@ -83,11 +101,24 @@ class UserResource extends JsonResource
             ],
             // Optional features the owner switched off (Features page).
             'switched_off' => $restaurant->switchedOff(),
-            // What this restaurant may use: its package plus any grants.
-            'plan' => [
-                'qr_studio' => $entitlements->can(Feature::QrStudio),
-                'ordering' => $entitlements->can(Feature::Ordering),
-                'advanced_analytics' => $entitlements->can(Feature::AdvancedAnalytics),
+            // What this restaurant may use: its package plus any grants. Every
+            // flag in App\Enums\Feature, so a new one needs no edit here.
+            'plan' => collect(Feature::flags())
+                ->mapWithKeys(fn (Feature $flag): array => [$flag->value => $entitlements->can($flag)])
+                ->all(),
+        ];
+    }
+
+    /**
+     * @return array{slug: string|null, name: array{en: string|null, ar: string|null}}
+     */
+    private function packageSummary(?Package $package): array
+    {
+        return [
+            'slug' => $package?->slug,
+            'name' => [
+                'en' => $package?->getTranslation('name', 'en', false) ?: null,
+                'ar' => $package?->getTranslation('name', 'ar', false) ?: null,
             ],
         ];
     }

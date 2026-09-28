@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Menu;
 
+use App\Enums\Feature;
 use App\Models\Category;
 use App\Models\Dish;
 use App\Models\Restaurant;
@@ -17,6 +18,13 @@ use Tests\TestCase;
 class MenuLocaleTest extends TestCase
 {
     use CreatesOwners, RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->defaultPackageIncludes(Feature::MultipleLanguages);
+    }
 
     private function shop(string $default = 'en'): Restaurant
     {

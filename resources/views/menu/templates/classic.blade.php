@@ -133,13 +133,17 @@
 <body @class(['has-dock' => $hasBottomBar])>
 <header class="topbar">
     <div class="topbar-inner">
-        <a class="brand" href="#top">
+        {{-- The owner can hide the name beside the logo (a logo that already
+             spells it out); the link still carries it for screen readers. --}}
+        <a class="brand" href="#top" aria-label="{{ $name }}">
             @if ($logo)
                 <img class="brand-mark" src="{{ $logo }}" alt="">
             @else
                 <span class="brand-mark">{{ Str::upper(Str::substr($name, 0, 1)) }}</span>
             @endif
-            <span class="brand-name">{{ $name }}</span>
+            @if ($settings['show_name'] ?? true)
+                <span class="brand-name">{{ $name }}</span>
+            @endif
         </a>
 
         @if ($facts)
@@ -361,11 +365,12 @@
     <dialog class="pop" id="pop-qr">
         <div class="pop-body">
             <h2>{{ __('Scan to open this menu') }}</h2>
-            {{-- The generator is 56 KB, so it is fetched the first time this
-                 opens rather than on every menu render. --}}
-            <div class="qr-code" data-qr-canvas
-                 data-url="{{ $menu_url }}"
-                 data-lib="{{ asset('js/qrcode-generator.js') }}"></div>
+            {{-- The owner's saved design, drawn by the library the dashboard
+                 previews with. Both are fetched the first time this opens
+                 rather than on every menu render. --}}
+            <div class="qr-code" data-qr-canvas role="img" aria-label="{{ __('QR code for the menu') }}"
+                 data-options="{{ route('public.qr.options', $restaurant->slug) }}"
+                 data-lib="{{ asset('js/qr-code-styling.js') }}"></div>
             <p class="pop-note" dir="ltr">{{ $menu_url }}</p>
             <button type="button" class="pop-done" data-pop-close>{{ __('Close') }}</button>
         </div>

@@ -24,18 +24,23 @@ php artisan migrate --seed
 composer serve
 ```
 
-Use `composer serve`, not `php artisan serve`. The app accepts images up to
-10 MB, but a stock PHP install caps `upload_max_filesize` at 2 MB, and PHP
-discards a larger file before Laravel ever sees it. The script starts the
-built-in server with limits that match the app.
+Use `composer serve` (or `composer dev`, which runs it with the queue), not
+`php artisan serve`. The app accepts images up to 20 MB and turns each into a
+small WebP, but a stock PHP install caps `upload_max_filesize` at 2 MB, and
+PHP discards a larger file before Laravel ever sees it. `php artisan serve`
+cannot fix that even with `php -d …` in front: it starts the real server as a
+second PHP process with the stock limits. `composer serve` runs PHP's built-in
+server directly, with the limits below.
 
-A deployed host needs the same three values set in its own `php.ini`:
+A deployed host needs the same values. With PHP-FPM, `public/.user.ini` sets
+them already; otherwise put them in `php.ini`. The web server must also let
+the body through (nginx: `client_max_body_size 25m;`).
 
-| Setting | Minimum | Why |
+| Setting | Value | Why |
 |---|---|---|
-| `upload_max_filesize` | `10M` | The largest image the app accepts |
-| `post_max_size` | `12M` | The file plus the rest of the form |
-| `memory_limit` | `256M` | GD decodes the original before resizing, and a 6000 × 6000 image needs roughly 144 MB |
+| `upload_max_filesize` | `20M` | The largest image the app accepts (`UploadLimits::APP_MAX_BYTES`) |
+| `post_max_size` | `25M` | The file plus the rest of the form |
+| `memory_limit` | `512M` | GD decodes the original before resizing; a 6000 × 6000 photo needs a few hundred MB. `MediaService` also raises it for the one request when a server is set lower |
 
 The seed creates an admin (`admin@admin.com` / `password`) and the `classic`
 template. The four packages (Free, Pro, Premium, Custom) are seeded by their

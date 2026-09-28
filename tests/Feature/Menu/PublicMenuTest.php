@@ -2,16 +2,25 @@
 
 namespace Tests\Feature\Menu;
 
+use App\Enums\Feature;
 use App\Models\Category;
 use App\Models\Dish;
 use App\Models\Restaurant;
 use App\Models\Template;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\CreatesOwners;
 use Tests\TestCase;
 
 class PublicMenuTest extends TestCase
 {
-    use RefreshDatabase;
+    use CreatesOwners, RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->defaultPackageIncludes(Feature::MultipleLanguages, Feature::Appearance);
+    }
 
     private function published(array $attributes = []): Restaurant
     {

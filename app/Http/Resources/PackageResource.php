@@ -38,6 +38,8 @@ class PackageResource extends JsonResource
             'is_contact_only' => (bool) $this->is_contact_only,
             'is_default' => (bool) $this->is_default,
             'sort_order' => (int) $this->sort_order,
+            // Marked "Most popular" on the dashboard.
+            'is_featured' => (bool) $this->is_featured,
             'features' => $this->features(),
         ];
     }

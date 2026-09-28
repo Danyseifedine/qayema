@@ -38,6 +38,7 @@ class Package extends Model
         'is_contact_only',
         'is_default',
         'sort_order',
+        'is_featured',
         'features',
     ];
 
@@ -48,6 +49,7 @@ class Package extends Model
             'is_contact_only' => 'boolean',
             'is_default' => 'boolean',
             'sort_order' => 'integer',
+            'is_featured' => 'boolean',
             'features' => 'array',
         ];
     }

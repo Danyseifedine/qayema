@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Menu;
 
+use App\Enums\Feature;
 use App\Models\Restaurant;
 use App\Models\Template;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -15,6 +16,13 @@ use Tests\TestCase;
 class MenuThemeTest extends TestCase
 {
     use CreatesOwners, RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->defaultPackageIncludes(Feature::Appearance, Feature::MultipleLanguages, Feature::QrStudio);
+    }
 
     private function menu(Restaurant $restaurant, string $query = ''): string
     {
@@ -37,6 +45,29 @@ class MenuThemeTest extends TestCase
         $this->assertStringContainsString('--primary-color-ink: #111418;', $html);
         $this->assertStringContainsString('--text-color: #222222;', $html);
         $this->assertStringContainsString('--text-color-ink: #FFFFFF;', $html);
+    }
+
+    public function test_the_owner_can_hide_the_name_beside_the_logo(): void
+    {
+        $classic = $this->classic();
+        $restaurant = $this->published(['template_id' => $classic->id, 'name' => ['en' => 'Beit El Deek']]);
+
+        $this->assertStringContainsString('<span class="brand-name">Beit El Deek</span>', $this->menu($restaurant));
+
+        $restaurant->saveDesignSettings($classic, ['show_name' => false]);
+        $html = $this->menu($restaurant->fresh());
+
+        $this->assertStringNotContainsString('class="brand-name"', $html);
+        // Still named for a screen reader, and still in the cover heading.
+        $this->assertStringContainsString('<a class="brand" href="#top" aria-label="Beit El Deek">', $html);
+    }
+
+    public function test_an_on_off_default_typed_as_text_in_the_admin_reads_as_off(): void
+    {
+        $design = Template::factory()->withSettings([['key' => 'show_name', 'type' => 'boolean', 'default' => 'false']])->create(['slug' => 'classic']);
+        $restaurant = $this->published(['template_id' => $design->id]);
+
+        $this->assertStringNotContainsString('class="brand-name"', $this->menu($restaurant));
     }
 
     public function test_a_value_that_is_not_a_colour_never_reaches_the_stylesheet(): void

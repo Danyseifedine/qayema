@@ -2,6 +2,7 @@
 
 namespace Tests\Concerns;
 
+use App\Enums\Feature;
 use App\Enums\UserRole;
 use App\Models\Package;
 use App\Models\Restaurant;
@@ -42,6 +43,18 @@ trait CreatesOwners
             'is_active' => true,
             'template_id' => $template->id,
         ], $restaurant));
+    }
+
+    /**
+     * Put features on the default package, which `owner()` and `published()`
+     * land on. For tests about a feature itself rather than about which
+     * package has it (those are in Tests\Feature\Packages).
+     */
+    protected function defaultPackageIncludes(Feature ...$features): void
+    {
+        foreach ($features as $feature) {
+            Package::default()->setFeature($feature, 1);
+        }
     }
 
     protected function admin(): User

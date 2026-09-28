@@ -55,6 +55,10 @@ Route::middleware('portal.locale')->group(function () {
 // Public, shareable QR table card (qr_studio owners only — 404 otherwise).
 Route::get('/{restaurant:slug}/qr', [QrCardController::class, 'show'])->name('public.qr');
 
+// The owner's QR design for the menu's "Scan to open this menu" pop-up,
+// fetched when it first opens.
+Route::get('/{restaurant:slug}/qr-options', [QrCardController::class, 'options'])->name('public.qr.options');
+
 // A guest placing an order from the public menu. Two segments, so it is safe
 // beside the one-segment catch-all below; the limiter is deliberately gentle
 // because a whole restaurant shares one wifi and therefore one IP.
