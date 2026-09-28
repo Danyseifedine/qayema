@@ -41,7 +41,6 @@ return [
             'journal_mode' => null,
             'synchronous' => null,
             'transaction_mode' => 'DEFERRED',
-            'options' => [PDO::ATTR_STRINGIFY_FETCHES => true],
         ],
 
         'mysql' => [
