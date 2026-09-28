@@ -18,6 +18,14 @@ class ContactMessage extends Model
 
     protected $fillable = ['name', 'email', 'message', 'ip_address', 'user_id', 'package_id'];
 
+    protected function casts(): array
+    {
+        return [
+            'user_id' => 'integer',
+            'package_id' => 'integer',
+        ];
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

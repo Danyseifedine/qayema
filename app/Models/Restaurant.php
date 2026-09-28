@@ -104,6 +104,9 @@ class Restaurant extends Model implements HasMedia
     protected function casts(): array
     {
         return [
+            'user_id' => 'integer',
+            'template_id' => 'integer',
+            'package_id' => 'integer',
             'is_active' => 'boolean',
             'opening_hours' => 'array',
             'package_started_at' => 'datetime',

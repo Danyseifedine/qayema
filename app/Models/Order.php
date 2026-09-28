@@ -33,6 +33,7 @@ class Order extends Model
     protected function casts(): array
     {
         return [
+            'restaurant_id' => 'integer',
             'status' => OrderStatus::class,
             'total' => 'decimal:2',
             'placed_at' => 'datetime',

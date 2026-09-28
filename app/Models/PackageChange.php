@@ -28,6 +28,10 @@ class PackageChange extends Model
     protected function casts(): array
     {
         return [
+            'restaurant_id' => 'integer',
+            'from_package_id' => 'integer',
+            'to_package_id' => 'integer',
+            'changed_by' => 'integer',
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
         ];

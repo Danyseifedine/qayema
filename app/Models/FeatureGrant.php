@@ -29,6 +29,7 @@ class FeatureGrant extends Model
     protected function casts(): array
     {
         return [
+            'restaurant_id' => 'integer',
             'feature' => Feature::class,
             'value' => 'integer',
             'ends_at' => 'datetime',

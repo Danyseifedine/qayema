@@ -28,6 +28,9 @@ class MenuEvent extends Model
     protected function casts(): array
     {
         return [
+            'restaurant_id' => 'integer',
+            'dish_id' => 'integer',
+            'category_id' => 'integer',
             'type' => MenuEventType::class,
             'occurred_at' => 'datetime',
         ];

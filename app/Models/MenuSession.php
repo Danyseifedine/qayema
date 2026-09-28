@@ -29,6 +29,7 @@ class MenuSession extends Model
     protected function casts(): array
     {
         return [
+            'restaurant_id' => 'integer',
             'viewed_at' => 'datetime',
             'via_qr' => 'boolean',
         ];
