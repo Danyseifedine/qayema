@@ -3,7 +3,7 @@
 namespace Tests\Feature\Onboarding;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\Concerns\CreatesOwners;
+use Tests\Support\CreatesOwners;
 use Tests\TestCase;
 
 /** GET /onboarding/check-slug with input the wizard never sends. */

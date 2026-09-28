@@ -292,7 +292,7 @@ Never wipe the local MySQL to look at the schema. The e2e database is built
 from the same migrations and is safe to rebuild:
 
 ```bash
-composer e2e:reset                                     # fresh database/e2e.sqlite
+composer e2e:reset                                     # fresh e2e database
 APP_ENV=e2e php artisan db:show --counts               # tables at a glance
 APP_ENV=e2e php artisan db:table restaurants           # one table's columns and indexes
 ```

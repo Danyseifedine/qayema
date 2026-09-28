@@ -5,7 +5,7 @@ namespace Tests\Feature\Menu;
 use App\Enums\Feature;
 use App\Models\Package;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\Concerns\CreatesOwners;
+use Tests\Support\CreatesOwners;
 use Tests\TestCase;
 
 /**

@@ -5,7 +5,7 @@ namespace Tests\Feature\Api;
 use App\Services\Media\UploadLimits;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Tests\Concerns\CreatesOwners;
+use Tests\Support\CreatesOwners;
 use Tests\TestCase;
 
 class UploadEdgeTest extends TestCase

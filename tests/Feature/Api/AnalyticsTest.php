@@ -8,7 +8,7 @@ use App\Models\Package;
 use App\Models\Restaurant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\Concerns\CreatesOwners;
+use Tests\Support\CreatesOwners;
 use Tests\TestCase;
 
 class AnalyticsTest extends TestCase

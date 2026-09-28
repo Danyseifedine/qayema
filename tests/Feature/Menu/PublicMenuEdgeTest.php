@@ -6,7 +6,7 @@ use App\Models\Category;
 use App\Models\Dish;
 use App\Models\Template;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\Concerns\CreatesOwners;
+use Tests\Support\CreatesOwners;
 use Tests\TestCase;
 
 class PublicMenuEdgeTest extends TestCase

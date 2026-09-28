@@ -10,7 +10,7 @@ use App\Models\Order;
 use App\Models\Package;
 use App\Models\Restaurant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\Concerns\CreatesOwners;
+use Tests\Support\CreatesOwners;
 use Tests\TestCase;
 
 class PlaceOrderTest extends TestCase

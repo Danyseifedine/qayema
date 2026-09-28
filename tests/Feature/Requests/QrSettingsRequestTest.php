@@ -6,7 +6,7 @@ use App\Enums\Feature;
 use App\Services\Qr\QrStyle;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
-use Tests\Concerns\CreatesOwners;
+use Tests\Support\CreatesOwners;
 use Tests\TestCase;
 
 /** App\Http\Requests\QrSettingsRequest, through PUT /api/qr. */

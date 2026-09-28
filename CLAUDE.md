@@ -904,23 +904,44 @@ Three layers, and a change is done when all three are green:
   `tests/TestCase.php` fakes the `local` and `public` disks.
 - **Vitest** in the dashboard repo.
 - **Playwright end-to-end** in `../qayema-dashboard/e2e` (`npm run e2e` there),
-  against this app with `APP_ENV=e2e`: `.env.e2e` (committed, no secrets),
-  SQLite at `database/e2e.sqlite`, media on the `e2e` disk, port 8001
-  (`composer serve:e2e`). `php artisan e2e:reset` rebuilds that database and
-  refuses anywhere else. `routes/e2e.php` exists only in that environment
-  (`E2eGuardTest` proves it): `POST /__e2e/scenario` builds an owner with
-  whatever a test needs (package and dates, design, languages, content,
-  orders, visits, grants — `E2eController`), `/__e2e/login` signs a user in,
-  `/__e2e/package`, `/__e2e/password-reset-token`. `E2eSeeder`: Classic, the
-  premium Midnight design, `admin@e2e.test` / `e2e-password`.
+  against this app on port 8001 (`composer serve:e2e`).
 
-PHPUnit layout: `tests/Unit/Services/<Group>/` mirrors `app/Services/<Group>/`
-and holds only tests that extend `PHPUnit\Framework\TestCase` (no container,
-no database); anything that boots the app or touches the DB is a Feature test.
-`tests/Feature/<Area>/` groups by area — `Api/` is every `/api/*` endpoint, then
-`Admin`, `Auth`, `Console`, `Journeys`, `Media`, `Menu`, `Onboarding`, `Orders`
-(public ordering), `Packages`, `Portal`, `Security`. Names are `<Thing>Test` and
-`<Thing>EdgeTest`, never `<Thing>ApiTest`. Shared fixtures: `Tests\Concerns\CreatesOwners` (`owner()`,
-`ownerOn('pro')`, `published()`, `admin()`, `defaultPackageIncludes()`).
+**Everything e2e lives in `tests/E2e/`** — nothing in `app/`, `config/`,
+`database/`, `routes/` or the root. `bootstrap/app.php` has the only hook: with
+`APP_ENV=e2e` it reads `tests/E2e/.env.e2e` (committed, no secrets) instead of
+the root `.env`, and registers `E2eServiceProvider`, which points the SQLite
+database, the `e2e` media disk, temp uploads (`local` disk) and the log at
+`storage/framework/testing/e2e/` (git-ignored by Laravel's own `.gitignore`)
+and adds `routes.php` and the `e2e:reset` command. Outside that environment
+none of it exists (`tests/Feature/E2e/E2eGuardTest`). `composer e2e:reset`
+wipes that folder and migrates + seeds it; it refuses any other database.
+Routes: `POST /__e2e/scenario` builds an owner with whatever a test needs
+(package and dates, design, languages, content, orders, visits, grants —
+`E2eController`), `/__e2e/login` signs a user in, `/__e2e/package`,
+`/__e2e/password-reset-token`, `GET /__e2e/media/{path}` serves uploads.
+`E2eSeeder`: Classic, the premium Midnight design, `admin@e2e.test` /
+`e2e-password`.
+
+**PHPUnit layout — three suites**, each file in the first that fits:
+
+- `tests/Unit/` — extends `PHPUnit\Framework\TestCase`: no app, no database
+  (`Enums`, `Services/<Group>`, `Support`).
+- `tests/Integration/` — boots the app or the database but sends no request:
+  `Services/<Group>/` mirrors `app/Services/<Group>/`, then `Models`, `Enums`,
+  `Policies`, `Resources` (API resources), `Rules`, `Mail`, `View`
+  (components, stylesheets), `Factories`, `Admin` (form helpers), `E2e`.
+- `tests/Feature/` — drives the app from outside: HTTP, Livewire/Filament
+  pages, artisan. By area: `Api/` is every `/api/*` endpoint, then `Admin`,
+  `Auth`, `Console`, `E2e`, `Journeys`, `Mail`, `Media`, `Menu`, `Onboarding`,
+  `Orders` (public ordering), `Packages`, `Portal`, `Requests`, `Security`.
+
+A class with pure methods and app-bound ones has one test in each layer under
+the same name (`Unit/Services/Qr/QrStyleTest` is the options mapping, the
+twin of the dashboard's; `Integration/Services/Qr/QrStyleTest` the logo and
+brand colour). Names are `<Thing>Test` and `<Thing>EdgeTest`, never
+`<Thing>ApiTest`. Shared helpers live in `tests/Support/`:
+`CreatesOwners` (`owner()`, `ownerOn('pro')`, `published()`, `admin()`,
+`defaultPackageIncludes()`) and `EnforcedCsrf`. One suite:
+`php artisan test --testsuite=Integration`.
 Run `php artisan test`; format with `vendor/bin/pint --dirty`. Switching `actingAs()`
 users inside one test trips Filament's session-hash check — use separate tests.

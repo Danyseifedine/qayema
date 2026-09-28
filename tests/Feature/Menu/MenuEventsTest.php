@@ -9,7 +9,7 @@ use App\Models\MenuEvent;
 use App\Models\Restaurant;
 use App\Models\Template;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\Concerns\CreatesOwners;
+use Tests\Support\CreatesOwners;
 use Tests\TestCase;
 
 class MenuEventsTest extends TestCase

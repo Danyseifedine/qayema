@@ -6,7 +6,7 @@ use App\Enums\Feature;
 use App\Models\Package;
 use App\Models\RestaurantSocialLink;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\Concerns\CreatesOwners;
+use Tests\Support\CreatesOwners;
 use Tests\TestCase;
 
 class SocialLinkEdgeTest extends TestCase

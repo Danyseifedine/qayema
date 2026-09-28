@@ -3,12 +3,14 @@
 namespace Tests\Feature\E2e;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\Concerns\CreatesOwners;
+use Illuminate\Support\Facades\Artisan;
+use Tests\Support\CreatesOwners;
 use Tests\TestCase;
 
 /**
- * The end-to-end helpers can wipe a database and sign anyone in, so they must
- * not exist outside APP_ENV=e2e.
+ * The end-to-end helpers can wipe a database and sign anyone in, so outside
+ * APP_ENV=e2e they must not exist at all: bootstrap/app.php only loads
+ * tests/E2e there.
  */
 class E2eGuardTest extends TestCase
 {
@@ -21,23 +23,18 @@ class E2eGuardTest extends TestCase
         foreach (['scenario', 'login', 'package', 'password-reset-token'] as $endpoint) {
             $this->postJson('/__e2e/'.$endpoint, ['email' => $owner->user->email])->assertNotFound();
         }
+        $this->get('/__e2e/media/1/logo.png')->assertNotFound();
 
         $this->assertGuest();
     }
 
-    public function test_the_reset_refuses_outside_the_e2e_environment(): void
+    public function test_the_reset_command_does_not_exist_outside_the_e2e_environment(): void
     {
-        $this->artisan('e2e:reset')
-            ->expectsOutputToContain('Refusing')
-            ->assertFailed();
+        $this->assertArrayNotHasKey('e2e:reset', Artisan::all());
     }
 
-    public function test_the_reset_refuses_a_database_that_is_not_the_e2e_file_even_in_e2e(): void
+    public function test_the_app_reads_the_root_env_file_outside_the_e2e_environment(): void
     {
-        $this->app['env'] = 'e2e';
-
-        $this->artisan('e2e:reset')
-            ->expectsOutputToContain('Refusing')
-            ->assertFailed();
+        $this->assertSame(base_path(), $this->app->environmentPath());
     }
 }

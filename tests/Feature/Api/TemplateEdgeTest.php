@@ -4,7 +4,7 @@ namespace Tests\Feature\Api;
 
 use App\Models\Template;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\Concerns\CreatesOwners;
+use Tests\Support\CreatesOwners;
 use Tests\TestCase;
 
 class TemplateEdgeTest extends TestCase

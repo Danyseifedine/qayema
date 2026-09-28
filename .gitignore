@@ -4,7 +4,6 @@
 .env.backup
 .env.production
 .phpactor.json
-.phpunit.result.cache
 /.fleet
 /.idea
 /.nova
@@ -15,8 +14,6 @@
 /node_modules
 /public/hot
 /public/storage
-/database/e2e.sqlite
-/storage/app/public/e2e
 /storage/*.key
 /storage/pail
 /vendor

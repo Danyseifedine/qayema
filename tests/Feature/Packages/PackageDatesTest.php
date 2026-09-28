@@ -8,7 +8,7 @@ use App\Models\FeatureGrant;
 use App\Models\Package;
 use App\Services\Packages\PackageAssigner;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\Concerns\CreatesOwners;
+use Tests\Support\CreatesOwners;
 use Tests\TestCase;
 
 /**

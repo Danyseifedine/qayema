@@ -3,6 +3,7 @@
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Bootstrap\RegisterProviders;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -14,7 +15,7 @@ use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
-return Application::configure(basePath: dirname(__DIR__))
+$app = Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
@@ -152,3 +153,13 @@ return Application::configure(basePath: dirname(__DIR__))
             ], 500);
         });
     })->create();
+
+// The end-to-end suite (APP_ENV=e2e) keeps its settings and code in tests/E2e:
+// its own .env.e2e is read instead of the root .env, and its provider adds
+// the test-only routes, command and storage. Never true in production.
+if ((getenv('APP_ENV') ?: ($_SERVER['APP_ENV'] ?? null)) === 'e2e') {
+    $app->useEnvironmentPath($app->basePath('tests/E2e'));
+    $app->afterBootstrapping(RegisterProviders::class, fn (Application $app) => $app->register(Tests\E2e\E2eServiceProvider::class));
+}
+
+return $app;

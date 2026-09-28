@@ -5,7 +5,7 @@ namespace Tests\Feature\Api;
 use App\Models\Category;
 use App\Models\Dish;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\Concerns\CreatesOwners;
+use Tests\Support\CreatesOwners;
 use Tests\TestCase;
 
 class DishEdgeTest extends TestCase

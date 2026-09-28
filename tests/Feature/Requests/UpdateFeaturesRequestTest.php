@@ -5,7 +5,7 @@ namespace Tests\Feature\Requests;
 use App\Models\Restaurant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
-use Tests\Concerns\CreatesOwners;
+use Tests\Support\CreatesOwners;
 use Tests\TestCase;
 
 /** App\Http\Requests\UpdateFeaturesRequest, through PUT /api/features. */

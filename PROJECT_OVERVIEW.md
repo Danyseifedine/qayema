@@ -75,12 +75,13 @@ with a cross-domain CSRF token endpoint.
 
 ## Testing
 
-- PHPUnit here: unit (`tests/Unit`) plus feature, admin and journey tests
-  (`tests/Feature`). `composer test`, `composer test:coverage` (fails under the
+- PHPUnit here in three suites: `tests/Unit` (plain PHP), `tests/Integration`
+  (app and database, no request) and `tests/Feature` (HTTP, admin, journeys). `composer test`, `composer test:coverage` (fails under the
   coverage floor); format with `vendor/bin/pint --dirty`.
 - Vitest in the dashboard repo for its components, hooks and pages.
 - Playwright end-to-end in `../qayema-dashboard/e2e`, against this app running
-  with `APP_ENV=e2e` on its own SQLite database (see README).
+  with `APP_ENV=e2e`; its support code and settings are all in `tests/E2e/`
+  (see README).
 
 ## Known gaps
 

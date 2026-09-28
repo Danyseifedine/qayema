@@ -6,7 +6,7 @@ use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\Restaurant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\Concerns\CreatesOwners;
+use Tests\Support\CreatesOwners;
 use Tests\TestCase;
 
 /** App\Http\Requests\IndexOrdersRequest, through GET /api/orders. */

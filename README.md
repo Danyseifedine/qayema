@@ -62,7 +62,7 @@ Sign in to the admin panel at `/admin`.
 ## Common tasks
 
 ```bash
-composer test                                 # every unit + feature test
+composer test                                 # every unit, integration and feature test
 composer test:coverage                        # the same, failing under the coverage floor
 php artisan test --filter=EntitlementsTest
 vendor/bin/pint --dirty                       # format before committing
@@ -71,25 +71,27 @@ php artisan make:menu-template midnight       # scaffold a design
 php artisan stats:rollup                      # prune old menu_sessions
 ```
 
-Unit tests live in `tests/Unit`, feature/journey tests in `tests/Feature`.
-Coverage needs the `pcov` PHP extension (`sudo apt install php8.4-pcov`, or
-any `pcov.so` loaded from an ini file).
+Tests come in three suites: `tests/Unit` (plain PHP), `tests/Integration`
+(the app and database, no request) and `tests/Feature` (HTTP, admin pages,
+commands); `php artisan test --testsuite=Unit` runs one. Coverage needs the
+`pcov` PHP extension (`sudo apt install php8.4-pcov`).
 
 ### End-to-end tests
 
 The browser suite lives in `../qayema-dashboard/e2e` (Playwright) and drives
-this app, the dashboard, the public menu and the admin together. It runs this
-app with `APP_ENV=e2e`, which loads `.env.e2e`: its own SQLite file
-(`database/e2e.sqlite`), logged mail, media on the `e2e` disk, on port 8001 —
-never your `.env` or MySQL.
+this app, the dashboard, the public menu and the admin together. Everything it
+needs from this app is in `tests/E2e/`: with `APP_ENV=e2e` the app reads
+`tests/E2e/.env.e2e` instead of `.env` and keeps its SQLite database, media,
+temp uploads and log under `storage/framework/testing/e2e/`, on port 8001 —
+never your `.env`, MySQL or real storage.
 
 ```bash
 composer serve:e2e    # the e2e server (Playwright starts it for you)
-composer e2e:reset    # fresh e2e database; refuses anywhere but APP_ENV=e2e
+composer e2e:reset    # fresh e2e database and media
 ```
 
-`routes/e2e.php` (only loaded in that environment) lets a test build the owner
-it needs (`POST /__e2e/scenario`) and sign in without the form.
+Its routes (only in that environment) let a test build the owner it needs
+(`POST /__e2e/scenario`) and sign in without the form.
 
 ## Going live — the checklist
 

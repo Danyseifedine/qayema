@@ -3,10 +3,14 @@
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
          bootstrap="vendor/autoload.php"
          colors="true"
+         cacheDirectory="storage/framework/testing/phpunit"
 >
     <testsuites>
         <testsuite name="Unit">
             <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Integration">
+            <directory>tests/Integration</directory>
         </testsuite>
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
@@ -19,8 +23,6 @@
         <exclude>
             <!-- Registered only in the local environment, never under test. -->
             <file>app/Providers/TelescopeServiceProvider.php</file>
-            <!-- Loaded only with APP_ENV=e2e; exercised by the Playwright suite. -->
-            <file>app/Http/Controllers/E2e/E2eController.php</file>
         </exclude>
     </source>
     <php>
