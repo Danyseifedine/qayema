@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Onboarding;
 
-use App\Mail\WelcomeRestaurantOwner;
 use App\Models\Restaurant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -30,8 +29,8 @@ class OnboardingFlowTest extends TestCase
 
     public function test_step_three_accepts_a_logo_and_completes_onboarding(): void
     {
-        // Step 3 (branding) is the final step: a logo completes onboarding and
-        // sends the welcome email. No template is assigned; the owner picks one
+        // Step 3 (branding) is the final step: a logo completes onboarding. The
+        // welcome email is switched off by default. No template is assigned; the owner picks one
         // from the dashboard, which stays locked until they do.
         Mail::fake();
         $user = User::factory()->create(['onboarding_step' => 2, 'onboarding_completed_at' => null]);
@@ -51,7 +50,7 @@ class OnboardingFlowTest extends TestCase
         $this->assertSame(User::ONBOARDING_STEPS, $user->onboarding_step);
         $this->assertNotNull($user->onboarding_completed_at);
         $this->assertNull($user->restaurant->template_id);
-        Mail::assertQueued(WelcomeRestaurantOwner::class);
+        Mail::assertNothingOutgoing();
     }
 
     public function test_slug_taken_by_another_restaurant_is_reported_as_taken(): void

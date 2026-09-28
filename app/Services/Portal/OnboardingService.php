@@ -87,9 +87,10 @@ class OnboardingService
     }
 
     /**
-     * Final step: mark onboarding complete and send the welcome email. The
-     * restaurant is intentionally left WITHOUT a template: the owner chooses one
-     * from the dashboard (which stays locked until they do).
+     * Final step: mark onboarding complete and send the welcome email when it
+     * is switched on (`mail.welcome`). The restaurant is intentionally left
+     * WITHOUT a template: the owner chooses one from the dashboard (which
+     * stays locked until they do).
      */
     public function complete(User $user, Restaurant $restaurant): void
     {
@@ -102,7 +103,7 @@ class OnboardingService
 
         // Re-submitting the last step (a refresh, a retry) must not welcome
         // the owner twice.
-        if (! $alreadyDone) {
+        if (! $alreadyDone && config('mail.welcome')) {
             Mail::to($user->email)->send(new WelcomeRestaurantOwner($user, $restaurant));
         }
     }

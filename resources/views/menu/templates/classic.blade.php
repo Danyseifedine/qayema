@@ -34,7 +34,8 @@
 
     // The dock carries the things a guest wants that are otherwise stranded at
     // the top of a long menu: share, language, directions, WhatsApp. The cart
-    // stays in the header. Each part only appears if the restaurant has it.
+    // stays in the header; with no cart, WhatsApp takes its place there.
+    // Each part only appears if the restaurant has it.
     // The QR is always worth offering, so the dock always has something.
     $canSwitchLocale = count($locales) > 1;
 
@@ -180,8 +181,10 @@
 
         @if ($hasContact)
             {{-- Desktop has no dock, so WhatsApp and the social links are
-                 reached from here, through the same popup. --}}
-            <button type="button" class="top-action dockface" data-pop-open="contact" aria-haspopup="dialog"
+                 reached from here, through the same popup. A phone shows it
+                 too when there is no cart, so the bar is never left empty,
+                 and the dock then leaves it out. --}}
+            <button type="button" @class(['top-action dockface', 'on-phone' => ! $can_order]) data-pop-open="contact" aria-haspopup="dialog"
                     aria-label="{{ $whatsapp_url ? __('WhatsApp') : __('Follow us') }}">
                 <span class="icon">{!! $whatsapp_url ? $icons['whatsapp'] : $icons['heart'] !!}</span>
             </button>
@@ -345,10 +348,11 @@
             </div>
         @endif
 
-        @if ($hasContact)
+        @if ($hasContact && $can_order)
             {{-- WhatsApp and the social links share one item: they are the
                  same job, reaching the restaurant. Without WhatsApp the
-                 item wears the heart and opens the links alone. --}}
+                 item wears the heart and opens the links alone. With no
+                 cart it sits in the top bar instead. --}}
             <div class="dockitem {{ $whatsapp_url ? 'is-whatsapp' : 'is-social' }}">
                 <button type="button" class="dockface" data-pop-open="contact" aria-haspopup="dialog">
                     <span class="icon">{!! $whatsapp_url ? $icons['whatsapp'] : $icons['heart'] !!}</span>

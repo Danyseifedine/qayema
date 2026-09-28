@@ -100,7 +100,8 @@ class OwnerJourneyTest extends TestCase
         // Guests see all four; the visit is counted.
         $this->get('/journey?qr=1')->assertOk()->assertSee('Hummus')->assertSee('Fourth');
         $this->actingAs($user)->getJson(route('api.analytics'))->assertJsonPath('data.totals.qr_scans', 1);
-        Mail::assertQueued(\App\Mail\WelcomeRestaurantOwner::class);
+        // The welcome email is switched off by default.
+        Mail::assertNothingOutgoing();
     }
 
     public function test_request_a_package_then_an_admin_assigns_it_and_the_limits_rise(): void

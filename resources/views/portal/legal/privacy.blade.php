@@ -76,7 +76,7 @@
     <li>To deliver the Qayema dashboard and public menu features</li>
     <li>To show you your menu's visitor statistics and orders</li>
     <li>To handle package requests and contact messages, and to switch packages on and off</li>
-    <li>To send service emails (a welcome email when your menu is set up, and password reset links)</li>
+    <li>To send service emails, such as password reset links</li>
     <li>To give you support: our administrators can view your account and restaurant and, when needed, sign in as you to help</li>
     <li>To detect and prevent fraud, abuse, and security incidents, for example with rate limits and by blocking abusive IP addresses</li>
     <li>To improve and develop our service</li>
@@ -183,7 +183,7 @@
     <li>لتقديم لوحة تحكم قائمة وميزات القائمة العامة</li>
     <li>لعرض إحصاءات زوار قائمتك وطلباتها عليك</li>
     <li>لمعالجة طلبات الباقات ورسائل التواصل، ولتفعيل الباقات وإيقافها</li>
-    <li>لإرسال رسائل البريد الإلكتروني الخاصة بالخدمة (رسالة ترحيب عند إعداد قائمتك، وروابط إعادة تعيين كلمة المرور)</li>
+    <li>لإرسال رسائل البريد الإلكتروني الخاصة بالخدمة، مثل روابط إعادة تعيين كلمة المرور</li>
     <li>لتقديم الدعم لك: يمكن لمسؤولينا الاطلاع على حسابك ومطعمك، وتسجيل الدخول بحسابك عند الحاجة لمساعدتك</li>
     <li>للكشف عن الاحتيال والإساءة والحوادث الأمنية ومنعها، مثل تحديد عدد الطلبات وحظر عناوين IP المسيئة</li>
     <li>لتحسين خدمتنا وتطويرها</li>

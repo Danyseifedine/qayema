@@ -52,6 +52,14 @@ class Restaurant extends Model implements HasMedia
      */
     public const OPTIONAL_FEATURES = ['orders', 'qr', 'analytics', 'languages'];
 
+    /** The package flag each optional feature needs before it can be on. */
+    private const FLAG_OF = [
+        'orders' => Feature::Ordering,
+        'qr' => Feature::QrStudio,
+        'analytics' => Feature::Analytics,
+        'languages' => Feature::MultipleLanguages,
+    ];
+
     /** The columns that say which package applies and when. */
     public const PACKAGE_FIELDS = ['package_id', 'package_started_at', 'package_ends_at'];
 
@@ -60,6 +68,14 @@ class Restaurant extends Model implements HasMedia
      * save. Set by PackageAssigner; never stored on the row.
      */
     public ?string $packageChangeNote = null;
+
+    /**
+     * What the package put in reach before the package fields changed, read
+     * as the save starts; never stored on the row.
+     *
+     * @var array<int, string>
+     */
+    private array $inReachBeforeSave = [];
 
     protected $fillable = [
         'user_id',
@@ -125,6 +141,13 @@ class Restaurant extends Model implements HasMedia
             $restaurant->recordPackageChange(null);
         });
 
+        static::updating(function (self $restaurant): void {
+            if ($restaurant->isDirty(self::PACKAGE_FIELDS)) {
+                // The row as it still is in the database, before this save.
+                $restaurant->inReachBeforeSave = $restaurant->newFromBuilder($restaurant->getRawOriginal())->featuresInReach();
+            }
+        });
+
         static::saved(function (self $restaurant): void {
             // Only an update carries changes; the insert is recorded above.
             if (! $restaurant->wasChanged(self::PACKAGE_FIELDS)) {
@@ -133,6 +156,9 @@ class Restaurant extends Model implements HasMedia
 
             Entitlements::flush($restaurant->id);
             $restaurant->recordPackageChange($restaurant->getOriginal('package_id'));
+            // The loaded package may be the one it just left.
+            $restaurant->unsetRelation('package');
+            $restaurant->switchOnWhatCameIntoReach($restaurant->inReachBeforeSave);
         });
     }
 
@@ -324,6 +350,36 @@ class Restaurant extends Model implements HasMedia
     public function isSwitchedOff(string $feature): bool
     {
         return in_array($feature, $this->switchedOff(), true);
+    }
+
+    /**
+     * The optional features the package and grants include, whether or not
+     * the owner switched them off.
+     *
+     * @return array<int, string>
+     */
+    public function featuresInReach(): array
+    {
+        $entitlements = $this->entitlements();
+
+        return array_keys(array_filter(self::FLAG_OF, fn (Feature $flag): bool => $entitlements->can($flag)));
+    }
+
+    /**
+     * A feature a new package or grant brings arrives switched on: the owner
+     * paid for it, so a choice made while it was out of reach no longer
+     * holds. Features that were already in reach keep the owner's choice.
+     *
+     * @param  array<int, string>  $inReachBefore  featuresInReach() before the change
+     */
+    public function switchOnWhatCameIntoReach(array $inReachBefore): void
+    {
+        $cameIntoReach = array_diff($this->featuresInReach(), $inReachBefore);
+        $off = array_values(array_diff($this->switchedOff(), $cameIntoReach));
+
+        if ($off !== $this->switchedOff()) {
+            $this->forceFill(['switched_off' => $off])->saveQuietly();
+        }
     }
 
     /** Guests can order: the package includes it and the owner has not switched it off. */

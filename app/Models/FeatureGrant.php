@@ -35,12 +35,27 @@ class FeatureGrant extends Model
         ];
     }
 
+    /**
+     * What the restaurant had in reach before this grant was saved; never
+     * stored on the row.
+     *
+     * @var array<int, string>
+     */
+    private array $inReachBeforeSave = [];
+
     protected static function booted(): void
     {
-        $flush = fn (self $grant) => Entitlements::flush($grant->restaurant_id);
+        static::saving(function (self $grant): void {
+            $grant->inReachBeforeSave = $grant->restaurant->featuresInReach();
+        });
 
-        static::saved($flush);
-        static::deleted($flush);
+        static::saved(function (self $grant): void {
+            Entitlements::flush($grant->restaurant_id);
+            // A flag it grants arrives switched on, as with a new package.
+            $grant->restaurant->switchOnWhatCameIntoReach($grant->inReachBeforeSave);
+        });
+
+        static::deleted(fn (self $grant) => Entitlements::flush($grant->restaurant_id));
     }
 
     /**

@@ -722,6 +722,9 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
   kept: `hasQrStudio()`), `analytics` (page hidden), `languages` (English-only
   menu: `MenuLanguages::for()`; `written()` ignores the switch). Nothing is
   deleted by switching one off. The package still decides what can be on.
+  A feature a new package or grant brings arrives switched on
+  (`switchOnWhatCameIntoReach()`, from the restaurant's and the grant's save
+  hooks); one the old package already had keeps the owner's choice.
 - Locale middleware alias is `portal.locale`; the session key stays `owner_locale`.
 - API requests take their language from `Accept-Language` (`SetApiLocale`,
   first in the `api` group so even a 401 is translated), limited to

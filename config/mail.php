@@ -94,4 +94,16 @@ return [
         'name' => env('MAIL_FROM_NAME', 'Example'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Welcome Email
+    |--------------------------------------------------------------------------
+    |
+    | Whether an owner gets the welcome email on finishing onboarding. Off
+    | until it is wanted again; MAIL_WELCOME=true turns it back on.
+    |
+    */
+
+    'welcome' => (bool) env('MAIL_WELCOME', false),
+
 ];

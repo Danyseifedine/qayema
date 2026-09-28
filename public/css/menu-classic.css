@@ -413,6 +413,11 @@ dialog.pop[open]::backdrop { animation: fade-in .2s ease; }
 
 /* Round buttons in the wide-screen header, standing in for the dock. */
 .top-action { display: none; flex-shrink: 0; min-width: 0; width: 36px; height: 36px; padding: 0; background: var(--bg); border: 1px solid var(--line); }
+/* With no cart, a phone's bar carries the contact button where the cart
+   would sit. */
+@media (max-width: 1023px) {
+    .top-action.on-phone { display: flex; margin-inline-start: auto; }
+}
 
 /* ---- Motion ---- */
 @keyframes sheet-in { from { transform: translateY(100%); } to { transform: none; } }

@@ -124,6 +124,7 @@ class OnboardingEdgeTest extends TestCase
     public function test_completing_twice_does_not_send_two_welcome_mails(): void
     {
         Mail::fake();
+        config(['mail.welcome' => true]);
         $user = User::factory()->create(['onboarding_step' => 2, 'onboarding_completed_at' => null]);
         Restaurant::factory()->create(['user_id' => $user->id]);
         $key = '11111111-1111-1111-1111-111111111111';

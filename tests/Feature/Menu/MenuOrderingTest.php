@@ -200,6 +200,36 @@ class MenuOrderingTest extends TestCase
         $this->assertStringContainsString('class="top-action dockface" data-pop-open="contact"', $header);
     }
 
+    public function test_with_no_cart_whatsapp_moves_from_the_dock_to_the_phone_top_bar(): void
+    {
+        // The cart is all a phone's bar holds; without ordering it would be
+        // empty, so WhatsApp takes its place and leaves the dock.
+        $shop = $this->shop(false, ['country_code' => 'LB', 'phone' => '70123456']);
+
+        $html = $this->get(route('public.menu', $shop->slug))->assertOk()->getContent();
+
+        $header = substr($html, 0, strpos($html, '</header>'));
+        $dockStart = strpos($html, '<nav class="dock"');
+        $dock = substr($html, $dockStart, strpos($html, '</nav>', $dockStart) - $dockStart);
+
+        $this->assertStringNotContainsString('data-open-cart', $header);
+        $this->assertStringContainsString('class="top-action dockface on-phone" data-pop-open="contact"', $header);
+        $this->assertStringNotContainsString('data-pop-open="contact"', $dock);
+        $this->assertSame(1, substr_count($html, 'id="pop-contact"'));
+    }
+
+    public function test_with_a_cart_whatsapp_stays_in_the_dock(): void
+    {
+        $shop = $this->shop(true, ['country_code' => 'LB', 'phone' => '70123456']);
+
+        $html = $this->get(route('public.menu', $shop->slug))->assertOk()->getContent();
+
+        $header = substr($html, 0, strpos($html, '</header>'));
+        $this->assertStringContainsString('data-open-cart', $header);
+        $this->assertStringNotContainsString('on-phone', $header);
+        $this->assertStringContainsString('class="dockitem is-whatsapp"', $html);
+    }
+
     public function test_the_wide_screen_header_opens_the_qr_popup(): void
     {
         // The Share item lives in the dock, which a wide screen hides; the

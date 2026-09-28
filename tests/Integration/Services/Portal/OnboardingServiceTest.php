@@ -178,6 +178,7 @@ class OnboardingServiceTest extends TestCase
     public function test_finishing_marks_the_user_done_and_welcomes_them_once(): void
     {
         Mail::fake();
+        config(['mail.welcome' => true]);
         $this->travelTo(CarbonImmutable::parse('2026-09-28 10:00:00', 'UTC'));
         $restaurant = $this->owner();
         $user = $restaurant->user;
@@ -196,6 +197,20 @@ class OnboardingServiceTest extends TestCase
 
         Mail::assertQueuedCount(1);
         $this->assertSame('2026-09-28 10:00:00', $user->fresh()->onboarding_completed_at->format('Y-m-d H:i:s'), 'The first finish is kept.');
+    }
+
+    public function test_no_welcome_email_while_it_is_switched_off(): void
+    {
+        // Off by default (MAIL_WELCOME); finishing still completes onboarding.
+        Mail::fake();
+        $restaurant = $this->owner();
+        $user = $restaurant->user;
+        $user->forceFill(['onboarding_step' => 2, 'onboarding_completed_at' => null])->save();
+
+        $this->service()->complete($user, $restaurant);
+
+        $this->assertNotNull($user->fresh()->onboarding_completed_at);
+        Mail::assertNothingOutgoing();
     }
 
     public function test_finishing_leaves_the_restaurant_without_a_template(): void

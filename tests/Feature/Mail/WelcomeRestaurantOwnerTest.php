@@ -104,6 +104,7 @@ class WelcomeRestaurantOwnerTest extends TestCase
     public function test_finishing_onboarding_queues_it_to_the_owner(): void
     {
         Mail::fake();
+        config(['mail.welcome' => true]);
         $this->user->update(['onboarding_step' => 2, 'onboarding_completed_at' => null]);
 
         $this->actingAs($this->user)->postJson(route('onboarding.advance'), [
