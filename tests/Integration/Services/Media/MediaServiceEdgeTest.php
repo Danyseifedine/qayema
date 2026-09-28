@@ -95,7 +95,7 @@ class MediaServiceEdgeTest extends TestCase
         $this->assertSame($at60, filesize($this->optimize($file, ['max_kb' => $ceilingKb])));
     }
 
-    public function test_a_photo_over_a_megabyte_is_reported_in_megabytes(): void
+    public function test_a_photo_over_a_megabyte_reports_what_it_became_and_the_saving(): void
     {
         $file = $this->noise(700);
         $bytes = $file->getSize();
@@ -105,7 +105,6 @@ class MediaServiceEdgeTest extends TestCase
         $result = $service->storeTempUpload($file, 'logo', 31);
         $stored = $this->track($service->tempPath(31, $result['key']));
 
-        $this->assertSame(round($bytes / 1_048_576, 2).' MB', $result['original_size']);
         $this->assertSame(round(filesize($stored) / 1024, 1).' KB', $result['optimized_size']);
         $this->assertSame((int) round((1 - filesize($stored) / $bytes) * 100), $result['saved_percent']);
     }

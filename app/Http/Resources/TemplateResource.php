@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Models\Template;
+use App\Support\MediaUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -27,12 +28,10 @@ class TemplateResource extends JsonResource
                 'en' => $this->getTranslation('description', 'en', false) ?: null,
                 'ar' => $this->getTranslation('description', 'ar', false) ?: null,
             ],
-            'thumbnail_url' => $this->getFirstMediaUrl('thumbnail') ?: null,
+            'thumbnail_url' => MediaUrl::of($this->resource, 'thumbnail'),
             'is_premium' => $this->is_premium,
             // Needs a package this restaurant is not on.
             'locked' => ! ($request->user()?->restaurant?->mayUseTemplate($this->resource) ?? true),
-            // What the owner may customize on this template, as declared rows.
-            'settings_schema' => $this->settingsSchema(),
         ];
     }
 }

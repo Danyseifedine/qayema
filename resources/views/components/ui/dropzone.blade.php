@@ -5,51 +5,24 @@
       1. User drops/selects a file → local preview shown instantly
       2. File is POST'd to /temp-upload → MediaService::storeTempUpload() optimizes it → returns key + size stats
       3. Hidden input `{name}_key` carries the temp key on form submit
-      4. Controller: MediaService::sync($model, $request->input('{name}_key'), ...) → addMedia()->toMediaCollection()
 
     Props:
-      $name         – field name; hidden input becomes "{name}_key"
-      $id           – input id (defaults to $name)
-      $context      – optimization profile: logo|cover_image|dish|category|generic
-      $value        – existing image URL (shows preview on load)
-      $fileName     – display name for the existing image
-      $accept       – accepted MIME types
-      $hint         – format/size hint shown in the drop zone
-      $deleteName   – if given, emits a hidden "{deleteName}" = "1" when existing image is removed
-      $required     – mark the drop zone as required (only when no image loaded)
-
-    Example:
-      <x-ui.dropzone name="logo" context="logo"
-                     :value="$restaurant?->getFirstMediaUrl('logo')"
-                     delete-name="delete_logo" />
-
-    Controller side:
-      if ($request->filled('logo_key')) {
-          $path = storage_path('app/temp/' . $request->input('logo_key') . '.webp');
-          if (file_exists($path)) {
-              $restaurant->clearMediaCollection('logo');
-              $restaurant->addMedia($path)->usingName('logo')->toMediaCollection('logo');
-          }
-      } elseif ($request->boolean('delete_logo')) {
-          $restaurant->clearMediaCollection('logo');
-      }
+      $name    : field name; hidden input becomes "{name}_key"
+      $context : optimization profile: logo|cover_image|dish|category|generic
+      $value   : existing image URL (shows preview on load)
+      $hint    : format/size hint shown in the drop zone
 --}}
 @props([
-    'name'       => null,
-    'id'         => null,
-    'context'    => 'generic',
-    'value'      => null,
-    'fileName'   => null,
-    'accept'     => 'image/jpeg,image/png,image/jpg,image/webp',
-    'hint'       => 'JPG, PNG or WebP · max 8 MB',
-    'deleteName' => null,
-    'required'   => false,
+    'name'    => null,
+    'context' => 'generic',
+    'value'   => null,
+    'hint'    => null,
 ])
 
 @php
-$inputId  = $id ?? $name;
+$accept   = 'image/jpeg,image/png,image/jpg,image/webp';
 $existing = $value ? (string) $value : null;
-$dispName = $fileName ?? ($existing ? basename(parse_url($existing, PHP_URL_PATH)) : null);
+$dispName = $existing ? basename(parse_url($existing, PHP_URL_PATH)) : null;
 $keyName  = $name ? $name.'_key' : null;
 @endphp
 
@@ -172,7 +145,7 @@ $keyName  = $name ? $name.'_key' : null;
             <div style="display:contents">
                 <div class="up-spinner"></div>
                 <div class="up-title" style="color:var(--olive-deep)">{{ __('owner.dropzone.optimizing') }}</div>
-                <div class="up-meta" x-text="'Original: ' + (origSize ?? '—')"></div>
+                <div class="up-meta" x-text="'Original: ' + (origSize ?? '-')"></div>
             </div>
         </template>
 
@@ -191,9 +164,8 @@ $keyName  = $name ? $name.'_key' : null;
         </template>
 
         <input type="file"
-               @if ($inputId) id="{{ $inputId }}" @endif
+               @if ($name) id="{{ $name }}" @endif
                accept="{{ $accept }}"
-               @if ($required && !$existing) required @endif
                @change="handleFile($event.target.files[0])">
     </label>
 
@@ -262,13 +234,6 @@ $keyName  = $name ? $name.'_key' : null;
     @if ($keyName)
         <template x-if="key">
             <input type="hidden" name="{{ $keyName }}" :value="key">
-        </template>
-    @endif
-
-    {{-- Delete signal: set when the user removes an existing image --}}
-    @if ($deleteName)
-        <template x-if="!isExisting && !key && !preview">
-            <input type="hidden" name="{{ $deleteName }}" value="1">
         </template>
     @endif
 </div>

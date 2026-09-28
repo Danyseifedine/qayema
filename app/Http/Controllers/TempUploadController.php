@@ -15,7 +15,7 @@ class TempUploadController extends Controller
         return response()->json(
             $this->media->storeTempUpload(
                 $request->file('file'),
-                $request->input('context', 'generic'),
+                $request->validated('context') ?? 'generic',
                 $request->user()->id,
             )
         );

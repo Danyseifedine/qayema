@@ -12,7 +12,7 @@ use Illuminate\View\View;
 class QrCardController extends Controller
 {
     /**
-     * The public, printable table card at /{slug}/qr — the design saved in the
+     * The public, printable table card at /{slug}/qr: the design saved in the
      * QR studio, drawn by the same library the dashboard previews with. It
      * follows the qr_studio flag like the rest of the studio; a restaurant
      * without it 404s so the page never leaks.

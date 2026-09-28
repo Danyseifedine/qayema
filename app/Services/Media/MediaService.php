@@ -26,8 +26,6 @@ class MediaService
 {
     private const TEMP_TTL_SECONDS = 3600;
 
-    private const DEFAULT_MAX_BYTES = 50 * 1024;
-
     /** Where an upload lands when the configured media disk cannot take it. */
     public const FALLBACK_DISK = 'public';
 
@@ -45,7 +43,7 @@ class MediaService
     /**
      * Optimize an upload, store it under the user's temp folder, and report savings.
      *
-     * @return array{key: string, original_size: string, optimized_size: string, saved_percent: int}
+     * @return array{key: string, optimized_size: string, saved_percent: int}
      */
     public function storeTempUpload(UploadedFile $file, string $context, int $userId): array
     {
@@ -63,7 +61,6 @@ class MediaService
 
         return [
             'key' => $key,
-            'original_size' => $this->humanSize($originalBytes),
             'optimized_size' => $this->humanSize($optimizedBytes),
             'saved_percent' => $originalBytes > 0
                 ? max(0, (int) round((1 - $optimizedBytes / $originalBytes) * 100))
@@ -97,11 +94,26 @@ class MediaService
     }
 
     /**
+     * An image uploaded straight to a model (the admin panel's upload
+     * fields): optimized with its context's preset like every other upload,
+     * then stored through replace(), so it reaches the media disk (or the
+     * local fallback) and the collection keeps one image.
+     */
+    public function storeUpload(HasMedia $model, UploadedFile $file, string $context, string $collection): Media
+    {
+        self::ensureMemoryFor($file->getRealPath());
+
+        $path = $this->optimize($file, $this->preset($context), $collection);
+
+        return $this->replace($model, $path, $collection, pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME));
+    }
+
+    /**
      * Make this file the collection's one image.
      *
      * The old image is removed only after the new one is safely stored, so a
      * failed upload leaves the restaurant with what it had rather than with
-     * nothing. Clearing first — what this used to do — lost the logo whenever
+     * nothing. Clearing first (what this used to do) lost the logo whenever
      * the store after it failed.
      */
     public function replace(HasMedia $model, string $path, string $collection, string $mediaName): Media
@@ -118,7 +130,7 @@ class MediaService
      * when that disk cannot take the file.
      *
      * Only a storage failure falls back. A file that is too big, missing or
-     * the wrong type fails the same way anywhere, so it is not retried —
+     * the wrong type fails the same way anywhere, so it is not retried;
      * that would only hide the real error behind a second one. Every fallback
      * is logged, because a file that quietly lands locally never reaches R2
      * on its own.
@@ -220,8 +232,8 @@ class MediaService
     }
 
     /**
-     * GD decodes the whole picture into memory — about 5 bytes a pixel, plus
-     * a working copy while it resizes — so a 6000 x 6000 photo needs well over
+     * GD decodes the whole picture into memory (about 5 bytes a pixel, plus
+     * a working copy while it resizes), so a 6000 x 6000 photo needs well over
      * the 128 MB PHP-FPM gives a request by default. Raise the limit for this
      * request only, and only when it is lower than what the image needs; a
      * server already set higher (or to unlimited) is left alone.
@@ -242,19 +254,14 @@ class MediaService
     }
 
     /**
-     * Resolve the app's optimization preset for an upload context. The dimensions
-     * are app-specific, so they live in config/image-optimization.php — not in
-     * this service.
+     * The optimization preset for an upload context (TempUploadRequest only
+     * lets through the ones config/image-optimization.php defines).
      *
      * @return array{fit?: string, width: int, height: int, quality?: int, max_kb?: int}
      */
     private function preset(string $context): array
     {
-        $presets = (array) config('image-optimization.presets', []);
-
-        return $presets[$context]
-            ?? $presets['generic']
-            ?? ['fit' => 'contain', 'width' => 1200, 'height' => 1200, 'max_kb' => 200];
+        return config("image-optimization.presets.{$context}");
     }
 
     /* ---------------------------------------------------------------------
@@ -265,7 +272,7 @@ class MediaService
      * Save as WebP, reducing quality until it fits within $maxBytes.
      * Stops at quality 30 to avoid unacceptable degradation.
      */
-    private function saveCompressed(Image $image, string $path, int $maxBytes = self::DEFAULT_MAX_BYTES): void
+    private function saveCompressed(Image $image, string $path, int $maxBytes): void
     {
         $quality = 90;
 
@@ -294,7 +301,7 @@ class MediaService
     /**
      * Best-effort cleanup of stale temp files across every user folder and the
      * scratch dir. Cross-user safety comes from the per-user paths, not this
-     * window — it only stops abandoned uploads from accumulating.
+     * window; it only stops abandoned uploads from accumulating.
      */
     private function purgeStaleTemps(): void
     {
@@ -306,7 +313,7 @@ class MediaService
 
         $cutoff = time() - self::TEMP_TTL_SECONDS;
 
-        foreach (glob($base.'/{*.webp,*/*.webp,*.jpg,*/*.jpg}', GLOB_BRACE) as $file) {
+        foreach (glob($base.'/{*.webp,*/*.webp}', GLOB_BRACE) as $file) {
             if (filemtime($file) < $cutoff) {
                 @unlink($file);
             }

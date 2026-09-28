@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 
 /**
  * The dashboard's Appearance page. The design's settings belong to the design
- * in use — each design declares its own (Template::editableSettings(): colours,
+ * in use: each design declares its own (Template::editableSettings(): colours,
  * on/off switches, choices, short text) and remembers what the owner picked
  * for it. Fonts belong to the restaurant: one per writing system the menu
  * uses, the same in every design.
@@ -61,7 +61,6 @@ class AppearanceController extends Controller
 
         return [
             'design' => [
-                'id' => $design->id,
                 'name' => [
                     'en' => $design->getTranslation('name', 'en', false) ?: null,
                     'ar' => $design->getTranslation('name', 'ar', false) ?: null,

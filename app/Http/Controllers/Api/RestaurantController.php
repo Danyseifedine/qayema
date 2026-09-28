@@ -6,7 +6,6 @@ use App\Http\Controllers\Concerns\ResolvesRestaurant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateRestaurantRequest;
 use App\Http\Resources\RestaurantResource;
-use App\Models\Restaurant;
 use App\Services\Media\MediaService;
 use App\Services\Menu\MenuLanguages;
 use App\Services\Menu\OpeningHours;
@@ -48,7 +47,7 @@ class RestaurantController extends Controller
             'currency' => $request->validated('currency'),
         ])->save();
 
-        // The logo can be replaced but never cleared (mandatory) — no delete flag.
+        // The logo can be replaced but never cleared (mandatory), so there is no delete flag.
         $this->media->sync($restaurant, $request->input('logo_key'), false, 'logo', 'logo');
         $this->media->sync($restaurant, $request->input('cover_image_key'), $request->boolean('delete_cover_image'), 'cover_image', 'cover');
 

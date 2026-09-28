@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Services\Menu\MenuLanguages;
 use App\Services\Menu\OpeningHours;
+use App\Support\MediaUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -31,8 +32,8 @@ class RestaurantResource extends JsonResource
             // dashboard never has to guess which keys exist.
             'opening_hours' => OpeningHours::normalise((array) $this->opening_hours),
             'timezone' => $this->timezone ?: config('app.timezone', 'UTC'),
-            'logo_url' => $this->getFirstMediaUrl('logo') ?: null,
-            'cover_url' => $this->getFirstMediaUrl('cover_image') ?: null,
+            'logo_url' => MediaUrl::of($this->resource, 'logo'),
+            'cover_url' => MediaUrl::of($this->resource, 'cover_image'),
         ];
     }
 }

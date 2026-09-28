@@ -1,9 +1,8 @@
 @extends('portal.layout.master.master')
 
 @php
-    // Inline icon set (server-rendered; was previously injected by landing.js)
+    // Inline icon set
     $ICON = [
-        'camera' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h2l1.5-2h7L17 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="12.5" r="3.5"/></svg>',
         'globe' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>',
         'palette' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 0 18c1.7 0 2-1.3 1.2-2.2-.8-1 .1-2.3 1.3-2.3H17a4 4 0 0 0 4-4 8.5 8.5 0 0 0-9-9.5z"/><circle cx="7.5" cy="11" r="1.2" fill="currentColor"/><circle cx="11" cy="7.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="9" r="1.2" fill="currentColor"/></svg>',
         'qr' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M21 21v-4M17 21h1M14 21h.01"/></svg>',
@@ -13,6 +12,7 @@
         'phone' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="3"/><path d="M11 18.5h2"/></svg>',
         'user' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-6 8-6s8 2 8 6"/></svg>',
         'check' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+        'funnel' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z"/></svg>',
         'spark' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6z"/></svg>',
     ];
 
@@ -23,6 +23,23 @@
     $ctaAuthedLabel = $owner
         ? ($owner->hasCompletedOnboarding() ? __('portal.nav.cta_dashboard') : __('portal.nav.cta_continue'))
         : null;
+
+    // Pricing comes from the packages an admin edits, so it never promises
+    // what a package does not hold.
+    $pricing = app(\App\Services\Portal\PricingCards::class)->all();
+    $unlockedBy = app(\App\Services\Portal\PricingCards::class)->unlockedBy();
+
+    // Every number here is true of the product today, and two follow it.
+    $freeDishes = \App\Models\Package::default()?->featureValue(\App\Enums\Feature::DishLimit);
+    $stats = array_values(array_filter([
+        ['value' => count(config('locales.menu')), 'suffix' => '', 'label' => __('portal.stats.languages')],
+        ['value' => 0, 'suffix' => '×', 'label' => __('portal.stats.reprints')],
+        ['value' => 1, 'suffix' => '', 'label' => __('portal.stats.qr')],
+        $freeDishes === null ? null : ['value' => $freeDishes, 'suffix' => '', 'label' => __('portal.stats.free_dishes')],
+    ]));
+
+    $dashboardHost = parse_url((string) config('app.dashboard_url'), PHP_URL_HOST);
+    $shot = app()->getLocale() === 'ar' ? 'ar' : 'en';
 @endphp
 
 @section('content')
@@ -48,25 +65,23 @@
         </form>
       @endauth
 
-      <div class="hero-rating">
-        <span class="hero-stars">
-          @for ($i = 0; $i < 5; $i++)
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6.3 6.9.9-5 4.8 1.2 6.8L12 17.8 5.9 20.8 7.1 14l-5-4.8 6.9-.9z"/></svg>
-          @endfor
-        </span>
-        <span class="sep"></span>
-        <span>{!! __('portal.hero.rating') !!}</span>
-      </div>
+      <ul class="hero-points">
+        @foreach (__('portal.hero.points') as $point)
+          <li>{!! $ICON['check'] !!}<span>{{ $point }}</span></li>
+        @endforeach
+      </ul>
     </div>
 
     <div class="hero-shot">
       <div class="browser">
         <div class="bw-bar">
           <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
-          <span class="url">app.qayema.io/menu</span>
+          <span class="url" dir="ltr">{{ $dashboardHost }}/analytics</span>
         </div>
         <div class="bw-body">
-          <iframe src="{{ asset('landing/qayema-dashboard.html') }}" title="Qayema dashboard" loading="lazy" scrolling="no" tabindex="-1" aria-hidden="true"></iframe>
+          {{-- The dashboard in the site's theme: the toggle swaps them. --}}
+          <img class="shot-dark" src="{{ asset('images/landing/dashboard-'.$shot.'-dark.webp') }}" alt="{{ __('portal.hero.shot_alt') }}" width="1440" height="900" fetchpriority="high" decoding="async">
+          <img class="shot-light" src="{{ asset('images/landing/dashboard-'.$shot.'-light.webp') }}" alt="{{ __('portal.hero.shot_alt') }}" width="1440" height="900" decoding="async">
         </div>
       </div>
     </div>
@@ -108,7 +123,7 @@
         <h2 class="display"><span>{{ __('portal.features.title') }}</span> <span class="gold-text">{{ __('portal.features.title_gold') }}</span></h2>
         <p>{{ __('portal.features.sub') }}</p>
       </div>
-      <div class="features-wrap" id="featuresBox">
+      <div class="features-wrap">
         <div class="feat-lead reveal">
           <div class="lead-text">
             <span class="badge">{{ __('portal.features.lead.badge') }}</span>
@@ -127,7 +142,12 @@
         <div class="feat-grid" data-stagger>
           @foreach (__('portal.features.cells') as $cell)
             <div class="feat-cell">
-              <div class="c-ic">{!! $ICON[$cell['icon']] !!}</div>
+              <div class="c-top">
+                <div class="c-ic">{!! $ICON[$cell['icon']] !!}</div>
+                @if (isset($cell['feature'], $unlockedBy[$cell['feature']]))
+                  <span class="c-plan">{{ $unlockedBy[$cell['feature']] }}</span>
+                @endif
+              </div>
               <h3>{{ $cell['title'] }}</h3>
               <p>{{ $cell['desc'] }}</p>
             </div>
@@ -167,7 +187,7 @@
   <section class="sec" id="stats" style="padding:90px 0;">
     <div class="wrap">
       <div class="stats reveal">
-        @foreach (__('portal.stats') as $stat)
+        @foreach ($stats as $stat)
           <div class="stat">
             <div class="v"><span class="gold-text" data-count="{{ $stat['value'] }}" data-suf="{{ $stat['suffix'] }}" @if (str_contains((string) $stat['value'], '.')) data-dec="1" @endif>0{{ $stat['suffix'] }}</span></div>
             <div class="k">{{ $stat['label'] }}</div>
@@ -187,26 +207,32 @@
       </div>
 
       <div class="price-grid reveal">
-        @foreach (__('portal.pricing.packages') as $slug => $plan)
-          @php
-            $isCustom = $slug === 'custom';
-            $isHot = $slug === 'premium';
-          @endphp
-          <div class="plan{{ $isHot ? ' hot' : '' }}">
-            <div class="tier">{{ $plan['tier'] }}</div>
-            <div class="amt"><span class="big display gold-text">{{ $plan['price'] }}</span><span class="per">{{ $plan['per'] }}</span></div>
-            <p class="pdesc">{{ $plan['desc'] }}</p>
+        @foreach ($pricing as $card)
+          <div class="plan{{ $card['featured'] ? ' hot' : '' }}">
+            <div class="plan-top">
+              <div class="tier">{{ $card['name'] }}</div>
+              @if ($card['featured'])
+                <span class="plan-badge">{{ __('portal.pricing.popular') }}</span>
+              @endif
+            </div>
+            <div class="amt"><span class="big display gold-text" @if ($card['per']) dir="ltr" @endif>{{ $card['price'] }}</span>@if ($card['per'])<span class="per">{{ $card['per'] }}</span>@endif</div>
+            <p class="pdesc">{{ $card['description'] }}</p>
+            <p class="plabel">{{ $card['base'] ? __('portal.pricing.everything_in', ['name' => $card['base']]) : __('portal.pricing.includes') }}</p>
             <ul>
-              @foreach ($plan['features'] as $feature)
-                <li>{!! $ICON['check'] !!}<span>{{ $feature }}</span></li>
+              @foreach ($card['lines'] as $line)
+                <li>{!! $ICON['check'] !!}<span>{{ $line }}</span></li>
               @endforeach
             </ul>
-            {{-- Custom has no price to sign up against, so it goes to the
-                 contact form instead of registration. --}}
-            <a class="btn {{ $isHot ? 'btn-gold' : 'btn-line' }}" data-magnetic
-               href="{{ $isCustom ? route('contact') : ($ctaAuthedHref ?? route('register')) }}">
-              {{ $isCustom ? $plan['cta'] : ($ctaAuthedLabel ?? $plan['cta']) }}
-            </a>
+            {{-- A contact-only package has no price to sign up against, so it
+                 goes to the contact form. Every other one starts with an
+                 account; a paid package is then asked for from the dashboard. --}}
+            @if ($card['contact'])
+              <a class="btn btn-line" data-magnetic href="{{ route('contact') }}">{{ __('portal.pricing.cta_contact') }}</a>
+            @else
+              <a class="btn {{ $card['featured'] ? 'btn-gold' : 'btn-line' }}" data-magnetic href="{{ $ctaAuthedHref ?? route('register') }}">
+                {{ $ctaAuthedLabel ?? ($card['free'] ? __('portal.pricing.cta_free') : __('portal.pricing.cta_choose', ['name' => $card['name']])) }}
+              </a>
+            @endif
           </div>
         @endforeach
       </div>
@@ -214,64 +240,23 @@
     </div>
   </section>
 
-  {{-- ===== TESTIMONIALS ===== --}}
-  <section class="sec" id="stories" style="padding-top:0;">
+  {{-- ===== HOW UPGRADING WORKS ===== --}}
+  <section class="sec" id="upgrade" style="padding-top:0;">
     <div class="wrap">
       <div class="sec-head reveal">
-        <div class="eyebrow"><span class="bar"></span><span class="mono-label">{{ __('portal.stories.eyebrow') }}</span></div>
-        <h2 class="display"><span>{{ __('portal.stories.title') }}</span> <span class="gold-text">{{ __('portal.stories.title_gold') }}</span></h2>
+        <div class="eyebrow"><span class="bar"></span><span class="mono-label">{{ __('portal.upgrade.eyebrow') }}</span></div>
+        <h2 class="display"><span>{{ __('portal.upgrade.title') }}</span> <span class="gold-text">{{ __('portal.upgrade.title_gold') }}</span></h2>
+        <p>{{ __('portal.upgrade.sub') }}</p>
       </div>
-      <div class="quotes" data-stagger>
-        @foreach (__('portal.stories.quotes') as $i => $quote)
-          <div class="quote {{ $i === 0 ? 'lead' : '' }}">
-            <div><div class="mk">"</div><p class="qt">{{ $quote['quote'] }}</p></div>
-            <div class="by"><span class="av display">{{ $quote['avatar'] }}</span><div><div class="nm">{{ $quote['name'] }}</div><div class="rl">{{ $quote['role'] }}</div></div></div>
+      <div class="prob-grid" data-stagger>
+        @foreach (__('portal.upgrade.steps') as $i => $step)
+          <div class="prob-card">
+            <div class="num display">0{{ $i + 1 }}</div>
+            <h3>{{ $step['title'] }}</h3>
+            <p>{{ $step['desc'] }}</p>
           </div>
         @endforeach
       </div>
-    </div>
-  </section>
-
-  {{-- ===== PAYMENTS ===== --}}
-  @php
-    // TODO(packages): marketing only — there is no checkout yet. Packages are
-    // requested and assigned by hand, so this section promises a payment flow
-    // that does not exist. Keep it or drop it once billing is decided.
-    // All render in each of three marquee rows (rotated per row for variety,
-    // duplicated for a seamless loop). toss/blik shipped as 446KB/70KB
-    // base64-raster SVGs, which the
-    // browser re-rasterizes during the transform animation and stutters — they
-    // are served as tiny rasterized WebP instead so the marquee stays smooth.
-    $payLogos = [
-      ['paypal.svg', 'PayPal'], ['apple-pay.svg', 'Apple Pay'], ['google_pay.svg', 'Google Pay'], ['ideal.svg', 'iDEAL'],
-      ['Bancontact.svg', 'Bancontact'], ['blik.webp', 'BLIK'], ['mbway.svg', 'MB WAY'], ['pix.svg', 'Pix'],
-      ['upi.svg', 'UPI'], ['wechat_pay.png', 'WeChat Pay'], ['kakao_pay.svg', 'Kakao Pay'], ['naver_pay.svg', 'Naver Pay'],
-      ['samsung_pay.svg', 'Samsung Pay'], ['payco.svg', 'PAYCO'], ['toss.webp', 'Toss'], ['kb.svg', 'KB'],
-      ['hana.svg', 'Hana'], ['woori.svg', 'Woori'], ['lotte.svg', 'Lotte'], ['shishan_bank.svg', 'Shinhan'],
-      ['Hyundai_Card.svg', 'Hyundai Card'],
-    ];
-  @endphp
-  <section class="sec" id="payments" style="padding-top:0;">
-    <div class="wrap">
-      <div class="sec-head reveal" style="max-width:620px;">
-        <div class="eyebrow"><span class="bar"></span><span class="mono-label">{{ __('portal.payments.eyebrow') }}</span></div>
-        <h2 class="display"><span>{{ __('portal.payments.title') }}</span> <span class="gold-text">{{ __('portal.payments.title_gold') }}</span></h2>
-        <p>{{ __('portal.payments.subtitle') }}</p>
-      </div>
-    </div>
-    <div class="pay-rows reveal">
-      @foreach ([0, 7, 14] as $ri => $offset)
-        @php $row = array_merge(array_slice($payLogos, $offset), array_slice($payLogos, 0, $offset)); @endphp
-        <div class="pay-row">
-          <div class="pay-strip {{ $ri === 1 ? 'rev' : '' }}">
-            @foreach (array_merge($row, $row) as $i => $logo)
-              <span class="pay-chip" @if ($i >= count($row)) aria-hidden="true" @endif>
-                <img src="{{ asset('images/payment-logos/'.$logo[0]) }}" alt="{{ $logo[1] }}" loading="lazy" decoding="async" />
-              </span>
-            @endforeach
-          </div>
-        </div>
-      @endforeach
     </div>
   </section>
 

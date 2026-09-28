@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Request;
 class ValidCaptcha implements ValidationRule
 {
     /**
-     * Run even when the field is missing — otherwise a client can skip the
+     * Run even when the field is missing; otherwise a client can skip the
      * captcha simply by not sending the token.
      */
     public bool $implicit = true;

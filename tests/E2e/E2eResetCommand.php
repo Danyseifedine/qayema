@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\File;
 /**
  * Starts the end-to-end suite from nothing: a fresh SQLite file, the seed
  * every spec builds on, and no media, temp uploads or log left from the
- * last run — everything under storage/framework/testing/e2e.
+ * last run: everything under storage/framework/testing/e2e.
  *
  * Registered only in the e2e environment, and it still refuses unless the
  * connection is the e2e SQLite file: the local MySQL is out of its reach.

@@ -46,12 +46,9 @@ class LandingCtaTest extends TestCase
         // against: the owner has to talk to us first.
         $html = $this->get('/')->assertOk()->getContent();
 
-        $this->assertStringContainsString(route('contact'), $html);
-        $position = strpos($html, __('portal.pricing.packages.custom.cta'));
-        $this->assertNotFalse($position, 'The Custom call to action is missing.');
-        $this->assertStringContainsString(
-            route('contact'),
-            substr($html, max(0, $position - 300), 300),
+        $this->assertMatchesRegularExpression(
+            '#<a [^>]*href="'.preg_quote(route('contact'), '#').'"[^>]*>\s*'.preg_quote(__('portal.pricing.cta_contact'), '#').'\s*</a>#',
+            $html,
             'The Custom call to action does not link to the contact page.',
         );
     }

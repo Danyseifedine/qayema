@@ -7,7 +7,6 @@ use App\Enums\OrderStatus;
 use App\Models\Category;
 use App\Models\Dish;
 use App\Models\Order;
-use App\Models\Package;
 use App\Models\Restaurant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\CreatesOwners;
@@ -27,7 +26,7 @@ class PlaceOrderTest extends TestCase
     /** A live restaurant whose package includes ordering. */
     private function shop(array $attributes = []): Restaurant
     {
-        Package::default()->setFeature(Feature::Ordering, 1);
+        $this->defaultPackageSets(Feature::Ordering, 1);
 
         return $this->published(array_merge(['slug' => 'olive', 'currency' => 'USD'], $attributes));
     }
@@ -230,7 +229,7 @@ class PlaceOrderTest extends TestCase
     {
         // The catalog ships the flag on; an admin turning it off at
         // /admin → Packages must close the endpoint, not just hide the cart.
-        Package::default()->setFeature(Feature::Ordering, 0);
+        $this->defaultPackageSets(Feature::Ordering, 0);
 
         $shop = $this->published(['slug' => 'olive']);
         $bowl = $this->dish($shop, 'House Bowl', '14.00');

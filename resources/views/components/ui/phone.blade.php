@@ -2,31 +2,25 @@
     Phone input with searchable country-code picker.
 
     Props:
-      $name        – phone number field name
-      $ccName      – country code field name (stores ISO value e.g. 'LB')
-      $value       – initial phone number
-      $ccValue     – initial country ISO code (default 'LB')
-      $placeholder – phone number placeholder
-      $countries   – override the default country list
-      $required    – bool
+      $name    : phone number field name
+      $ccName  : country code field name (stores ISO value e.g. 'LB')
+      $value   : initial phone number
+      $ccValue : initial country ISO code (default 'LB')
 
     Usage:
       <x-ui.phone name="phone" cc-name="country_code"
-                  :value="old('phone', $restaurant?->phone)"
-                  :cc-value="old('country_code', $restaurant?->country_code ?? 'LB')" />
+                  :value="$restaurant?->phone"
+                  :cc-value="$restaurant?->country_code ?? 'LB'" />
 --}}
 @props([
-    'name'        => 'phone',
-    'ccName'      => 'country_code',
-    'value'       => null,
-    'ccValue'     => 'LB',
-    'placeholder' => '70 123 456',
-    'required'    => false,
-    'countries'   => null,
+    'name'    => 'phone',
+    'ccName'  => 'country_code',
+    'value'   => null,
+    'ccValue' => 'LB',
 ])
 
 @php
-$defaultCountries = collect(config('countries', []))
+$list = collect(config('countries', []))
     ->map(fn (array $country, string $code): array => [
         'value' => $code,
         'label' => $country['label'],
@@ -35,7 +29,6 @@ $defaultCountries = collect(config('countries', []))
     ])
     ->values()
     ->all();
-$list = $countries ?? $defaultCountries;
 @endphp
 
 <div class="ui-phone-wrap"
@@ -74,9 +67,7 @@ $list = $countries ?? $defaultCountries;
         </button>
 
         {{-- Hidden input stores the ISO code --}}
-        @if ($ccName)
-            <input type="hidden" name="{{ $ccName }}" :value="cc">
-        @endif
+        <input type="hidden" name="{{ $ccName }}" :value="cc">
 
         {{-- Dropdown --}}
         <div class="ui-phone-dropdown" x-show="open" x-cloak role="listbox">
@@ -112,12 +103,11 @@ $list = $countries ?? $defaultCountries;
         type="tel"
         inputmode="tel"
         maxlength="30"
-        @if ($name)    name="{{ $name }}"       @endif
+        name="{{ $name }}"
         class="ui-phone-num"
-        placeholder="{{ $placeholder }}"
-        value="{{ old($name ?? '', $value) }}"
+        placeholder="70 123 456"
+        value="{{ old($name, $value) }}"
         oninput="this.value = this.value.replace(/[^0-9+()\s.\-]/g, '')"
-        @if ($required) required @endif
         {{ $attributes->except(['class','type','name','placeholder']) }}
     >
 </div>

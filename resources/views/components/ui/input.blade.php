@@ -6,10 +6,7 @@
     'value'        => null,
     'icon'         => null,
     'prefix'       => null,
-    'trail'        => null,
-    'state'        => null,
     'required'     => false,
-    'disabled'     => false,
     'autofocus'    => false,
     'autocomplete' => null,
     'reveal'       => false,
@@ -17,14 +14,11 @@
 
 @php
     $inputId   = $id ?? $name;
-    $autoState = $name && $errors->has($name) ? 'error' : null;
-    $resolvedState = $state ?? $autoState;
-    $wrapClass = trim('ui-input-wrap ' . ($resolvedState ?? ''));
-    $isDisabled = $disabled || $resolvedState === 'disabled';
+    $wrapClass = $name && $errors->has($name) ? 'ui-input-wrap error' : 'ui-input-wrap';
 @endphp
 
 <div class="{{ $wrapClass }}"
-     @if ($prefix || $type === 'number') dir="ltr" @endif
+     @if ($prefix) dir="ltr" @endif
      @if ($reveal) x-data="{ showPass: false }" @endif>
 
     @if ($icon)
@@ -40,20 +34,14 @@
         @if ($name)       name="{{ $name }}"         @endif
         @if ($reveal)     :type="showPass ? 'text' : 'password'"
         @else             type="{{ $type }}"          @endif
-        @if ($type === 'number') dir="ltr" @endif
         class="ui-input{{ $prefix ? ' with-prefix' : '' }}"
         @if ($placeholder)   placeholder="{{ $placeholder }}"         @endif
         @if ($name !== null) value="{{ old($name ?? '', $value) }}"   @endif
         @if ($autofocus)     autofocus                                  @endif
         @if ($autocomplete)  autocomplete="{{ $autocomplete }}"        @endif
         @if ($required)      required                                   @endif
-        @if ($isDisabled)    disabled                                   @endif
         {{ $attributes->except(['class','type','name','id','value','placeholder','autocomplete']) }}
     >
-
-    @if ($trail)
-        <span class="trail">{{ $trail }}</span>
-    @endif
 
     @if ($reveal)
         <button type="button" class="trail-btn" @click="showPass = !showPass"
@@ -75,5 +63,5 @@
         </button>
     @endif
 
-    {{ $slot ?? '' }}
+    {{ $slot }}
 </div>

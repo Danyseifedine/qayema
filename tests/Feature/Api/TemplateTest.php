@@ -46,7 +46,7 @@ class TemplateTest extends TestCase
         $response = $this->actingAs($user)->getJson(route('api.templates.index'))->assertOk();
 
         $response->assertJsonStructure([
-            'data' => [['id', 'slug', 'settings_schema', 'name' => ['en', 'ar'], 'description' => ['en', 'ar']]],
+            'data' => [['id', 'slug', 'name' => ['en', 'ar'], 'description' => ['en', 'ar']]],
             'meta' => ['current'],
         ]);
 

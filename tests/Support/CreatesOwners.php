@@ -50,10 +50,17 @@ trait CreatesOwners
      * land on. For tests about a feature itself rather than about which
      * package has it (those are in Tests\Feature\Packages).
      */
+    /** Give the default package one feature's value: a limit, null for unlimited, or 0/1 for a flag. */
+    protected function defaultPackageSets(Feature $feature, ?int $value): void
+    {
+        $package = Package::default();
+        $package->update(['features' => [...(array) $package->features, $feature->value => $value]]);
+    }
+
     protected function defaultPackageIncludes(Feature ...$features): void
     {
         foreach ($features as $feature) {
-            Package::default()->setFeature($feature, 1);
+            $this->defaultPackageSets($feature, 1);
         }
     }
 

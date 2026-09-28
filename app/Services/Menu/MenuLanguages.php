@@ -21,7 +21,7 @@ class MenuLanguages
     public const MAIN = 'en';
 
     /**
-     * @return array<string, array{name: string, english: string, flag: string, rtl: bool, script: string}>
+     * @return array<string, array{name: string, flag: string, rtl: bool, script: string}>
      */
     public static function catalogue(): array
     {
@@ -39,7 +39,7 @@ class MenuLanguages
     }
 
     /**
-     * The languages the menu is shown in: English, then the second language —
+     * The languages the menu is shown in: English, then the second language,
      * unless the package has no `multiple_languages` or the owner switched
      * "Menu languages" off on the Features page, which makes the menu
      * English-only without forgetting the second one.
@@ -114,7 +114,7 @@ class MenuLanguages
     }
 
     /**
-     * A translatable field in one language, falling back to English — the one
+     * A translatable field in one language, falling back to English, the one
      * language every name is required in. Never spatie's accessor, which falls
      * back to the app locale and so showed Arabic-only text as blank.
      */
@@ -125,7 +125,7 @@ class MenuLanguages
     }
 
     /**
-     * A field as `{code: text|null}` for the given languages — the shape the
+     * A field as `{code: text|null}` for the given languages: the shape the
      * dashboard reads and writes.
      *
      * @param  array<int, string>  $languages

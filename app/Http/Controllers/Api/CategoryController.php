@@ -78,13 +78,6 @@ class CategoryController extends Controller
             ->setStatusCode(201);
     }
 
-    public function show(Request $request, Category $category): CategoryResource
-    {
-        $this->authorize('view', $category);
-
-        return new CategoryResource($category->loadCount('dishes'));
-    }
-
     public function update(UpdateCategoryRequest $request, Category $category): CategoryResource
     {
         $this->authorize('update', $category);
@@ -101,7 +94,7 @@ class CategoryController extends Controller
         return new CategoryResource($category->loadCount('dishes'));
     }
 
-    public function destroy(Request $request, Category $category): JsonResponse
+    public function destroy(Category $category): JsonResponse
     {
         $this->authorize('delete', $category);
 

@@ -83,12 +83,8 @@ class FeatureGrantsRelationManager extends RelationManager
                     ->color(fn (string $state): string => $state === 'admin' ? 'gray' : 'success'),
                 TextColumn::make('note')
                     ->label('Note')
-                    ->placeholder('—')
+                    ->placeholder('-')
                     ->wrap(),
-                TextColumn::make('reference')
-                    ->label('Reference')
-                    ->placeholder('—')
-                    ->toggleable(),
                 TextColumn::make('ends_at')
                     ->label('Expires')
                     ->dateTime()

@@ -11,7 +11,7 @@ return new class extends Migration
      *
      * `name` and `unit_price` are copies, not lookups. A dish renamed or
      * repriced tomorrow must not rewrite yesterday's order, and a dish deleted
-     * next month must not empty the line that paid for it — which is why
+     * next month must not empty the line that paid for it, which is why
      * `dish_id` goes null rather than cascading.
      */
     public function up(): void

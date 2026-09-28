@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api;
 
+use App\Enums\Feature;
 use App\Models\Category;
 use App\Models\Dish;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -77,7 +78,7 @@ class DishEdgeTest extends TestCase
     {
         [$owner, $category] = $this->menu();
 
-        // Laravel's `boolean` rule: real booleans, 0/1 and '0'/'1' — never the words.
+        // Laravel's `boolean` rule: real booleans, 0/1 and '0'/'1', never the words.
         foreach ([[false, false], ['0', false], [0, false], [true, true], ['1', true], [1, true]] as [$input, $expected]) {
             $response = $this->actingAs($owner->user)
                 ->postJson(route('api.dishes.store'), $this->dish(['category_id' => $category->id, 'is_available' => $input]))
@@ -115,7 +116,7 @@ class DishEdgeTest extends TestCase
             ['Accept' => 'application/json'])->json('key');
 
         $this->actingAs($owner->user)
-            ->putJson(route('api.dishes.update', $dish), ['image_key' => $key, 'delete_image' => true])
+            ->patchJson(route('api.dishes.update', $dish), ['image_key' => $key, 'delete_image' => true])
             ->assertOk();
 
         $this->assertNotNull($dish->fresh()->getFirstMediaUrl('image') ?: null, 'A new upload wins over the delete flag.');
@@ -150,7 +151,7 @@ class DishEdgeTest extends TestCase
         $foreign = Category::factory()->create();
 
         $this->actingAs($owner->user)
-            ->putJson(route('api.dishes.update', $dish), ['category_id' => $foreign->id])
+            ->patchJson(route('api.dishes.update', $dish), ['category_id' => $foreign->id])
             ->assertStatus(422)->assertJsonValidationErrors('category_id');
     }
 
@@ -164,5 +165,88 @@ class DishEdgeTest extends TestCase
         $names = collect($this->actingAs($owner->user)->getJson(route('api.dishes.index'))->json('data'))->pluck('name.en')->all();
 
         $this->assertSame(['A', 'B', 'C'], $names);
+    }
+
+    public function test_the_listed_dish_comes_back_in_the_dashboard_shape(): void
+    {
+        $this->defaultPackageIncludes(Feature::MultipleLanguages);
+        $owner = $this->owner(['second_locale' => 'ar']);
+        $category = Category::factory()->for($owner)->create();
+        $dish = Dish::factory()->for($owner)->create([
+            'category_id' => $category->id,
+            'name' => ['en' => 'Hummus', 'ar' => 'حمص'],
+            'ingredients' => ['en' => 'Chickpeas'],
+            'price' => 4.5,
+            'is_available' => false,
+            'display_order' => 3,
+        ]);
+
+        $this->actingAs($owner->user)
+            ->getJson(route('api.dishes.index'))
+            ->assertOk()
+            ->assertJsonPath('data.0', [
+                'id' => $dish->id,
+                'name' => ['en' => 'Hummus', 'ar' => 'حمص'],
+                'ingredients' => ['en' => 'Chickpeas', 'ar' => null],
+                'price' => '4.50',
+                'is_available' => false,
+                'category_id' => $category->id,
+                'image_url' => null,
+            ]);
+    }
+
+    /** Without the languages flag the dashboard sees English alone, the Arabic kept. */
+    public function test_a_single_language_package_shows_only_english(): void
+    {
+        $owner = $this->owner(['second_locale' => 'ar']);
+        $dish = Dish::factory()->for($owner)->create(['name' => ['en' => 'Hummus', 'ar' => 'حمص'], 'price' => null]);
+
+        $this->actingAs($owner->user)
+            ->getJson(route('api.dishes.index'))
+            ->assertOk()
+            ->assertJsonPath('data.0.name', ['en' => 'Hummus'])
+            ->assertJsonPath('data.0.price', null)
+            ->assertJsonPath('data.0.category_id', null);
+
+        $this->assertSame('حمص', $dish->refresh()->getTranslation('name', 'ar'));
+    }
+
+    /** Only price or category, and the rest of the dish stays as it was. */
+    public function test_a_partial_update_writes_the_price_and_the_category(): void
+    {
+        $owner = $this->owner();
+        $from = Category::factory()->for($owner)->create();
+        $to = Category::factory()->for($owner)->create();
+        $dish = Dish::factory()->for($owner)->create([
+            'category_id' => $from->id,
+            'name' => ['en' => 'Falafel'],
+            'price' => 3,
+            'is_available' => false,
+        ]);
+
+        $this->actingAs($owner->user)
+            ->patchJson(route('api.dishes.update', $dish), ['price' => '7.25', 'category_id' => $to->id])
+            ->assertOk()
+            ->assertJsonPath('data.price', '7.25')
+            ->assertJsonPath('data.category_id', $to->id)
+            ->assertJsonPath('data.name.en', 'Falafel')
+            ->assertJsonPath('data.is_available', false);
+
+        $dish->refresh();
+        $this->assertSame('7.25', (string) $dish->price);
+        $this->assertSame($to->id, $dish->category_id);
+    }
+
+    public function test_a_price_sent_as_null_clears_it(): void
+    {
+        $owner = $this->owner();
+        $dish = Dish::factory()->for($owner)->create(['price' => 3]);
+
+        $this->actingAs($owner->user)
+            ->patchJson(route('api.dishes.update', $dish), ['price' => null])
+            ->assertOk()
+            ->assertJsonPath('data.price', null);
+
+        $this->assertNull($dish->refresh()->price);
     }
 }

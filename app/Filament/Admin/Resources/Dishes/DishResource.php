@@ -36,13 +36,6 @@ class DishResource extends Resource
         return DishesTable::configure($table);
     }
 
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
-    }
-
     public static function getPages(): array
     {
         return [

@@ -3,7 +3,7 @@
 namespace App\Enums;
 
 /**
- * Everything a restaurant's package can grant. This enum is the registry —
+ * Everything a restaurant's package can grant. This enum is the registry;
  * adding a limit or a flag means adding a case here and nothing else: the
  * package form renders from `cases()`, the dashboard's `plan` is built from
  * `flags()`, and App\Services\Packages\Entitlements resolves it against the

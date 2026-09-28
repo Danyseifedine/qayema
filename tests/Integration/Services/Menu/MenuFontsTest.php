@@ -187,7 +187,7 @@ class MenuFontsTest extends TestCase
     /** A script missing from the catalogue stacks Latin first, since `latin_first` defaults on. */
     public function test_a_script_the_catalogue_lacks_stacks_latin_first_then_inter(): void
     {
-        config()->set('locales.menu.tlh', ['name' => 'tlhIngan', 'english' => 'Klingon', 'flag' => '', 'rtl' => false, 'script' => 'klingon']);
+        config()->set('locales.menu.tlh', ['name' => 'tlhIngan', 'flag' => '', 'rtl' => false, 'script' => 'klingon']);
         $this->defaultPackageIncludes(Feature::Appearance);
 
         $this->assertSame(['Lora', 'Inter'], MenuFonts::stack($this->owner(['menu_fonts' => ['latin' => 'Lora']]), 'tlh'));

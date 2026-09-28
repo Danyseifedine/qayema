@@ -8,7 +8,7 @@ use Tests\TestCase;
 
 /**
  * The API is only ever called cross-origin by the dashboard, so CORS must be an
- * explicit allow-list that fails closed — never `*`, because cookies are sent.
+ * explicit allow-list that fails closed, never `*`, because cookies are sent.
  */
 class CorsTest extends TestCase
 {

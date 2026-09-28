@@ -78,7 +78,7 @@ class PublicMenuEdgeTest extends TestCase
     {
         $restaurant = $this->published(['name' => ['en' => 'English Only'], 'default_locale' => 'ar']);
 
-        // No Arabic name saved — the page must still show something, not blank.
+        // No Arabic name saved; the page must still show something, not blank.
         $this->get(route('public.menu', $restaurant->slug))->assertOk()->assertSee('English Only');
     }
 

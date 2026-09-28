@@ -37,10 +37,4 @@ class OrderItem extends Model
     {
         return $this->belongsTo(Order::class);
     }
-
-    /** Null once the dish itself has been deleted; the line still stands. */
-    public function dish(): BelongsTo
-    {
-        return $this->belongsTo(Dish::class);
-    }
 }

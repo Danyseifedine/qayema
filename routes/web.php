@@ -1,11 +1,13 @@
 <?php
 
+use App\Http\Controllers\Admin\MediaPreviewController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\PublicMenuController;
 use App\Http\Controllers\PublicMenuEventController;
 use App\Http\Controllers\PublicOrderController;
 use App\Http\Controllers\QrCardController;
 use App\Http\Controllers\TempUploadController;
+use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -29,19 +31,24 @@ Route::middleware(['portal.locale'])->group(function () {
 
 require __DIR__.'/auth.php';
 
-// Authenticated owner endpoints retained after the dashboard removal.
+// Signed-in endpoints served by this app rather than the dashboard.
 Route::middleware(['auth', 'portal.locale'])->group(function () {
     // Impersonation (admin → owner), driven from the Filament admin panel.
     Route::impersonate();
 
-    // Temp image upload — used by the onboarding wizard's logo/cover dropzone
+    // Temp image upload, used by the onboarding wizard's logo/cover dropzone
     // (optimize & store for deferred form submission).
+    // The admin's upload previews, same-origin (MediaPreviewController).
+    Route::get('/admin/media-preview/{media:uuid}', MediaPreviewController::class)
+        ->middleware(EnsureUserIsAdmin::class)
+        ->name('admin.media.preview');
+
     Route::post('/temp-upload', [TempUploadController::class, 'store'])
         ->middleware(['throttle:mutations', 'throttle:uploads'])
         ->name('temp-upload');
 });
 
-// Legal + contact (public portal pages) — locale resolved from session
+// Legal + contact (public portal pages); locale resolved from session
 Route::middleware('portal.locale')->group(function () {
     Route::get('/privacy-policy', fn () => view('portal.legal.privacy'))->name('privacy');
     Route::get('/terms-of-service', fn () => view('portal.legal.terms'))->name('terms');
@@ -52,7 +59,7 @@ Route::middleware('portal.locale')->group(function () {
     Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:contact')->name('contact.store');
 });
 
-// Public, shareable QR table card (qr_studio owners only — 404 otherwise).
+// Public, shareable QR table card (qr_studio owners only; 404 otherwise).
 Route::get('/{restaurant:slug}/qr', [QrCardController::class, 'show'])->name('public.qr');
 
 // The owner's QR design for the menu's "Scan to open this menu" pop-up,
@@ -73,7 +80,7 @@ Route::post('/{restaurant:slug}/events', [PublicMenuEventController::class, 'sto
     ->middleware('throttle:menu-events')
     ->name('public.events');
 
-// The public menu — what the QR code points at. Declared last because the slug
+// The public menu: what the QR code points at. Declared last because the slug
 // would otherwise swallow every other path, and constrained to the shape a slug
 // can actually take so reserved prefixes can never be captured.
 Route::get('/{restaurant:slug}', [PublicMenuController::class, 'show'])

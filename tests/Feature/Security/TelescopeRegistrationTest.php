@@ -3,7 +3,6 @@
 namespace Tests\Feature\Security;
 
 use App\Providers\AppServiceProvider;
-use App\Providers\TelescopeServiceProvider as AppTelescopeServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Telescope\TelescopeServiceProvider;
 use Tests\TestCase;
@@ -21,7 +20,6 @@ class TelescopeRegistrationTest extends TestCase
         $this->assertSame('testing', $this->app->environment());
 
         $this->assertNull($this->app->getProvider(TelescopeServiceProvider::class));
-        $this->assertNull($this->app->getProvider(AppTelescopeServiceProvider::class));
         $this->get('/telescope')->assertNotFound();
     }
 
@@ -32,16 +30,14 @@ class TelescopeRegistrationTest extends TestCase
         (new AppServiceProvider($this->app))->register();
 
         $this->assertNull($this->app->getProvider(TelescopeServiceProvider::class));
-        $this->assertNull($this->app->getProvider(AppTelescopeServiceProvider::class));
     }
 
-    public function test_local_loads_the_package_and_the_apps_own_provider(): void
+    public function test_local_loads_the_package(): void
     {
         $this->app['env'] = 'local';
 
         (new AppServiceProvider($this->app))->register();
 
         $this->assertInstanceOf(TelescopeServiceProvider::class, $this->app->getProvider(TelescopeServiceProvider::class));
-        $this->assertInstanceOf(AppTelescopeServiceProvider::class, $this->app->getProvider(AppTelescopeServiceProvider::class));
     }
 }

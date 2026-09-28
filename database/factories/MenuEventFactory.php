@@ -30,12 +30,4 @@ class MenuEventFactory extends Factory
             'occurred_at' => now(),
         ];
     }
-
-    public function type(MenuEventType $type, ?string $value = null): static
-    {
-        return $this->state(fn (array $attributes): array => [
-            'type' => $type,
-            'value' => $value,
-        ]);
-    }
 }

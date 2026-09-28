@@ -2,7 +2,6 @@
 
 namespace Tests\E2e;
 
-use App\Enums\Feature;
 use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
@@ -33,13 +32,12 @@ class E2eController extends Controller
      *
      * Body (all optional): package (free|pro|premium|custom), package_starts_at,
      * package_ends_at, template (classic|midnight|null), onboarded, restaurant
-     * (false for a user mid-onboarding), has_password, name, second_locale,
-     * default_locale, is_active, switched_off, currency, phone,
-     * google_maps_url, opening_hours, categories [{name, description,
-     * dishes: [{name, price, ingredients, is_available}]}], social_links
-     * [{platform, url}], orders (count), visits (count), qr_scans (count),
-     * grants [{feature, value, ends_at}], settings {key: value} for the
-     * design, menu_fonts {script: family}, qr_settings {…}, logo (bool).
+     * (false for a user mid-onboarding), has_password, name, description,
+     * slug, second_locale, is_active, switched_off, phone, google_maps_url,
+     * opening_hours, categories [{name, description, dishes: [{name, price,
+     * ingredients, is_available}]}], social_links [{platform, url}], orders
+     * (count), visits (count), qr_scans (count), settings {key: value} for
+     * the design, qr_settings {…}, logo (bool).
      */
     public function scenario(Request $request): JsonResponse
     {
@@ -47,14 +45,14 @@ class E2eController extends Controller
         $email = 'owner-'.Str::lower(Str::random(10)).'@e2e.test';
 
         $user = User::query()->create([
-            'name' => $input['owner_name'] ?? 'E2E Owner',
+            'name' => 'E2E Owner',
             'email' => $email,
             'password' => ($input['has_password'] ?? true) ? E2eSeeder::PASSWORD : null,
             'onboarding_step' => ($input['onboarded'] ?? true) ? User::ONBOARDING_STEPS : 0,
             'onboarding_completed_at' => ($input['onboarded'] ?? true) ? now() : null,
         ]);
 
-        $result = ['user' => ['id' => $user->id, 'email' => $email, 'password' => E2eSeeder::PASSWORD]];
+        $result = ['user' => ['email' => $email, 'password' => E2eSeeder::PASSWORD]];
 
         if (($input['restaurant'] ?? true) === false) {
             return response()->json($result, 201);
@@ -73,14 +71,13 @@ class E2eController extends Controller
             'is_active' => $input['is_active'] ?? true,
             'country_code' => 'LB',
             'phone' => $input['phone'] ?? '+96170123456',
-            'currency' => $input['currency'] ?? 'USD',
-            'timezone' => $input['timezone'] ?? 'Asia/Beirut',
+            'currency' => 'USD',
+            'timezone' => 'Asia/Beirut',
             'google_maps_url' => $input['google_maps_url'] ?? null,
             'opening_hours' => $input['opening_hours'] ?? null,
-            'default_locale' => $input['default_locale'] ?? 'en',
+            'default_locale' => 'en',
             'second_locale' => $input['second_locale'] ?? null,
             'switched_off' => $input['switched_off'] ?? [],
-            'menu_fonts' => $input['menu_fonts'] ?? null,
             'qr_settings' => $input['qr_settings'] ?? null,
             'template_settings' => $template && isset($input['settings']) ? [$template->id => $input['settings']] : null,
         ]);
@@ -139,15 +136,6 @@ class E2eController extends Controller
                 'viewed_at' => now()->subHours($i),
                 'via_qr' => $i < $scans,
                 'locale' => 'en',
-            ]);
-        }
-
-        foreach ($input['grants'] ?? [] as $grant) {
-            $restaurant->featureGrants()->create([
-                'feature' => Feature::from($grant['feature']),
-                'value' => $grant['value'] ?? 1,
-                'source' => 'admin',
-                'ends_at' => $grant['ends_at'] ?? null,
             ]);
         }
 

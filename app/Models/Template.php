@@ -157,7 +157,7 @@ class Template extends Model implements HasMedia
     /**
      * Merge an owner's stored settings over the template defaults, ignoring
      * nulls, any key the schema doesn't declare, and a colour that isn't a
-     * hex — views print these straight into CSS, where a stray `;}` would
+     * hex; views print these straight into CSS, where a stray `;}` would
      * break out of the rule.
      *
      * @param  array<string, mixed>  $stored

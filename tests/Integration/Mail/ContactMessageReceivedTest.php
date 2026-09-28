@@ -34,7 +34,6 @@ class ContactMessageReceivedTest extends TestCase
         $mail->assertHasSubject('New contact message from Rima Haddad');
         $mail->assertHasReplyTo('rima@example.test', 'Rima Haddad');
         $this->assertSame('emails.contact-received', $mail->content()->markdown);
-        $this->assertSame([], $mail->attachments());
 
         $html = $mail->render();
         $this->assertStringContainsString('New message from Rima Haddad', $html);
@@ -59,7 +58,7 @@ class ContactMessageReceivedTest extends TestCase
 
         $mail = new ContactMessageReceived($contact);
 
-        $mail->assertHasSubject('Package request: '.$premium->getTranslation('name', 'en').' — Dani');
+        $mail->assertHasSubject('Package request: '.$premium->getTranslation('name', 'en').' from Dani');
         $mail->assertHasReplyTo('dani@qayema.test', 'Dani');
 
         $html = $mail->render();
@@ -80,7 +79,7 @@ class ContactMessageReceivedTest extends TestCase
         $contact = ContactMessage::factory()->packageRequest($pro)->create(['name' => 'Dani']);
 
         (new ContactMessageReceived($contact))
-            ->assertHasSubject('Package request: '.$pro->getTranslation('name', 'en').' — Dani');
+            ->assertHasSubject('Package request: '.$pro->getTranslation('name', 'en').' from Dani');
     }
 
     public function test_a_restaurant_without_an_english_name_is_named_by_its_slug(): void

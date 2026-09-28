@@ -5,7 +5,6 @@ namespace Tests\Feature\Api;
 use App\Enums\Feature;
 use App\Models\Dish;
 use App\Models\FeatureGrant;
-use App\Models\Package;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\CreatesOwners;
 use Tests\TestCase;
@@ -26,7 +25,7 @@ class LimitsEdgeTest extends TestCase
 
     public function test_the_last_slot_can_be_used_and_the_next_cannot(): void
     {
-        Package::default()->setFeature(Feature::DishLimit, 2);
+        $this->defaultPackageSets(Feature::DishLimit, 2);
         $owner = $this->owner();
         $category = \App\Models\Category::factory()->create(['restaurant_id' => $owner->id]);
 
@@ -37,7 +36,7 @@ class LimitsEdgeTest extends TestCase
 
     public function test_the_error_names_the_limit(): void
     {
-        Package::default()->setFeature(Feature::DishLimit, 1);
+        $this->defaultPackageSets(Feature::DishLimit, 1);
         $owner = $this->owner();
         $category = \App\Models\Category::factory()->create(['restaurant_id' => $owner->id]);
         $this->create($owner, $category);
@@ -49,7 +48,7 @@ class LimitsEdgeTest extends TestCase
 
     public function test_an_admin_grant_reopens_creation_immediately(): void
     {
-        Package::default()->setFeature(Feature::DishLimit, 1);
+        $this->defaultPackageSets(Feature::DishLimit, 1);
         $owner = $this->owner();
         $category = \App\Models\Category::factory()->create(['restaurant_id' => $owner->id]);
         $this->create($owner, $category)->assertCreated();
@@ -63,7 +62,7 @@ class LimitsEdgeTest extends TestCase
 
     public function test_an_expired_grant_closes_creation_again(): void
     {
-        Package::default()->setFeature(Feature::DishLimit, 1);
+        $this->defaultPackageSets(Feature::DishLimit, 1);
         $owner = $this->owner();
         $category = \App\Models\Category::factory()->create(['restaurant_id' => $owner->id]);
         $this->create($owner, $category)->assertCreated();
@@ -81,7 +80,7 @@ class LimitsEdgeTest extends TestCase
         $category = \App\Models\Category::factory()->create(['restaurant_id' => $owner->id]);
         Dish::factory()->count(5)->create(['restaurant_id' => $owner->id, 'category_id' => $category->id]);
 
-        Package::default()->setFeature(Feature::DishLimit, 3);
+        $this->defaultPackageSets(Feature::DishLimit, 3);
         \App\Services\Packages\Entitlements::flush($owner->id);
 
         $this->assertSame(5, $owner->dishes()->count(), 'Nothing is deleted.');
@@ -91,7 +90,7 @@ class LimitsEdgeTest extends TestCase
 
     public function test_deleting_below_the_limit_reopens_creation(): void
     {
-        Package::default()->setFeature(Feature::DishLimit, 1);
+        $this->defaultPackageSets(Feature::DishLimit, 1);
         $owner = $this->owner();
         $category = \App\Models\Category::factory()->create(['restaurant_id' => $owner->id]);
         $id = $this->create($owner, $category)->assertCreated()->json('data.id');
@@ -104,7 +103,7 @@ class LimitsEdgeTest extends TestCase
 
     public function test_limits_are_per_restaurant(): void
     {
-        Package::default()->setFeature(Feature::DishLimit, 1);
+        $this->defaultPackageSets(Feature::DishLimit, 1);
         $a = $this->owner();
         $b = $this->owner();
         $ca = \App\Models\Category::factory()->create(['restaurant_id' => $a->id]);

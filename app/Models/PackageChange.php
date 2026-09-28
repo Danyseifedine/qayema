@@ -33,11 +33,6 @@ class PackageChange extends Model
         ];
     }
 
-    public function restaurant(): BelongsTo
-    {
-        return $this->belongsTo(Restaurant::class);
-    }
-
     public function fromPackage(): BelongsTo
     {
         return $this->belongsTo(Package::class, 'from_package_id');

@@ -11,8 +11,8 @@ use Illuminate\Validation\Rule;
 
 /**
  * The dashboard's Appearance page. `settings` is checked against the *current
- * design's* own schema — a design that declares five colours and an on/off
- * switch accepts those six and nothing else — so adding a setting to a design
+ * design's* own schema (a design that declares five colours and an on/off
+ * switch accepts those six and nothing else), so adding a setting to a design
  * needs no code here. `fonts` is checked against config/fonts.php, for the
  * scripts the menu uses right now. Null puts one back to its default.
  */

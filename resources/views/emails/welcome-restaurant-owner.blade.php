@@ -44,8 +44,6 @@
       .py-lg { padding-top: 40px !important; padding-bottom: 40px !important; }
       .h1 { font-size: 40px !important; line-height: 42px !important; }
       .stack { display: block !important; width: 100% !important; }
-      .stack-pad { padding: 0 0 16px 0 !important; }
-      .stat-cell { padding: 16px 0 !important; }
       .hide-mobile { display: none !important; }
       .center-mobile { text-align: center !important; }
       .full-btn { width: 100% !important; display: block !important; }
@@ -114,7 +112,7 @@
 
               <!-- lead -->
               <p style="margin:22px 0 0 0; font-family:'Geist',Helvetica,Arial,sans-serif; font-size:16px; line-height:25px; color:rgba(15,15,16,0.6);">
-                Hi {{ $user->name }}, {{ $restaurant->name }} is set up on Qayema. Add your dishes, print your QR code, and your guests can order from their phone the moment they sit down. Here's how to go live.
+                Hi {{ $user->name }}, {{ $restaurant->name }} is set up on Qayema. Add your dishes, print your QR code, and your guests can open your menu on their phone the moment they sit down. Here's how to go live.
               </p>
 
               <!-- spacer above button -->
@@ -125,14 +123,14 @@
                 <tr>
                   <td>
                     <!--[if mso]>
-                    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{ url('/') }}" style="height:50px;v-text-anchor:middle;width:220px;" arcsize="50%" fillcolor="#0F0F10" stroke="f">
+                    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{ config('app.dashboard_url') }}" style="height:50px;v-text-anchor:middle;width:240px;" arcsize="50%" fillcolor="#0F0F10" stroke="f">
                       <w:anchorlock/>
-                      <center style="color:#F6F1E8;font-family:Helvetica,Arial,sans-serif;font-size:15px;font-weight:500;">Open Qayema  →</center>
+                      <center style="color:#F6F1E8;font-family:Helvetica,Arial,sans-serif;font-size:15px;font-weight:500;">Open your dashboard  →</center>
                     </v:roundrect>
                     <![endif]-->
                     <!--[if !mso]><!-->
-                    <a href="{{ url('/') }}" class="btn-primary full-btn" style="display:inline-block; background-color:#0F0F10; color:#F6F1E8; font-family:'Geist',Helvetica,Arial,sans-serif; font-size:15px; font-weight:500; letter-spacing:-0.2px; line-height:50px; padding:0 26px; border-radius:999px;">
-                      Open Qayema &nbsp;&rarr;
+                    <a href="{{ config('app.dashboard_url') }}" class="btn-primary full-btn" style="display:inline-block; background-color:#0F0F10; color:#F6F1E8; font-family:'Geist',Helvetica,Arial,sans-serif; font-size:15px; font-weight:500; letter-spacing:-0.2px; line-height:50px; padding:0 26px; border-radius:999px;">
+                      Open your dashboard &nbsp;&rarr;
                     </a>
                     <!--<![endif]-->
                   </td>
@@ -183,7 +181,7 @@
                         </td>
                         <td valign="top">
                           <div style="font-family:'Geist',Helvetica,Arial,sans-serif; font-size:16px; font-weight:500; letter-spacing:-0.3px; color:#0F0F10;">Build your menu</div>
-                          <div style="font-family:'Geist',Helvetica,Arial,sans-serif; font-size:13.5px; line-height:20px; color:rgba(15,15,16,0.55); padding-top:4px;">Add your dishes and categories from the dashboard, or photograph your paper menu and let the AI scanner import everything in seconds.</div>
+                          <div style="font-family:'Geist',Helvetica,Arial,sans-serif; font-size:13.5px; line-height:20px; color:rgba(15,15,16,0.55); padding-top:4px;">Add your categories and dishes from your dashboard, each with its price, ingredients and a photo.</div>
                         </td>
                       </tr>
                     </table>
@@ -206,7 +204,7 @@
                         </td>
                         <td valign="top">
                           <div style="font-family:'Geist',Helvetica,Arial,sans-serif; font-size:16px; font-weight:500; letter-spacing:-0.3px; color:#0F0F10;">Print your QR code</div>
-                          <div style="font-family:'Geist',Helvetica,Arial,sans-serif; font-size:13.5px; line-height:20px; color:rgba(15,15,16,0.55); padding-top:4px;">Generate your table QR, download the print-ready file, and place one on every table. No app for your guests, they just scan.</div>
+                          <div style="font-family:'Geist',Helvetica,Arial,sans-serif; font-size:13.5px; line-height:20px; color:rgba(15,15,16,0.55); padding-top:4px;">Download your QR code from the dashboard and place one on every table. No app for your guests, they just scan.</div>
                         </td>
                       </tr>
                     </table>
@@ -237,44 +235,6 @@
                 </tr>
               </table>
 
-            </td>
-          </tr>
-
-          <!-- ───────── Quote band (dark) ───────── -->
-          <tr>
-            <td class="px" style="padding:36px 40px 0 40px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#0F0F10; border-radius:16px;">
-                <tr>
-                  <td style="padding:44px 32px 30px 32px;">
-                    <div class="editorial" style="font-family:'Instrument Serif',Georgia,serif; font-style:italic; font-size:24px; line-height:31px; letter-spacing:-0.3px; color:#F6F1E8;">
-                      &ldquo;It felt like the restaurant <span style="color:#A8B388;">cared about us</span> before we even ordered.&rdquo;
-                    </div>
-
-                    <!-- spacer above attribution -->
-                    <div style="font-size:0; line-height:26px; height:26px;">&nbsp;</div>
-
-                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                      <tr>
-                        <td align="right">
-                          <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-                            <tr>
-                              <td valign="middle" style="padding-right:12px;">
-                                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="38" height="38" style="background-color:#E8DCCB; border-radius:50%;">
-                                  <tr><td align="center" valign="middle" class="editorial" style="font-family:'Instrument Serif',Georgia,serif; font-style:italic; font-size:17px; color:#0F0F10; line-height:38px;">S</td></tr>
-                                </table>
-                              </td>
-                              <td valign="middle" align="left">
-                                <div style="font-family:'Geist',Helvetica,Arial,sans-serif; font-size:13px; font-weight:500; color:#F6F1E8;">Sushi By Ahmad</div>
-                                <div style="font-family:'Geist',Helvetica,Arial,sans-serif; font-size:11.5px; letter-spacing:0.4px; color:rgba(246,241,232,0.55);">Restaurant owner</div>
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
             </td>
           </tr>
 

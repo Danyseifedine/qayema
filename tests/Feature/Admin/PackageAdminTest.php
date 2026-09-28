@@ -116,16 +116,17 @@ class PackageAdminTest extends TestCase
         $this->assertSame(Feature::CategoryLimit->defaultValue(), $package->fresh()->features['category_limit']);
     }
 
-    public function test_a_package_can_be_marked_most_popular(): void
+    public function test_marking_a_package_most_popular_takes_it_off_the_others(): void
     {
-        $premium = Package::findBySlug('premium');
+        $pro = Package::findBySlug('pro');
         $this->actingAs($this->admin());
 
-        Livewire::test(EditPackage::class, ['record' => $premium->id])
+        Livewire::test(EditPackage::class, ['record' => $pro->id])
             ->fillForm(['is_featured' => true])
             ->call('save')
             ->assertHasNoFormErrors();
 
-        $this->assertTrue($premium->fresh()->is_featured);
+        $this->assertTrue($pro->fresh()->is_featured);
+        $this->assertSame(['pro'], Package::query()->where('is_featured', true)->pluck('slug')->all());
     }
 }

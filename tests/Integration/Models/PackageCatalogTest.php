@@ -42,7 +42,7 @@ class PackageCatalogTest extends TestCase
             'multiple_languages' => 1, 'appearance' => 1, 'premium_designs' => 0,
             'qr_studio' => 0, 'ordering' => 0, 'analytics' => 1, 'advanced_analytics' => 0,
         ], $this->shipped('pro'));
-        $this->assertTrue(Package::findBySlug('pro')->is_featured);
+        $this->assertFalse(Package::findBySlug('pro')->is_featured);
     }
 
     public function test_premium_has_everything(): void
@@ -52,6 +52,8 @@ class PackageCatalogTest extends TestCase
             'multiple_languages' => 1, 'appearance' => 1, 'premium_designs' => 1,
             'qr_studio' => 1, 'ordering' => 1, 'analytics' => 1, 'advanced_analytics' => 1,
         ], $this->shipped('premium'));
+        // Premium is the one marked "Most popular", and the only one.
+        $this->assertSame(['premium'], Package::query()->where('is_featured', true)->pluck('slug')->all());
     }
 
     public function test_custom_is_unlimited_with_everything_and_asked_for(): void

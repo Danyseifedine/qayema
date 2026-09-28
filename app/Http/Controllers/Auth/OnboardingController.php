@@ -41,7 +41,7 @@ class OnboardingController extends Controller
             $slug = Str::slug((string) $request->query('slug', ''));
 
             if (strlen($slug) < 2) {
-                return response()->json(['available' => false, 'slug' => $slug]);
+                return response()->json(['available' => false]);
             }
 
             $ownId = $request->user()?->restaurant?->id;
@@ -50,9 +50,9 @@ class OnboardingController extends Controller
                 ->when($ownId, fn ($q) => $q->where('id', '!=', $ownId))
                 ->exists();
 
-            return response()->json(['available' => ! $taken, 'slug' => $slug]);
+            return response()->json(['available' => ! $taken]);
         } catch (\Throwable) {
-            return response()->json(['available' => false, 'slug' => ''], 200);
+            return response()->json(['available' => false]);
         }
     }
 
@@ -75,7 +75,7 @@ class OnboardingController extends Controller
         $next = $current + 1;
 
         switch ($current) {
-            case 0: // Step 1 — restaurant name + slug + preferred language
+            case 0: // Step 1: restaurant name + slug + preferred language
                 // Normalize the slug server-side so spaces/uppercase/special chars
                 // can never reach validation or the database as an invalid value.
                 $request->merge(['slug' => Str::slug((string) $request->input('slug', ''))]);
@@ -96,7 +96,7 @@ class OnboardingController extends Controller
                 $onboarding->saveIdentity($user, $validated['name'], $validated['slug'], $validated['default_locale'] ?? null);
                 break;
 
-            case 1: // Step 2 — country code + phone + currency
+            case 1: // Step 2: country code + phone + currency
                 $validated = $request->validate([
                     // char(2) column → exactly two ASCII letters (ISO-3166-1 alpha-2).
                     'country_code' => ['nullable', 'string', 'size:2', 'alpha:ascii'],
@@ -113,9 +113,9 @@ class OnboardingController extends Controller
                 $onboarding->saveContact($user->restaurant, $validated['country_code'] ?? null, $validated['phone'], $validated['currency']);
                 break;
 
-            case 2: // Step 3 — branding (logo required, cover image optional)
+            case 2: // Step 3: branding (logo required, cover image optional)
                 // A logo is required to finish onboarding, but an already-uploaded
-                // logo satisfies it — only force a new upload when none exists yet,
+                // logo satisfies it; only force a new upload when none exists yet,
                 // so revisiting the step doesn't demand a re-upload.
                 $logoRule = $user->restaurant->hasMedia('logo') ? 'nullable' : 'required';
 

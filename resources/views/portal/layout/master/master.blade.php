@@ -6,15 +6,14 @@
     // cache-bust static assets by file mtime so CSS/JS edits always take effect
     $ver = fn(string $path): string => asset($path) . '?v=' . (@filemtime(public_path($path)) ?: '1');
 @endphp
-<html lang="{{ $locale }}" dir="{{ $isRtl ? 'rtl' : 'ltr' }}" data-theme="light">
+<html lang="{{ $locale }}" dir="{{ $isRtl ? 'rtl' : 'ltr' }}" data-theme="dark">
 
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="csrf-token" content="{{ csrf_token() }}" />
 
-    <x-seo :title="$seoTitle ?? 'Qayema — Your restaurant menu, live with one QR'" :description="$seoDescription ??
-        'Photograph your menu, let AI rebuild it bilingually in Arabic & English, and go live with one custom QR code. The Arabic-first digital menu platform.'" />
+    <x-seo :title="$seoTitle ?? __('portal.seo.title')" :description="$seoDescription ?? __('portal.seo.description')" />
 
     <link
         href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&family=El+Messiri:wght@400;500;600;700&display=swap"
@@ -34,7 +33,8 @@
         {{-- language + direction are server-rendered (session locale); only theme is client-side --}}
             (function() {
                 try {
-                    var t = localStorage.getItem('qayema-theme') || 'light';
+                    // Dark unless the visitor chose light.
+                    var t = localStorage.getItem('qayema-theme') || 'dark';
                     document.documentElement.setAttribute('data-theme', t);
                 } catch (e) {}
             })();

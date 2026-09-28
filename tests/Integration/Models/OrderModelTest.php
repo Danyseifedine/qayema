@@ -18,13 +18,6 @@ class OrderModelTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_the_title_is_the_reference_in_capitals(): void
-    {
-        $order = Order::factory()->create(['reference' => 'ab3kx9']);
-
-        $this->assertSame('AB3KX9', $order->title());
-    }
-
     public function test_a_new_reference_is_six_unambiguous_characters(): void
     {
         for ($i = 0; $i < 50; $i++) {
@@ -32,7 +25,7 @@ class OrderModelTest extends TestCase
             $this->assertDoesNotMatchRegularExpression('/[O0I1S]/', $reference);
         }
 
-        $this->assertSame($reference, Order::factory()->create(['reference' => $reference])->title());
+        $this->assertSame($reference, Order::factory()->create(['reference' => $reference])->reference);
     }
 
     public function test_it_belongs_to_its_restaurant_and_lists_its_lines_in_order(): void
@@ -61,7 +54,7 @@ class OrderModelTest extends TestCase
         ])->fresh();
 
         $this->assertTrue($item->order->is($order));
-        $this->assertTrue($item->dish->is($dish));
+        $this->assertSame($dish->id, $item->dish_id);
         $this->assertSame('4.50', $item->unit_price);
         $this->assertSame('13.50', $item->line_total);
         $this->assertSame(3, $item->quantity);
@@ -76,7 +69,6 @@ class OrderModelTest extends TestCase
         $item->refresh();
 
         $this->assertNull($item->dish_id);
-        $this->assertNull($item->dish);
         $this->assertSame('Kibbeh', $item->name);
     }
 

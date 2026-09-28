@@ -5,7 +5,6 @@ namespace Tests\Feature\Api;
 use App\Enums\Feature;
 use App\Models\Category;
 use App\Models\Dish;
-use App\Models\Package;
 use App\Models\Restaurant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -67,13 +66,13 @@ class CategoryTest extends TestCase
         $response->assertJsonCount(2, 'data');
         $this->assertSame([$first->id, $second->id], array_column($response->json('data'), 'id'));
         $response->assertJsonStructure([
-            'data' => [['id', 'name' => ['en', 'ar'], 'display_order', 'dishes_count']],
+            'data' => [['id', 'name' => ['en', 'ar'], 'dishes_count']],
         ]);
     }
 
     public function test_index_includes_the_plan_limit_meta(): void
     {
-        Package::default()->setFeature(Feature::CategoryLimit, 10);
+        $this->defaultPackageSets(Feature::CategoryLimit, 10);
         [$user, $restaurant] = $this->owner();
         Category::factory()->create(['restaurant_id' => $restaurant->id]);
 
@@ -172,14 +171,14 @@ class CategoryTest extends TestCase
 
         // Only the name is sent; the description must survive untouched.
         $this->actingAs($user)
-            ->putJson(route('api.categories.update', $category), ['name' => ['en' => 'Plates']])
+            ->patchJson(route('api.categories.update', $category), ['name' => ['en' => 'Plates']])
             ->assertOk()
             ->assertJsonPath('data.name.en', 'Plates')
             ->assertJsonPath('data.description.en', 'From noon onwards');
 
         // And it can be cleared on purpose.
         $this->actingAs($user)
-            ->putJson(route('api.categories.update', $category), [
+            ->patchJson(route('api.categories.update', $category), [
                 'name' => ['en' => 'Plates'],
                 'description' => ['en' => '', 'ar' => ''],
             ])
@@ -230,7 +229,7 @@ class CategoryTest extends TestCase
 
     public function test_store_is_rejected_when_the_category_limit_is_reached(): void
     {
-        Package::default()->setFeature(Feature::CategoryLimit, 1);
+        $this->defaultPackageSets(Feature::CategoryLimit, 1);
         [$user, $restaurant] = $this->owner();
         Category::factory()->create(['restaurant_id' => $restaurant->id]);
 
@@ -252,7 +251,7 @@ class CategoryTest extends TestCase
             ['Accept' => 'application/json'],
         );
 
-        $response->assertOk()->assertJsonStructure(['key', 'original_size', 'optimized_size', 'saved_percent']);
+        $response->assertOk()->assertJsonStructure(['key', 'optimized_size', 'saved_percent']);
 
         // The endpoint actually wrote the optimized WebP to the user's temp area.
         $path = app(\App\Services\Media\MediaService::class)->tempPath($user->id, $response->json('key'));
@@ -266,7 +265,7 @@ class CategoryTest extends TestCase
         $victim = Restaurant::factory()->create();
 
         // A tampered payload must not be able to plant a category in someone
-        // else's restaurant — restaurant_id is set server-side, not from input.
+        // else's restaurant; restaurant_id is set server-side, not from input.
         $this->actingAs($user)
             ->postJson(route('api.categories.store'), ['name' => ['en' => 'Injected'], 'restaurant_id' => $victim->id])
             ->assertCreated();
@@ -313,20 +312,12 @@ class CategoryTest extends TestCase
         [$user, $restaurant] = $this->owner();
         Category::factory()->create(['restaurant_id' => $restaurant->id, 'display_order' => 7]);
 
-        $this->actingAs($user)
+        $id = $this->actingAs($user)
             ->postJson(route('api.categories.store'), ['name' => ['en' => 'Drinks']])
             ->assertCreated()
-            ->assertJsonPath('data.display_order', 8);
-    }
+            ->json('data.id');
 
-    public function test_a_user_cannot_view_another_restaurants_category(): void
-    {
-        [$user] = $this->owner();
-        $foreign = Category::factory()->create(['restaurant_id' => Restaurant::factory()->create()->id]);
-
-        $this->actingAs($user)
-            ->getJson(route('api.categories.show', $foreign))
-            ->assertForbidden();
+        $this->assertSame(8, Category::find($id)->display_order);
     }
 
     public function test_a_user_can_update_their_own_category(): void
@@ -335,7 +326,7 @@ class CategoryTest extends TestCase
         $category = Category::factory()->create(['restaurant_id' => $restaurant->id]);
 
         $this->actingAs($user)
-            ->putJson(route('api.categories.update', $category), [
+            ->patchJson(route('api.categories.update', $category), [
                 'name' => ['en' => 'Renamed', 'ar' => 'تم التغيير'],
             ])
             ->assertOk()
@@ -350,7 +341,7 @@ class CategoryTest extends TestCase
         $foreign = Category::factory()->create(['restaurant_id' => Restaurant::factory()->create()->id]);
 
         $this->actingAs($user)
-            ->putJson(route('api.categories.update', $foreign), ['name' => ['en' => 'Hijack']])
+            ->patchJson(route('api.categories.update', $foreign), ['name' => ['en' => 'Hijack']])
             ->assertForbidden();
     }
 

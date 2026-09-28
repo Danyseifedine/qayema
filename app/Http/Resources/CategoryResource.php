@@ -13,7 +13,7 @@ class CategoryResource extends JsonResource
 {
     /**
      * Transform the category for the dashboard SPA. Translatable fields come
-     * as one entry per menu language — English, then the second one — null
+     * as one entry per menu language (English, then the second one), null
      * when unset, so the client never has to probe which keys exist.
      *
      * @return array<string, mixed>
@@ -24,7 +24,6 @@ class CategoryResource extends JsonResource
             'id' => $this->id,
             'name' => MenuLanguages::map($this->resource, 'name', MenuLanguages::forOwner($request->user())),
             'description' => MenuLanguages::map($this->resource, 'description', MenuLanguages::forOwner($request->user())),
-            'display_order' => $this->display_order,
             'dishes_count' => $this->whenCounted('dishes'),
         ];
     }

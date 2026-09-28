@@ -36,11 +36,6 @@ class TemplateResource extends Resource
         return TemplatesTable::configure($table);
     }
 
-    public static function getRelations(): array
-    {
-        return [];
-    }
-
     public static function getPages(): array
     {
         return [

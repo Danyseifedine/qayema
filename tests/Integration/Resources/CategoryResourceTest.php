@@ -31,14 +31,12 @@ class CategoryResourceTest extends TestCase
         $category = Category::factory()->for($restaurant)->create([
             'name' => ['en' => 'Mains'],
             'description' => null,
-            'display_order' => 2,
         ]);
 
         $this->assertSame([
             'id' => $category->id,
             'name' => ['en' => 'Mains'],
             'description' => ['en' => null],
-            'display_order' => 2,
         ], $this->resolve($category, $restaurant->user));
     }
 
@@ -50,7 +48,7 @@ class CategoryResourceTest extends TestCase
 
         $counted = $this->resolve(Category::query()->withCount('dishes')->find($category->id), $restaurant->user);
 
-        $this->assertSame(['id', 'name', 'description', 'display_order', 'dishes_count'], array_keys($counted));
+        $this->assertSame(['id', 'name', 'description', 'dishes_count'], array_keys($counted));
         $this->assertSame(3, $counted['dishes_count']);
         $this->assertArrayNotHasKey('dishes_count', $this->resolve($category, $restaurant->user));
     }

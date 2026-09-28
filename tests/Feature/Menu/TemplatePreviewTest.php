@@ -56,7 +56,7 @@ class TemplatePreviewTest extends TestCase
         $restaurant = $this->restaurantOn(null);
         $candidate = $this->candidate();
 
-        // Without a template the public page is a 404 — the preview still works.
+        // Without a template the public page is a 404; the preview still works.
         $this->get(route('public.menu', $restaurant->slug))->assertNotFound();
 
         $this->actingAs($restaurant->user)

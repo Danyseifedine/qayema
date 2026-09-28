@@ -9,16 +9,16 @@ use Tests\TestCase;
 
 /**
  * The head every public portal page ships: title, description, canonical,
- * robots, Open Graph, Twitter card and — on the landing page only — the
+ * robots, Open Graph, Twitter card and (on the landing page only) the
  * Organization and WebSite structured data.
  */
 class SeoTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const DEFAULT_TITLE = 'Qayema — Your restaurant menu, live with one QR';
+    private const DEFAULT_TITLE = 'Qayema | Your restaurant menu, live with one QR';
 
-    private const DEFAULT_DESCRIPTION = 'Photograph your menu, let AI rebuild it bilingually in Arabic & English, and go live with one custom QR code. The Arabic-first digital menu platform.';
+    private const DEFAULT_DESCRIPTION = 'Build your restaurant menu in minutes, share one QR code that never changes, and update prices in seconds. English plus a second language, free to start.';
 
     /**
      * Path and expected page title. `:app` stands for config('app.name'),
@@ -30,13 +30,13 @@ class SeoTest extends TestCase
     {
         return [
             'landing' => ['/', self::DEFAULT_TITLE],
-            'privacy' => ['/privacy-policy', 'Privacy Policy — Qayema'],
-            'terms' => ['/terms-of-service', 'Terms of Service — Qayema'],
-            'cookies' => ['/cookie-policy', 'Cookie Policy — Qayema'],
-            'refund' => ['/refund-policy', 'Refund Policy — Qayema'],
+            'privacy' => ['/privacy-policy', 'Privacy Policy | Qayema'],
+            'terms' => ['/terms-of-service', 'Terms of Service | Qayema'],
+            'cookies' => ['/cookie-policy', 'Cookie Policy | Qayema'],
+            'refund' => ['/refund-policy', 'Refund Policy | Qayema'],
             'contact' => ['/contact', self::DEFAULT_TITLE],
-            'get started' => ['/get-started', 'Get Started — :app'],
-            'forgot password' => ['/forgot-password', 'Reset your password. — :app'],
+            'get started' => ['/get-started', 'Get Started | :app'],
+            'forgot password' => ['/forgot-password', 'Reset your password. | :app'],
         ];
     }
 
@@ -74,13 +74,6 @@ class SeoTest extends TestCase
         $this->assertSame($title, $this->meta($doc, 'name', 'twitter:title'));
         $this->assertSame(self::DEFAULT_DESCRIPTION, $this->meta($doc, 'name', 'twitter:description'));
         $this->assertSame($image, $this->meta($doc, 'name', 'twitter:image'));
-
-        // Portal pages are plain "website" pages: nothing article-, product-
-        // or video-shaped leaks into their head.
-        $this->assertNull($doc->querySelector('meta[property="article:section"]'));
-        $this->assertNull($doc->querySelector('meta[property="product:price:amount"]'));
-        $this->assertNull($doc->querySelector('meta[property="og:video"]'));
-        $this->assertNull($doc->querySelector('link[rel="alternate"][hreflang]'));
     }
 
     public function test_the_landing_page_carries_organization_and_website_structured_data(): void
@@ -135,26 +128,17 @@ class SeoTest extends TestCase
         $this->assertCount(0, $doc->querySelectorAll('script[type="application/ld+json"]'));
     }
 
-    public function test_the_organization_schema_is_dropped_when_it_is_not_configured(): void
-    {
-        config(['seo.organization' => null]);
-
-        $doc = HTMLDocument::createFromString($this->get('/')->assertOk()->getContent(), LIBXML_NOERROR);
-        $schemas = json_decode($doc->querySelector('script[type="application/ld+json"]')->textContent, true);
-
-        $this->assertSame(['WebSite'], array_column($schemas, '@type'));
-    }
-
     /**
      * @return array<string, array{0: string, 1: string}>
      */
     public static function arabicPages(): array
     {
         return [
-            'landing' => ['/', self::DEFAULT_TITLE],
-            'privacy' => ['/privacy-policy', 'Privacy Policy — Qayema'],
-            'get started' => ['/get-started', 'ابدأ الآن — :app'],
-            'forgot password' => ['/forgot-password', 'إعادة تعيين كلمة المرور. — :app'],
+            // The default title is translated too.
+            'landing' => ['/', 'قيمة | قائمة مطعمك، حيّة برمز QR واحد'],
+            'privacy' => ['/privacy-policy', 'Privacy Policy | Qayema'],
+            'get started' => ['/get-started', 'ابدأ الآن | :app'],
+            'forgot password' => ['/forgot-password', 'إعادة تعيين كلمة المرور. | :app'],
         ];
     }
 

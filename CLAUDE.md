@@ -438,27 +438,31 @@ Forms\Components\Select::make('user_id')
 2. **Never leave code unused.** Every Blade component, Livewire component,
    Filament resource/action/widget, service, job, enum case or helper you create
    must be used in the same task. If it ends up unused, delete it or wire it
-   in — never leave it.
+   in. Never leave it.
 3. **Always use the component.** Before writing Blade markup, look in
    `resources/views/components/` (especially `components/ui/`) and the Filament
    component set. If a component exists for the job, use it. Never re-implement
    a button, card, field, modal or layout inline. If the existing component does
-   not fit, extend it — do not fork it.
+   not fit, extend it; do not fork it.
 4. **Always tell the truth.** Report what actually happened: if `php artisan test`
-   failed, a test was skipped, a step was not done, or you are guessing — say it
+   failed, a test was skipped, a step was not done, or you are guessing, say it
    plainly in the first sentence. No softening, no reassurance, no claiming
    something works without having run it. The user does not need feelings
    managed; they need accurate status.
+5. **Never use em dashes.** Not in code, comments, UI copy, translations
+   (English or Arabic), tests, docs or messages. Write a comma, colon,
+   semicolon, parentheses or a new sentence instead (in Arabic, the Arabic comma ، or a colon);
+   never an en dash or `--` in its place. An empty-value placeholder is `-`.
 
-# Qayema — Project Architecture
+# Qayema: Project Architecture
 
 Bilingual (ar/en) restaurant-menu SaaS. Two codebases in this folder:
 
-- **Laravel app (this repo)** — the public portal (landing, legal, contact), auth
+- **Laravel app (this repo)**: the public portal (landing, legal, contact), auth
   (Google OAuth + email via `/get-started`), a 3-step onboarding wizard, the
   **public menu at `/{slug}`**, the JSON API for the dashboard SPA
   (`routes/api.php`), and the Filament v4 admin panel (`/admin`).
-- **`qayema-dashboard/` (separate repo)** — the owner dashboard SPA. React 19 +
+- **`qayema-dashboard/` (separate repo)**: the owner dashboard SPA. React 19 +
   Vite + TS, Sanctum **session-cookie** auth (no tokens), CSRF primed from
   `GET /api/csrf-token` (the body, because a cross-subdomain SPA can't read the
   cookie). It also holds the Playwright end-to-end suite for both apps (`e2e/`).
@@ -482,12 +486,16 @@ the admin owns the numbers after install):
 | | Free | Pro | Premium | Custom |
 |---|---|---|---|---|
 | dishes / categories / social links | 40 / 8 / 1 | 150 / 15 / 2 | 500 / 30 / 10 | unlimited |
-| `multiple_languages`, `appearance`, `analytics` | — | ✓ | ✓ | ✓ |
-| `premium_designs`, `qr_studio`, `ordering`, `advanced_analytics` | — | — | ✓ | ✓ |
+| `multiple_languages`, `appearance`, `analytics` | - | ✓ | ✓ | ✓ |
+| `premium_designs`, `qr_studio`, `ordering`, `advanced_analytics` | - | - | ✓ | ✓ |
 
-Pro is `is_featured` ("Most popular" on the dashboard). Prices are still
-placeholders. The landing page's pricing (`lang/{en,ar}/portal.php`) is **not**
-in step with this yet.
+Premium is `is_featured` ("Most popular" on the dashboard and the landing page); only one package holds it, and marking another in the admin takes it off the rest.
+Prices are still placeholders. The landing page's pricing is read from the
+`packages` table by `App\Services\Portal\PricingCards` (names, prices,
+"Everything in Pro, plus" lines like the dashboard's), so an admin's edit
+shows there at once; only its headings live in `lang/{en,ar}/portal.php`.
+The landing copy says only what the product does: no AI, no checkout, no
+invented reviews (`tests/Feature/Portal/LandingContentTest`).
 
 - `packages.features` is a JSON map of `App\Enums\Feature` slug => value:
   an integer allowance, **null for unlimited**, or 0/1 for a flag. A key the map
@@ -498,12 +506,12 @@ in step with this yet.
   deleted there. `PackageSeeder` is `firstOrCreate`, so seeding a live database
   cannot overwrite an admin's edits.
 - **Dates:** the assigned package is in force from `package_started_at` (null =
-  always) until `package_ends_at` (null = forever) — `Restaurant::packageStatus()`
+  always) until `package_ends_at` (null = forever): `Restaurant::packageStatus()`
   (`PackageStatus` Active / Scheduled / Expired). Outside that window
   `effectivePackage()` is the default package, and the assignment stays on the
   row so an admin sees what is coming or what lapsed. `/api/user` sends the
-  package in force with `starts_at`, `ends_at`, `days_left`, plus `lapsed` or
-  `upcoming` for the assigned one. Query scopes: `packageActive()`,
+  package in force with `ends_at` and `days_left`, plus `lapsed` (with
+  `ended_at`) or `upcoming` (with `starts_at`) for the assigned one. Query scopes: `packageActive()`,
   `packageScheduled()`, `packageExpired()`, `packageEndingWithin($days)`,
   `onPackage($id)` (in force, including restaurants fallen back to the default).
 - **`App\Services\Packages\PackageAssigner` is the one way an admin changes a
@@ -535,7 +543,7 @@ in step with this yet.
   (`GET /api/analytics/teaser`, this week's views, is open to all);
   `appearance` → `PUT /api/appearance` (403), and without it the menu draws the
   design's defaults and default fonts (`designSettings()`, `MenuFonts::family()`;
-  `MenuFonts::chosen()` is the owner's pick for the dashboard) — choices kept;
+  `MenuFonts::chosen()` is the owner's pick for the dashboard); choices kept;
   `multiple_languages` → `showsSecondLanguage()` / `MenuLanguages::for()`
   (English-only, the second language kept) and choosing one in
   `PUT /api/menu-languages` (403);
@@ -546,10 +554,10 @@ in step with this yet.
 One rule: **effective value = the package's value + Σ active grants** (limits
 add, flags OR, unlimited stays unlimited). Resolved by
 `App\Services\Packages\Entitlements`, cached `entitlements:{id}` for 300 s or
-until the next start/end of the package or a grant, whichever is sooner — a
+until the next start/end of the package or a grant, whichever is sooner. A
 date passing never leaves a stale answer, and no scheduler is needed.
 
-- `App\Enums\Feature` is the registry — adding a limit or a flag is one enum
+- `App\Enums\Feature` is the registry: adding a limit or a flag is one enum
   case (`kind()`, `defaultValue()` and `label()`/`hint()` in
   `lang/{en,ar}/features.php` list every case, no default arm). The admin form,
   the packages table and `/api/user`'s `plan` (`Feature::flags()`) all render
@@ -585,7 +593,7 @@ declares them: `[{key, type, default, label: {en, ar}, contrast_with?, options?}
 type `color` | `boolean` | `select` | `text` (edited in the admin panel; `key`
 is `^[a-z][a-z0-9_]*$`, a colour default must be hex, an on/off default is
 written `true`/`false`). To give a design a new setting: add a row, then use it
-in the view — `$settings['key']` for any type, and a colour is also
+in the view: `$settings['key']` for any type, and a colour is also
 `var(--the-key)`. Nothing else. The dashboard's **Appearance** page shows
 every row (`Template::editableSettings()`) with the field its type needs:
 colour picker (with a contrast warning against `contrast_with`), switch,
@@ -599,14 +607,13 @@ top bar). An empty schema = a fixed design.
 **Each design remembers its colours.** `restaurants.template_settings` is
 `{template_id: {key: value}}` holding only what the owner changed
 (`Restaurant::designSettings()` resolves it over the design's defaults;
-`saveDesignSettings()` writes one entry, by key — never `array_merge`, which
-renumbers the integer keys). Switching design resets nothing. An old flat map
-is read as the current design's. `resolveSettings()` drops a stored colour
+`saveDesignSettings()` writes one entry, by key, never `array_merge`, which
+renumbers the integer keys). Switching design resets nothing. `resolveSettings()` drops a stored colour
 that isn't hex, so a view can print one straight into CSS.
 
 **Fonts belong to the restaurant**, one per writing system the menu uses:
 `config/fonts.php` is the curated catalogue (per script: families with the
-weights each really has — Google 400s on a missing one —, a default, a sample
+weights each really has (Google 400s on a missing one), a default, a sample
 dish name, and `latin_first`); each menu language names its `script` in
 `config/locales.php`. `restaurants.menu_fonts` = `{script: family}`.
 `App\Services\Menu\MenuFonts` gives the scripts in use (via
@@ -629,7 +636,7 @@ One name per thing, shared with the dashboard (`../qayema-dashboard`):
 | Owner sees | Backend |
 |---|---|
 | Analytics | `AnalyticsController`, `GET /api/analytics[/advanced]`, `Services/Analytics/MenuStats`, model `MenuSession` (table `menu_sessions`) |
-| Design | `TemplateController`, `/api/templates` — a *design* is a `Template` row; the model keeps its name |
+| Design | `TemplateController`, `/api/templates`; a *design* is a `Template` row; the model keeps its name |
 | Appearance | `AppearanceController`, `GET/PUT /api/appearance`, `Restaurant::designSettings()`, `MenuFonts`, `config/fonts.php` |
 | Restaurant | `RestaurantController`, `GET/PUT /api/restaurant`, `RestaurantResource`, `UpdateRestaurantRequest` |
 | Features | `FeaturesController`, `PUT /api/features`, column `switched_off` |
@@ -667,7 +674,7 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
   No category images, no tags.
 - **Never run `migrate:fresh`, `migrate:refresh`, `db:wipe` or `db:seed` over
   the local database without asking.** Migrations are edited in place
-  pre-launch, which makes `migrate:fresh` look like the way to apply one — but
+  pre-launch, which makes `migrate:fresh` look like the way to apply one, but
   the local MySQL holds the owner's own working data, binary logging is off,
   and there are no dumps, so a wipe is unrecoverable. Tests run on in-memory
   SQLite and need none of this. To apply an in-place column change to the live
@@ -686,16 +693,16 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
 - **Uploads are up to 20 MB** (`UploadLimits::APP_MAX_BYTES`, the dashboard's
   `MAX_IMAGE_BYTES`) and always come out as a small WebP (presets in
   `config/image-optimization.php`). PHP must allow it too: `composer serve`
-  locally (never `php artisan serve` — its child process ignores `-d`),
+  locally (never `php artisan serve`: its child process ignores `-d`),
   `public/.user.ini` under PHP-FPM, nginx `client_max_body_size 25m`.
   `MediaService::ensureMemoryFor()` raises `memory_limit` for a big photo.
-- **Every promotion goes through `MediaService::replace()`** — the dashboard's
+- **Every promotion goes through `MediaService::replace()`**: the dashboard's
   `sync()` and onboarding's `saveBranding()` alike. It stores on `MEDIA_DISK`
   and, if that disk is down or not configured, **falls back to the local
   `public` disk** and logs a warning (`Media disk failed; …`). Files that fell
   back stay local; nothing moves them to R2 later. A problem with the file
   itself (too big, missing, wrong type) is not retried. The old image is
-  removed only *after* the new one is stored — clearing first, as both paths
+  removed only *after* the new one is stored. Clearing first, as both paths
   used to, lost the logo whenever the upload then failed.
 - **Keep `throw: false` on the `r2` disk.** The media library saves the row,
   then copies the file, and only cleans the row up when the copy *returns*
@@ -710,10 +717,10 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
 - Session lifetime is intentionally 1 year (the SPA rides it).
 - `restaurants.switched_off` holds the optional features the owner
   switched off on the dashboard's Features page (`PUT /api/features` with
-  `{off: [...]}`, limited to `Restaurant::OPTIONAL_FEATURES`): `orders` (no ordering at all —
+  `{off: [...]}`, limited to `Restaurant::OPTIONAL_FEATURES`): `orders` (no ordering at all:
   `takesOrders()`), `qr` (studio styling and printable card off, plain code
-  kept — `hasQrStudio()`), `analytics` (page hidden), `languages` (English-only
-  menu — `MenuLanguages::for()`; `written()` ignores the switch). Nothing is
+  kept: `hasQrStudio()`), `analytics` (page hidden), `languages` (English-only
+  menu: `MenuLanguages::for()`; `written()` ignores the switch). Nothing is
   deleted by switching one off. The package still decides what can be on.
 - Locale middleware alias is `portal.locale`; the session key stays `owner_locale`.
 - API requests take their language from `Accept-Language` (`SetApiLocale`,
@@ -727,10 +734,22 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
   create/edit pages: filling gives the form every language, saving merges what
   the form sent over the languages it does not show. Never bind a translatable
   column to a single input (it shows `[object Object]` and overwrites the text).
+- **Admin forms and tables** (`AdminPanelProvider::boot()` sets the defaults):
+  a select or select filter is never the browser's native dropdown
+  (`native(false)` everywhere; never switch one back); a section spans the
+  full width of where it sits; a form with more than two sections is a wide
+  main column and a narrow side column (`->columns(['lg' => 3])`, two
+  `Group`s spanning 2 and 1), with short settings (visibility, template,
+  image, availability, limits) on the side, single-column there. An upload's
+  preview loads from `admin.media.preview` (`MediaPreviewController`, admins
+  only), not the R2 domain: the field fetches the file, and R2 refuses a
+  cross-origin fetch without CORS. The phone field's flag images are
+  published to `public/vendor/filament-phone-input` (also on
+  `composer update`); without them the flag is an empty box.
 - Filament v4 testing: table **header** actions need
   `callAction(TestAction::make('create')->table())`, not `callAction('create')`.
 - `Restaurant::RESERVED_SLUGS` is the single list behind both the public menu
-  route constraint and onboarding's slug validation — add new top-level pages there.
+  route constraint and onboarding's slug validation. Add new top-level pages there.
 - Every `api/*` error is `{message, code}` JSON (see `bootstrap/app.php`); a
   rate limiter's custom response arrives as `HttpResponseException` and must pass through.
 
@@ -738,7 +757,7 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
 
 A guest builds a cart on the public menu and places an order. It is **stored**
 (`orders` + `order_items`) and the guest is then sent to **WhatsApp** with the
-order written out — nothing here is realtime, so the hand-off is what actually
+order written out. Nothing here is realtime, so the hand-off is what actually
 reaches the owner.
 
 - `App\Services\Orders\OrderPlacer` is the only way an order is created. Every
@@ -758,12 +777,12 @@ reaches the owner.
 `restaurants.google_maps_url` is the only thing stored; there are no lat/lng
 columns. `App\Services\Menu\MapPoint` reads the point back out of that URL
 (`?q=`, `?ll=`, `?query=`, `/@lat,lng,17z`) and builds a **keyless
-OpenStreetMap** embed — Google's needs an API key and a billing account, and
+OpenStreetMap** embed: Google's needs an API key and a billing account, and
 this page is scanned all day. A shortened `maps.app.goo.gl` link hides its
 coordinates behind a redirect, so it gets the directions button but no map.
 
 It mirrors `parseMapCoordinates` / `mapEmbedUrlFor` in the dashboard
-(`src/features/settings/hooks/use-current-location.ts`) — change one, change
+(`src/features/settings/hooks/use-current-location.ts`); change one, change
 both.
 
 **The map frame must send a Referer.** OSM's tile policy requires one and
@@ -791,14 +810,14 @@ with the design**, so a printed code keeps working whatever is saved.
 - `App\Services\Qr\QrStyle::options()` is the one place a design becomes
   `qr-code-styling` options. The dashboard mirrors it in
   `src/features/qr/utils/qr-options.ts`; both are tested against the same
-  cases (`tests/Unit/Services/Qr/QrStyleTest.php`) — change one, change both.
+  cases (`tests/Unit/Services/Qr/QrStyleTest.php`); change one, change both.
   Hex checks and the ink-on-a-colour rule live in `App\Support\Color`. The allowed shapes are QrStyle's constants, which
   `QrSettingsRequest` validates against.
 - Drawn by `qr-code-styling` 1.9.2 everywhere: npm in the dashboard, and a
   vendored copy at `public/js/qr-code-styling.js` for the printable card at
   `/{slug}/qr` and the menu's own "Scan to open this menu" pop-up. The pop-up
   fetches its options from `GET /{slug}/qr-options` on first open (the logo is
-  inlined, too heavy for every menu page) — the studio design, or the plain
+  inlined, too heavy for every menu page): the studio design, or the plain
   code without the studio, exactly as the dashboard shows it. Every code
   encodes `Restaurant::qrUrl()` (`?qr=1`, which counts the visit as a scan).
 - The logo is sent **inline as a data URL** (`QrStyle::logoDataUrl()`), not as
@@ -814,7 +833,7 @@ with the design**, so a printed code keeps working whatever is saved.
   switch) writes a `menu_sessions` row with device, browser, OS, the `locale`
   it opened in, and `via_qr` from the `?qr=1` the QR codes encode.
 - **Guest actions:** `public/js/menu-track.js` batches what guests do into
-  `POST /{slug}/events` (`throttle:menu-events`, never a ban — a dining room
+  `POST /{slug}/events` (`throttle:menu-events`, never a ban, since a dining room
   shares one IP) → `MenuEventRecorder` → `menu_events`. Types are
   `App\Enums\MenuEventType`. Links opt in with `data-track="…"` (+
   `data-track-value`); the cart and the menu navigation dispatch a
@@ -831,10 +850,10 @@ with the design**, so a printed code keeps working whatever is saved.
   Tests about a feature itself put it on the default package with
   `defaultPackageIncludes()` (`CreatesOwners`); which package has what is
   tested in `tests/Feature/Packages`. Days and hours are the restaurant's `timezone` (UTC when
-  unset): rows are grouped by UTC hour with `SUBSTR(ts, 1, 13)` — portable
-  across MySQL and SQLite — and shifted in PHP. The funnel (visit → cart → order)
+  unset): rows are grouped by UTC hour with `SUBSTR(ts, 1, 13)` (portable
+  across MySQL and SQLite) and shifted in PHP. The funnel (visit → cart → order)
   is null when the package does not take orders. Devices, browsers, systems
-  and order money are deliberately **not** reported — the owner decided they
+  and order money are deliberately **not** reported: the owner decided they
   do not help a restaurant (the order itself reaches them on WhatsApp). The
   visit rows still record device/browser/OS.
 - `stats:rollup` prunes `menu_sessions` and `menu_events` after 6 months.
@@ -843,13 +862,13 @@ with the design**, so a printed code keeps working whatever is saved.
 
 Every menu is written in **English** plus, optionally, **one second language**
 the owner picks on the dashboard's Features page (`PUT /api/menu-languages`,
-`restaurants.second_locale`, null = English only) from `config('locales.menu')` — Arabic, French, Spanish, Turkish,
+`restaurants.second_locale`, null = English only) from `config('locales.menu')`: Arabic, French, Spanish, Turkish,
 German, Italian, Russian, Chinese, Hindi, Portuguese. `default_locale` is what
 the menu opens in: `en` or the second language. `config('locales.supported')`
 is only the **portal's** UI list and has nothing to do with menus.
 
 - `App\Services\Menu\MenuLanguages` owns it: `for()` (`['en', second?]`),
-  `default()`, `text()` (that language, else English — never spatie's
+  `default()`, `text()` (that language, else English; never spatie's
   accessor, which fell back to the app locale and showed Arabic-only text
   blank), `map()` for resources, `rules()` for requests, `input()` + `fill()`
   for writes.
@@ -871,7 +890,7 @@ is only the **portal's** UI list and has nothing to do with menus.
 - A new restaurant gets Arabic as its second language at onboarding; the name
   typed there is saved in English.
 
-A load whose referer is this same menu is **not** recorded as a visit — a
+A load whose referer is this same menu is **not** recorded as a visit: a
 language switch is one visit continuing, not two.
 
 ## Opening hours
@@ -885,13 +904,12 @@ close is at or before its open, which runs past midnight.
 
 - **Realtime.** Nothing pushes. The dashboard's Orders page polls every 60s
   while it is open; WhatsApp is the notification.
-- More template designs — only the `classic` view exists.
+- More template designs. Only the `classic` view exists.
 - **Taking payment.** Pro/Premium/Custom are requested, not bought: there is no
   checkout, no subscription and no billing provider. An admin assigns a package
   by hand.
-- **Prices and the landing page.** Package contents are decided (see
-  Packages); the prices are still placeholders and `lang/{en,ar}/portal.php`
-  still shows the old copy.
+- **Real prices.** Package contents are decided (see Packages); the prices
+  are still placeholders, set at /admin → Packages when decided.
 - **A Free menu in a language other than English.** English is required on
   every menu, so Free (one language) is English-only for now.
 
@@ -900,13 +918,13 @@ close is at or before its open, which runs past midnight.
 Three layers, and a change is done when all three are green:
 
 - **PHPUnit here** (`composer test`; `composer test:coverage` fails under the
-  coverage floor — needs the `pcov` extension). Tests never touch real storage:
+  coverage floor; needs the `pcov` extension). Tests never touch real storage:
   `tests/TestCase.php` fakes the `local` and `public` disks.
 - **Vitest** in the dashboard repo.
 - **Playwright end-to-end** in `../qayema-dashboard/e2e` (`npm run e2e` there),
   against this app on port 8001 (`composer serve:e2e`).
 
-**Everything e2e lives in `tests/E2e/`** — nothing in `app/`, `config/`,
+**Everything e2e lives in `tests/E2e/`**: nothing in `app/`, `config/`,
 `database/`, `routes/` or the root. `bootstrap/app.php` has the only hook: with
 `APP_ENV=e2e` it reads `tests/E2e/.env.e2e` (committed, no secrets) instead of
 the root `.env`, and registers `E2eServiceProvider`, which points the SQLite
@@ -916,21 +934,21 @@ and adds `routes.php` and the `e2e:reset` command. Outside that environment
 none of it exists (`tests/Feature/E2e/E2eGuardTest`). `composer e2e:reset`
 wipes that folder and migrates + seeds it; it refuses any other database.
 Routes: `POST /__e2e/scenario` builds an owner with whatever a test needs
-(package and dates, design, languages, content, orders, visits, grants —
+(package and dates, design, languages, content, orders, visits;
 `E2eController`), `/__e2e/login` signs a user in, `/__e2e/package`,
 `/__e2e/password-reset-token`, `GET /__e2e/media/{path}` serves uploads.
 `E2eSeeder`: Classic, the premium Midnight design, `admin@e2e.test` /
 `e2e-password`.
 
-**PHPUnit layout — three suites**, each file in the first that fits:
+**PHPUnit layout: three suites**, each file in the first that fits:
 
-- `tests/Unit/` — extends `PHPUnit\Framework\TestCase`: no app, no database
+- `tests/Unit/`: extends `PHPUnit\Framework\TestCase`: no app, no database
   (`Enums`, `Services/<Group>`, `Support`).
-- `tests/Integration/` — boots the app or the database but sends no request:
+- `tests/Integration/`: boots the app or the database but sends no request:
   `Services/<Group>/` mirrors `app/Services/<Group>/`, then `Models`, `Enums`,
   `Policies`, `Resources` (API resources), `Rules`, `Mail`, `View`
   (components, stylesheets), `Factories`, `Admin` (form helpers), `E2e`.
-- `tests/Feature/` — drives the app from outside: HTTP, Livewire/Filament
+- `tests/Feature/`: drives the app from outside: HTTP, Livewire/Filament
   pages, artisan. By area: `Api/` is every `/api/*` endpoint, then `Admin`,
   `Auth`, `Console`, `E2e`, `Journeys`, `Mail`, `Media`, `Menu`, `Onboarding`,
   `Orders` (public ordering), `Packages`, `Portal`, `Requests`, `Security`.
@@ -944,4 +962,4 @@ brand colour). Names are `<Thing>Test` and `<Thing>EdgeTest`, never
 `defaultPackageIncludes()`) and `EnforcedCsrf`. One suite:
 `php artisan test --testsuite=Integration`.
 Run `php artisan test`; format with `vendor/bin/pint --dirty`. Switching `actingAs()`
-users inside one test trips Filament's session-hash check — use separate tests.
+users inside one test trips Filament's session-hash check; use separate tests.

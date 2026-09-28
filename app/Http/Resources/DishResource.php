@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Services\Menu\MenuLanguages;
+use App\Support\MediaUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -23,12 +24,11 @@ class DishResource extends JsonResource
             'ingredients' => MenuLanguages::map($this->resource, 'ingredients', MenuLanguages::forOwner($request->user())),
             'price' => $this->price !== null ? (string) $this->price : null,
             'is_available' => (bool) $this->is_available,
-            'display_order' => $this->display_order,
             // The id alone: the dashboard already holds the category list and
             // looks the name up from it, so repeating the name on every dish
             // was payload nobody read.
             'category_id' => $this->category_id,
-            'image_url' => $this->getFirstMediaUrl('image') ?: null,
+            'image_url' => MediaUrl::of($this->resource, 'image'),
         ];
     }
 }

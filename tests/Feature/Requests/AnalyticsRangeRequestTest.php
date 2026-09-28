@@ -24,10 +24,15 @@ class AnalyticsRangeRequestTest extends TestCase
         $this->defaultPackageIncludes(Feature::Analytics, Feature::AdvancedAnalytics);
     }
 
-    /** @return array<string, array{0: string}> */
+    /**
+     * Each range and the days its chart covers (all time with no visits yet
+     * is just today).
+     *
+     * @return array<string, array{0: string, 1: int}>
+     */
     public static function ranges(): array
     {
-        return ['7d' => ['7d'], '30d' => ['30d'], '90d' => ['90d'], 'all' => ['all']];
+        return ['7d' => ['7d', 7], '30d' => ['30d', 30], '90d' => ['90d', 90], 'all' => ['all', 1]];
     }
 
     /** @return array<string, array{0: mixed}> */
@@ -42,19 +47,18 @@ class AnalyticsRangeRequestTest extends TestCase
     }
 
     #[DataProvider('ranges')]
-    public function test_every_known_range_is_accepted(string $range): void
+    public function test_every_known_range_is_accepted(string $range, int $days): void
     {
         $restaurant = $this->owner();
 
         $this->actingAs($restaurant->user)
             ->getJson(route('api.analytics', ['range' => $range]))
             ->assertOk()
-            ->assertJsonPath('data.range', $range);
+            ->assertJsonCount($days, 'data.series');
 
         $this->actingAs($restaurant->user)
             ->getJson(route('api.analytics.advanced', ['range' => $range]))
-            ->assertOk()
-            ->assertJsonPath('data.range', $range);
+            ->assertOk();
     }
 
     #[DataProvider('badRanges')]
@@ -83,13 +87,14 @@ class AnalyticsRangeRequestTest extends TestCase
         $this->actingAs($restaurant->user)
             ->getJson(route('api.analytics'))
             ->assertOk()
-            ->assertJsonPath('data.range', '30d')
+            ->assertJsonCount(30, 'data.series')
             ->assertJsonPath('data.totals.views', 1);
 
+        // The 20-day-old visit is inside 30 days, the 40-day-old one is not.
         $this->actingAs($restaurant->user)
             ->getJson(route('api.analytics.advanced'))
             ->assertOk()
-            ->assertJsonPath('data.range', '30d');
+            ->assertJsonPath('data.hours', fn (array $hours): bool => array_sum($hours) === 1);
     }
 
     /** A blank `?range=` is "no range", not a range called "". */
@@ -102,7 +107,7 @@ class AnalyticsRangeRequestTest extends TestCase
         $this->actingAs($restaurant->user)
             ->getJson(route('api.analytics').'?range=')
             ->assertOk()
-            ->assertJsonPath('data.range', '30d')
+            ->assertJsonCount(30, 'data.series')
             ->assertJsonPath('data.totals.views', 1);
     }
 
@@ -114,7 +119,7 @@ class AnalyticsRangeRequestTest extends TestCase
         $this->actingAs($restaurant->user)
             ->getJson(route('api.analytics').'?range=')
             ->assertOk()
-            ->assertJsonPath('data.range', '30d');
+            ->assertJsonCount(30, 'data.series');
     }
 
     public function test_a_user_without_a_restaurant_is_refused_before_validation(): void

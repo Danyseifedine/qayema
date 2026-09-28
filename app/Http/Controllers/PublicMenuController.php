@@ -13,7 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
- * The public menu at /{slug} — the page a guest lands on after scanning the QR
+ * The public menu at /{slug}: the page a guest lands on after scanning the QR
  * code. Each template renders from its own Blade view
  * (resources/views/menu/templates/{slug}.blade.php) with the owner's saved
  * settings resolved over the template's defaults.
@@ -30,7 +30,7 @@ class PublicMenuController extends Controller
     {
         $preview = $this->previewTemplate($request, $restaurant);
 
-        // A restaurant that is switched off has no menu to show — but its
+        // A restaurant that is switched off has no menu to show, but its
         // owner may still preview it while setting up.
         abort_unless($restaurant->is_active || $preview !== null, 404);
 
@@ -90,7 +90,7 @@ class PublicMenuController extends Controller
                 ? 'https://wa.me/'.$number
                 : null,
             // Ordering is a package feature, and a preview is a dress
-            // rehearsal — neither should take a real order.
+            // rehearsal; neither should take a real order.
             'can_order' => ! $preview && $restaurant->takesOrders(),
         ]);
     }

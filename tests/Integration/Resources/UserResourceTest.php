@@ -18,11 +18,11 @@ class UserResourceTest extends TestCase
 {
     use CreatesOwners, RefreshDatabase;
 
-    private const USER_KEYS = ['id', 'name', 'email', 'role', 'has_completed_onboarding', 'has_password'];
+    private const USER_KEYS = ['name', 'email', 'has_completed_onboarding', 'has_password'];
 
     private const RESTAURANT_KEYS = [
-        'id', 'name', 'slug', 'languages', 'second_locale', 'default_locale', 'is_active', 'template_id',
-        'logo_url', 'public_url', 'qr_url', 'package', 'lapsed', 'upcoming', 'limits', 'switched_off', 'plan',
+        'languages', 'second_locale', 'default_locale', 'template_id', 'public_url',
+        'package', 'lapsed', 'upcoming', 'limits', 'switched_off', 'plan',
     ];
 
     protected function setUp(): void
@@ -55,10 +55,8 @@ class UserResourceTest extends TestCase
         ]);
 
         $this->assertSame([
-            'id' => $user->id,
             'name' => 'Rana',
             'email' => 'rana@example.test',
-            'role' => 'menu_owner',
             'has_completed_onboarding' => false,
             'has_password' => true,
             'restaurant' => null,
@@ -71,7 +69,6 @@ class UserResourceTest extends TestCase
 
         $data = $this->resolve($user);
 
-        $this->assertSame('admin', $data['role']);
         $this->assertFalse($data['has_password']);
         $this->assertTrue($data['has_completed_onboarding']);
     }
@@ -86,21 +83,15 @@ class UserResourceTest extends TestCase
         $data = $this->resolve($restaurant->user->load('restaurant'))['restaurant'];
 
         $this->assertSame(self::RESTAURANT_KEYS, array_keys($data));
-        $this->assertSame($restaurant->id, $data['id']);
-        $this->assertSame(['en' => 'Aran'], $data['name']);
         $this->assertSame(['en'], $data['languages']);
         $this->assertSame('ar', $data['second_locale']);
         $this->assertSame('en', $data['default_locale']);
-        $this->assertTrue($data['is_active']);
         $this->assertNull($data['template_id']);
-        $this->assertNull($data['logo_url']);
         $this->assertSame('https://qayema.test/aran', $data['public_url']);
-        $this->assertSame('https://qayema.test/aran?qr=1', $data['qr_url']);
         $this->assertSame([
             'slug' => 'free',
             'name' => ['en' => 'Free', 'ar' => 'مجاني'],
             'is_contact_only' => false,
-            'starts_at' => '2026-06-15T12:00:00+00:00',
             'ends_at' => null,
             'days_left' => null,
         ], $data['package']);
@@ -116,7 +107,7 @@ class UserResourceTest extends TestCase
         $this->assertSame(array_fill_keys(array_column(Feature::flags(), 'value'), false), $data['plan']);
     }
 
-    public function test_an_active_package_with_an_end_sends_its_dates_and_days_left(): void
+    public function test_an_active_package_with_an_end_sends_its_end_and_days_left(): void
     {
         $restaurant = $this->ownerOn('premium', [
             'package_started_at' => '2026-06-01 00:00:00',
@@ -127,7 +118,6 @@ class UserResourceTest extends TestCase
         $data = $this->resolve($restaurant->user->load('restaurant'))['restaurant'];
 
         $this->assertSame('premium', $data['package']['slug']);
-        $this->assertSame('2026-06-01T00:00:00+00:00', $data['package']['starts_at']);
         $this->assertSame('2026-06-20T00:00:00+00:00', $data['package']['ends_at']);
         $this->assertSame(5, $data['package']['days_left']);
         $this->assertSame(['qr'], $data['switched_off']);
@@ -155,7 +145,6 @@ class UserResourceTest extends TestCase
         $data = $this->resolve($restaurant->user->load('restaurant'))['restaurant'];
 
         $this->assertSame('free', $data['package']['slug']);
-        $this->assertNull($data['package']['starts_at']);
         $this->assertNull($data['package']['ends_at']);
         $this->assertNull($data['package']['days_left']);
         $this->assertSame([
@@ -182,7 +171,6 @@ class UserResourceTest extends TestCase
             'slug' => 'custom',
             'name' => ['en' => 'Custom', 'ar' => 'مخصّص'],
             'starts_at' => '2026-07-01T00:00:00+00:00',
-            'ends_at' => null,
         ], $data['upcoming']);
     }
 

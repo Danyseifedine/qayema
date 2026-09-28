@@ -15,8 +15,8 @@ use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Collection;
 
 /**
- * Put a restaurant — or every selected one — on a package, from a date, for
- * a while or forever — from the table, a bulk selection or a package
+ * Put a restaurant (or every selected one) on a package, from a date, for
+ * a while or forever, from the table, a bulk selection or a package
  * request. All go through PackageAssigner, which leaves a line
  * in each restaurant's package history.
  */

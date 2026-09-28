@@ -7,7 +7,7 @@ use Illuminate\Support\ServiceProvider;
 
 /**
  * Everything the Playwright suite (../qayema-dashboard/e2e) needs from this
- * app, registered by bootstrap/app.php only when APP_ENV=e2e — which also
+ * app, registered by bootstrap/app.php only when APP_ENV=e2e, which also
  * makes Laravel read tests/E2e/.env.e2e instead of the root .env.
  *
  * Whatever the e2e server writes lands under storage/framework/testing/e2e:
@@ -31,7 +31,7 @@ class E2eServiceProvider extends ServiceProvider
         config([
             // Several server workers share one file: wait for a lock rather
             // than fail, let readers run beside a writer, and take the write
-            // lock when a transaction begins — in WAL mode a transaction that
+            // lock when a transaction begins: in WAL mode a transaction that
             // read first fails at once ("database is locked") if another
             // worker committed in between.
             'database.connections.sqlite' => [

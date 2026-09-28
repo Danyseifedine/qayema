@@ -32,16 +32,6 @@ class CategoryPolicy
         return $this->belongsToUserRestaurant($user, $category->restaurant_id);
     }
 
-    public function restore(User $user, Category $category): bool
-    {
-        return $this->belongsToUserRestaurant($user, $category->restaurant_id);
-    }
-
-    public function forceDelete(User $user, Category $category): bool
-    {
-        return $this->belongsToUserRestaurant($user, $category->restaurant_id);
-    }
-
     private function belongsToUserRestaurant(User $user, int $restaurantId): bool
     {
         if ($user->isAdmin()) {

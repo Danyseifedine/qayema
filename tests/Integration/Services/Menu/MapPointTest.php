@@ -51,7 +51,7 @@ class MapPointTest extends TestCase
 
         $this->assertNotNull($embed);
         $this->assertStringStartsWith('https://www.openstreetmap.org/export/embed.html?', $embed);
-        // bbox is minLng,minLat,maxLng,maxLat — longitude first, as OSM wants.
+        // bbox is minLng,minLat,maxLng,maxLat: longitude first, as OSM wants.
         $this->assertStringContainsString('bbox=35.491500,33.886600,35.499500,33.890600', $embed);
         $this->assertStringContainsString('marker=33.888600,35.495500', $embed);
         // No key, and no Google.

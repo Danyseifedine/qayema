@@ -2,74 +2,29 @@
 <title>{{ $fullTitle() }}</title>
 <meta name="title" content="{{ $title }}">
 <meta name="description" content="{{ $description }}">
-@if ($keywords)
-    <meta name="keywords" content="{{ $keywords }}">
-@endif
-@if ($author)
-    <meta name="author" content="{{ $author }}">
-@endif
+<meta name="keywords" content="{{ $keywords }}">
+<meta name="author" content="{{ $author }}">
 
 {{-- Canonical URL --}}
-<link rel="canonical" href="{{ $canonical }}">
+<link rel="canonical" href="{{ $url }}">
 
 {{-- Robots Meta --}}
-<meta name="robots" content="{{ $robotsContent() }}">
-<meta name="googlebot" content="{{ $robotsContent() }}">
-<meta name="bingbot" content="{{ $robotsContent() }}">
-
-{{-- Alternate Languages (hreflang) --}}
-@if ($hreflang)
-    @foreach ($hreflang as $lang => $langUrl)
-        <link rel="alternate" hreflang="{{ $lang }}" href="{{ $langUrl }}">
-    @endforeach
-@endif
+<meta name="robots" content="index, follow">
+<meta name="googlebot" content="index, follow">
+<meta name="bingbot" content="index, follow">
 
 {{-- Open Graph / Facebook --}}
-<meta property="og:type" content="{{ $type }}">
+<meta property="og:type" content="website">
 <meta property="og:site_name" content="{{ $siteName }}">
 <meta property="og:url" content="{{ $url }}">
 <meta property="og:title" content="{{ $title }}">
 <meta property="og:description" content="{{ $description }}">
 <meta property="og:image" content="{{ $image }}">
 <meta property="og:image:secure_url" content="{{ $image }}">
-<meta property="og:image:alt" content="{{ $imageAlt }}">
-@if ($imageWidth && $imageHeight)
-    <meta property="og:image:width" content="{{ $imageWidth }}">
-    <meta property="og:image:height" content="{{ $imageHeight }}">
-@endif
+<meta property="og:image:alt" content="Qayema by Lebify - Digital Menus for Restaurants">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <meta property="og:locale" content="{{ $locale }}">
-@if ($alternateLocales)
-    @foreach ($alternateLocales as $altLocale)
-        <meta property="og:locale:alternate" content="{{ $altLocale }}">
-    @endforeach
-@endif
-
-{{-- Article Specific --}}
-@if ($type === 'article')
-    @if ($publishedTime)
-        <meta property="article:published_time" content="{{ $publishedTime }}">
-    @endif
-    @if ($modifiedTime)
-        <meta property="article:modified_time" content="{{ $modifiedTime }}">
-    @endif
-    @if ($author)
-        <meta property="article:author" content="{{ $author }}">
-    @endif
-    @if ($section)
-        <meta property="article:section" content="{{ $section }}">
-    @endif
-    @if ($tags)
-        @foreach ($tags as $tag)
-            <meta property="article:tag" content="{{ $tag }}">
-        @endforeach
-    @endif
-@endif
-
-{{-- Product Specific --}}
-@if ($type === 'product' && $price)
-    <meta property="product:price:amount" content="{{ $price }}">
-    <meta property="product:price:currency" content="{{ $currency }}">
-@endif
 
 {{-- Facebook App ID --}}
 @if ($facebookAppId)
@@ -77,34 +32,15 @@
 @endif
 
 {{-- Twitter Card --}}
-<meta name="twitter:card" content="{{ $twitterCard }}">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:url" content="{{ $url }}">
 <meta name="twitter:title" content="{{ $title }}">
 <meta name="twitter:description" content="{{ $description }}">
 <meta name="twitter:image" content="{{ $image }}">
-<meta name="twitter:image:alt" content="{{ $imageAlt }}">
-@if ($twitterSite)
-    <meta name="twitter:site" content="{{ '@'.ltrim($twitterSite, '@') }}">
-@endif
-@if ($twitterCreator)
-    <meta name="twitter:creator" content="{{ '@'.ltrim($twitterCreator, '@') }}">
-@endif
-
-{{-- Video Meta (if video) --}}
-@if ($videoUrl)
-    <meta property="og:video" content="{{ $videoUrl }}">
-    <meta property="og:video:secure_url" content="{{ $videoUrl }}">
-    @if ($videoDuration)
-        <meta property="og:video:duration" content="{{ $videoDuration }}">
-    @endif
-    <meta name="twitter:player" content="{{ $videoUrl }}">
-@endif
-
-{{-- Additional Meta Tags --}}
-@if ($additionalMeta)
-    @foreach ($additionalMeta as $name => $content)
-        <meta name="{{ $name }}" content="{{ $content }}">
-    @endforeach
+<meta name="twitter:image:alt" content="Qayema by Lebify - Digital Menus for Restaurants">
+@if ($twitterHandle)
+    <meta name="twitter:site" content="{{ '@'.ltrim($twitterHandle, '@') }}">
+    <meta name="twitter:creator" content="{{ '@'.ltrim($twitterHandle, '@') }}">
 @endif
 
 {{-- JSON-LD Schema --}}
@@ -117,7 +53,6 @@
 {{-- Preconnect for Performance --}}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="dns-prefetch" href="//www.google-analytics.com">
 
 {{-- Favicon and Touch Icons --}}
 <link rel="icon" type="image/x-icon" href="{{ asset('images/favicons/favicon.ico') }}">

@@ -13,7 +13,7 @@ use Illuminate\Http\JsonResponse;
  * A guest placing an order from the public menu.
  *
  * The order is stored so the owner has a record, and the response carries a
- * WhatsApp link the page sends the guest to — that hand-off is what actually
+ * WhatsApp link the page sends the guest to. That hand-off is what actually
  * reaches the owner, since nothing here is realtime.
  */
 class PublicOrderController extends Controller

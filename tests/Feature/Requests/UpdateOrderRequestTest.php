@@ -72,7 +72,7 @@ class UpdateOrderRequestTest extends TestCase
         $order = Order::factory()->for($shop)->create(['total' => '14.00', 'note' => 'No onions']);
 
         $this->actingAs($shop->user)
-            ->putJson(route('api.orders.update', $order), ['status' => 'done', 'total' => '0.00', 'note' => 'hacked'])
+            ->patchJson(route('api.orders.update', $order), ['status' => 'done', 'total' => '0.00', 'note' => 'hacked'])
             ->assertOk();
 
         $order->refresh();

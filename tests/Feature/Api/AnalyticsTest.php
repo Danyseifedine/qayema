@@ -4,7 +4,6 @@ namespace Tests\Feature\Api;
 
 use App\Enums\Feature;
 use App\Models\Order;
-use App\Models\Package;
 use App\Models\Restaurant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -52,7 +51,6 @@ class AnalyticsTest extends TestCase
             ->assertJsonPath('data.totals.views', 0)
             ->assertJsonPath('data.totals.unique_visitors', 0)
             ->assertJsonPath('data.totals.qr_scans', 0)
-            ->assertJsonPath('data.last_visit_at', null)
             ->assertJsonCount(30, 'data.series');
     }
 
@@ -74,7 +72,7 @@ class AnalyticsTest extends TestCase
 
     public function test_the_range_limits_what_is_counted(): void
     {
-        Package::default()->setFeature(Feature::AdvancedAnalytics, 1);
+        $this->defaultPackageSets(Feature::AdvancedAnalytics, 1);
         $restaurant = Restaurant::factory()->create();
         $this->visit($restaurant, 2, session: 'recent');
         $this->visit($restaurant, 20, session: 'older');
@@ -88,7 +86,7 @@ class AnalyticsTest extends TestCase
 
     public function test_longer_ranges_need_advanced_analytics(): void
     {
-        Package::default()->setFeature(Feature::AdvancedAnalytics, 0);
+        $this->defaultPackageSets(Feature::AdvancedAnalytics, 0);
         $restaurant = Restaurant::factory()->create();
 
         foreach (['7d', '30d'] as $range) {
@@ -105,7 +103,7 @@ class AnalyticsTest extends TestCase
 
     public function test_all_time_charts_from_the_first_visit(): void
     {
-        Package::default()->setFeature(Feature::AdvancedAnalytics, 1);
+        $this->defaultPackageSets(Feature::AdvancedAnalytics, 1);
         $restaurant = Restaurant::factory()->create(['timezone' => 'UTC']);
         $this->visit($restaurant, 45);
 
@@ -160,7 +158,6 @@ class AnalyticsTest extends TestCase
 
         $data = $this->actingAs($restaurant->user)->getJson(route('api.analytics', ['range' => '7d']))->assertOk()->json('data');
 
-        $this->assertSame('Asia/Beirut', $data['timezone']);
         $this->assertSame(1, $data['totals']['views_today']);
         $this->assertSame(1, $data['series'][6]['views']);
         $this->assertSame(0, $data['series'][5]['views']);
@@ -168,7 +165,7 @@ class AnalyticsTest extends TestCase
 
     public function test_orders_are_counted_when_the_package_takes_them(): void
     {
-        Package::default()->setFeature(Feature::Ordering, 1);
+        $this->defaultPackageSets(Feature::Ordering, 1);
         $restaurant = Restaurant::factory()->create();
         Order::factory()->for($restaurant)->create(['placed_at' => now()]);
         Order::factory()->for($restaurant)->create(['placed_at' => now(), 'status' => 'cancelled']);
@@ -181,7 +178,7 @@ class AnalyticsTest extends TestCase
 
     public function test_orders_are_null_when_the_package_does_not_take_them(): void
     {
-        Package::default()->setFeature(Feature::Ordering, 0);
+        $this->defaultPackageSets(Feature::Ordering, 0);
         $restaurant = Restaurant::factory()->create();
 
         $this->actingAs($restaurant->user)

@@ -93,8 +93,8 @@ class UserAdminTest extends TestCase
             ->assertOk()
             ->assertSee('Inactive')
             ->assertSee('No visits yet')
-            ->assertSeeInOrder(['Top Device', '—'])
-            ->assertSeeInOrder(['Dishes', '0 / —', 'Categories', '0 / —', 'Available Dishes', '0', 'Social Links', '0 / —']);
+            ->assertSeeInOrder(['Top Device', '-'])
+            ->assertSeeInOrder(['Dishes', '0 / -', 'Categories', '0 / -', 'Available Dishes', '0', 'Social Links', '0 / -']);
     }
 
     public function test_the_view_page_of_an_admin_shows_the_admin_role(): void
@@ -269,9 +269,9 @@ class UserAdminTest extends TestCase
             ->assertTableColumnStateSet('onboarding_completed_at', false, $pending)
             ->assertTableColumnStateSet('restaurant.name', 'Olive Tree', $onboarded->user)
             ->assertTableColumnStateSet('dishes_count', '2', $onboarded->user)
-            ->assertTableColumnStateSet('dishes_count', '—', $pending)
+            ->assertTableColumnStateSet('dishes_count', '-', $pending)
             ->assertTableColumnStateSet('views_count', '4', $onboarded->user)
-            ->assertTableColumnStateSet('views_count', '—', $pending)
+            ->assertTableColumnStateSet('views_count', '-', $pending)
             ->assertTableColumnFormattedStateSet('restaurant.is_active', 'Active', $onboarded->user)
             ->assertTableColumnFormattedStateSet('restaurant.is_active', 'Inactive', $inactive->user)
             ->assertSee('Completed 1 day ago')

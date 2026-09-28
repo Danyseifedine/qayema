@@ -77,7 +77,7 @@ class RestaurantAdminEdgeTest extends TestCase
         Livewire::test(ListRestaurants::class)
             ->assertCanSeeTableRecords([$scheduled, $ended])
             ->assertSee('Starts '.now()->addDays(5)->toFormattedDateString())
-            ->assertSee('Ended '.now()->subDays(2)->toFormattedDateString().' — on Free');
+            ->assertSee('Ended '.now()->subDays(2)->toFormattedDateString().', on Free');
     }
 
     public function test_the_package_dates_filter_covers_in_force_forever_thirty_days_and_scheduled(): void

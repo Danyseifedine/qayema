@@ -10,9 +10,7 @@ return new class extends Migration
      * Grants stacked on top of the restaurant's package: limits add up, flags
      * switch on, and an unlimited package limit stays unlimited. `source`
      * records where a grant came from ('admin' when you bump one restaurant by
-     * hand, 'purchase' once extra slots are sellable), and `reference` is that
-     * source's id — which doubles as the idempotency key, so replaying a
-     * purchase can't grant twice.
+     * hand, 'purchase' when it was paid for).
      */
     public function up(): void
     {
@@ -22,7 +20,6 @@ return new class extends Migration
             $table->string('feature', 32);
             $table->unsignedInteger('value')->default(1);
             $table->string('source', 12)->default('admin');
-            $table->string('reference')->nullable();
             // Why an admin gave it, for whoever reads the grant later.
             $table->string('note')->nullable();
             // Null means the grant never expires, which is the norm.
@@ -30,7 +27,6 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['restaurant_id', 'feature']);
-            $table->unique(['restaurant_id', 'feature', 'reference']);
         });
     }
 

@@ -32,7 +32,7 @@ class StoreSocialLinkRequest extends FormRequest
                 // One link per platform per restaurant.
                 Rule::unique('restaurant_social_links', 'platform')->where('restaurant_id', $restaurantId),
             ],
-            // http/https only — the URL is rendered as a link on the public menu,
+            // http/https only: the URL is rendered as a link on the public menu,
             // so javascript:/data: schemes must never reach it.
             'url' => ['required', 'string', 'url:http,https', 'max:500'],
         ];

@@ -8,6 +8,7 @@ use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
@@ -17,85 +18,87 @@ class DishForm
     public static function configure(Schema $schema): Schema
     {
         return $schema
+            ->columns(['lg' => 3])
             ->components([
-                Section::make('Assignment')
-                    ->description('Which restaurant and category this dish belongs to.')
-                    ->columns(2)
-                    ->schema([
-                        Select::make('restaurant_id')
-                            ->label('Restaurant')
-                            ->relationship('restaurant', 'name')
-                            ->getOptionLabelFromRecordUsing(fn ($record): string => (string) $record->name)
-                            ->preload()
-                            ->required()
-                            ->live()
-                            ->afterStateUpdated(fn (callable $set) => $set('category_id', null))
-                            ->helperText('Select the restaurant first to filter categories.'),
-                        Select::make('category_id')
-                            ->label('Category')
-                            ->relationship('category', 'name', fn ($query, $get) => $query->where('restaurant_id', $get('restaurant_id')))
-                            ->getOptionLabelFromRecordUsing(fn ($record): string => (string) $record->name)
-                            ->preload()
-                            ->nullable()
-                            ->helperText('Optional. Groups this dish under a category.'),
-                    ]),
-
-                Section::make('Dish Details')
-                    ->description('Name, price and ingredients.')
-                    ->columns(2)
-                    ->schema([
-                        // Menu text: the English, which every menu has. The
-                        // other languages are kept on save (KeepsTranslations).
-                        TextInput::make('name.en')
-                            ->label('Name (English)')
-                            ->placeholder('e.g. Grilled Salmon')
-                            ->required()
-                            ->maxLength(255)
-                            ->helperText('Displayed on the public menu.'),
-                        TextInput::make('price')
-                            ->numeric()
-                            // The restaurant's own currency.
-                            ->prefix(fn (Get $get): ?string => Restaurant::query()->find($get('restaurant_id'))?->currency)
-                            ->placeholder('0.00')
-                            ->step(0.01)
-                            ->minValue(0)
-                            ->helperText('Leave empty to hide the price.'),
-                        Textarea::make('ingredients.en')
-                            ->label('Ingredients (English)')
-                            ->placeholder('e.g. Salmon, lemon, garlic, olive oil…')
-                            ->rows(3)
-                            ->helperText('Optional. Shown under the dish name on the menu.')
-                            ->columnSpanFull(),
-                    ]),
-
-                Section::make('Display & Availability')
-                    ->columns(2)
-                    ->schema([
-                        TextInput::make('display_order')
-                            ->label('Display Order')
-                            ->numeric()
-                            ->default(0)
-                            ->required()
-                            ->placeholder('0')
-                            ->helperText('Lower numbers appear first within the category.'),
-                        Toggle::make('is_available')
-                            ->label('Dish is available (visible to customers)')
-                            ->default(true)
-                            ->helperText('Uncheck to hide this dish without deleting it.'),
-                    ]),
-
-                Section::make('Image')
-                    ->description('Photo shown on the public menu.')
-                    ->schema([
-                        SpatieMediaLibraryFileUpload::make('image')
-                            ->label('Dish Image')
-                            ->collection('image')
-                            ->image()
-                            ->maxSize(5120)
-                            ->imageEditor()
-                            ->imageEditorAspectRatioOptions([null, '16:9', '4:3', '1:1'])
-                            ->helperText('Max 5 MB. Optimised automatically.'),
-                    ]),
+                // A wide column for what defines it, a narrow one for its settings.
+                Group::make([
+                    Section::make('Dish Details')
+                        ->description('Name, price and ingredients.')
+                        ->columns(2)
+                        ->schema([
+                            // Menu text: the English, which every menu has. The
+                            // other languages are kept on save (KeepsTranslations).
+                            TextInput::make('name.en')
+                                ->label('Name (English)')
+                                ->placeholder('e.g. Grilled Salmon')
+                                ->required()
+                                ->maxLength(255)
+                                ->helperText('Displayed on the public menu.'),
+                            TextInput::make('price')
+                                ->numeric()
+                                // The restaurant's own currency.
+                                ->prefix(fn (Get $get): ?string => Restaurant::query()->find($get('restaurant_id'))?->currency)
+                                ->placeholder('0.00')
+                                ->step(0.01)
+                                ->minValue(0)
+                                ->helperText('Leave empty to hide the price.'),
+                            Textarea::make('ingredients.en')
+                                ->label('Ingredients (English)')
+                                ->placeholder('e.g. Salmon, lemon, garlic, olive oil…')
+                                ->rows(3)
+                                ->helperText('Optional. Shown under the dish name on the menu.')
+                                ->columnSpanFull(),
+                        ]),
+                    Section::make('Assignment')
+                        ->description('Which restaurant and category this dish belongs to.')
+                        ->columns(2)
+                        ->schema([
+                            Select::make('restaurant_id')
+                                ->label('Restaurant')
+                                ->relationship('restaurant', 'name')
+                                ->getOptionLabelFromRecordUsing(fn ($record): string => (string) $record->name)
+                                ->preload()
+                                ->required()
+                                ->live()
+                                ->afterStateUpdated(fn (callable $set) => $set('category_id', null))
+                                ->helperText('Select the restaurant first to filter categories.'),
+                            Select::make('category_id')
+                                ->label('Category')
+                                ->relationship('category', 'name', fn ($query, $get) => $query->where('restaurant_id', $get('restaurant_id')))
+                                ->getOptionLabelFromRecordUsing(fn ($record): string => (string) $record->name)
+                                ->preload()
+                                ->nullable()
+                                ->helperText('Optional. Groups this dish under a category.'),
+                        ]),
+                ])->columnSpan(['lg' => 2]),
+                Group::make([
+                    Section::make('Image')
+                        ->description('Photo shown on the public menu.')
+                        ->schema([
+                            SpatieMediaLibraryFileUpload::make('image')
+                                ->label('Dish Image')
+                                ->collection('image')
+                                ->image()
+                                ->maxSize(5120)
+                                ->imageEditor()
+                                ->imageEditorAspectRatioOptions([null, '16:9', '4:3', '1:1'])
+                                ->helperText('Max 5 MB. Optimised automatically.'),
+                        ]),
+                    Section::make('Display & Availability')
+                        ->schema([
+                            TextInput::make('display_order')
+                                ->label('Display Order')
+                                ->numeric()
+                                ->default(0)
+                                ->required()
+                                ->placeholder('0')
+                                ->helperText('Lower numbers appear first within the category.'),
+                            Toggle::make('is_available')
+                                ->label('Dish is available (visible to customers)')
+                                ->default(true)
+                                ->helperText('Uncheck to hide this dish without deleting it.'),
+                        ]),
+                ])->columnSpan(['lg' => 1]),
             ]);
     }
 }

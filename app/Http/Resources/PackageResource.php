@@ -32,12 +32,11 @@ class PackageResource extends JsonResource
                 'en' => $this->getTranslation('description', 'en', false) ?: null,
                 'ar' => $this->getTranslation('description', 'ar', false) ?: null,
             ],
-            // Null means the price is not published — the owner has to ask.
+            // Null means the price is not published; the owner has to ask.
             'price_cents' => $this->price_cents,
             'currency' => $this->currency,
             'is_contact_only' => (bool) $this->is_contact_only,
             'is_default' => (bool) $this->is_default,
-            'sort_order' => (int) $this->sort_order,
             // Marked "Most popular" on the dashboard.
             'is_featured' => (bool) $this->is_featured,
             'features' => $this->features(),

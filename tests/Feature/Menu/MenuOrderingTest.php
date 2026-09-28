@@ -5,7 +5,6 @@ namespace Tests\Feature\Menu;
 use App\Enums\Feature;
 use App\Models\Category;
 use App\Models\Dish;
-use App\Models\Package;
 use App\Models\Restaurant;
 use App\Models\RestaurantSocialLink;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -28,7 +27,7 @@ class MenuOrderingTest extends TestCase
 
     private function shop(bool $ordering, array $attributes = []): Restaurant
     {
-        Package::default()->setFeature(Feature::Ordering, $ordering ? 1 : 0);
+        $this->defaultPackageSets(Feature::Ordering, $ordering ? 1 : 0);
 
         $restaurant = $this->published(array_merge([
             'slug' => 'olive',

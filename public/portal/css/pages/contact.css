@@ -1,5 +1,5 @@
 /* ============================================================
-   QAYEMA — contact page
+   QAYEMA: contact page
    Uses the shared design tokens from app.css
    ============================================================ */
 
@@ -57,7 +57,6 @@ html[lang="ar"] .ctc-label { letter-spacing: 0; text-transform: none; }
 .ctc-btn { width: 100%; height: 52px; display: inline-flex; align-items: center; justify-content: center; gap: 9px; margin-top: 8px; border-radius: 100px; background: var(--gold); color: #1A1408; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; transition: background .25s var(--ease), transform .1s var(--ease); }
 .ctc-btn:hover { background: var(--gold-deep); }
 .ctc-btn:active { transform: translateY(1px); }
-html[lang="ar"] .ctc-btn svg { transform: scaleX(-1); }
 
 /* ---- Success ---- */
 .ctc-success { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 40px 16px 32px; }

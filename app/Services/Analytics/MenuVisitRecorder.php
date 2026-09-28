@@ -7,7 +7,7 @@ use App\Models\Restaurant;
 use Illuminate\Http\Request;
 
 /**
- * Records one `menu_sessions` row per public menu view — the raw data behind
+ * Records one `menu_sessions` row per public menu view: the raw data behind
  * the owner's QR scan counts and the admin visitor widgets. Rows are pruned
  * after the retention window by `stats:rollup`.
  *

@@ -22,7 +22,6 @@ class FeatureGrant extends Model
         'feature',
         'value',
         'source',
-        'reference',
         'note',
         'ends_at',
     ];

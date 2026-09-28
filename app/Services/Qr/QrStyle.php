@@ -12,7 +12,7 @@ use Throwable;
 /**
  * Turns a saved QR design into the options `qr-code-styling` draws from.
  *
- * The design stays ours — flat, named for what the owner picks — and this is
+ * The design stays ours (flat, named for what the owner picks) and this is
  * the one place it becomes the library's option tree. The dashboard does the
  * same for its live preview in
  * `qayema-dashboard/src/features/qr-studio/components/preview/qr-options.ts`;
@@ -84,7 +84,7 @@ class QrStyle
      * sends CORS headers, which R2 does not by default. Inlining also makes a
      * downloaded SVG self-contained instead of pointing back at the CDN.
      *
-     * A logo that cannot be read — R2 down, file missing — returns null, and
+     * A logo that cannot be read (R2 down, file missing) returns null, and
      * the code is simply drawn without it.
      */
     public static function logoDataUrl(Restaurant $restaurant): ?string

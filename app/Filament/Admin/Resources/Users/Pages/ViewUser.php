@@ -84,7 +84,7 @@ class ViewUser extends ViewRecord
 
                     TextEntry::make('restaurant.phone')
                         ->label('Phone')
-                        ->placeholder('—'),
+                        ->placeholder('-'),
 
                     TextEntry::make('restaurant.currency')
                         ->label('Currency')
@@ -145,7 +145,7 @@ class ViewUser extends ViewRecord
                         ->label('Top Device')
                         ->getStateUsing(function () use ($restaurant): string {
                             if (! $restaurant) {
-                                return '—';
+                                return '-';
                             }
 
                             $top = $restaurant->menuSessions()
@@ -154,7 +154,7 @@ class ViewUser extends ViewRecord
                                 ->orderByDesc('cnt')
                                 ->value('device_type');
 
-                            return $top ?? '—';
+                            return $top ?? '-';
                         })
                         ->badge()
                         ->color('gray'),
@@ -167,13 +167,13 @@ class ViewUser extends ViewRecord
                 ->schema([
                     TextEntry::make('content_dishes')
                         ->label('Dishes')
-                        ->getStateUsing(fn () => ($restaurant?->dishes()->count() ?? 0).' / '.($restaurant?->dish_limit ?? '—'))
+                        ->getStateUsing(fn () => ($restaurant?->dishes()->count() ?? 0).' / '.($restaurant?->dish_limit ?? '-'))
                         ->badge()
                         ->color('primary'),
 
                     TextEntry::make('content_categories')
                         ->label('Categories')
-                        ->getStateUsing(fn () => ($restaurant?->categories()->count() ?? 0).' / '.($restaurant?->category_limit ?? '—'))
+                        ->getStateUsing(fn () => ($restaurant?->categories()->count() ?? 0).' / '.($restaurant?->category_limit ?? '-'))
                         ->badge()
                         ->color('warning'),
 
@@ -185,7 +185,7 @@ class ViewUser extends ViewRecord
 
                     TextEntry::make('content_social_links')
                         ->label('Social Links')
-                        ->getStateUsing(fn () => ($restaurant?->socialLinks()->count() ?? 0).' / '.($restaurant?->social_link_limit ?? '—'))
+                        ->getStateUsing(fn () => ($restaurant?->socialLinks()->count() ?? 0).' / '.($restaurant?->social_link_limit ?? '-'))
                         ->badge()
                         ->color('info'),
                 ]),

@@ -1,5 +1,5 @@
 /* ============================================================
-   QAYEMA — portal interactions (GSAP choreography, theme, FAQ)
+   QAYEMA: portal interactions (GSAP choreography, theme, FAQ)
    Content + language are server-rendered (Laravel locale); this
    file only handles animation and client-side interactions.
    ============================================================ */
@@ -67,10 +67,9 @@
     });
   }
 
-  // Pinned horizontal scroll for "How it works" — direction follows the
+  // Pinned horizontal scroll for "How it works": direction follows the
   // server-set document direction (RTL scrolls the other way).
   function initHowPin() {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     var track = document.getElementById('howTrack');
     var section = document.getElementById('how');
     if (!track || !section) return;
@@ -108,7 +107,6 @@
   }
 
   function initMagnetic() {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     document.querySelectorAll('[data-magnetic]').forEach(function (el) {
       var strength = 0.35;
       el.addEventListener('mousemove', function (e) {

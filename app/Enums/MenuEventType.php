@@ -8,7 +8,7 @@ namespace App\Enums;
  */
 enum MenuEventType: string
 {
-    /** A dish went into the cart — once per press of +. Carries the dish. */
+    /** A dish went into the cart, once per press of +. Carries the dish. */
     case DishAdd = 'dish_add';
 
     /** A category tab was picked. Carries the category. */
@@ -17,7 +17,7 @@ enum MenuEventType: string
     /** A search that found something. Carries the term. */
     case Search = 'search';
 
-    /** A search that found nothing — what guests wanted and the menu lacks. */
+    /** A search that found nothing: what guests wanted and the menu lacks. */
     case SearchMiss = 'search_miss';
 
     case WhatsApp = 'whatsapp';

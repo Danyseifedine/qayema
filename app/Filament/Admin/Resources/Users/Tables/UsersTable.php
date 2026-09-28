@@ -64,7 +64,7 @@ class UsersTable
 
                 TextColumn::make('restaurant.name')
                     ->label('Restaurant')
-                    ->placeholder('—')
+                    ->placeholder('-')
                     ->searchable()
                     ->sortable()
                     ->url(fn (User $record): ?string => $record->restaurant
@@ -73,21 +73,21 @@ class UsersTable
 
                 TextColumn::make('dishes_count')
                     ->label('Dishes')
-                    ->getStateUsing(fn (User $record): string => (string) ($record->restaurant?->dishes()->count() ?? '—'))
-                    ->placeholder('—')
+                    ->getStateUsing(fn (User $record): string => (string) ($record->restaurant?->dishes()->count() ?? '-'))
+                    ->placeholder('-')
                     ->toggleable(),
 
                 TextColumn::make('views_count')
                     ->label('Total Views')
-                    ->getStateUsing(fn (User $record): string => (string) ($record->restaurant?->getTotalViews() ?? '—'))
-                    ->placeholder('—')
+                    ->getStateUsing(fn (User $record): string => (string) ($record->restaurant?->getTotalViews() ?? '-'))
+                    ->placeholder('-')
                     ->badge()
                     ->color('info')
                     ->toggleable(),
 
                 TextColumn::make('restaurant.is_active')
                     ->label('Menu Active')
-                    ->placeholder('—')
+                    ->placeholder('-')
                     ->badge()
                     ->color(fn ($state): string => $state ? 'success' : 'danger')
                     ->formatStateUsing(fn ($state): string => $state ? 'Active' : 'Inactive')
@@ -137,7 +137,7 @@ class UsersTable
                     ->modalHeading('Delete user')
                     ->modalDescription('This permanently deletes the user, their restaurant, all categories and dishes (including images), social links, statistics, profile media, and their sessions.')
                     ->action(function (User $record): void {
-                        $record->forceDelete();
+                        $record->delete();
                     }),
             ])
             ->defaultSort('created_at', 'desc');

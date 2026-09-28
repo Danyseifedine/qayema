@@ -27,12 +27,12 @@ class PackagesTest extends TestCase
 
         $response->assertJsonStructure([
             'data' => [[
-                'id', 'slug', 'price_cents', 'currency', 'is_contact_only', 'is_default', 'sort_order',
+                'id', 'slug', 'price_cents', 'currency', 'is_contact_only', 'is_default',
                 'name' => ['en', 'ar'],
                 'description' => ['en', 'ar'],
                 'features' => ['dish_limit', 'category_limit', 'social_link_limit', 'qr_studio'],
             ]],
-            'meta' => ['current', 'ends_at'],
+            'meta' => ['current'],
         ]);
     }
 
@@ -59,8 +59,7 @@ class PackagesTest extends TestCase
 
         $this->actingAs($owner->user)->getJson(route('api.packages.index'))
             ->assertOk()
-            ->assertJsonPath('meta.current', 'pro')
-            ->assertJsonPath('meta.ends_at', $owner->package_ends_at->toIso8601String());
+            ->assertJsonPath('meta.current', 'pro');
     }
 
     public function test_an_expired_package_reports_as_the_default_one(): void
@@ -69,8 +68,7 @@ class PackagesTest extends TestCase
 
         $this->actingAs($owner->user)->getJson(route('api.packages.index'))
             ->assertOk()
-            ->assertJsonPath('meta.current', 'free')
-            ->assertJsonPath('meta.ends_at', null);
+            ->assertJsonPath('meta.current', 'free');
     }
 
     public function test_a_user_without_a_restaurant_still_sees_the_catalog(): void

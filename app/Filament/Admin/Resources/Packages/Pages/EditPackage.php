@@ -28,7 +28,7 @@ class EditPackage extends EditRecord
 
         foreach (Feature::cases() as $feature) {
             // A key the package does not carry yet reads as the feature's
-            // default — never as empty, which a limit field would save as
+            // default, never as empty, which a limit field would save as
             // unlimited.
             $value = array_key_exists($feature->value, $stored) ? $stored[$feature->value] : $feature->defaultValue();
 

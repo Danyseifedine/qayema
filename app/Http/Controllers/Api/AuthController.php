@@ -15,14 +15,14 @@ class AuthController extends Controller
      *
      * A cross-domain SPA (e.g. a localhost dashboard talking to qayema.test)
      * cannot read the XSRF-TOKEN cookie because it belongs to another domain, so
-     * it can't echo it back on writes. Handing the token over the body — which
-     * CORS lets the allow-listed origin read — lets the SPA send it as the
+     * it can't echo it back on writes. Handing the token over the body (which
+     * CORS lets the allow-listed origin read) lets the SPA send it as the
      * X-CSRF-TOKEN header and pass CSRF validation. Same-domain SPAs don't need
      * this (they read the cookie directly), but it's harmless for them too.
      */
-    public function csrfToken(Request $request): JsonResponse
+    public function csrfToken(): JsonResponse
     {
-        // Never cache the token — a stale token from a proxy/browser cache would
+        // Never cache the token: a stale token from a proxy/browser cache would
         // cause CSRF mismatches on writes.
         return response()->json(['token' => csrf_token()])
             ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');

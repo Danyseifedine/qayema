@@ -6,7 +6,7 @@
 // (script). Every menu language names its script in config('locales.menu'), so
 // English and Spanish share the Latin pick and Arabic has its own.
 //
-// Each family is a Google Font. `weights` are the ones it really has — Google
+// Each family is a Google Font. `weights` are the ones it really has. Google
 // answers 400 to a request for a weight a family lacks, which would leave the
 // menu in the fallback font. `category` only groups the picker.
 //

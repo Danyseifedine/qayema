@@ -8,7 +8,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="robots" content="noindex, nofollow" />
-<title>{{ $design['title'] ?: config('app.name') }} — QR</title>
+<title>{{ $design['title'] ?: config('app.name') }} | QR</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="{{ $card['fonts_href'] }}" rel="stylesheet">
@@ -108,7 +108,7 @@
     <script>
         (function () {
             // The same library and the same options the dashboard previews
-            // with — built by App\Services\Qr\QrStyle — so what the owner
+            // with (built by App\Services\Qr\QrStyle), so what the owner
             // designed is what gets printed. SVG keeps it sharp on paper.
             var options = @json($card['options']);
             options.width = 196;

@@ -24,7 +24,7 @@ class SecurityHeaders
 
         // script-src/default-src are intentionally omitted: the app runs standard
         // Alpine.js (needs eval), Livewire/Filament inline scripts, CDN scripts and
-        // reCAPTCHA — a strict policy (or any default-src, which scripts/styles fall
+        // reCAPTCHA; a strict policy (or any default-src, which scripts/styles fall
         // back to) would break them. The directives below have no default-src
         // fallback, so they add protection without restricting scripts/styles/images:
         // base-tag hijacking of relative URLs, plugin/object injection, and

@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\View\View;
 
 /**
- * "Forgot your password?" — sends the reset link.
+ * "Forgot your password?": sends the reset link.
  *
  * The response is the same whether or not the address exists, so the form
  * can't be used to discover which emails have accounts.
@@ -29,7 +29,7 @@ class PasswordResetLinkController extends Controller
 
         $status = Password::sendResetLink($request->only('email'));
 
-        // RESET_THROTTLED is the only outcome worth telling the user about —
+        // RESET_THROTTLED is the only outcome worth telling the user about:
         // it means they just asked and should check their inbox, not resubmit.
         if ($status === Password::RESET_THROTTLED) {
             return back()->withInput($request->only('email'))

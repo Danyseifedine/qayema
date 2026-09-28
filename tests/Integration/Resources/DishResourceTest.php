@@ -17,7 +17,7 @@ class DishResourceTest extends TestCase
 {
     use CreatesOwners, RefreshDatabase;
 
-    private const KEYS = ['id', 'name', 'ingredients', 'price', 'is_available', 'display_order', 'category_id', 'image_url'];
+    private const KEYS = ['id', 'name', 'ingredients', 'price', 'is_available', 'category_id', 'image_url'];
 
     /** @return array<string, mixed> */
     private function resolve(Dish $dish, ?User $user): array
@@ -39,7 +39,6 @@ class DishResourceTest extends TestCase
             'ingredients' => ['en' => 'Bulgur, lamb'],
             'price' => 12,
             'is_available' => true,
-            'display_order' => 5,
         ]);
 
         $this->assertSame([
@@ -48,7 +47,6 @@ class DishResourceTest extends TestCase
             'ingredients' => ['en' => 'Bulgur, lamb', 'ar' => null],
             'price' => '12.00',
             'is_available' => true,
-            'display_order' => 5,
             'category_id' => $category->id,
             'image_url' => null,
         ], $this->resolve($dish, $restaurant->user));
@@ -78,7 +76,10 @@ class DishResourceTest extends TestCase
         $url = $this->resolve($dish->fresh(), $restaurant->user)['image_url'];
 
         $this->assertIsString($url);
-        $this->assertSame($dish->fresh()->getFirstMediaUrl('image'), $url);
+        // Absolute even when the disk gives "/storage/…": the dashboard
+        // rejects a relative URL, which once broke the whole Design page.
+        $this->assertSame(url($dish->fresh()->getFirstMediaUrl('image')), $url);
+        $this->assertStringStartsWith('http', $url);
         $this->assertStringEndsWith('dish.jpg', $url);
     }
 }

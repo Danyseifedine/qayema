@@ -74,7 +74,7 @@ class SocialLinkController extends Controller
         return new SocialLinkResource($socialLink);
     }
 
-    public function destroy(Request $request, RestaurantSocialLink $socialLink): JsonResponse
+    public function destroy(RestaurantSocialLink $socialLink): JsonResponse
     {
         $this->authorize('delete', $socialLink);
 

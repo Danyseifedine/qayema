@@ -31,7 +31,7 @@ class DisplayOrder
 
         foreach ($orderedIds as $index => $id) {
             // Both halves are cast to int here, so the expression carries no
-            // caller-controlled text even though it is built as raw SQL —
+            // caller-controlled text even though it is built as raw SQL:
             // `update()` gives a raw expression no bindings of its own.
             $cases[] = 'when '.(int) $id.' then '.($index + 1);
         }

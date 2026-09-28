@@ -36,11 +36,6 @@ class RestaurantSocialLinkResource extends Resource
         return RestaurantSocialLinksTable::configure($table);
     }
 
-    public static function getRelations(): array
-    {
-        return [];
-    }
-
     public static function getPages(): array
     {
         return [

@@ -17,7 +17,7 @@ class PackageChangeTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_it_points_at_the_restaurant_both_packages_and_the_admin(): void
+    public function test_it_records_the_restaurant_and_points_at_both_packages_and_the_admin(): void
     {
         $restaurant = Restaurant::factory()->create();
         $admin = User::factory()->admin()->create();
@@ -32,7 +32,7 @@ class PackageChangeTest extends TestCase
             'note' => 'Paid by bank transfer',
         ])->fresh();
 
-        $this->assertTrue($change->restaurant->is($restaurant));
+        $this->assertSame($restaurant->id, $change->restaurant_id);
         $this->assertTrue($change->fromPackage->is($free));
         $this->assertTrue($change->toPackage->is($pro));
         $this->assertTrue($change->changedBy->is($admin));
@@ -61,24 +61,12 @@ class PackageChangeTest extends TestCase
         $this->assertTrue($first->toPackage->is(Package::default()));
     }
 
-    public function test_a_soft_deleted_admin_is_still_on_record(): void
+    public function test_deleting_the_admin_keeps_the_line_but_forgets_who(): void
     {
         $admin = User::factory()->admin()->create();
         $change = PackageChange::factory()->create(['changed_by' => $admin->id]);
 
         $admin->delete();
-
-        $this->assertSame($admin->id, $change->fresh()->changed_by);
-        $this->assertNull($change->fresh()->changedBy, 'The relation hides a trashed user.');
-        $this->assertTrue($change->fresh()->changedBy()->withTrashed()->sole()->is($admin));
-    }
-
-    public function test_purging_the_admin_keeps_the_line_but_forgets_who(): void
-    {
-        $admin = User::factory()->admin()->create();
-        $change = PackageChange::factory()->create(['changed_by' => $admin->id]);
-
-        $admin->forceDelete();
 
         $this->assertModelExists($change);
         $this->assertNull($change->fresh()->changed_by);

@@ -12,7 +12,7 @@ use App\Models\Order;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 /**
- * The owner's own orders. Read and a status change — an order's contents are
+ * The owner's own orders. Read and a status change; an order's contents are
  * written once, by the guest who placed it, and never edited afterwards.
  */
 class OrderController extends Controller

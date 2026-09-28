@@ -22,7 +22,7 @@ class OnboardingNavigationTest extends TestCase
 
     public function test_final_step_completes_onboarding(): void
     {
-        // Step 3 (branding) is the final step — a logo completes onboarding
+        // Step 3 (branding) is the final step: a logo completes onboarding
         // rather than returning a further step.
         Mail::fake();
         $user = $this->ownerWithRestaurant(2);

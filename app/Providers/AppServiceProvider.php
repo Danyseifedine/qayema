@@ -29,7 +29,6 @@ class AppServiceProvider extends ServiceProvider
         // /telescope or record sensitive request/query data, even if env is wrong.
         if ($this->app->environment('local') && class_exists(\Laravel\Telescope\TelescopeServiceProvider::class)) {
             $this->app->register(\Laravel\Telescope\TelescopeServiceProvider::class);
-            $this->app->register(TelescopeServiceProvider::class);
         }
     }
 
@@ -71,11 +70,11 @@ class AppServiceProvider extends ServiceProvider
     {
         // Low-ceiling limiters: a 429 here is usually legitimate (a shared login,
         // a double-submit) and is already throttled, so it must NOT escalate to an
-        // IP-wide ban — otherwise one busy office NAT could lock everyone out.
+        // IP-wide ban; otherwise one busy office NAT could lock everyone out.
         $this->defineRateLimiter('auth', fn (): Limit => Limit::perMinute(5), autoBan: false);
         // The login form has its own per-account lockout (5 wrong passwords,
         // LoginRequest). This ceiling only has to stop floods, so it sits well
-        // above that — otherwise the raw 429 fires before the friendly lockout.
+        // above that; otherwise the raw 429 fires before the friendly lockout.
         $this->defineRateLimiter('login', fn (): Limit => Limit::perMinute(20), autoBan: false);
         $this->defineRateLimiter('contact', fn (): Limit => Limit::perMinute(10), autoBan: false);
         // Guests ordering share one IP across a whole dining room, so this is

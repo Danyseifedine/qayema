@@ -404,7 +404,7 @@
 
     /**
      * A dialog closes instantly, which kills any exit animation. So the sheet
-     * is held open for the length of the slide-out and closed after it — with
+     * is held open for the length of the slide-out and closed after it, with
      * a timer in case no animation runs at all.
      */
     function closeSheet() {

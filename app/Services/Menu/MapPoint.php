@@ -8,7 +8,7 @@ use App\Models\Restaurant;
  * The point behind a restaurant's map link, and a map that can be shown for it.
  *
  * Owners paste a Google Maps URL or let the dashboard fill one in from the
- * browser's position, so the coordinates already live inside that URL — which
+ * browser's position, so the coordinates already live inside that URL, which
  * is why this reads them rather than the restaurant carrying its own lat/lng
  * columns that would need backfilling from the same URLs anyway.
  *
@@ -53,8 +53,8 @@ class MapPoint
     /**
      * The point written into a map link, as `[lat, lng]`.
      *
-     * Google writes coordinates several ways — `?q=`, `?ll=`, `?query=`, and
-     * `/@lat,lng,17z` in a place URL — and a shortened `maps.app.goo.gl` link
+     * Google writes coordinates several ways (`?q=`, `?ll=`, `?query=`, and
+     * `/@lat,lng,17z` in a place URL), and a shortened `maps.app.goo.gl` link
      * hides them behind a redirect. Null means "no map to draw", not "bad link".
      *
      * @return array{0: float, 1: float}|null

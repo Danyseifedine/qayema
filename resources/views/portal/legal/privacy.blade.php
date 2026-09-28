@@ -10,8 +10,8 @@
 @section('headline_plain', 'Privacy')
 @section('headline_italic', 'Policy')
 @section('headline_ar', 'سياسة الخصوصية')
-@section('updated', 'Last updated: May 9, 2025')
-@section('updated_ar', 'آخر تحديث: 9 مايو 2025')
+@section('updated', 'Last updated: September 28, 2026')
+@section('updated_ar', 'آخر تحديث: 28 سبتمبر 2026')
 
 @section('toc')
     <li><a href="#information">Information we collect</a></li>
@@ -48,29 +48,38 @@
 <h2 id="information">Information we collect</h2>
 
 <h3>Account information</h3>
-<p>When you register for a Qayema account (via email or Google), we collect your name, email address, and authentication credentials. We do not store your Google password.</p>
+<p>Accounts are created by signing in with Google. We receive and store your name, your email address, your Google account identifier, the link to your Google profile picture, and the sign-in tokens Google issues, which we store encrypted. We never see or store your Google password. If you set a password to sign in with your email address, we store only a one-way hash of it.</p>
 
 <h3>Restaurant & menu data</h3>
-<p>To provide the service, we store the restaurant information, categories, dishes, prices, images, and settings you add to your account. This data belongs to you.</p>
+<p>To provide the service, we store the restaurant details you enter (such as its name, description, phone number, map location link, opening hours, time zone, currency and social links), your categories, dishes, prices, images, and design and QR code settings. This data belongs to you, and what you publish is shown to anyone who opens your menu. Images you upload are converted to the WebP format and stored on Cloudflare R2; the original file you uploaded is not kept.</p>
 
-<h3>Usage & analytics data</h3>
-<p>We collect information about how you use the dashboard, including pages visited, actions taken, and session duration. For public menus, we collect anonymised visitor statistics — session identifiers, device type, browser, operating system, time on page, and whether the visit came from a QR code scan. We do not collect names or personal details of your guests.</p>
+<h3>Contact messages & package requests</h3>
+<p>When you use our contact form or ask for a package from your dashboard, we store your name, email address, your message and the IP address it was sent from (used to limit each address to three messages a day). For a package request we also store your account and the package you asked for. An email with the message is sent to our team.</p>
+
+<h3>Guests on public menus</h3>
+<p>We do not track how you use the dashboard. When a guest opens a public menu, we record one entry per menu view with: a session identifier (the browser session's ID or, when there is no session, a one-way hash of the IP address and browser; the IP address itself is not stored in these entries), the device type (mobile, tablet or desktop), the browser name, the operating system, the menu language, whether the visit came through the menu's QR code, and the time.</p>
+<p>We also record some of the actions guests take on a menu, tied to the same session identifier: adding a dish to the cart, opening a category, search terms (in a normalised form) and searches that found nothing, taps on the WhatsApp, map, call and social links, and switching language. The restaurant's owner sees these records as statistics. Both kinds of records are deleted automatically after 6 months. Owners previewing their own menu are not recorded. We do not collect guests' names, phone numbers or other contact details.</p>
+
+<h3>Orders</h3>
+<p>On menus whose package includes ordering, when a guest places an order we store the dishes ordered (name, price and quantity), the total, the currency, an optional note written by the guest, and the time. We do not ask for the guest's name, phone number or address. The guest is then sent to WhatsApp with the order written out; that message goes from the guest to the restaurant through WhatsApp (operated by Meta) and is not processed by us. The restaurant's owner sees the order in the dashboard.</p>
 
 <h3>Technical data</h3>
-<p>We automatically receive standard server log data, including IP addresses, request timestamps, and HTTP headers. This is used for security, debugging, and infrastructure monitoring.</p>
+<p>Like any website, our servers receive the IP address, browser details and time of each request, which we use for security, debugging, and keeping the service running. We keep a session record for each browser that visits, including guests on a menu, holding its IP address, browser user agent and last activity time; it is removed after a year without activity. An IP address that sends abusive traffic can be blocked automatically for a period, and we keep the blocked address, the reason and when the block ends.</p>
 
-<h3>Payment data</h3>
-<p>Qayema does not directly handle payment card information. Payments are processed by third-party providers (such as Stripe) who are responsible for the security of your financial data.</p>
+<h3>Payments</h3>
+<p>Qayema does not take payments. Paid packages are arranged and paid for directly with Lebify Group, so no payment details are entered into or stored by Qayema.</p>
 
 <h2 id="use">How we use your information</h2>
 
 <ul>
     <li>To create and maintain your account and restaurant profile</li>
     <li>To deliver the Qayema dashboard and public menu features</li>
-    <li>To provide you with visitor analytics for your menu</li>
-    <li>To send transactional emails (account confirmation, password reset)</li>
-    <li>To detect and prevent fraud, abuse, and security incidents</li>
-    <li>To improve and develop our service based on usage patterns</li>
+    <li>To show you your menu's visitor statistics and orders</li>
+    <li>To handle package requests and contact messages, and to switch packages on and off</li>
+    <li>To send service emails (a welcome email when your menu is set up, and password reset links)</li>
+    <li>To give you support: our administrators can view your account and restaurant and, when needed, sign in as you to help</li>
+    <li>To detect and prevent fraud, abuse, and security incidents, for example with rate limits and by blocking abusive IP addresses</li>
+    <li>To improve and develop our service</li>
     <li>To comply with legal obligations</li>
 </ul>
 
@@ -81,7 +90,12 @@
 <p>We share your information only in the following circumstances:</p>
 
 <ul>
-    <li><strong>Service providers:</strong> Infrastructure partners (hosting, databases, email delivery, image storage) that process data on our behalf under strict data processing agreements.</li>
+    <li><strong>The restaurant's owner:</strong> Visit statistics, guest actions and orders from a menu are shown to that restaurant's owner.</li>
+    <li><strong>Service providers:</strong> The providers that run the service for us: hosting and database, Cloudflare R2 (image storage), and an email delivery service.</li>
+    <li><strong>Google:</strong> Sign-in with Google; Google reCAPTCHA, which checks for automated abuse on the sign-in and contact pages where it is enabled; and Google Fonts, which serves the typefaces on our website, dashboard and menus, so Google receives your IP address and browser details when a page loads them.</li>
+    <li><strong>OpenStreetMap:</strong> Menus that show the restaurant's location load a map from OpenStreetMap, which receives the guest's IP address and the page address.</li>
+    <li><strong>jsDelivr:</strong> Some scripts on our website pages are loaded from the jsDelivr content delivery network, which receives your IP address.</li>
+    <li><strong>WhatsApp:</strong> When a guest taps a WhatsApp link or places an order, the conversation happens in WhatsApp (operated by Meta) under its own terms and privacy policy.</li>
     <li><strong>Legal requirements:</strong> If required by law, court order, or to protect the rights and safety of Qayema or others.</li>
     <li><strong>Business transfers:</strong> In connection with a merger, acquisition, or sale of assets, with appropriate confidentiality obligations.</li>
 </ul>
@@ -90,13 +104,13 @@
 
 <h2 id="storage">Data storage & security</h2>
 
-<p>Your data is stored on secure servers. We apply industry-standard security measures including encryption in transit (HTTPS/TLS), encrypted storage for sensitive fields, access controls, and regular security reviews.</p>
+<p>Your data is stored on our servers and, for images, on Cloudflare R2. We use encryption in transit (HTTPS/TLS), store passwords only as one-way hashes, store Google sign-in tokens encrypted, and apply access controls, rate limits and automatic blocking of abusive traffic.</p>
 <p>No method of transmission over the internet is 100% secure. While we strive to protect your data, we cannot guarantee absolute security. In the event of a data breach that affects your rights, we will notify you in accordance with applicable law.</p>
-<p>We retain your data for as long as your account is active. When you delete your account, your data is permanently removed from our systems within 30 days, except where retention is required by law.</p>
+<p>We retain your data for as long as your account exists. Records of menu views and guest actions are deleted after 6 months. When you ask us to delete your account, your data is permanently removed from our systems within 30 days, except where retention is required by law.</p>
 
 <h2 id="cookies">Cookies</h2>
 
-<p>We use cookies and similar technologies to operate the service. For full details, please read our <a href="{{ route('cookies') }}">Cookie Policy</a>.</p>
+<p>We use a small number of cookies and browser storage entries to operate the service, and no advertising or analytics cookies. For full details, please read our <a href="{{ route('cookies') }}">Cookie Policy</a>.</p>
 
 <h2 id="rights">Your rights</h2>
 
@@ -141,29 +155,38 @@
 <h2 id="information-ar">المعلومات التي نجمعها</h2>
 
 <h3>معلومات الحساب</h3>
-<p>عند التسجيل في حساب قائمة (عبر البريد الإلكتروني أو Google)، نجمع اسمك وعنوان بريدك الإلكتروني وبيانات اعتماد المصادقة. نحن لا نحتفظ بكلمة مرور Google الخاصة بك.</p>
+<p>تُنشأ الحسابات بتسجيل الدخول عبر Google. نتلقى ونحتفظ باسمك وعنوان بريدك الإلكتروني ومعرّف حسابك في Google ورابط صورة ملفك الشخصي في Google ورموز تسجيل الدخول التي تصدرها Google، ونخزّن هذه الرموز مشفّرة. لا نطّلع على كلمة مرور Google الخاصة بك ولا نحتفظ بها. إذا عيّنت كلمة مرور لتسجيل الدخول ببريدك الإلكتروني، فإننا نحتفظ فقط بتجزئة أحادية الاتجاه لها.</p>
 
 <h3>بيانات المطعم والقائمة</h3>
-<p>لتقديم الخدمة، نحتفظ بمعلومات المطعم والفئات والأطباق والأسعار والصور والإعدادات التي تضيفها إلى حسابك. هذه البيانات ملك لك.</p>
+<p>لتقديم الخدمة، نحتفظ بتفاصيل المطعم التي تدخلها (مثل اسمه ووصفه ورقم هاتفه ورابط موقعه على الخريطة وساعات العمل والمنطقة الزمنية والعملة والروابط الاجتماعية)، وبالفئات والأطباق والأسعار والصور وإعدادات التصميم ورمز QR. هذه البيانات ملك لك، وما تنشره يظهر لكل من يفتح قائمتك. تُحوَّل الصور التي ترفعها إلى صيغة WebP وتُخزَّن على Cloudflare R2، ولا يُحتفظ بالملف الأصلي الذي رفعته.</p>
 
-<h3>بيانات الاستخدام والتحليلات</h3>
-<p>نجمع معلومات حول كيفية استخدامك للوحة التحكم، بما في ذلك الصفحات التي تزورها والإجراءات التي تتخذها ومدة الجلسة. بالنسبة للقوائم العامة، نجمع إحصاءات زوار مجهولة الهوية تشمل: معرّفات الجلسة ونوع الجهاز والمتصفح ونظام التشغيل والوقت المقضي في الصفحة وما إذا كانت الزيارة من رمز QR. نحن لا نجمع أسماء أو تفاصيل شخصية لضيوفك.</p>
+<h3>رسائل التواصل وطلبات الباقات</h3>
+<p>عند استخدامك نموذج التواصل أو طلبك باقة من لوحة تحكمك، نحتفظ باسمك وعنوان بريدك الإلكتروني ورسالتك وعنوان IP الذي أُرسلت منه (ويُستخدم لحصر كل عنوان في ثلاث رسائل يوميًا). وفي طلب الباقة نحتفظ أيضًا بحسابك والباقة التي طلبتها. تُرسل رسالة بريد إلكتروني تتضمن الرسالة إلى فريقنا.</p>
+
+<h3>ضيوف القوائم العامة</h3>
+<p>لا نتتبّع كيفية استخدامك للوحة التحكم. عندما يفتح ضيف قائمة عامة، نسجّل إدخالًا واحدًا لكل مشاهدة للقائمة يتضمن: معرّف جلسة (معرّف جلسة المتصفح، أو عند عدم وجود جلسة، تجزئة أحادية الاتجاه لعنوان IP والمتصفح؛ ولا يُخزَّن عنوان IP نفسه في هذه الإدخالات)، ونوع الجهاز (هاتف أو جهاز لوحي أو حاسوب)، واسم المتصفح، ونظام التشغيل، ولغة القائمة، وما إذا جاءت الزيارة عبر رمز QR الخاص بالقائمة، ووقت الزيارة.</p>
+<p>ونسجّل أيضًا بعض ما يفعله الضيوف في القائمة، مرتبطًا بمعرّف الجلسة نفسه: إضافة طبق إلى السلة، وفتح فئة، وكلمات البحث (بصيغة موحّدة) وعمليات البحث التي لم تجد نتيجة، والنقر على روابط WhatsApp والخريطة والاتصال ومواقع التواصل، وتبديل اللغة. يرى صاحب المطعم هذه السجلات على شكل إحصاءات. ويُحذف النوعان تلقائيًا بعد 6 أشهر. لا تُسجَّل معاينة أصحاب المطاعم لقوائمهم. ولا نجمع أسماء الضيوف أو أرقام هواتفهم أو أي بيانات تواصل أخرى خاصة بهم.</p>
+
+<h3>الطلبات</h3>
+<p>في القوائم التي تتضمن باقتها استقبال الطلبات، عندما يرسل ضيف طلبًا نحتفظ بالأطباق المطلوبة (الاسم والسعر والكمية) والمجموع والعملة وملاحظة اختيارية يكتبها الضيف ووقت الطلب. لا نطلب اسم الضيف أو رقم هاتفه أو عنوانه. ثم يُحوَّل الضيف إلى WhatsApp مع نص الطلب؛ وتنتقل تلك الرسالة من الضيف إلى المطعم عبر WhatsApp (الذي تشغّله Meta) ولا نعالجها نحن. يرى صاحب المطعم الطلب في لوحة التحكم.</p>
 
 <h3>البيانات التقنية</h3>
-<p>نتلقى تلقائيًا بيانات سجل الخادم القياسية، بما في ذلك عناوين IP وطوابع وقت الطلبات وترويسات HTTP. تُستخدم هذه البيانات لأغراض الأمان والتصحيح ومراقبة البنية التحتية.</p>
+<p>كما في أي موقع إلكتروني، تتلقى خوادمنا عنوان IP وتفاصيل المتصفح ووقت كل طلب، ونستخدمها لأغراض الأمان والتصحيح والحفاظ على عمل الخدمة. ونحتفظ بسجل جلسة لكل متصفح يزورنا، بما في ذلك ضيوف القوائم، يتضمن عنوان IP ووكيل المستخدم للمتصفح ووقت آخر نشاط، ويُحذف بعد سنة دون نشاط. وقد يُحظر تلقائيًا لفترة محددة عنوان IP يرسل حركة مسيئة، ونحتفظ بالعنوان المحظور وسبب الحظر وموعد انتهائه.</p>
 
-<h3>بيانات الدفع</h3>
-<p>لا تتعامل قائمة مباشرةً مع معلومات بطاقات الدفع. تتم معالجة المدفوعات عبر مزودي خدمة خارجيين (مثل Stripe) المسؤولين عن أمان بياناتك المالية.</p>
+<h3>المدفوعات</h3>
+<p>لا تتقاضى قائمة أي مدفوعات. يُتفق على الباقات المدفوعة وتُدفع مباشرةً مع مجموعة ليبيفاي، لذلك لا تُدخل أي بيانات دفع في قائمة ولا تحتفظ بها.</p>
 
 <h2 id="use-ar">كيف نستخدم معلوماتك</h2>
 
 <ul>
     <li>لإنشاء حسابك وملف مطعمك والحفاظ عليهما</li>
     <li>لتقديم لوحة تحكم قائمة وميزات القائمة العامة</li>
-    <li>لتزويدك بإحصاءات الزوار لقائمتك</li>
-    <li>لإرسال رسائل البريد الإلكتروني التعاملية (تأكيد الحساب، إعادة تعيين كلمة المرور)</li>
-    <li>للكشف عن الاحتيال والإساءة والحوادث الأمنية ومنعها</li>
-    <li>لتحسين خدمتنا وتطويرها بناءً على أنماط الاستخدام</li>
+    <li>لعرض إحصاءات زوار قائمتك وطلباتها عليك</li>
+    <li>لمعالجة طلبات الباقات ورسائل التواصل، ولتفعيل الباقات وإيقافها</li>
+    <li>لإرسال رسائل البريد الإلكتروني الخاصة بالخدمة (رسالة ترحيب عند إعداد قائمتك، وروابط إعادة تعيين كلمة المرور)</li>
+    <li>لتقديم الدعم لك: يمكن لمسؤولينا الاطلاع على حسابك ومطعمك، وتسجيل الدخول بحسابك عند الحاجة لمساعدتك</li>
+    <li>للكشف عن الاحتيال والإساءة والحوادث الأمنية ومنعها، مثل تحديد عدد الطلبات وحظر عناوين IP المسيئة</li>
+    <li>لتحسين خدمتنا وتطويرها</li>
     <li>للامتثال للالتزامات القانونية</li>
 </ul>
 
@@ -174,7 +197,12 @@
 <p>نشارك معلوماتك فقط في الحالات التالية:</p>
 
 <ul>
-    <li><strong>مزودو الخدمة:</strong> شركاء البنية التحتية (الاستضافة وقواعد البيانات وتسليم البريد الإلكتروني وتخزين الصور) الذين يعالجون البيانات نيابةً عنا وفق اتفاقيات معالجة بيانات صارمة.</li>
+    <li><strong>صاحب المطعم:</strong> تُعرض إحصاءات الزيارات وما يفعله الضيوف والطلبات الخاصة بقائمة ما على صاحب ذلك المطعم.</li>
+    <li><strong>مزودو الخدمة:</strong> الجهات التي تشغّل الخدمة لصالحنا: الاستضافة وقاعدة البيانات، وCloudflare R2 (تخزين الصور)، وخدمة لتسليم البريد الإلكتروني.</li>
+    <li><strong>Google:</strong> تسجيل الدخول عبر Google؛ وGoogle reCAPTCHA الذي يتحقق من الإساءة الآلية في صفحتي تسجيل الدخول والتواصل حين يكون مفعّلًا؛ وخطوط Google التي تقدّم الخطوط المستخدمة في موقعنا ولوحة التحكم والقوائم، فتتلقى Google عنوان IP وتفاصيل متصفحك عند تحميل الصفحة لها.</li>
+    <li><strong>OpenStreetMap:</strong> القوائم التي تعرض موقع المطعم تحمّل خريطة من OpenStreetMap، التي تتلقى عنوان IP الخاص بالضيف وعنوان الصفحة.</li>
+    <li><strong>jsDelivr:</strong> تُحمَّل بعض البرامج النصية في صفحات موقعنا من شبكة توصيل المحتوى jsDelivr، التي تتلقى عنوان IP الخاص بك.</li>
+    <li><strong>WhatsApp:</strong> عندما ينقر ضيف على رابط WhatsApp أو يرسل طلبًا، تجري المحادثة داخل WhatsApp (الذي تشغّله Meta) وفق شروطه وسياسة خصوصيته.</li>
     <li><strong>المتطلبات القانونية:</strong> إذا طُلب ذلك بموجب القانون أو أمر قضائي أو لحماية حقوق وسلامة قائمة أو الآخرين.</li>
     <li><strong>التحويلات التجارية:</strong> في سياق الاندماج أو الاستحواذ أو بيع الأصول، مع التزامات سرية مناسبة.</li>
 </ul>
@@ -183,13 +211,13 @@
 
 <h2 id="storage-ar">تخزين البيانات والأمان</h2>
 
-<p>يتم تخزين بياناتك على خوادم آمنة. نطبّق معايير أمان صناعية تشمل التشفير أثناء النقل (HTTPS/TLS) والتشفير للحقول الحساسة وضوابط الوصول ومراجعات الأمان المنتظمة.</p>
+<p>تُخزَّن بياناتك على خوادمنا، وتُخزَّن الصور على Cloudflare R2. نستخدم التشفير أثناء النقل (HTTPS/TLS)، ونحتفظ بكلمات المرور على شكل تجزئة أحادية الاتجاه فقط، ونخزّن رموز تسجيل الدخول عبر Google مشفّرة، ونطبّق ضوابط الوصول وتحديد عدد الطلبات والحظر التلقائي للحركة المسيئة.</p>
 <p>لا توجد طريقة نقل عبر الإنترنت آمنة بنسبة 100%. بينما نسعى جاهدين لحماية بياناتك، لا يمكننا ضمان الأمان المطلق. في حال حدوث اختراق للبيانات يؤثر على حقوقك، سنُخطرك وفقًا للقانون المعمول به.</p>
-<p>نحتفظ ببياناتك طالما حسابك نشط. عند حذف حسابك، تُزال بياناتك نهائيًا من أنظمتنا خلال 30 يومًا، إلا إذا كان الاحتفاظ بها مطلوبًا قانونًا.</p>
+<p>نحتفظ ببياناتك طالما حسابك موجود. تُحذف سجلات مشاهدات القوائم وما يفعله الضيوف بعد 6 أشهر. عندما تطلب منا حذف حسابك، تُزال بياناتك نهائيًا من أنظمتنا خلال 30 يومًا، إلا إذا كان الاحتفاظ بها مطلوبًا قانونًا.</p>
 
 <h2 id="cookies-ar">ملفات تعريف الارتباط</h2>
 
-<p>نستخدم ملفات تعريف الارتباط والتقنيات المماثلة لتشغيل الخدمة. لمزيد من التفاصيل، يرجى قراءة <a href="{{ route('cookies') }}">سياسة ملفات تعريف الارتباط</a>.</p>
+<p>نستخدم عددًا قليلًا من ملفات تعريف الارتباط وإدخالات التخزين في المتصفح لتشغيل الخدمة، ولا نستخدم أي ملفات ارتباط إعلانية أو تحليلية. لمزيد من التفاصيل، يرجى قراءة <a href="{{ route('cookies') }}">سياسة ملفات تعريف الارتباط</a>.</p>
 
 <h2 id="rights-ar">حقوقك</h2>
 

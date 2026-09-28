@@ -22,10 +22,10 @@ return [
     |--------------------------------------------------------------------------
     |
     | What each package includes, as decided with the owner (2026-09). Prices
-    | are still placeholders. This seeds a fresh database only — after that
+    | are still placeholders. This seeds a fresh database only; after that
     | /admin → Packages owns the numbers, and changing this file does not move
-    | them. The landing page's pricing (lang/{en,ar}/portal.php) is separate
-    | and not yet in step with it.
+    | them. The landing page's pricing reads the table too
+    | (App\Services\Portal\PricingCards).
     |
     | A feature value of null means unlimited. A flag is 0 or 1. A key left out
     | falls back to App\Enums\Feature::defaultValue().
@@ -68,7 +68,6 @@ return [
             'is_contact_only' => false,
             'is_default' => false,
             'sort_order' => 1,
-            'is_featured' => true,
             'features' => [
                 'dish_limit' => 150,
                 'category_limit' => 15,
@@ -93,6 +92,7 @@ return [
             'is_contact_only' => false,
             'is_default' => false,
             'sort_order' => 2,
+            'is_featured' => true,
             'features' => [
                 'dish_limit' => 500,
                 'category_limit' => 30,

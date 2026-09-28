@@ -88,7 +88,7 @@ class AuthApiEdgeTest extends TestCase
     {
         $admin = User::factory()->create(['role' => \App\Enums\UserRole::Admin]);
 
-        $this->actingAs($admin)->getJson(route('api.user'))->assertOk()->assertJsonPath('data.role', 'admin')->assertJsonPath('data.restaurant', null);
+        $this->actingAs($admin)->getJson(route('api.user'))->assertOk()->assertJsonPath('data.restaurant', null);
         $this->actingAs($admin)->getJson(route('api.dishes.index'))->assertForbidden();
     }
 }

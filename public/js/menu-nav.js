@@ -1,7 +1,7 @@
 /**
  * Menu navigation: the category filter and the search box.
  *
- * Separate from the cart on purpose — these work on every menu, including one
+ * Separate from the cart on purpose: these work on every menu, including one
  * whose package does not include ordering.
  */
 (function () {
@@ -25,7 +25,7 @@
         document.dispatchEvent(new CustomEvent('qayema:track', { detail: detail }));
     }
 
-    /** Whether anything is showing — a search that finds nothing is worth knowing about. */
+    /** Whether anything is showing; a search that finds nothing is worth knowing about. */
     function apply() {
         var anyShown = false;
 
@@ -107,7 +107,7 @@
         revealTab();
 
         // Only pull the page back when it is already scrolled past the first
-        // section — picking a tab while the cover is still in view should not
+        // section; picking a tab while the cover is still in view should not
         // make the page jump.
         var first = sections.filter(function (section) {
             return !section.hidden;
@@ -156,8 +156,8 @@
     /**
      * The owner's QR design, drawn by the same library the dashboard previews
      * with and the printable card uses (qr-code-styling), from the same
-     * options (App\Services\Qr\QrStyle). Both are fetched on first use —
-     * far too big to ship with every menu.
+     * options (App\Services\Qr\QrStyle). Both are fetched on first use;
+     * they are far too big to ship with every menu.
      */
     var qrOptions = null;
 
@@ -277,8 +277,8 @@
 
     // ---- Search: filter what is already on the page, no request ----
     //
-    // There are two inputs — one in the header for a wide screen, one under the
-    // cover for a phone — and only ever one of them is visible. They share a
+    // There are two inputs (one in the header for a wide screen, one under the
+    // cover for a phone) and only ever one of them is visible. They share a
     // term so switching orientation mid-search does not lose it.
     //
     // A search is counted once the guest stops typing, so "piz", "pizz" and

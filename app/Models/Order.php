@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Str;
 
 /**
  * What a guest asked for, as they asked for it.
@@ -68,11 +67,5 @@ class Order extends Model
         } while (self::query()->where('reference', $reference)->exists());
 
         return $reference;
-    }
-
-    /** @return string the human title used in lists and emails */
-    public function title(): string
-    {
-        return Str::upper($this->reference);
     }
 }

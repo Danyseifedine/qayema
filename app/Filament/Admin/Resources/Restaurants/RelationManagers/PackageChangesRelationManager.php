@@ -9,7 +9,7 @@ use Filament\Tables\Table;
 
 /**
  * Every package this restaurant has been on: what it moved from and to, the
- * dates it was given, who did it and why. Read-only — it is a record.
+ * dates it was given, who did it and why. Read-only: it is a record.
  */
 class PackageChangesRelationManager extends RelationManager
 {
@@ -48,7 +48,7 @@ class PackageChangesRelationManager extends RelationManager
                     ->label('By')
                     ->placeholder('System'),
                 TextColumn::make('note')
-                    ->placeholder('—')
+                    ->placeholder('-')
                     ->wrap(),
             ])
             ->defaultSort('created_at', 'desc');

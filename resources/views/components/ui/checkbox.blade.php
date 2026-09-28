@@ -1,28 +1,20 @@
 {{--
-    Checkbox with optional label and description.
-    $olive – use olive-green checked colour instead of dark ink
+    Checkbox with its label in the slot, checked in the gold accent.
 --}}
 @props([
-    'name'        => null,
-    'id'          => null,
-    'value'       => '1',
-    'checked'     => false,
-    'label'       => null,
-    'description' => null,
-    'olive'       => false,
-    'required'    => false,
+    'name'    => null,
+    'checked' => false,
 ])
 
-@php $inputId = $id ?? ($name ? 'cb_' . $name . '_' . $value : null); @endphp
+@php $inputId = $name ? 'cb_' . $name . '_1' : null; @endphp
 
-<label class="ui-check {{ $olive ? 'olive' : '' }}" @if ($inputId) for="{{ $inputId }}" @endif>
+<label class="ui-check olive" @if ($inputId) for="{{ $inputId }}" @endif>
     <input
         type="checkbox"
         @if ($inputId) id="{{ $inputId }}" @endif
         @if ($name)    name="{{ $name }}"  @endif
-        value="{{ $value }}"
-        @if ($checked || old($name) == $value) checked @endif
-        @if ($required) required @endif
+        value="1"
+        @if ($checked || old($name) == '1') checked @endif
         {{ $attributes->except(['class','type','name','id','value','checked']) }}
     >
     <span class="box">
@@ -31,14 +23,8 @@
             <path d="M20 6L9 17l-5-5"/>
         </svg>
     </span>
-    @if ($label || $description || $slot->isNotEmpty())
+    @if ($slot->isNotEmpty())
         <span class="meta">
-            @if ($label)
-                <span>{{ $label }}</span>
-            @endif
-            @if ($description)
-                <span class="desc">{{ $description }}</span>
-            @endif
             {{ $slot }}
         </span>
     @endif

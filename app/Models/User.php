@@ -7,7 +7,6 @@ use Filament\Models\Contracts\FilamentUser;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Lab404\Impersonate\Models\Impersonate;
@@ -18,7 +17,7 @@ class User extends Authenticatable implements FilamentUser
     public const ONBOARDING_STEPS = 3;
 
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Impersonate, Notifiable, SoftDeletes;
+    use HasFactory, Impersonate, Notifiable;
 
     public function canImpersonate(): bool
     {

@@ -1,4 +1,4 @@
-# Qayema — Database ER Diagram
+# Qayema: Database ER Diagram
 
 Written from the migrations (2026-09-28). One migration per table.
 
@@ -183,7 +183,7 @@ erDiagram
     templates |o..o{ media : "thumbnail"
 ```
 
-**How a limit is resolved** — `App\Services\Packages\Entitlements`:
+**How a limit is resolved** (`App\Services\Packages\Entitlements`):
 
 ```
 effective value = features of the package in force + Σ active feature_grants

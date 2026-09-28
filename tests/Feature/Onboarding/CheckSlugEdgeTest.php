@@ -17,7 +17,7 @@ class CheckSlugEdgeTest extends TestCase
         $this->actingAs($this->userWithoutRestaurant())
             ->getJson(route('onboarding.check-slug').'?slug[]=aran')
             ->assertOk()
-            ->assertExactJson(['available' => false, 'slug' => '']);
+            ->assertExactJson(['available' => false]);
     }
 
     public function test_no_slug_at_all_is_too_short(): void
@@ -25,7 +25,7 @@ class CheckSlugEdgeTest extends TestCase
         $this->actingAs($this->userWithoutRestaurant())
             ->getJson(route('onboarding.check-slug'))
             ->assertOk()
-            ->assertExactJson(['available' => false, 'slug' => '']);
+            ->assertExactJson(['available' => false]);
     }
 
     public function test_a_slug_that_slugs_to_nothing_is_too_short(): void
@@ -33,7 +33,7 @@ class CheckSlugEdgeTest extends TestCase
         $this->actingAs($this->userWithoutRestaurant())
             ->getJson(route('onboarding.check-slug', ['slug' => '!!! ???']))
             ->assertOk()
-            ->assertExactJson(['available' => false, 'slug' => '']);
+            ->assertExactJson(['available' => false]);
     }
 
     public function test_a_guest_is_sent_to_sign_in(): void

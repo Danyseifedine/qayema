@@ -3,15 +3,15 @@
 Bilingual (Arabic/English) digital menus for restaurants. Owners build a menu,
 pick a design, and share it as a QR code; guests open it at `qayema.com/{slug}`.
 
-- **This repo** — Laravel 12 API, public portal, public menu and Filament v4 admin.
-- **`../qayema-dashboard`** — the owner dashboard SPA (React 19 + Vite).
+- **This repo**: Laravel 12 API, public portal, public menu and Filament v4 admin.
+- **`../qayema-dashboard`**: the owner dashboard SPA (React 19 + Vite).
 
 New here? Read [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) first, then
 [docs/database-erd.md](docs/database-erd.md).
 
 ## Requirements
 
-PHP 8.2+, Composer, MySQL 8, Node (for the separate dashboard repo only — this
+PHP 8.2+, Composer, MySQL 8, Node (for the separate dashboard repo only; this
 app ships static CSS and has no build step).
 
 ## Setup
@@ -54,8 +54,8 @@ Sign in to the admin panel at `/admin`.
 | Concept | Where it lives |
 |---|---|
 | What a package allows | `App\Enums\Feature` + `packages.features` + `feature_grants` |
-| Resolving a limit | `App\Services\Packages\Entitlements` — package + Σ grants, in force between its dates |
-| Moving a restaurant up | `/admin → Restaurants → Package` (Change package / Extend) or "Apply this package" on a request — all through `PackageAssigner`, with history |
+| Resolving a limit | `App\Services\Packages\Entitlements`: package + Σ grants, in force between its dates |
+| Moving a restaurant up | `/admin → Restaurants → Package` (Change package / Extend) or "Apply this package" on a request, all through `PackageAssigner`, with history |
 | Asking for a package | `POST /api/packages/request` → a `contact_messages` row + an email |
 | A menu design | a `templates` row + `resources/views/menu/templates/{slug}.blade.php` |
 
@@ -82,7 +82,7 @@ The browser suite lives in `../qayema-dashboard/e2e` (Playwright) and drives
 this app, the dashboard, the public menu and the admin together. Everything it
 needs from this app is in `tests/E2e/`: with `APP_ENV=e2e` the app reads
 `tests/E2e/.env.e2e` instead of `.env` and keeps its SQLite database, media,
-temp uploads and log under `storage/framework/testing/e2e/`, on port 8001 —
+temp uploads and log under `storage/framework/testing/e2e/`, on port 8001,
 never your `.env`, MySQL or real storage.
 
 ```bash
@@ -93,7 +93,7 @@ composer e2e:reset    # fresh e2e database and media
 Its routes (only in that environment) let a test build the owner it needs
 (`POST /__e2e/scenario`) and sign in without the form.
 
-## Going live — the checklist
+## Going live: the checklist
 
 1. `APP_ENV=production`, `APP_DEBUG=false`, and set `APP_NAME=Qayema` (it still
    reads `Laravel`, which shows in the public menu footer).

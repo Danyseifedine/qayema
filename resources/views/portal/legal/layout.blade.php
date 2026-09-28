@@ -3,7 +3,7 @@
 @php
     $isAr = app()->getLocale() === 'ar';
     $pageTitle = trim($__env->yieldContent('title'));
-    $seoTitle = $pageTitle !== '' ? $pageTitle.' — Qayema' : null;
+    $seoTitle = $pageTitle !== '' ? $pageTitle.' | Qayema' : null;
 @endphp
 
 @push('styles')

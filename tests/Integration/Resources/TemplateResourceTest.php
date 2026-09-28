@@ -27,8 +27,7 @@ class TemplateResourceTest extends TestCase
 
     public function test_the_full_shape(): void
     {
-        $schema = [['key' => 'primary_color', 'type' => 'color', 'default' => '#112233', 'label' => ['en' => 'Accent', 'ar' => 'اللون']]];
-        $template = Template::factory()->withSettings($schema)->create([
+        $template = Template::factory()->create([
             'slug' => 'harbour',
             'name' => ['en' => 'Harbour', 'ar' => 'الميناء'],
             'description' => ['en' => 'Light and airy'],
@@ -43,7 +42,6 @@ class TemplateResourceTest extends TestCase
             'thumbnail_url' => null,
             'is_premium' => false,
             'locked' => false,
-            'settings_schema' => $schema,
         ], $this->resolve($template, $this->owner()->user));
     }
 
@@ -74,14 +72,13 @@ class TemplateResourceTest extends TestCase
         $this->assertFalse($this->resolve($template, $this->userWithoutRestaurant())['locked']);
     }
 
-    public function test_a_fixed_design_has_an_empty_schema_and_a_thumbnail_comes_as_a_url(): void
+    public function test_a_missing_description_is_null_and_a_thumbnail_comes_as_a_url(): void
     {
-        $template = Template::factory()->create(['settings_schema' => null, 'description' => null]);
+        $template = Template::factory()->create(['description' => null]);
         $template->addMedia(UploadedFile::fake()->image('thumb.png'))->toMediaCollection('thumbnail');
 
         $data = $this->resolve($template->fresh(), null);
 
-        $this->assertSame([], $data['settings_schema']);
         $this->assertSame(['en' => null, 'ar' => null], $data['description']);
         $this->assertStringEndsWith('thumb.png', $data['thumbnail_url']);
     }

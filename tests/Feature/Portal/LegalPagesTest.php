@@ -40,7 +40,7 @@ class LegalPagesTest extends TestCase
             ->get($path)
             ->assertOk()
             ->assertSee('<html lang="en" dir="ltr"', false)
-            ->assertSee("<meta name=\"title\" content=\"{$title} — Qayema\">", false)
+            ->assertSee("<meta name=\"title\" content=\"{$title} | Qayema\">", false)
             ->assertSee("<h2 id=\"{$section}\">", false)
             ->assertDontSee("<h2 id=\"{$sectionAr}\">", false)
             ->assertDontSee($titleAr);

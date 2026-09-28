@@ -5,7 +5,7 @@ namespace App\Services\Media;
 /**
  * How large an upload this installation can actually take.
  *
- * The app asks for 20 MB — a phone photo straight off the camera — and every
+ * The app asks for 20 MB (a phone photo straight off the camera) and every
  * upload is then cut down to a small WebP by MediaService. But PHP refuses a
  * file larger than `upload_max_filesize` before a single line of Laravel runs,
  * so the real ceiling is the smaller of the two. Telling an owner "images must

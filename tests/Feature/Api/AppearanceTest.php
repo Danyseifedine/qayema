@@ -212,21 +212,6 @@ class AppearanceTest extends TestCase
         $this->as($owner)->getJson(route('api.appearance.show'))->assertJsonPath('data.settings.0.value', '#C0392B');
     }
 
-    public function test_colours_saved_before_designs_kept_their_own_still_count(): void
-    {
-        // The old shape: one flat map for the design in use.
-        $owner = $this->ownerOnDesign(null, ['template_settings' => ['primary_color' => '#C0392B']]);
-
-        $this->as($owner)->getJson(route('api.appearance.show'))->assertJsonPath('data.settings.0.value', '#C0392B');
-
-        // The first save moves it under the design, keeping it.
-        $this->as($owner)->putJson(route('api.appearance.update'), ['settings' => ['text_color' => '#222222']])->assertOk();
-        $this->assertEquals(
-            [$owner->template_id => ['primary_color' => '#C0392B', 'text_color' => '#222222']],
-            $owner->fresh()->template_settings,
-        );
-    }
-
     public function test_one_font_picker_per_writing_system(): void
     {
         // English + Spanish share Latin: one picker.

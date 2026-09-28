@@ -40,8 +40,7 @@ class PackageRequestTest extends TestCase
 
         $this->actingAs($owner->user)
             ->postJson(route('api.packages.request'), ['package' => 'pro', 'message' => 'We need more room.'])
-            ->assertCreated()
-            ->assertJsonPath('data.package', 'pro');
+            ->assertNoContent(201);
 
         $contact = ContactMessage::firstOrFail();
         $this->assertSame($owner->user_id, $contact->user_id);

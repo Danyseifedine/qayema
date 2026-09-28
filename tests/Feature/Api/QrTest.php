@@ -3,7 +3,6 @@
 namespace Tests\Feature\Api;
 
 use App\Enums\Feature;
-use App\Models\Package;
 use App\Models\Restaurant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -27,7 +26,7 @@ class QrTest extends TestCase
      */
     private function lock(): void
     {
-        Package::default()->setFeature(Feature::QrStudio, 0);
+        $this->defaultPackageSets(Feature::QrStudio, 0);
     }
 
     /** @return array<string, mixed> A full valid design payload. */
@@ -117,7 +116,7 @@ class QrTest extends TestCase
             ->getJson(route('api.qr.show'))
             ->assertOk()
             ->assertJsonPath('data.unlocked', false)
-            // The saved design is not served while locked — defaults only.
+            // The saved design is not served while locked; defaults only.
             ->assertJsonPath('data.settings.dot_style', 'square')
             ->assertJsonPath('data.settings.dot_color', '#000000')
             // No logo while locked; scan counts follow analytics, not the studio.

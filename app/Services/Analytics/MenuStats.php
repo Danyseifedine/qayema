@@ -68,8 +68,6 @@ class MenuStats
         $visits = $this->inRange($this->restaurant->menuSessions(), 'viewed_at');
 
         return [
-            'range' => $this->range,
-            'timezone' => $this->timezone,
             'totals' => [
                 'views' => (clone $visits)->count(),
                 'unique_visitors' => (clone $visits)->distinct('session_id')->count('session_id'),
@@ -78,7 +76,6 @@ class MenuStats
                 'orders' => $this->takesOrders() ? $this->orderCount($this->from, null) : null,
             ],
             'series' => $this->series(),
-            'last_visit_at' => $this->restaurant->menuSessions()->max('viewed_at'),
         ];
     }
 
@@ -86,12 +83,11 @@ class MenuStats
      * The one number a package without analytics still sees: menu views in
      * the range.
      *
-     * @return array{range: string, views: int}
+     * @return array{views: int}
      */
     public function teaser(): array
     {
         return [
-            'range' => $this->range,
             'views' => $this->inRange($this->restaurant->menuSessions(), 'viewed_at')->count(),
         ];
     }
@@ -104,7 +100,6 @@ class MenuStats
         $visits = $this->inRange($this->restaurant->menuSessions(), 'viewed_at');
 
         return [
-            'range' => $this->range,
             'previous' => $this->previous(),
             ...$this->busyTimes(),
             'languages' => $this->breakdown($visits, 'locale'),
@@ -187,7 +182,7 @@ class MenuStats
     }
 
     /**
-     * Views by local hour of day (0–23) and by weekday (Monday first).
+     * Views by local hour of day (0 to 23) and by weekday (Monday first).
      *
      * @return array{hours: array<int, int>, weekdays: array<int, int>}
      */

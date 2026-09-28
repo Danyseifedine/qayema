@@ -202,12 +202,12 @@ class RestaurantsTable
             ->defaultSort('created_at', 'desc');
     }
 
-    /** "Until 12 Oct 2026", "Forever", "Starts 3 Oct", "Ended 1 Sep — on Free". */
+    /** "Until 12 Oct 2026", "Forever", "Starts 3 Oct", "Ended 1 Sep, on Free". */
     public static function packageDates(Restaurant $restaurant): string
     {
         return match ($restaurant->packageStatus()) {
             PackageStatus::Scheduled => 'Starts '.$restaurant->package_started_at->toFormattedDateString(),
-            PackageStatus::Expired => 'Ended '.$restaurant->package_ends_at->toFormattedDateString().' — on '.$restaurant->effectivePackage()?->name,
+            PackageStatus::Expired => 'Ended '.$restaurant->package_ends_at->toFormattedDateString().', on '.$restaurant->effectivePackage()?->name,
             PackageStatus::Active => $restaurant->package_ends_at === null
                 ? 'Forever'
                 : 'Until '.$restaurant->package_ends_at->toFormattedDateString(),

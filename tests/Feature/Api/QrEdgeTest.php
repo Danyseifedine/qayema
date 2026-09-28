@@ -3,7 +3,6 @@
 namespace Tests\Feature\Api;
 
 use App\Enums\Feature;
-use App\Models\Package;
 use App\Models\Restaurant;
 use App\Models\Template;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -36,7 +35,7 @@ class QrEdgeTest extends TestCase
 
     private function lock(): void
     {
-        Package::default()->setFeature(Feature::QrStudio, 0);
+        $this->defaultPackageSets(Feature::QrStudio, 0);
     }
 
     public function test_the_locked_payload_leaks_nothing_gated(): void

@@ -69,18 +69,6 @@ class FactoriesTest extends TestCase
         $this->assertNotNull($event->occurred_at);
     }
 
-    public function test_a_menu_event_type_state_sets_type_and_value(): void
-    {
-        $search = MenuEvent::factory()->type(MenuEventType::Search, 'hummus')->create()->fresh();
-        $call = MenuEvent::factory()->type(MenuEventType::Call)->create()->fresh();
-
-        $this->assertSame(MenuEventType::Search, $search->type);
-        $this->assertSame('hummus', $search->value);
-        $this->assertSame(MenuEventType::Call, $call->type);
-        $this->assertNull($call->value);
-        $this->assertDatabaseHas('menu_events', ['id' => $search->id, 'type' => 'search', 'value' => 'hummus']);
-    }
-
     public function test_a_menu_session_is_a_direct_mobile_visit(): void
     {
         $session = MenuSession::factory()->create()->fresh();

@@ -109,8 +109,8 @@ class EntitlementsEdgeTest extends TestCase
     public function test_the_nearest_of_several_boundaries_wins(): void
     {
         $restaurant = $this->owner();
-        FeatureGrant::factory()->for($restaurant)->forFeature(Feature::DishLimit, 10)->create(['ends_at' => now()->addMinutes(10), 'reference' => 'a']);
-        FeatureGrant::factory()->for($restaurant)->forFeature(Feature::DishLimit, 5)->create(['ends_at' => now()->addMinutes(2), 'reference' => 'b']);
+        FeatureGrant::factory()->for($restaurant)->forFeature(Feature::DishLimit, 10)->create(['ends_at' => now()->addMinutes(10)]);
+        FeatureGrant::factory()->for($restaurant)->forFeature(Feature::DishLimit, 5)->create(['ends_at' => now()->addMinutes(2)]);
         app(PackageAssigner::class)->assign($restaurant, Package::default(), now()->subDay(), now()->addHour());
 
         $this->assertSame(55, $this->dishLimit($restaurant));
@@ -207,9 +207,9 @@ class EntitlementsEdgeTest extends TestCase
     public function test_limit_grants_add_up_and_flag_grants_only_switch_on(): void
     {
         $restaurant = $this->ownerOn('pro');
-        FeatureGrant::factory()->for($restaurant)->forFeature(Feature::DishLimit, 10)->create(['reference' => 'a']);
-        FeatureGrant::factory()->for($restaurant)->forFeature(Feature::DishLimit, 5)->create(['reference' => 'b', 'ends_at' => now()->addMonth()]);
-        FeatureGrant::factory()->for($restaurant)->forFeature(Feature::DishLimit, 100)->expired()->create(['reference' => 'c']);
+        FeatureGrant::factory()->for($restaurant)->forFeature(Feature::DishLimit, 10)->create();
+        FeatureGrant::factory()->for($restaurant)->forFeature(Feature::DishLimit, 5)->create(['ends_at' => now()->addMonth()]);
+        FeatureGrant::factory()->for($restaurant)->forFeature(Feature::DishLimit, 100)->expired()->create();
         FeatureGrant::factory()->for($restaurant)->forFeature(Feature::QrStudio, 0)->create();
         FeatureGrant::factory()->for($restaurant)->forFeature(Feature::Appearance, 1)->create();
 

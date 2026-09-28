@@ -34,7 +34,7 @@ class RestaurantTest extends TestCase
     }
 
     /**
-     * A valid update body — name, phone and currency are the required fields.
+     * A valid update body: name, phone and currency are the required fields.
      *
      * @param  array<string, mixed>  $overrides
      * @return array<string, mixed>
@@ -87,7 +87,7 @@ class RestaurantTest extends TestCase
         [$user, $restaurant] = $this->owner();
 
         $this->actingAs($user)
-            ->putJson(route('api.restaurant.update'), $this->basePayload([
+            ->patchJson(route('api.restaurant.update'), $this->basePayload([
                 'description' => ['en' => 'Best mezze in town'],
                 'google_maps_url' => 'https://maps.google.com/?q=33.8886,35.4955',
             ]))
@@ -107,7 +107,7 @@ class RestaurantTest extends TestCase
         [$user, $restaurant] = $this->owner();
 
         $this->actingAs($user)
-            ->putJson(route('api.restaurant.update'), $this->basePayload([
+            ->patchJson(route('api.restaurant.update'), $this->basePayload([
                 'timezone' => 'Asia/Beirut',
                 'opening_hours' => [
                     'mon' => ['open' => '07:30', 'close' => '22:00'],
@@ -129,7 +129,7 @@ class RestaurantTest extends TestCase
         [$user] = $this->owner();
 
         $this->actingAs($user)
-            ->putJson(route('api.restaurant.update'), $this->basePayload([
+            ->patchJson(route('api.restaurant.update'), $this->basePayload([
                 'opening_hours' => ['mon' => ['open' => '07:30']],
             ]))
             ->assertStatus(422)
@@ -141,7 +141,7 @@ class RestaurantTest extends TestCase
         [$user] = $this->owner();
 
         $this->actingAs($user)
-            ->putJson(route('api.restaurant.update'), $this->basePayload(['timezone' => 'Middle/Earth']))
+            ->patchJson(route('api.restaurant.update'), $this->basePayload(['timezone' => 'Middle/Earth']))
             ->assertStatus(422)
             ->assertJsonValidationErrors('timezone');
     }
@@ -151,7 +151,7 @@ class RestaurantTest extends TestCase
         [$user] = $this->owner();
 
         $this->actingAs($user)
-            ->putJson(route('api.restaurant.update'), $this->basePayload(['google_maps_url' => 'not-a-url']))
+            ->patchJson(route('api.restaurant.update'), $this->basePayload(['google_maps_url' => 'not-a-url']))
             ->assertStatus(422)
             ->assertJsonValidationErrors('google_maps_url');
     }
@@ -161,7 +161,7 @@ class RestaurantTest extends TestCase
         [$user, $restaurant] = $this->owner();
 
         $this->actingAs($user)
-            ->putJson(route('api.restaurant.update'), $this->basePayload([
+            ->patchJson(route('api.restaurant.update'), $this->basePayload([
                 'phone' => '+971 50 111 2222',
                 'country_code' => 'AE',
                 'currency' => 'AED',
@@ -181,7 +181,7 @@ class RestaurantTest extends TestCase
         unset($payload['phone']);
 
         $this->actingAs($user)
-            ->putJson(route('api.restaurant.update'), $payload)
+            ->patchJson(route('api.restaurant.update'), $payload)
             ->assertStatus(422)
             ->assertJsonValidationErrors('phone');
     }
@@ -191,7 +191,7 @@ class RestaurantTest extends TestCase
         [$user] = $this->owner();
 
         $this->actingAs($user)
-            ->putJson(route('api.restaurant.update'), $this->basePayload(['currency' => 'NOPE']))
+            ->patchJson(route('api.restaurant.update'), $this->basePayload(['currency' => 'NOPE']))
             ->assertStatus(422)
             ->assertJsonValidationErrors('currency');
     }
@@ -203,7 +203,7 @@ class RestaurantTest extends TestCase
         [$user, $restaurant] = $this->owner();
 
         $this->actingAs($user)
-            ->putJson(route('api.restaurant.update'), $this->basePayload(['name' => ['en' => 'Renamed Bistro']]))
+            ->patchJson(route('api.restaurant.update'), $this->basePayload(['name' => ['en' => 'Renamed Bistro']]))
             ->assertOk()
             ->assertJsonPath('data.name.en', 'Renamed Bistro');
 
@@ -215,7 +215,7 @@ class RestaurantTest extends TestCase
         [$user] = $this->owner();
 
         $this->actingAs($user)
-            ->putJson(route('api.restaurant.update'), $this->basePayload(['name' => ['en' => '']]))
+            ->patchJson(route('api.restaurant.update'), $this->basePayload(['name' => ['en' => '']]))
             ->assertStatus(422)
             ->assertJsonValidationErrors('name.en');
     }
@@ -225,7 +225,7 @@ class RestaurantTest extends TestCase
         [$user] = $this->owner();
 
         $this->actingAs($user)
-            ->putJson(route('api.restaurant.update'), $this->basePayload(['name' => ['en' => 'x']]))
+            ->patchJson(route('api.restaurant.update'), $this->basePayload(['name' => ['en' => 'x']]))
             ->assertStatus(422)
             ->assertJsonValidationErrors('name.en');
     }
@@ -235,7 +235,7 @@ class RestaurantTest extends TestCase
         [$user, $restaurant] = $this->owner();
 
         $this->actingAs($user)
-            ->putJson(route('api.restaurant.update'), $this->basePayload(['name' => ['en' => 'Olive', 'ar' => 'زيتون']]))
+            ->patchJson(route('api.restaurant.update'), $this->basePayload(['name' => ['en' => 'Olive', 'ar' => 'زيتون']]))
             ->assertOk()
             ->assertJsonPath('data.name', ['en' => 'Olive', 'ar' => 'زيتون']);
 
@@ -249,7 +249,7 @@ class RestaurantTest extends TestCase
         [$user] = $this->owner();
 
         $this->actingAs($user)
-            ->putJson(route('api.restaurant.update'), $this->basePayload(['name' => ['en' => "Bad\nName"]]))
+            ->patchJson(route('api.restaurant.update'), $this->basePayload(['name' => ['en' => "Bad\nName"]]))
             ->assertStatus(422)
             ->assertJsonValidationErrors('name.en');
     }
@@ -261,7 +261,7 @@ class RestaurantTest extends TestCase
         [$user] = $this->owner();
 
         $this->actingAs($user)
-            ->putJson(route('api.restaurant.update'), $this->basePayload(['country_code' => 'ABCDE']))
+            ->patchJson(route('api.restaurant.update'), $this->basePayload(['country_code' => 'ABCDE']))
             ->assertStatus(422)
             ->assertJsonValidationErrors('country_code');
     }
@@ -271,7 +271,7 @@ class RestaurantTest extends TestCase
         [$user] = $this->owner();
 
         $this->actingAs($user)
-            ->putJson(route('api.restaurant.update'), $this->basePayload(['phone' => "70\n123456"]))
+            ->patchJson(route('api.restaurant.update'), $this->basePayload(['phone' => "70\n123456"]))
             ->assertStatus(422)
             ->assertJsonValidationErrors('phone');
     }
@@ -282,7 +282,7 @@ class RestaurantTest extends TestCase
         $slug = $restaurant->slug;
 
         $this->actingAs($user)
-            ->putJson(route('api.restaurant.update'), $this->basePayload(['slug' => 'hacked']))
+            ->patchJson(route('api.restaurant.update'), $this->basePayload(['slug' => 'hacked']))
             ->assertOk();
 
         $this->assertSame($slug, $restaurant->fresh()->slug);
@@ -295,7 +295,7 @@ class RestaurantTest extends TestCase
         $key = $this->uploadTempImage($user, 'logo');
 
         $this->actingAs($user)
-            ->putJson(route('api.restaurant.update'), $this->basePayload(['logo_key' => $key]))
+            ->patchJson(route('api.restaurant.update'), $this->basePayload(['logo_key' => $key]))
             ->assertOk();
 
         $this->assertSame(1, $restaurant->fresh()->getMedia('logo')->count());
@@ -307,9 +307,9 @@ class RestaurantTest extends TestCase
         [$user, $restaurant] = $this->owner();
         $restaurant->addMedia(UploadedFile::fake()->image('logo.png'))->toMediaCollection('logo');
 
-        // delete_logo is not an accepted field — the mandatory logo must survive.
+        // delete_logo is not an accepted field; the mandatory logo must survive.
         $this->actingAs($user)
-            ->putJson(route('api.restaurant.update'), $this->basePayload(['delete_logo' => true]))
+            ->patchJson(route('api.restaurant.update'), $this->basePayload(['delete_logo' => true]))
             ->assertOk();
 
         $this->assertSame(1, $restaurant->fresh()->getMedia('logo')->count());
@@ -320,7 +320,7 @@ class RestaurantTest extends TestCase
         [$user] = $this->owner();
 
         $this->actingAs($user)
-            ->putJson(route('api.restaurant.update'), $this->basePayload(['logo_key' => 'not-a-uuid']))
+            ->patchJson(route('api.restaurant.update'), $this->basePayload(['logo_key' => 'not-a-uuid']))
             ->assertStatus(422)
             ->assertJsonValidationErrors('logo_key');
     }
@@ -330,6 +330,6 @@ class RestaurantTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($user)->getJson(route('api.restaurant.show'))->assertForbidden();
-        $this->actingAs($user)->putJson(route('api.restaurant.update'), $this->basePayload())->assertForbidden();
+        $this->actingAs($user)->patchJson(route('api.restaurant.update'), $this->basePayload())->assertForbidden();
     }
 }

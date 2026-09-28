@@ -31,7 +31,7 @@ class QrController extends Controller
 
     /**
      * Persist the QR design (studio owners only). The settings only affect how
-     * the code LOOKS — the encoded link never changes, so saved designs never
+     * the code LOOKS; the encoded link never changes, so saved designs never
      * break printed codes.
      */
     public function update(QrSettingsRequest $request): JsonResponse

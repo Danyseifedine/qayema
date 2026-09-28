@@ -23,7 +23,7 @@ class ContactMessageReceived extends Mailable implements ShouldQueue
 
         $subject = $package === null
             ? 'New contact message from '.$this->contactMessage->name
-            : 'Package request: '.$package->getTranslation('name', 'en').' — '.$this->contactMessage->name;
+            : 'Package request: '.$package->getTranslation('name', 'en').' from '.$this->contactMessage->name;
 
         return new Envelope(
             replyTo: [new Address($this->contactMessage->email, $this->contactMessage->name)],
@@ -36,10 +36,5 @@ class ContactMessageReceived extends Mailable implements ShouldQueue
         return new Content(
             markdown: 'emails.contact-received',
         );
-    }
-
-    public function attachments(): array
-    {
-        return [];
     }
 }

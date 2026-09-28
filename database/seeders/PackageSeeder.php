@@ -9,7 +9,7 @@ class PackageSeeder extends Seeder
 {
     /**
      * The four packages are already inserted by their migration. Seeding only
-     * fills a gap — `firstOrCreate`, never `updateOrCreate` — so running
+     * fills a gap (`firstOrCreate`, never `updateOrCreate`), so running
      * `db:seed` on a live database cannot overwrite what an admin has edited.
      */
     public function run(): void

@@ -11,7 +11,7 @@ use Tests\Support\EnforcedCsrf;
 use Tests\TestCase;
 
 /**
- * Every `api/*` error comes back as JSON in one shape — {message, code} — so
+ * Every `api/*` error comes back as JSON in one shape ({message, code}) so
  * the SPA never has to special-case a redirect or an HTML page.
  */
 class ErrorShapeTest extends TestCase
@@ -44,7 +44,7 @@ class ErrorShapeTest extends TestCase
         $restaurant = Restaurant::factory()->create();
 
         $this->actingAs($restaurant->user)
-            ->getJson(route('api.categories.show', 999999))
+            ->deleteJson(route('api.categories.destroy', 999999))
             ->assertStatus(404)
             ->assertJsonPath('code', 'not_found')
             ->assertJsonPath('message', 'Not found.');
@@ -56,7 +56,7 @@ class ErrorShapeTest extends TestCase
         $theirs = Category::factory()->create();
 
         $this->actingAs($mine->user)
-            ->getJson(route('api.categories.show', $theirs))
+            ->deleteJson(route('api.categories.destroy', $theirs))
             ->assertStatus(403)
             ->assertJsonPath('code', 'forbidden');
     }

@@ -30,7 +30,6 @@ class OrderResource extends JsonResource
             'items' => $this->whenLoaded('items', fn () => $this->items->map(fn ($item): array => [
                 'id' => $item->id,
                 'name' => $item->name,
-                'unit_price' => (string) $item->unit_price,
                 'quantity' => $item->quantity,
                 'line_total' => (string) $item->line_total,
             ])->all()),

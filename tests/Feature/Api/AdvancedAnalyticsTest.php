@@ -7,7 +7,6 @@ use App\Enums\MenuEventType;
 use App\Models\Category;
 use App\Models\Dish;
 use App\Models\Order;
-use App\Models\Package;
 use App\Models\Restaurant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\CreatesOwners;
@@ -58,7 +57,7 @@ class AdvancedAnalyticsTest extends TestCase
 
     public function test_it_needs_the_package_flag(): void
     {
-        Package::default()->setFeature(Feature::AdvancedAnalytics, 0);
+        $this->defaultPackageSets(Feature::AdvancedAnalytics, 0);
         $restaurant = $this->restaurant();
 
         $this->actingAs($restaurant->user)
@@ -69,7 +68,7 @@ class AdvancedAnalyticsTest extends TestCase
 
     public function test_a_grant_opens_it_on_a_package_without_it(): void
     {
-        Package::default()->setFeature(Feature::AdvancedAnalytics, 0);
+        $this->defaultPackageSets(Feature::AdvancedAnalytics, 0);
         $restaurant = $this->restaurant();
         $restaurant->featureGrants()->create(['feature' => Feature::AdvancedAnalytics->value, 'value' => 1]);
 
@@ -220,7 +219,7 @@ class AdvancedAnalyticsTest extends TestCase
 
     public function test_the_funnel_is_null_when_the_package_does_not_take_orders(): void
     {
-        Package::default()->setFeature(Feature::Ordering, 0);
+        $this->defaultPackageSets(Feature::Ordering, 0);
 
         $this->assertNull($this->advanced($this->restaurant())['funnel']);
     }

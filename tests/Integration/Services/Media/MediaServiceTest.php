@@ -17,8 +17,8 @@ class MediaServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Storage::fake('s3');
-        config(['media-library.disk_name' => 's3']);
+        Storage::fake('r2');
+        config(['media-library.disk_name' => 'r2']);
     }
 
     protected function tearDown(): void
@@ -66,16 +66,6 @@ class MediaServiceTest extends TestCase
         [$w, $h] = getimagesize($service->tempPath(1, $key));
 
         $this->assertEqualsWithDelta(1920 / 600, $w / $h, 0.05, 'Cover is a wide banner, not a square.');
-    }
-
-    public function test_an_unknown_context_falls_back_to_the_generic_preset(): void
-    {
-        $service = app(MediaService::class);
-
-        $key = $service->storeTempUpload(UploadedFile::fake()->image('x.png', 3000, 1000), 'no-such-context', 1)['key'];
-        [$w] = getimagesize($service->tempPath(1, $key));
-
-        $this->assertLessThanOrEqual(1200, $w);
     }
 
     public function test_small_images_are_not_upscaled(): void

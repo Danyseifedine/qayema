@@ -5,8 +5,6 @@
 @php
     $appName    = config('app.name', 'Qayema');
     $locale     = app()->getLocale();
-    $isRtl      = in_array($locale, config('locales.rtl', []));
-    $dir        = $isRtl ? 'rtl' : 'ltr';
     $allLocales = config('locales.locales');
     $currencyOptions = collect(config('currencies', []))
         ->map(fn ($c, $code) => ['value' => $code, 'label' => $code, 'flag' => $c['symbol'] ?? '', 'meta' => $c['name'] ?? $code])
@@ -47,7 +45,7 @@
                         <svg class="moon" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
                     </span>
                 </button>
-                {{-- Language switcher — available on every step --}}
+                {{-- Language switcher, available on every step --}}
                 <div class="lang-picker" x-data="{ open: false }" @click.outside="open = false">
                     <button class="lang-trigger" @click="open = !open" :aria-expanded="open" type="button">
                         <span>{{ $allLocales[$locale]['flag'] ?? '' }}</span>
@@ -100,7 +98,7 @@
 
             <div class="onb-alert" x-show="globalError" x-text="globalError" x-cloak></div>
 
-            {{-- ── Step 1 — Restaurant name + language ── --}}
+            {{-- ── Step 1: Restaurant name + menu link ── --}}
             <div x-show="step === 1" x-cloak>
                 <h1 class="title">{!! __('owner.onboarding.step1_heading', ['em' => '<span class="it">'.__('owner.onboarding.step1_em').'</span>']) !!}</h1>
                 <p class="lead">{{ __('owner.onboarding.step1_desc') }}</p>
@@ -110,8 +108,10 @@
                             :placeholder="__('owner.onboarding.name_placeholder')"
                             @input="onNameInput()"
                             autofocus required />
-                        <div class="ui-help error" x-show="errors.name" x-text="errors.name" x-cloak></div>
-                        <p class="ui-help" x-show="!errors.name" x-cloak>{{ __('owner.onboarding.name_hint') }}</p>
+                        <div class="ui-helps">
+                            <p class="ui-help">{{ __('owner.onboarding.name_hint') }}</p>
+                            <p class="ui-help error" x-show="errors.name" x-text="errors.name" x-cloak></p>
+                        </div>
                     </x-ui.field>
 
                     {{-- Menu link (slug) --}}
@@ -141,18 +141,21 @@
                                 </span>
                             </x-ui.input>
                         </div>
-                        <div class="ui-help error" x-show="errors.slug" x-text="errors.slug" x-cloak></div>
-                        <div x-show="!errors.slug" x-cloak>
-                            <p class="ui-help" x-show="slugStatus === 'idle' || slugStatus === 'checking'">{{ __('owner.onboarding.slug_hint') }}</p>
-                            <p class="ui-help" style="color:#16a34a" x-show="slugStatus === 'available'">{{ __('owner.onboarding.slug_available') }}</p>
-                            <p class="ui-help" style="color:#dc2626" x-show="slugStatus === 'taken'">{{ __('owner.onboarding.slug_taken_hint') }}</p>
+                        {{-- The hint stays under an error; the availability line
+                             takes its place only while there is no error, so
+                             "taken" is never said twice. --}}
+                        <div class="ui-helps">
+                            <p class="ui-help" x-show="errors.slug || slugStatus === 'idle' || slugStatus === 'checking'">{{ __('owner.onboarding.slug_hint') }}</p>
+                            <p class="ui-help" style="color:#16a34a" x-show="!errors.slug && slugStatus === 'available'" x-cloak>{{ __('owner.onboarding.slug_available') }}</p>
+                            <p class="ui-help" style="color:#dc2626" x-show="!errors.slug && slugStatus === 'taken'" x-cloak>{{ __('owner.onboarding.slug_taken_hint') }}</p>
+                            <p class="ui-help error" x-show="errors.slug" x-text="errors.slug" x-cloak></p>
                         </div>
                     </x-ui.field>
 
                 </div>
             </div>
 
-            {{-- ── Step 2 — Contact + Currency ── --}}
+            {{-- ── Step 2: Contact + Currency ── --}}
             <div x-show="step === 2" x-cloak
                  @change="onContactChange($event)"
                  @combo-change="onCurrencyChange($event)"
@@ -164,8 +167,10 @@
                         <x-ui.phone name="phone" cc-name="country_code"
                             :value="$restaurant?->phone"
                             :cc-value="$restaurant?->country_code ?? 'LB'" />
-                        <div class="ui-help error" x-show="errors.phone" x-text="errors.phone" x-cloak></div>
-                        <p class="ui-help" x-show="!errors.phone" x-cloak>{{ __('owner.onboarding.phone_hint') }}</p>
+                        <div class="ui-helps">
+                            <p class="ui-help">{{ __('owner.onboarding.phone_hint') }}</p>
+                            <p class="ui-help error" x-show="errors.phone" x-text="errors.phone" x-cloak></p>
+                        </div>
                     </x-ui.field>
 
                     <x-ui.field name="currency" :label="__('owner.onboarding.currency_label')" required>
@@ -174,13 +179,15 @@
                             :value="$restaurant?->currency ?? 'USD'"
                             :placeholder="__('owner.restaurant.currency_placeholder')"
                             :up="true" />
-                        <div class="ui-help error" x-show="errors.currency" x-text="errors.currency" x-cloak></div>
-                        <p class="ui-help" x-show="!errors.currency" x-cloak>{{ __('owner.onboarding.currency_hint') }}</p>
+                        <div class="ui-helps">
+                            <p class="ui-help">{{ __('owner.onboarding.currency_hint') }}</p>
+                            <p class="ui-help error" x-show="errors.currency" x-text="errors.currency" x-cloak></p>
+                        </div>
                     </x-ui.field>
                 </div>
             </div>
 
-            {{-- ── Step 3 — Branding ── --}}
+            {{-- ── Step 3: Branding ── --}}
             <div x-show="step === 3" x-cloak>
                 <h1 class="title">{!! __('owner.onboarding.step3_heading', ['em' => '<span class="it">'.__('owner.onboarding.step3_em').'</span>']) !!}</h1>
                 <p class="lead">{{ __('owner.onboarding.step3_desc') }}</p>
@@ -189,8 +196,10 @@
                         <x-ui.dropzone name="logo" context="logo"
                             :value="$restaurant?->getFirstMediaUrl('logo') ?: null"
                             :hint="__('owner.onboarding.logo_hint')" />
-                        <div class="ui-help error" x-show="errors.logo" x-text="errors.logo" x-cloak></div>
-                        <p class="ui-help" x-show="!errors.logo" x-cloak>{{ __('owner.onboarding.logo_field_hint') }}</p>
+                        <div class="ui-helps">
+                            <p class="ui-help">{{ __('owner.onboarding.logo_field_hint') }}</p>
+                            <p class="ui-help error" x-show="errors.logo" x-text="errors.logo" x-cloak></p>
+                        </div>
                     </x-ui.field>
 
                     <x-ui.field :label="__('owner.onboarding.cover_label')"
@@ -281,7 +290,7 @@
             <div class="phone-wrap">
                 <span class="annot tl">
                     <span class="pulse"></span>
-                    <span x-text="step === 1 ? s1.name || '{{ $appName }}' : step === 2 ? '{{ __('owner.onboarding.step2_title') }}' : step === 3 ? '{{ __('owner.onboarding.logo_label') }}' : '{{ __('owner.onboarding.stat_stage') }}'"></span>
+                    <span x-text="step === 1 ? s1.name || '{{ $appName }}' : step === 2 ? '{{ __('owner.onboarding.step2_title') }}' : '{{ __('owner.onboarding.logo_label') }}'"></span>
                 </span>
 
                 <div class="phone">
@@ -348,12 +357,10 @@ window._onb = {
         stepData:   @json($stepData),
         currencySymbols: @json($currencySymbols),
         currencyCodes: @json(array_keys(config('currencies', []))),
-        locale:     @json($locale),
         routes: {
             advance:    @json(route('onboarding.advance')),
             checkSlug:  @json(route('onboarding.check-slug')),
         },
-        appHost: @json(parse_url(config('app.url'), PHP_URL_HOST) ?? request()->getHost()),
         existing: {
             name:               @json($restaurant?->name ?? ''),
             slug:               @json($restaurant?->slug ?? ''),
@@ -371,15 +378,10 @@ window._onb = {
             currencyRequired: @json(__('owner.onboarding.currency_required')),
             currencyInvalid:  @json(__('owner.onboarding.currency_invalid')),
             logoRequired:     @json(__('owner.onboarding.logo_required')),
-            tagsRequired:     @json(__('owner.onboarding.tags_required')),
-            tagsEachCategory: @json(__('owner.onboarding.tags_each_category')),
-            uploadError:      @json(__('owner.onboarding.upload_error')),
             somethingWrong:   @json(__('owner.onboarding.something_wrong')),
             slugRequired:     @json(__('owner.onboarding.slug_required')),
             slugTaken:        @json(__('owner.onboarding.slug_taken')),
             slugChecking:     @json(__('owner.onboarding.slug_checking')),
-            tagsOne:          @json(__('owner.onboarding.tags_count_one')),
-            tagsMany:         @json(__('owner.onboarding.tags_count')),
         },
     };
 </script>
@@ -405,8 +407,6 @@ document.addEventListener('alpine:init', () => {
         slugEdited:  !!_o.existing.slug, // true when user has manually touched the slug field
         slugStatus:  'idle',             // idle | checking | available | taken
         _slugTimer:  null,
-
-        get slugPreview() { return _o.appHost + '/' + (this.s1.slug || '…'); },
 
         onNameInput() {
             this.errors.name = '';
@@ -461,7 +461,7 @@ document.addEventListener('alpine:init', () => {
             }, 380);
         },
 
-        /* Step 2 — currency tracked for right-panel display only */
+        /* Step 2: currency tracked for right-panel display only */
         selectedCurrency: _o.existing.currency || 'USD',
         get currencySymbol() {
             return (_o.currencySymbols && _o.currencySymbols[this.selectedCurrency]) || '$';
@@ -474,7 +474,7 @@ document.addEventListener('alpine:init', () => {
             this.selectedCurrency = (e.detail && e.detail.value) || 'USD';
             this.errors.currency = '';
         },
-        /* Step 3 — a logo already saved on the restaurant satisfies the requirement.
+        /* Step 3: a logo already saved on the restaurant satisfies the requirement.
            The dropzone is a self-contained component, so the wizard tracks this
            page-load flag separately (a fresh upload is detected via logo_key). */
         hasLogo: _o.existing.hasLogo,
@@ -571,10 +571,10 @@ document.addEventListener('alpine:init', () => {
                 if (!currency) { this.errors.currency = _o.i18n.currencyRequired; return; }
                 if (!(_o.currencyCodes || []).includes(currency)) { this.errors.currency = _o.i18n.currencyInvalid; return; }
             }
-            // Step 3 (branding) — a logo is required (an existing one counts).
+            // Step 3 (branding): a logo is required (an existing one counts).
             if (this.step === 3 && !this.hasLogo && !dom('logo_key')) { this.errors.logo = _o.i18n.logoRequired; return; }
 
-            // ── Skip API if nothing changed (never skip the final step — it must complete server-side) ──
+            // ── Skip API if nothing changed (never skip the final step; it must complete server-side) ──
             if (this._isUnchanged() && this.step < this.totalSteps) {
                 this.step = Math.min(this.step + 1, this.totalSteps);
                 return;

@@ -16,8 +16,8 @@
 @use('App\Support\MenuIcons')
 @php
     $isRtl = MenuLanguages::isRtl($locale);
-    // Every piece of text is this language, else English — the language every
-    // name is required in — so nothing on the menu is ever blank.
+    // Every piece of text is this language, else English (the language every
+    // name is required in), so nothing on the menu is ever blank.
     $text = fn ($model, string $field): string => MenuLanguages::text($model, $field, $locale);
     $logo = $restaurant->getFirstMediaUrl('logo') ?: null;
     $cover = $restaurant->getFirstMediaUrl('cover_image') ?: null;
@@ -35,13 +35,12 @@
     // The dock carries the things a guest wants that are otherwise stranded at
     // the top of a long menu: share, language, directions, WhatsApp. The cart
     // stays in the header. Each part only appears if the restaurant has it.
-    $canSwitchLocale = count($locales) > 1;
     // The QR is always worth offering, so the dock always has something.
-    $hasBottomBar = true;
+    $canSwitchLocale = count($locales) > 1;
 
     // Built once and laid out twice: as a row in the header on a wide screen,
     // and as the card under the cover on a phone. The card only keeps what the
-    // dock does not already carry — on a phone that is just the hours.
+    // dock does not already carry; on a phone that is just the hours.
     $facts = [];
 
     if (! $hours->isEmpty()) {
@@ -130,7 +129,7 @@
     </style>
     <link rel="stylesheet" href="{{ asset('css/menu-classic.css') }}?v={{ filemtime(public_path('css/menu-classic.css')) }}">
 </head>
-<body @class(['has-dock' => $hasBottomBar])>
+<body class="has-dock">
 <header class="topbar">
     <div class="topbar-inner">
         {{-- The owner can hide the name beside the logo (a logo that already
@@ -319,69 +318,67 @@
     @endif
 </div>
 
-@if ($hasBottomBar)
-    <nav class="dock" aria-label="{{ __('Menu actions') }}">
-        <div class="dock-inner">
-            <div class="dockitem is-share">
-                <button type="button" class="dockface" data-pop-open="qr" aria-haspopup="dialog">
-                    <span class="icon">{!! $icons['qr'] !!}</span>
-                    <span class="dock-label">{{ __('Share menu') }}</span>
+<nav class="dock" aria-label="{{ __('Menu actions') }}">
+    <div class="dock-inner">
+        <div class="dockitem is-share">
+            <button type="button" class="dockface" data-pop-open="qr" aria-haspopup="dialog">
+                <span class="icon">{!! $icons['qr'] !!}</span>
+                <span class="dock-label">{{ __('Share menu') }}</span>
+            </button>
+        </div>
+
+        @if ($canSwitchLocale)
+            <div class="dockitem is-lang">
+                <button type="button" class="dockface" data-pop-open="lang" aria-haspopup="dialog">
+                    <span class="icon">{!! $icons['language'] !!}</span>
+                    <span class="dock-label">{{ $locales[$locale]['name'] ?? __('Language') }}</span>
                 </button>
             </div>
+        @endif
 
-            @if ($canSwitchLocale)
-                <div class="dockitem is-lang">
-                    <button type="button" class="dockface" data-pop-open="lang" aria-haspopup="dialog">
-                        <span class="icon">{!! $icons['language'] !!}</span>
-                        <span class="dock-label">{{ $locales[$locale]['name'] ?? __('Language') }}</span>
-                    </button>
-                </div>
-            @endif
-
-            @if ($restaurant->google_maps_url)
-                <div class="dockitem is-map">
-                    <button type="button" class="dockface" data-pop-open="map" aria-haspopup="dialog">
-                        <span class="icon">{!! $icons['pin'] !!}</span>
-                        <span class="dock-label">{{ __('Find us') }}</span>
-                    </button>
-                </div>
-            @endif
-
-            @if ($hasContact)
-                {{-- WhatsApp and the social links share one item — they are the
-                     same job, reaching the restaurant. Without WhatsApp the
-                     item wears the heart and opens the links alone. --}}
-                <div class="dockitem {{ $whatsapp_url ? 'is-whatsapp' : 'is-social' }}">
-                    <button type="button" class="dockface" data-pop-open="contact" aria-haspopup="dialog">
-                        <span class="icon">{!! $whatsapp_url ? $icons['whatsapp'] : $icons['heart'] !!}</span>
-                        <span class="dock-label">{{ $whatsapp_url ? __('WhatsApp') : __('Follow us') }}</span>
-                    </button>
-                </div>
-            @endif
-
-            <div class="dockitem">
-                <button type="button" class="dockface" data-scroll-top aria-label="{{ __('Back to top') }}">
-                    <span class="icon">{!! $icons['top'] !!}</span>
-                    <span class="dock-label">{{ __('Back to top') }}</span>
+        @if ($restaurant->google_maps_url)
+            <div class="dockitem is-map">
+                <button type="button" class="dockface" data-pop-open="map" aria-haspopup="dialog">
+                    <span class="icon">{!! $icons['pin'] !!}</span>
+                    <span class="dock-label">{{ __('Find us') }}</span>
                 </button>
             </div>
-        </div>
-    </nav>
+        @endif
 
-    <dialog class="pop" id="pop-qr">
-        <div class="pop-body">
-            <h2>{{ __('Scan to open this menu') }}</h2>
-            {{-- The owner's saved design, drawn by the library the dashboard
-                 previews with. Both are fetched the first time this opens
-                 rather than on every menu render. --}}
-            <div class="qr-code" data-qr-canvas role="img" aria-label="{{ __('QR code for the menu') }}"
-                 data-options="{{ route('public.qr.options', $restaurant->slug) }}"
-                 data-lib="{{ asset('js/qr-code-styling.js') }}"></div>
-            <p class="pop-note" dir="ltr">{{ $menu_url }}</p>
-            <button type="button" class="pop-done" data-pop-close>{{ __('Close') }}</button>
+        @if ($hasContact)
+            {{-- WhatsApp and the social links share one item: they are the
+                 same job, reaching the restaurant. Without WhatsApp the
+                 item wears the heart and opens the links alone. --}}
+            <div class="dockitem {{ $whatsapp_url ? 'is-whatsapp' : 'is-social' }}">
+                <button type="button" class="dockface" data-pop-open="contact" aria-haspopup="dialog">
+                    <span class="icon">{!! $whatsapp_url ? $icons['whatsapp'] : $icons['heart'] !!}</span>
+                    <span class="dock-label">{{ $whatsapp_url ? __('WhatsApp') : __('Follow us') }}</span>
+                </button>
+            </div>
+        @endif
+
+        <div class="dockitem">
+            <button type="button" class="dockface" data-scroll-top aria-label="{{ __('Back to top') }}">
+                <span class="icon">{!! $icons['top'] !!}</span>
+                <span class="dock-label">{{ __('Back to top') }}</span>
+            </button>
         </div>
-    </dialog>
-@endif
+    </div>
+</nav>
+
+<dialog class="pop" id="pop-qr">
+    <div class="pop-body">
+        <h2>{{ __('Scan to open this menu') }}</h2>
+        {{-- The owner's saved design, drawn by the library the dashboard
+             previews with. Both are fetched the first time this opens
+             rather than on every menu render. --}}
+        <div class="qr-code" data-qr-canvas role="img" aria-label="{{ __('QR code for the menu') }}"
+             data-options="{{ route('public.qr.options', $restaurant->slug) }}"
+             data-lib="{{ asset('js/qr-code-styling.js') }}"></div>
+        <p class="pop-note" dir="ltr">{{ $menu_url }}</p>
+        <button type="button" class="pop-done" data-pop-close>{{ __('Close') }}</button>
+    </div>
+</dialog>
 
 @if ($canSwitchLocale)
     <dialog class="pop" id="pop-lang">
@@ -411,7 +408,7 @@
                      No referrerpolicy: OSM's tile policy requires a real
                      Referer and forbids a restrictive one, and without it the
                      tiles come back 403. `allow-same-origin` is what lets the
-                     frame send one — it restores openstreetmap.org's origin,
+                     frame send one. It restores openstreetmap.org's origin,
                      not ours, so the frame still cannot reach this page, and
                      forms, popups and top-level navigation stay blocked. --}}
                 <iframe class="pop-map" src="{{ $map_embed_url }}" title="{{ __('Find us') }}"

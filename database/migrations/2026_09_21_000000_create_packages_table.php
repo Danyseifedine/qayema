@@ -13,8 +13,8 @@ return new class extends Migration
      * means unlimited and a flag is 0 or 1), so adding a tier is a row and
      * adding a feature is an enum case.
      *
-     * Seeded from config('package.catalog') so a fresh database — and every
-     * test run — has the four packages before anything else needs one.
+     * Seeded from config('package.catalog') so a fresh database (and every
+     * test run) has the four packages before anything else needs one.
      */
     public function up(): void
     {

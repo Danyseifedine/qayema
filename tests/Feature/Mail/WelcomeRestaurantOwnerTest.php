@@ -41,7 +41,6 @@ class WelcomeRestaurantOwnerTest extends TestCase
         $this->assertInstanceOf(ShouldQueue::class, $mail);
         $mail->assertHasSubject('Your menu is live, welcome to Qayema!');
         $this->assertSame('emails.welcome-restaurant-owner', $mail->content()->view);
-        $this->assertSame([], $mail->attachments());
     }
 
     public function test_it_greets_the_owner_and_links_to_their_menu(): void
@@ -51,7 +50,9 @@ class WelcomeRestaurantOwnerTest extends TestCase
         $mail->assertSeeInHtml('Hi Dani Seif, Beit Qayema is set up on Qayema.', false);
         $mail->assertSeeInHtml('href="'.url('/beit-qayema').'"', false);
         $mail->assertSeeInHtml(parse_url(config('app.url'), PHP_URL_HOST).'/beit-qayema', false);
-        $mail->assertSeeInHtml('href="'.url('/').'"', false);
+        $mail->assertSeeInHtml('href="'.config('app.dashboard_url').'"', false);
+        $mail->assertDontSeeInHtml('AI scanner', false);
+        $mail->assertDontSeeInHtml('Sushi By Ahmad', false);
         $mail->assertSeeInHtml('href="'.route('contact').'"', false);
         $mail->assertSeeInHtml('href="'.route('privacy').'"', false);
         $mail->assertSeeInHtml('href="'.route('terms').'"', false);

@@ -70,7 +70,7 @@ class OwnerJourneyTest extends TestCase
 
     public function test_signup_onboard_pick_template_build_menu_hit_limit_get_more_go_live(): void
     {
-        Package::default()->setFeature(Feature::DishLimit, 3);
+        $this->defaultPackageSets(Feature::DishLimit, 3);
         $user = $this->signUpWithGoogle('journey@example.com');
         $restaurant = $this->onboard($user, 'journey');
 
@@ -116,11 +116,11 @@ class OwnerJourneyTest extends TestCase
             ->assertJsonPath('data.restaurant.package.slug', 'free')
             ->assertJsonPath('data.restaurant.limits.dishes.limit', 40);
 
-        // Asks for Pro. Nothing changes yet — it lands in the admin inbox.
+        // Asks for Pro. Nothing changes yet; it lands in the admin inbox.
         $this->actingAs($owner->user)->postJson(route('api.packages.request'), [
             'package' => 'pro',
             'message' => 'We are opening a second branch.',
-        ])->assertCreated()->assertJsonPath('data.package', 'pro');
+        ])->assertCreated();
 
         $this->assertDatabaseHas('contact_messages', [
             'user_id' => $owner->user_id,

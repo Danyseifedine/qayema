@@ -18,7 +18,7 @@ class LoginRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        // Public login endpoint — credentials are verified in authenticate().
+        // Public login endpoint; credentials are verified in authenticate().
         return true;
     }
 
@@ -45,7 +45,7 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        // Google-only account — no password set
+        // Google-only account (no password set)
         $user = User::where('email', $this->string('email'))->first();
         if ($user && is_null($user->password)) {
             RateLimiter::hit($this->throttleKey());

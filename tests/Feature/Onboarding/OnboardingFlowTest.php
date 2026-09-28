@@ -20,7 +20,7 @@ class OnboardingFlowTest extends TestCase
         $user = User::factory()->create(['onboarding_step' => 2, 'onboarding_completed_at' => null]);
         Restaurant::factory()->create(['user_id' => $user->id]);
 
-        // Advancing step 3 with NO logo must now fail — the logo is required.
+        // Advancing step 3 with NO logo must now fail: the logo is required.
         $response = $this->actingAs($user)->postJson(route('onboarding.advance'), ['_step' => 3]);
 
         $response->assertStatus(422);
@@ -31,7 +31,7 @@ class OnboardingFlowTest extends TestCase
     public function test_step_three_accepts_a_logo_and_completes_onboarding(): void
     {
         // Step 3 (branding) is the final step: a logo completes onboarding and
-        // sends the welcome email. No template is assigned — the owner picks one
+        // sends the welcome email. No template is assigned; the owner picks one
         // from the dashboard, which stays locked until they do.
         Mail::fake();
         $user = User::factory()->create(['onboarding_step' => 2, 'onboarding_completed_at' => null]);

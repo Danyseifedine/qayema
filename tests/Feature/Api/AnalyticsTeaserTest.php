@@ -73,7 +73,7 @@ class AnalyticsTeaserTest extends TestCase
         $this->actingAs($restaurant->user)
             ->getJson(route('api.analytics.teaser'))
             ->assertOk()
-            ->assertExactJson(['data' => ['range' => '7d', 'views' => 1]]);
+            ->assertExactJson(['data' => ['views' => 1]]);
     }
 
     public function test_the_week_starts_at_local_midnight_six_days_ago(): void
@@ -84,7 +84,7 @@ class AnalyticsTeaserTest extends TestCase
         $this->actingAs($restaurant->user)
             ->getJson(route('api.analytics.teaser'))
             ->assertOk()
-            ->assertExactJson(['data' => ['range' => '7d', 'views' => 5]]);
+            ->assertExactJson(['data' => ['views' => 5]]);
     }
 
     /** The same rows seen from UTC: the three Beirut-only visits drop out. */
@@ -156,6 +156,6 @@ class AnalyticsTeaserTest extends TestCase
         $this->actingAs($restaurant->user)
             ->getJson(route('api.analytics.teaser'))
             ->assertOk()
-            ->assertExactJson(['data' => ['range' => '7d', 'views' => 0]]);
+            ->assertExactJson(['data' => ['views' => 0]]);
     }
 }

@@ -123,11 +123,6 @@ class Entitlements
 
         foreach ($grants as $grant) {
             $feature = $grant->feature;
-
-            if ($feature === null) {
-                continue;
-            }
-
             $current = $values[$feature->value];
 
             if ($current === null) {

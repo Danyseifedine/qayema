@@ -9,13 +9,13 @@ return [
     |
     | Only the dashboard SPA endpoints and the CSRF-cookie route are exposed to
     | cross-origin requests. Because `supports_credentials` is true (cookies are
-    | sent), `allowed_origins` MUST be an explicit allow-list — never "*". The
+    | sent), `allowed_origins` MUST be an explicit allow-list, never "*". The
     | list is env-driven and fails closed: an empty CORS_ALLOWED_ORIGINS blocks
     | all cross-origin browser access rather than opening it up.
     |
     */
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie'],
+    'paths' => ['api/*'],
 
     'allowed_methods' => ['*'],
 

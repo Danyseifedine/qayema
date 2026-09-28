@@ -14,8 +14,8 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 
 /**
- * What each plan contains. The rows are fixed — the catalog is seeded and a
- * restaurant points at one — so this resource edits them and nothing else:
+ * What each plan contains. The rows are fixed (the catalog is seeded and a
+ * restaurant points at one), so this resource edits them and nothing else:
  * creating a fifth package or deleting one would leave restaurants pointing at
  * nothing, and is a code change (config/package.php), not an admin action.
  */
@@ -56,11 +56,6 @@ class PackageResource extends Resource
     public static function canDeleteAny(): bool
     {
         return false;
-    }
-
-    public static function getRelations(): array
-    {
-        return [];
     }
 
     public static function getPages(): array

@@ -30,7 +30,7 @@ class ListContactMessages extends ListRecords
 
                 TextColumn::make('package.name')
                     ->label('Requested package')
-                    ->placeholder('—')
+                    ->placeholder('-')
                     ->badge()
                     ->color('warning'),
 

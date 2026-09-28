@@ -10,14 +10,14 @@
 @section('headline_plain', 'Cookie')
 @section('headline_italic', 'Policy')
 @section('headline_ar', 'سياسة ملفات الارتباط')
-@section('updated', 'Last updated: May 9, 2025')
-@section('updated_ar', 'آخر تحديث: 9 مايو 2025')
+@section('updated', 'Last updated: September 28, 2026')
+@section('updated_ar', 'آخر تحديث: 28 سبتمبر 2026')
 
 @section('toc')
     <li><a href="#what">What are cookies</a></li>
     <li><a href="#types">Cookies we use</a></li>
     <li><a href="#essential">Essential cookies</a></li>
-    <li><a href="#functional">Functional cookies</a></li>
+    <li><a href="#functional">Functional storage</a></li>
     <li><a href="#analytics">Analytics cookies</a></li>
     <li><a href="#third">Third-party cookies</a></li>
     <li><a href="#control">Controlling cookies</a></li>
@@ -29,7 +29,7 @@
     <li><a href="#what-ar">ما هي ملفات تعريف الارتباط</a></li>
     <li><a href="#types-ar">ملفات الارتباط التي نستخدمها</a></li>
     <li><a href="#essential-ar">ملفات الارتباط الأساسية</a></li>
-    <li><a href="#functional-ar">ملفات الارتباط الوظيفية</a></li>
+    <li><a href="#functional-ar">التخزين الوظيفي</a></li>
     <li><a href="#analytics-ar">ملفات الارتباط التحليلية</a></li>
     <li><a href="#third-ar">ملفات الارتباط من الأطراف الثالثة</a></li>
     <li><a href="#control-ar">التحكم في ملفات الارتباط</a></li>
@@ -52,11 +52,11 @@
 
 <h2 id="types">Cookies we use</h2>
 
-<p>We use three categories of cookies:</p>
+<p>We use two categories of cookies and browser storage, and no analytics or advertising cookies:</p>
 <ul>
-    <li><strong>Essential cookies</strong> — required for the service to function. Cannot be disabled.</li>
-    <li><strong>Functional cookies</strong> — remember your preferences (e.g. dashboard language).</li>
-    <li><strong>Analytics cookies</strong> — help us understand how visitors use our service.</li>
+    <li><strong>Essential cookies</strong>: required for the service to function. Cannot be disabled.</li>
+    <li><strong>Functional storage</strong>: remembers your preferences (such as the dashboard language) and a guest's cart on a menu.</li>
+    <li><strong>Analytics cookies</strong>: we use none. Menu statistics are recorded on our server, as described below.</li>
 </ul>
 
 <h2 id="essential">Essential cookies</h2>
@@ -73,58 +73,75 @@
     </thead>
     <tbody>
         <tr style="border-bottom:1px solid rgba(15,15,16,.06)">
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema_session</code></td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Maintains your login session and stores temporary data</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Session (browser close)</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema-session</code></td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Keeps you signed in and holds temporary data such as your chosen website language. On a public menu, it links a guest's visit and actions together for the menu's statistics and protects orders</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Up to 1 year</td>
         </tr>
         <tr style="border-bottom:1px solid rgba(15,15,16,.06)">
             <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">XSRF-TOKEN</code></td>
             <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Protects against cross-site request forgery attacks</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Session</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Up to 1 year</td>
+        </tr>
+        <tr>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">remember_web_…</code></td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Keeps you signed in even after your session ends when "Keep me signed in" is ticked (it is by default) or when you sign in with Google</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">400 days</td>
         </tr>
     </tbody>
 </table>
 
-<h2 id="functional">Functional cookies</h2>
+<h2 id="functional">Functional storage</h2>
 
-<p>Functional cookies allow the service to remember choices you make, such as your preferred dashboard language. Disabling these cookies may affect your experience.</p>
+<p>Functional storage allows the service to remember choices you make, such as your preferred language and theme, and keeps a guest's cart on a menu. Apart from your website language, which is kept inside the session, these entries live in your browser's local storage and are never sent to our servers on their own. Clearing them may affect your experience.</p>
 
 <table style="width:100%;border-collapse:collapse;font-size:13.5px;margin-bottom:16px">
     <thead>
         <tr style="border-bottom:1px solid rgba(15,15,16,.1)">
-            <th style="text-align:left;padding:8px 12px;font-weight:600;color:var(--muted)">Cookie / Storage</th>
+            <th style="text-align:left;padding:8px 12px;font-weight:600;color:var(--muted)">Name</th>
             <th style="text-align:left;padding:8px 12px;font-weight:600;color:var(--muted)">Purpose</th>
             <th style="text-align:left;padding:8px 12px;font-weight:600;color:var(--muted)">Duration</th>
         </tr>
     </thead>
     <tbody>
         <tr style="border-bottom:1px solid rgba(15,15,16,.06)">
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">owner_locale</code></td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Remembers your chosen dashboard language</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Session</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">owner_locale</code> (inside the session)</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Remembers the language you chose on the website and sign-in pages</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">As long as the session</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(15,15,16,.06)">
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema-theme</code> (localStorage)</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Remembers the light or dark theme you chose on the website</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Until you clear it</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(15,15,16,.06)">
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema.dashboard.theme.v1</code>, <code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema.dashboard.locale.v1</code>, <code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema.dashboard.sidebar.collapsed.v1</code> (localStorage)</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Remember your dashboard theme, language and whether the sidebar is collapsed</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Until you clear it</td>
         </tr>
         <tr>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema_lang</code> (localStorage)</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Remembers your language preference on the public website</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Persistent (1 year)</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema-cart-…</code> (localStorage)</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">On menus that take orders, keeps the guest's cart so a reload does not lose it; emptied when the order is placed</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Until you clear it</td>
         </tr>
     </tbody>
 </table>
 
 <h2 id="analytics">Analytics cookies</h2>
 
-<p>We use lightweight, privacy-first analytics to understand how visitors interact with the dashboard and public menu pages. This data is anonymised and aggregated, and is not used to track individuals across websites.</p>
+<p>We do not use analytics cookies or third-party analytics tools, and we do not track how you use the dashboard. Nothing here is used to follow anyone across websites.</p>
 
-<p>For public menu pages hosted on Qayema, we record a session identifier, device type, browser, operating system, and visit duration per session. This data is visible to the restaurant owner as visitor statistics. We do not link this data to any personally identifiable information.</p>
+<p>On public menu pages, statistics are recorded on our server rather than in a separate cookie. Each menu view is recorded with the session identifier from the session cookie above (or, without a session, a one-way hash of the IP address and browser; the IP address itself is not stored), the device type, browser name, operating system, menu language, whether the visit came through the menu's QR code, and the time. Some guest actions are recorded with the same identifier: adding a dish to the cart, opening a category, searches (including ones that found nothing), taps on the WhatsApp, map, call and social links, and switching language. The restaurant's owner sees these records as statistics; they are deleted after 6 months, and owners previewing their own menu are not recorded. See our <a href="{{ route('privacy') }}">Privacy Policy</a> for details.</p>
 
 <h2 id="third">Third-party cookies</h2>
 
-<p>Some features of Qayema involve third-party services that may set their own cookies:</p>
+<p>Some features of Qayema load third-party services, which may set their own cookies or log request data:</p>
 
 <ul>
-    <li><strong>Google Fonts:</strong> Used to load the typefaces displayed on the website. Google may log request metadata. See <a href="https://policies.google.com/privacy" target="_blank">Google's Privacy Policy</a>.</li>
-    <li><strong>Google OAuth:</strong> If you sign in with Google, Google sets authentication cookies. See <a href="https://policies.google.com/privacy" target="_blank">Google's Privacy Policy</a>.</li>
-    <li><strong>Payment processor (Stripe):</strong> If you subscribe to a paid plan, Stripe sets cookies for fraud detection. See <a href="https://stripe.com/privacy" target="_blank">Stripe's Privacy Policy</a>.</li>
+    <li><strong>Google Fonts:</strong> Used to load the typefaces on the website, the dashboard and menus. Google may log request metadata. See <a href="https://policies.google.com/privacy" target="_blank">Google's Privacy Policy</a>.</li>
+    <li><strong>Google sign-in:</strong> If you sign in with Google, Google sets authentication cookies. See <a href="https://policies.google.com/privacy" target="_blank">Google's Privacy Policy</a>.</li>
+    <li><strong>Google reCAPTCHA:</strong> Where it is enabled, the sign-in and contact pages load reCAPTCHA to tell people from automated abuse, and Google may set cookies for it. See <a href="https://policies.google.com/privacy" target="_blank">Google's Privacy Policy</a>.</li>
+    <li><strong>OpenStreetMap:</strong> Menus that show the restaurant's location load a map from OpenStreetMap. See <a href="https://osmfoundation.org/wiki/Privacy_Policy" target="_blank">the OpenStreetMap Foundation's Privacy Policy</a>.</li>
+    <li><strong>jsDelivr:</strong> Some scripts on our website pages are loaded from the jsDelivr content delivery network, which may log request data.</li>
 </ul>
 
 <p>We do not use advertising cookies or third-party tracking pixels.</p>
@@ -141,7 +158,7 @@
     <li><a href="https://support.microsoft.com/en-us/microsoft-edge/delete-cookies-in-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09" target="_blank">Microsoft Edge</a></li>
 </ul>
 
-<p>You can also clear localStorage from your browser's Developer Tools (Application tab) to remove persistent functional storage.</p>
+<p>You can also clear localStorage from your browser's settings or Developer Tools (Application tab) to remove the stored theme, dashboard preferences and menu carts.</p>
 
 <h2 id="changes">Changes to this policy</h2>
 
@@ -166,11 +183,11 @@
 
 <h2 id="types-ar">ملفات الارتباط التي نستخدمها</h2>
 
-<p>نستخدم ثلاث فئات من ملفات تعريف الارتباط:</p>
+<p>نستخدم فئتين من ملفات تعريف الارتباط والتخزين في المتصفح، ولا نستخدم أي ملفات ارتباط تحليلية أو إعلانية:</p>
 <ul>
-    <li><strong>ملفات الارتباط الأساسية</strong> — ضرورية لعمل الخدمة. لا يمكن تعطيلها.</li>
-    <li><strong>ملفات الارتباط الوظيفية</strong> — تتذكر تفضيلاتك (مثل لغة لوحة التحكم).</li>
-    <li><strong>ملفات الارتباط التحليلية</strong> — تساعدنا على فهم كيفية تفاعل الزوار مع خدمتنا.</li>
+    <li><strong>ملفات الارتباط الأساسية</strong>: ضرورية لعمل الخدمة. لا يمكن تعطيلها.</li>
+    <li><strong>التخزين الوظيفي</strong>: يتذكر تفضيلاتك (مثل لغة لوحة التحكم) وسلة الضيف في القائمة.</li>
+    <li><strong>ملفات الارتباط التحليلية</strong>: لا نستخدم أيًا منها. تُسجَّل إحصاءات القوائم على خادمنا كما هو موضح أدناه.</li>
 </ul>
 
 <h2 id="essential-ar">ملفات الارتباط الأساسية</h2>
@@ -187,58 +204,75 @@
     </thead>
     <tbody>
         <tr style="border-bottom:1px solid rgba(15,15,16,.06)">
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema_session</code></td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">يحافظ على جلسة تسجيل دخولك ويخزّن البيانات المؤقتة</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">جلسة (إغلاق المتصفح)</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema-session</code></td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">يُبقيك مسجّل الدخول ويخزّن بيانات مؤقتة مثل لغة الموقع التي اخترتها. وفي القائمة العامة، يربط زيارة الضيف وما يفعله ببعضهما لإحصاءات القائمة ويحمي الطلبات</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">حتى سنة واحدة</td>
         </tr>
         <tr style="border-bottom:1px solid rgba(15,15,16,.06)">
             <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">XSRF-TOKEN</code></td>
             <td style="padding:8px 12px;color:rgba(15,15,16,.75)">يحمي من هجمات طلب التزوير عبر المواقع</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">جلسة</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">حتى سنة واحدة</td>
+        </tr>
+        <tr>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">remember_web_…</code></td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">يُبقيك مسجّل الدخول حتى بعد انتهاء جلستك عند تفعيل خيار "ابقني متصلاً" (وهو مفعّل افتراضيًا) أو عند تسجيل الدخول عبر Google</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">400 يوم</td>
         </tr>
     </tbody>
 </table>
 
-<h2 id="functional-ar">ملفات الارتباط الوظيفية</h2>
+<h2 id="functional-ar">التخزين الوظيفي</h2>
 
-<p>تتيح ملفات الارتباط الوظيفية للخدمة تذكّر الخيارات التي تتخذها، مثل لغة لوحة التحكم المفضّلة لديك. قد يؤثر تعطيل هذه الملفات على تجربتك.</p>
+<p>يتيح التخزين الوظيفي للخدمة تذكّر الخيارات التي تتخذها، مثل اللغة والمظهر المفضّلين لديك، ويحفظ سلة الضيف في القائمة. باستثناء لغة الموقع التي تُحفظ داخل الجلسة، تُخزَّن هذه الإدخالات في التخزين المحلي لمتصفحك ولا تُرسل وحدها إلى خوادمنا. قد يؤثر مسحها على تجربتك.</p>
 
 <table style="width:100%;border-collapse:collapse;font-size:13.5px;margin-bottom:16px">
     <thead>
         <tr style="border-bottom:1px solid rgba(15,15,16,.1)">
-            <th style="text-align:right;padding:8px 12px;font-weight:600;color:var(--muted)">ملف الارتباط / التخزين</th>
+            <th style="text-align:right;padding:8px 12px;font-weight:600;color:var(--muted)">الاسم</th>
             <th style="text-align:right;padding:8px 12px;font-weight:600;color:var(--muted)">الغرض</th>
             <th style="text-align:right;padding:8px 12px;font-weight:600;color:var(--muted)">المدة</th>
         </tr>
     </thead>
     <tbody>
         <tr style="border-bottom:1px solid rgba(15,15,16,.06)">
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">owner_locale</code></td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">يتذكر لغة لوحة التحكم المختارة</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">جلسة</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">owner_locale</code> (داخل الجلسة)</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">يتذكر اللغة التي اخترتها في الموقع وصفحات تسجيل الدخول</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">طوال مدة الجلسة</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(15,15,16,.06)">
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema-theme</code> (localStorage)</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">يتذكر المظهر الفاتح أو الداكن الذي اخترته في الموقع</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">حتى تمسحه</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(15,15,16,.06)">
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema.dashboard.theme.v1</code>، <code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema.dashboard.locale.v1</code>، <code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema.dashboard.sidebar.collapsed.v1</code> (localStorage)</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">تتذكر مظهر لوحة التحكم ولغتها وما إذا كان الشريط الجانبي مطويًا</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">حتى تمسحها</td>
         </tr>
         <tr>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema_lang</code> (localStorage)</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">يتذكر تفضيلات اللغة على الموقع العام</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">دائم (سنة واحدة)</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema-cart-…</code> (localStorage)</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">في القوائم التي تستقبل الطلبات، يحفظ سلة الضيف كي لا تضيع عند إعادة تحميل الصفحة، ويُفرَّغ عند إرسال الطلب</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">حتى تمسحه</td>
         </tr>
     </tbody>
 </table>
 
 <h2 id="analytics-ar">ملفات الارتباط التحليلية</h2>
 
-<p>نستخدم تحليلات خفيفة تراعي الخصوصية لفهم كيفية تفاعل الزوار مع لوحة التحكم وصفحات القوائم العامة. هذه البيانات مجهولة الهوية ومجمّعة ولا تُستخدم لتتبع الأفراد عبر المواقع.</p>
+<p>لا نستخدم ملفات ارتباط تحليلية أو أدوات تحليل من أطراف ثالثة، ولا نتتبّع كيفية استخدامك للوحة التحكم. ولا يُستخدم أي مما سبق لتتبّع أحد عبر المواقع.</p>
 
-<p>بالنسبة لصفحات القوائم العامة المستضافة على قائمة، نسجّل معرّف الجلسة ونوع الجهاز والمتصفح ونظام التشغيل ومدة الزيارة لكل جلسة. هذه البيانات مرئية لصاحب المطعم كإحصاءات الزوار. نحن لا نربط هذه البيانات بأي معلومات تعريف شخصية.</p>
+<p>في صفحات القوائم العامة، تُسجَّل الإحصاءات على خادمنا وليس في ملف ارتباط منفصل. تُسجَّل كل مشاهدة للقائمة مع معرّف الجلسة المأخوذ من ملف ارتباط الجلسة أعلاه (أو، عند عدم وجود جلسة، تجزئة أحادية الاتجاه لعنوان IP والمتصفح؛ ولا يُخزَّن عنوان IP نفسه)، ونوع الجهاز واسم المتصفح ونظام التشغيل ولغة القائمة وما إذا جاءت الزيارة عبر رمز QR الخاص بالقائمة ووقتها. وتُسجَّل بعض أفعال الضيوف بالمعرّف نفسه: إضافة طبق إلى السلة، وفتح فئة، وعمليات البحث (بما فيها التي لم تجد نتيجة)، والنقر على روابط WhatsApp والخريطة والاتصال ومواقع التواصل، وتبديل اللغة. يرى صاحب المطعم هذه السجلات على شكل إحصاءات، وتُحذف بعد 6 أشهر، ولا تُسجَّل معاينة أصحاب المطاعم لقوائمهم. راجع <a href="{{ route('privacy') }}">سياسة الخصوصية</a> لمزيد من التفاصيل.</p>
 
 <h2 id="third-ar">ملفات الارتباط من الأطراف الثالثة</h2>
 
-<p>بعض ميزات قائمة تتضمن خدمات من أطراف ثالثة قد تضع ملفات الارتباط الخاصة بها:</p>
+<p>بعض ميزات قائمة تحمّل خدمات من أطراف ثالثة قد تضع ملفات الارتباط الخاصة بها أو تسجّل بيانات الطلبات:</p>
 
 <ul>
-    <li><strong>خطوط Google:</strong> تُستخدم لتحميل الخطوط المعروضة على الموقع. قد تسجّل Google بيانات تعريفية للطلبات. راجع <a href="https://policies.google.com/privacy" target="_blank">سياسة خصوصية Google</a>.</li>
-    <li><strong>Google OAuth:</strong> إذا سجّلت دخولك باستخدام Google، تضع Google ملفات ارتباط للمصادقة. راجع <a href="https://policies.google.com/privacy" target="_blank">سياسة خصوصية Google</a>.</li>
-    <li><strong>معالج الدفع (Stripe):</strong> إذا اشتركت في باقة مدفوعة، يضع Stripe ملفات ارتباط للكشف عن الاحتيال. راجع <a href="https://stripe.com/privacy" target="_blank">سياسة خصوصية Stripe</a>.</li>
+    <li><strong>خطوط Google:</strong> تُستخدم لتحميل الخطوط المعروضة في الموقع ولوحة التحكم والقوائم. قد تسجّل Google بيانات تعريفية للطلبات. راجع <a href="https://policies.google.com/privacy" target="_blank">سياسة خصوصية Google</a>.</li>
+    <li><strong>تسجيل الدخول عبر Google:</strong> إذا سجّلت دخولك باستخدام Google، تضع Google ملفات ارتباط للمصادقة. راجع <a href="https://policies.google.com/privacy" target="_blank">سياسة خصوصية Google</a>.</li>
+    <li><strong>Google reCAPTCHA:</strong> حين يكون مفعّلًا، تحمّل صفحتا تسجيل الدخول والتواصل reCAPTCHA للتمييز بين الأشخاص والإساءة الآلية، وقد تضع Google ملفات ارتباط لذلك. راجع <a href="https://policies.google.com/privacy" target="_blank">سياسة خصوصية Google</a>.</li>
+    <li><strong>OpenStreetMap:</strong> القوائم التي تعرض موقع المطعم تحمّل خريطة من OpenStreetMap. راجع <a href="https://osmfoundation.org/wiki/Privacy_Policy" target="_blank">سياسة خصوصية مؤسسة OpenStreetMap</a>.</li>
+    <li><strong>jsDelivr:</strong> تُحمَّل بعض البرامج النصية في صفحات موقعنا من شبكة توصيل المحتوى jsDelivr، التي قد تسجّل بيانات الطلبات.</li>
 </ul>
 
 <p>نحن لا نستخدم ملفات ارتباط إعلانية أو بكسلات تتبع من أطراف ثالثة.</p>
@@ -255,7 +289,7 @@
     <li><a href="https://support.microsoft.com/en-us/microsoft-edge/delete-cookies-in-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09" target="_blank">Microsoft Edge</a></li>
 </ul>
 
-<p>يمكنك أيضًا مسح التخزين المحلي من أدوات المطوّرين في متصفحك (علامة تبويب التطبيقات) لإزالة التخزين الوظيفي الدائم.</p>
+<p>يمكنك أيضًا مسح التخزين المحلي من إعدادات متصفحك أو أدوات المطوّرين فيه (علامة تبويب التطبيقات) لإزالة المظهر المحفوظ وتفضيلات لوحة التحكم وسلال القوائم.</p>
 
 <h2 id="changes-ar">التغييرات على هذه السياسة</h2>
 

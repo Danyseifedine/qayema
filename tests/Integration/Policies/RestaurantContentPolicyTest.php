@@ -30,12 +30,12 @@ class RestaurantContentPolicyTest extends TestCase
      */
     public static function policies(): array
     {
-        $all = ['view', 'update', 'delete', 'restore', 'forceDelete'];
+        $abilities = ['view', 'update', 'delete'];
 
         return [
-            'category' => [Category::class, CategoryPolicy::class, $all],
-            'dish' => [Dish::class, DishPolicy::class, $all],
-            'social link' => [RestaurantSocialLink::class, RestaurantSocialLinkPolicy::class, ['view', 'update', 'delete']],
+            'category' => [Category::class, CategoryPolicy::class, $abilities],
+            'dish' => [Dish::class, DishPolicy::class, $abilities],
+            'social link' => [RestaurantSocialLink::class, RestaurantSocialLinkPolicy::class, $abilities],
         ];
     }
 
@@ -145,15 +145,22 @@ class RestaurantContentPolicyTest extends TestCase
         $this->assertFalse($instance->update($this->userWithoutRestaurant(), $row));
     }
 
-    public function test_a_social_link_has_no_restore_or_force_delete_so_the_gate_denies_both(): void
+    /**
+     * Nothing here is soft-deleted, so there is nothing to restore.
+     *
+     * @param  class-string<Model>  $model
+     * @param  class-string  $policy
+     */
+    #[DataProvider('policies')]
+    public function test_there_is_no_restore_or_force_delete_so_the_gate_denies_both(string $model, string $policy): void
     {
         $restaurant = $this->owner();
-        $link = $this->rowOf(RestaurantSocialLink::class, $restaurant);
+        $row = $this->rowOf($model, $restaurant);
 
-        $this->assertFalse(method_exists(RestaurantSocialLinkPolicy::class, 'restore'));
-        $this->assertFalse(method_exists(RestaurantSocialLinkPolicy::class, 'forceDelete'));
-        $this->assertFalse($restaurant->user->can('restore', $link));
-        $this->assertFalse($restaurant->user->can('forceDelete', $link));
+        $this->assertFalse(method_exists($policy, 'restore'));
+        $this->assertFalse(method_exists($policy, 'forceDelete'));
+        $this->assertFalse($restaurant->user->can('restore', $row));
+        $this->assertFalse($restaurant->user->can('forceDelete', $row));
     }
 
     public function test_a_dish_moved_to_another_restaurant_leaves_its_old_owner(): void

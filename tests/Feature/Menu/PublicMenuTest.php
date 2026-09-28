@@ -108,7 +108,7 @@ class PublicMenuTest extends TestCase
         $html = $this->get(route('public.menu', $restaurant->slug))->assertOk()->getContent();
 
         // The card runs from its own opening tag to the menu sections, which
-        // always render — the search box only does when there are dishes.
+        // always render; the search box only does when there are dishes.
         $start = strpos($html, '<div class="info">');
         $this->assertNotFalse($start, 'The hours card should render.');
         $card = substr($html, $start, strpos($html, '<div class="sections">') - $start);

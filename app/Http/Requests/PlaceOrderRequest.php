@@ -14,7 +14,7 @@ class PlaceOrderRequest extends FormRequest
 
     /**
      * Shape only. Which dishes are real, which belong to this restaurant and
-     * what they cost is settled in OrderPlacer against the database — a price
+     * what they cost is settled in OrderPlacer against the database; a price
      * is never accepted from the page.
      *
      * @return array<string, array<int, mixed>>

@@ -1,5 +1,5 @@
 /* ============================================================
-   QAYEMA — auth (login + onboarding) dark theme
+   QAYEMA: auth (login + onboarding) dark theme
    Loaded only on bare pages, AFTER the light auth CSS.
    Flips the page tokens for data-theme="dark". The always-dark
    showcase panels (.brand-col, .right) keep their light-mode
@@ -17,7 +17,7 @@ html[data-theme="dark"] {
   --sand-2:  #2A2A2A;
 }
 
-/* Showcase panels are dark by design in BOTH themes — restore the
+/* Showcase panels are dark by design in BOTH themes; restore the
    light-mode token values inside them (dark surface, light text). */
 html[data-theme="dark"] .right {
   --paper:   #FBFAF6;
@@ -33,24 +33,17 @@ html[data-theme="dark"] .right {
 /* The dark phone mock inside .right keeps its own dark device chrome,
    but its screen should not read as a bright cream rectangle. */
 html[data-theme="dark"] .phone-screen { background: #0F0F12; color: #F2EDE3; }
-html[data-theme="dark"] .tpl-thumb { background: #16161B; }
 
 /* Inputs / dropdowns gain a hairline so they separate from the dark bg. */
 html[data-theme="dark"] .ui-input-wrap,
 html[data-theme="dark"] .form-col .ui-input-wrap,
 html[data-theme="dark"] .lang-dropdown,
-html[data-theme="dark"] .google-btn,
-html[data-theme="dark"] .tag-chip,
-html[data-theme="dark"] .tpl-card { border-color: rgba(255, 255, 255, .12); }
+html[data-theme="dark"] .google-btn { border-color: rgba(255, 255, 255, .12); }
 
-/* The dashed dropzone border is a near-black ink in light mode — invisible on
+/* The dashed dropzone border is a near-black ink in light mode, invisible on
    the dark bg. Lift it to a faint light tone so the dashes read (a touch
    stronger than the solid hairlines above since a dashed line shows less). */
 html[data-theme="dark"] .ui-uploader { border-color: rgba(245, 241, 232, .22); }
-
-/* Primary buttons invert (cream on dark). Their hardcoded light-mode
-   "darken on hover" (#1c1c1f) would hide the dark label, so re-point it. */
-html[data-theme="dark"] .ui-btn-primary:hover { background: #E9E3D6; }
 
 /* Keep the checked checkbox visible (white tick on gold, not on cream). */
 html[data-theme="dark"] .ui-check input:checked + .box,
@@ -60,13 +53,10 @@ html[data-theme="dark"] .form-col .ui-check.olive input:checked + .box {
   border-color: var(--accent, #E9BD66);
 }
 
-/* Placeholders are a dark muted ink in light mode — invisible on the dark
+/* Placeholders are a dark muted ink in light mode, invisible on the dark
    input bg, so lift them to a light faint tone in dark mode. */
 html[data-theme="dark"] .ui-input::placeholder,
-html[data-theme="dark"] .ui-textarea::placeholder,
 html[data-theme="dark"] .ui-combo-input::placeholder,
-html[data-theme="dark"] .ui-tags-wrap input::placeholder,
-html[data-theme="dark"] .ui-phone-num::placeholder,
-html[data-theme="dark"] .f-input::placeholder {
+html[data-theme="dark"] .ui-phone-num::placeholder {
   color: rgba(245, 241, 232, .40);
 }

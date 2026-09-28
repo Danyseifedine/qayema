@@ -8,6 +8,7 @@ use App\Http\Requests\RequestPackageRequest;
 use App\Models\Package;
 use App\Services\Contact\ContactService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 
 /**
  * An owner asking to move to a paid package.
@@ -18,17 +19,16 @@ use Illuminate\Http\JsonResponse;
  */
 class PackageRequestController extends Controller
 {
-    public function store(RequestPackageRequest $request, ContactService $contacts): JsonResponse
+    public function store(RequestPackageRequest $request, ContactService $contacts): JsonResponse|Response
     {
         $user = $request->user();
-        $package = Package::findBySlug($request->validated('package'));
-
-        abort_if($package === null, 422);
+        // The rules already found it.
+        $package = Package::query()->where('slug', $request->validated('package'))->sole();
 
         $message = trim((string) $request->validated('message'));
 
         try {
-            $contact = $contacts->submit([
+            $contacts->submit([
                 'name' => $user->name,
                 'email' => $user->email,
                 'message' => $message !== ''
@@ -49,11 +49,6 @@ class PackageRequestController extends Controller
             ], 429);
         }
 
-        return response()->json([
-            'data' => [
-                'id' => $contact->id,
-                'package' => $package->slug,
-            ],
-        ], 201);
+        return response()->noContent(201);
     }
 }

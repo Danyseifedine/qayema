@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateAccountRequest;
 use App\Http\Requests\UpdatePasswordRequest;
 use App\Http\Resources\UserResource;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -30,7 +30,7 @@ class AccountController extends Controller
      * account. Rotating the remember token logs every other "keep me signed
      * in" browser out; this session stays.
      */
-    public function updatePassword(UpdatePasswordRequest $request): JsonResponse
+    public function updatePassword(UpdatePasswordRequest $request): Response
     {
         $user = $request->user();
 
@@ -39,6 +39,6 @@ class AccountController extends Controller
             'remember_token' => Str::random(60),
         ])->save();
 
-        return response()->json(['message' => __('Your password has been updated.'), 'has_password' => true]);
+        return response()->noContent();
     }
 }

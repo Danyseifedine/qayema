@@ -20,12 +20,12 @@ use Illuminate\Support\Facades\Route;
 
 /*
 | First-party dashboard SPA endpoints. Authentication is the Sanctum stateful
-| session cookie (see `statefulApi()` in bootstrap/app.php) — there are no
-| bearer tokens. The SPA primes CSRF via GET /sanctum/csrf-cookie first.
+| session cookie (see `statefulApi()` in bootstrap/app.php); there are no
+| bearer tokens.
 */
-// CSRF token in the body for cross-domain SPAs that can't read the cookie.
-// Public (the token is session-scoped and only readable by an allow-listed CORS
-// origin), but throttled.
+// The CSRF token in the body: the SPA primes it here because, on another
+// subdomain, it can't read the cookie. Public (the token is session-scoped and
+// only readable by an allow-listed CORS origin), but throttled.
 Route::get('/csrf-token', [AuthController::class, 'csrfToken'])
     ->middleware('throttle:api')
     ->name('api.csrf-token');
@@ -35,14 +35,14 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('api.logout');
 
     // The owner's own account. Email is read-only (accounts come from Google).
-    Route::match(['put', 'patch'], '/account', [AccountController::class, 'update'])
+    Route::patch('/account', [AccountController::class, 'update'])
         ->middleware('throttle:mutations')
         ->name('api.account.update');
     Route::put('/password', [AccountController::class, 'updatePassword'])
         ->middleware('throttle:auth')
         ->name('api.password.update');
 
-    // Optional features the owner switched off, and the menu's languages —
+    // Optional features the owner switched off, and the menu's languages,
     // both set from the dashboard's Features page.
     Route::put('/features', [FeaturesController::class, 'update'])
         ->middleware('throttle:mutations')
@@ -72,8 +72,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::get('/categories', [CategoryController::class, 'index'])->name('api.categories.index');
     Route::post('/categories', [CategoryController::class, 'store'])->name('api.categories.store');
     Route::post('/categories/reorder', [CategoryController::class, 'reorder'])->name('api.categories.reorder');
-    Route::get('/categories/{category}', [CategoryController::class, 'show'])->name('api.categories.show');
-    Route::match(['put', 'patch'], '/categories/{category}', [CategoryController::class, 'update'])->name('api.categories.update');
+    Route::patch('/categories/{category}', [CategoryController::class, 'update'])->name('api.categories.update');
     Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('api.categories.destroy');
 
     // Dishes (scoped to the authenticated user's restaurant). `reorder` is
@@ -81,16 +80,14 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::get('/dishes', [DishController::class, 'index'])->name('api.dishes.index');
     Route::post('/dishes', [DishController::class, 'store'])->name('api.dishes.store');
     Route::post('/dishes/reorder', [DishController::class, 'reorder'])->name('api.dishes.reorder');
-    Route::get('/dishes/{dish}', [DishController::class, 'show'])->name('api.dishes.show');
     Route::patch('/dishes/{dish}/availability', [DishController::class, 'updateAvailability'])->name('api.dishes.availability');
-    Route::post('/dishes/{dish}/move', [DishController::class, 'move'])->name('api.dishes.move');
-    Route::match(['put', 'patch'], '/dishes/{dish}', [DishController::class, 'update'])->name('api.dishes.update');
+    Route::patch('/dishes/{dish}', [DishController::class, 'update'])->name('api.dishes.update');
     Route::delete('/dishes/{dish}', [DishController::class, 'destroy'])->name('api.dishes.destroy');
 
-    // The restaurant itself — name, contact, hours, branding (the dashboard's
+    // The restaurant itself: name, contact, hours, branding (the dashboard's
     // Restaurant page). The slug is read-only. A singleton, so no {id}.
     Route::get('/restaurant', [RestaurantController::class, 'show'])->name('api.restaurant.show');
-    Route::match(['put', 'patch'], '/restaurant', [RestaurantController::class, 'update'])->name('api.restaurant.update');
+    Route::patch('/restaurant', [RestaurantController::class, 'update'])->name('api.restaurant.update');
 
     // Menu designs (Template rows). A new restaurant has none and must choose
     // before the dashboard unlocks. A design marked premium needs a package
@@ -105,7 +102,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         ->middleware('throttle:mutations')
         ->name('api.appearance.update');
 
-    // Packages — what every plan contains and which one this restaurant is on.
+    // Packages: what every plan contains and which one this restaurant is on.
     // Nothing is sold here: an owner asks for a package and an admin assigns it,
     // so the request lands as a contact message rather than a checkout.
     Route::get('/packages', [PackageController::class, 'index'])->name('api.packages.index');
@@ -116,11 +113,11 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // Orders placed from the public menu. Read-only apart from the status:
     // what was ordered is written once, by the guest, and never edited.
     Route::get('/orders', [OrderController::class, 'index'])->name('api.orders.index');
-    Route::match(['put', 'patch'], '/orders/{order}', [OrderController::class, 'update'])
+    Route::patch('/orders/{order}', [OrderController::class, 'update'])
         ->middleware('throttle:mutations')
         ->name('api.orders.update');
 
-    // QR studio — the menu link's QR design (persisted look) + scan analytics.
+    // QR studio: the menu link's QR design (persisted look) + scan analytics.
     Route::get('/qr', [QrController::class, 'show'])->name('api.qr.show');
     Route::put('/qr', [QrController::class, 'update'])
         ->middleware('throttle:mutations')
@@ -129,6 +126,6 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // Social links (scoped to the authenticated user's restaurant).
     Route::get('/social-links', [SocialLinkController::class, 'index'])->name('api.social-links.index');
     Route::post('/social-links', [SocialLinkController::class, 'store'])->name('api.social-links.store');
-    Route::match(['put', 'patch'], '/social-links/{socialLink}', [SocialLinkController::class, 'update'])->name('api.social-links.update');
+    Route::patch('/social-links/{socialLink}', [SocialLinkController::class, 'update'])->name('api.social-links.update');
     Route::delete('/social-links/{socialLink}', [SocialLinkController::class, 'destroy'])->name('api.social-links.destroy');
 });

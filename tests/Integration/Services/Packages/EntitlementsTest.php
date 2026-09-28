@@ -7,11 +7,12 @@ use App\Models\FeatureGrant;
 use App\Models\Package;
 use App\Models\Restaurant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\CreatesOwners;
 use Tests\TestCase;
 
 class EntitlementsTest extends TestCase
 {
-    use RefreshDatabase;
+    use CreatesOwners, RefreshDatabase;
 
     public function test_limits_come_from_the_default_package(): void
     {
@@ -28,7 +29,7 @@ class EntitlementsTest extends TestCase
         $restaurant = Restaurant::factory()->create(['template_id' => null]);
 
         // No manual flush: saving a package invalidates every restaurant on it.
-        Package::default()->setFeature(Feature::CategoryLimit, 25);
+        $this->defaultPackageSets(Feature::CategoryLimit, 25);
 
         $this->assertSame(25, $restaurant->category_limit);
         $this->assertSame(40, $restaurant->dish_limit, 'Untouched features keep their seeded value.');
@@ -103,9 +104,9 @@ class EntitlementsTest extends TestCase
         $restaurant = Restaurant::factory()->create(['template_id' => null]);
 
         FeatureGrant::factory()->for($restaurant)
-            ->forFeature(Feature::DishLimit, 50)->create(['reference' => 'first']);
+            ->forFeature(Feature::DishLimit, 50)->create();
         FeatureGrant::factory()->for($restaurant)
-            ->forFeature(Feature::DishLimit, 50)->create(['reference' => 'second']);
+            ->forFeature(Feature::DishLimit, 50)->create();
 
         $this->assertSame(140, $restaurant->dish_limit, '40 default + 50 + 50.');
     }

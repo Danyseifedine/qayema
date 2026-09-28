@@ -27,8 +27,8 @@ class RestaurantEdgeTest extends TestCase
     {
         $owner = $this->owner();
 
-        $this->actingAs($owner->user)->putJson(route('api.restaurant.update'), $this->payload(['description' => ['en' => str_repeat('x', 2000)]]))->assertOk();
-        $this->actingAs($owner->user)->putJson(route('api.restaurant.update'), $this->payload(['description' => ['en' => str_repeat('x', 2001)]]))->assertStatus(422)->assertJsonValidationErrors('description.en');
+        $this->actingAs($owner->user)->patchJson(route('api.restaurant.update'), $this->payload(['description' => ['en' => str_repeat('x', 2000)]]))->assertOk();
+        $this->actingAs($owner->user)->patchJson(route('api.restaurant.update'), $this->payload(['description' => ['en' => str_repeat('x', 2001)]]))->assertStatus(422)->assertJsonValidationErrors('description.en');
     }
 
     public function test_a_written_address_is_not_accepted_any_more(): void
@@ -38,7 +38,7 @@ class RestaurantEdgeTest extends TestCase
         $owner = $this->owner();
 
         $this->actingAs($owner->user)
-            ->putJson(route('api.restaurant.update'), $this->payload(['address' => 'Hamra Street']))
+            ->patchJson(route('api.restaurant.update'), $this->payload(['address' => 'Hamra Street']))
             ->assertOk();
 
         $this->assertArrayNotHasKey('address', $owner->fresh()->getAttributes());
@@ -49,11 +49,11 @@ class RestaurantEdgeTest extends TestCase
         $owner = $this->owner();
 
         foreach (['javascript:alert(1)', 'ftp://maps', 'maps.google.com/x', 'data:text/html,hi'] as $bad) {
-            $this->actingAs($owner->user)->putJson(route('api.restaurant.update'), $this->payload(['google_maps_url' => $bad]))
+            $this->actingAs($owner->user)->patchJson(route('api.restaurant.update'), $this->payload(['google_maps_url' => $bad]))
                 ->assertStatus(422, $bad)->assertJsonValidationErrors('google_maps_url');
         }
 
-        $this->actingAs($owner->user)->putJson(route('api.restaurant.update'), $this->payload(['google_maps_url' => 'https://maps.app.goo.gl/abc']))->assertOk();
+        $this->actingAs($owner->user)->patchJson(route('api.restaurant.update'), $this->payload(['google_maps_url' => 'https://maps.app.goo.gl/abc']))->assertOk();
     }
 
     public function test_clearing_optional_fields_with_null_works(): void
@@ -61,7 +61,7 @@ class RestaurantEdgeTest extends TestCase
         $owner = $this->owner(['google_maps_url' => 'https://maps.google.com/x', 'description' => ['en' => 'old']]);
 
         $this->actingAs($owner->user)
-            ->putJson(route('api.restaurant.update'), $this->payload(['google_maps_url' => null, 'description' => null]))
+            ->patchJson(route('api.restaurant.update'), $this->payload(['google_maps_url' => null, 'description' => null]))
             ->assertOk()
             ->assertJsonPath('data.google_maps_url', null)
             ->assertJsonPath('data.description', ['en' => null, 'ar' => null]);
@@ -71,21 +71,21 @@ class RestaurantEdgeTest extends TestCase
     {
         $owner = $this->owner();
 
-        $this->actingAs($owner->user)->putJson(route('api.restaurant.update'), $this->payload(['country_code' => 'lb']))->assertOk();
-        $this->actingAs($owner->user)->putJson(route('api.restaurant.update'), $this->payload(['country_code' => 'L1']))->assertStatus(422);
-        $this->actingAs($owner->user)->putJson(route('api.restaurant.update'), $this->payload(['country_code' => 'LBN']))->assertStatus(422);
-        $this->actingAs($owner->user)->putJson(route('api.restaurant.update'), $this->payload(['country_code' => null]))->assertOk();
+        $this->actingAs($owner->user)->patchJson(route('api.restaurant.update'), $this->payload(['country_code' => 'lb']))->assertOk();
+        $this->actingAs($owner->user)->patchJson(route('api.restaurant.update'), $this->payload(['country_code' => 'L1']))->assertStatus(422);
+        $this->actingAs($owner->user)->patchJson(route('api.restaurant.update'), $this->payload(['country_code' => 'LBN']))->assertStatus(422);
+        $this->actingAs($owner->user)->patchJson(route('api.restaurant.update'), $this->payload(['country_code' => null]))->assertOk();
     }
 
     public function test_phone_boundaries(): void
     {
         $owner = $this->owner();
 
-        $this->actingAs($owner->user)->putJson(route('api.restaurant.update'), $this->payload(['phone' => '123456']))->assertOk();
-        $this->actingAs($owner->user)->putJson(route('api.restaurant.update'), $this->payload(['phone' => '12345']))->assertStatus(422);
-        $this->actingAs($owner->user)->putJson(route('api.restaurant.update'), $this->payload(['phone' => str_repeat('1', 31)]))->assertStatus(422);
-        $this->actingAs($owner->user)->putJson(route('api.restaurant.update'), $this->payload(['phone' => '+961 (70) 123-456']))->assertOk();
-        $this->actingAs($owner->user)->putJson(route('api.restaurant.update'), $this->payload(['phone' => '0700 CALL ME']))->assertStatus(422);
+        $this->actingAs($owner->user)->patchJson(route('api.restaurant.update'), $this->payload(['phone' => '123456']))->assertOk();
+        $this->actingAs($owner->user)->patchJson(route('api.restaurant.update'), $this->payload(['phone' => '12345']))->assertStatus(422);
+        $this->actingAs($owner->user)->patchJson(route('api.restaurant.update'), $this->payload(['phone' => str_repeat('1', 31)]))->assertStatus(422);
+        $this->actingAs($owner->user)->patchJson(route('api.restaurant.update'), $this->payload(['phone' => '+961 (70) 123-456']))->assertOk();
+        $this->actingAs($owner->user)->patchJson(route('api.restaurant.update'), $this->payload(['phone' => '0700 CALL ME']))->assertStatus(422);
     }
 
     public function test_replacing_the_logo_never_leaves_two(): void
@@ -95,8 +95,8 @@ class RestaurantEdgeTest extends TestCase
             ['file' => \Illuminate\Http\UploadedFile::fake()->image('l.png', 100, 100), 'context' => 'logo'],
             ['Accept' => 'application/json'])->json('key');
 
-        $this->actingAs($owner->user)->putJson(route('api.restaurant.update'), $this->payload(['logo_key' => $upload()]))->assertOk();
-        $this->actingAs($owner->user)->putJson(route('api.restaurant.update'), $this->payload(['logo_key' => $upload()]))->assertOk();
+        $this->actingAs($owner->user)->patchJson(route('api.restaurant.update'), $this->payload(['logo_key' => $upload()]))->assertOk();
+        $this->actingAs($owner->user)->patchJson(route('api.restaurant.update'), $this->payload(['logo_key' => $upload()]))->assertOk();
 
         $this->assertCount(1, $owner->fresh()->getMedia('logo'));
     }
@@ -106,12 +106,12 @@ class RestaurantEdgeTest extends TestCase
         $owner = $this->owner();
         $owner->addMedia(\Illuminate\Http\UploadedFile::fake()->image('c.jpg'))->toMediaCollection('cover_image');
 
-        $this->actingAs($owner->user)->putJson(route('api.restaurant.update'), $this->payload(['delete_cover_image' => true]))->assertOk()->assertJsonPath('data.cover_url', null);
+        $this->actingAs($owner->user)->patchJson(route('api.restaurant.update'), $this->payload(['delete_cover_image' => true]))->assertOk()->assertJsonPath('data.cover_url', null);
 
         $key = $this->actingAs($owner->user)->post(route('api.uploads.temp'),
             ['file' => \Illuminate\Http\UploadedFile::fake()->image('c.png', 400, 200), 'context' => 'cover_image'],
             ['Accept' => 'application/json'])->json('key');
-        $this->actingAs($owner->user)->putJson(route('api.restaurant.update'), $this->payload(['cover_image_key' => $key]))->assertOk();
+        $this->actingAs($owner->user)->patchJson(route('api.restaurant.update'), $this->payload(['cover_image_key' => $key]))->assertOk();
 
         $this->assertCount(1, $owner->fresh()->getMedia('cover_image'));
     }
@@ -122,7 +122,7 @@ class RestaurantEdgeTest extends TestCase
         $owner = $this->owner(['second_locale' => 'ar', 'name' => ['en' => 'Olive', 'fr' => 'Olivier']]);
 
         $this->actingAs($owner->user)
-            ->putJson(route('api.restaurant.update'), $this->payload(['name' => ['en' => 'Olive', 'ar' => 'زيتون']]))
+            ->patchJson(route('api.restaurant.update'), $this->payload(['name' => ['en' => 'Olive', 'ar' => 'زيتون']]))
             ->assertOk()
             ->assertJsonPath('data.name', ['en' => 'Olive', 'ar' => 'زيتون']);
 
@@ -133,7 +133,7 @@ class RestaurantEdgeTest extends TestCase
     {
         $owner = $this->owner(['second_locale' => 'fr', 'default_locale' => 'fr']);
 
-        $this->actingAs($owner->user)->putJson(route('api.restaurant.update'), $this->payload())->assertOk();
+        $this->actingAs($owner->user)->patchJson(route('api.restaurant.update'), $this->payload())->assertOk();
 
         $this->assertSame('fr', $owner->fresh()->second_locale);
         $this->assertSame('fr', $owner->fresh()->default_locale);
@@ -146,11 +146,11 @@ class RestaurantEdgeTest extends TestCase
         $owner = $this->owner();
 
         foreach (['Asia/Calcutta', 'Europe/Kiev', 'America/Buenos_Aires', 'Asia/Saigon'] as $timezone) {
-            $this->actingAs($owner->user)->putJson(route('api.restaurant.update'), $this->payload(['timezone' => $timezone]))
+            $this->actingAs($owner->user)->patchJson(route('api.restaurant.update'), $this->payload(['timezone' => $timezone]))
                 ->assertOk()->assertJsonPath('data.timezone', $timezone);
         }
 
-        $this->actingAs($owner->user)->putJson(route('api.restaurant.update'), $this->payload(['timezone' => 'Mars/Olympus']))
+        $this->actingAs($owner->user)->patchJson(route('api.restaurant.update'), $this->payload(['timezone' => 'Mars/Olympus']))
             ->assertStatus(422)->assertJsonValidationErrors('timezone');
     }
 
@@ -158,7 +158,7 @@ class RestaurantEdgeTest extends TestCase
     {
         $owner = $this->owner(['is_active' => true]);
 
-        $this->actingAs($owner->user)->putJson(route('api.restaurant.update'), $this->payload(['is_active' => false]))->assertOk();
+        $this->actingAs($owner->user)->patchJson(route('api.restaurant.update'), $this->payload(['is_active' => false]))->assertOk();
 
         $this->assertTrue($owner->fresh()->is_active);
     }

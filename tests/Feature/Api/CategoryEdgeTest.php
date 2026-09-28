@@ -69,7 +69,7 @@ class CategoryEdgeTest extends TestCase
 
     public function test_deleting_a_category_frees_a_slot(): void
     {
-        \App\Models\Package::default()->setFeature(\App\Enums\Feature::CategoryLimit, 1);
+        $this->defaultPackageSets(\App\Enums\Feature::CategoryLimit, 1);
         $owner = $this->owner();
         $category = Category::factory()->create(['restaurant_id' => $owner->id]);
 
@@ -113,23 +113,14 @@ class CategoryEdgeTest extends TestCase
         $category = Category::factory()->create(['restaurant_id' => $owner->id]);
 
         $this->actingAs($owner->user)
-            ->putJson(route('api.categories.update', $category), ['name' => ['en' => 'Mine'], 'restaurant_id' => $other->id])
+            ->patchJson(route('api.categories.update', $category), ['name' => ['en' => 'Mine'], 'restaurant_id' => $other->id])
             ->assertOk();
 
         $this->assertSame($owner->id, $category->fresh()->restaurant_id);
     }
 
-    public function test_show_returns_the_dish_count(): void
-    {
-        $owner = $this->owner();
-        $category = Category::factory()->create(['restaurant_id' => $owner->id]);
-        Dish::factory()->count(2)->create(['restaurant_id' => $owner->id, 'category_id' => $category->id]);
-
-        $this->actingAs($owner->user)->getJson(route('api.categories.show', $category))->assertOk()->assertJsonPath('data.dishes_count', 2);
-    }
-
     public function test_a_missing_category_is_a_404_not_a_403(): void
     {
-        $this->actingAs($this->owner()->user)->getJson(route('api.categories.show', 424242))->assertNotFound();
+        $this->actingAs($this->owner()->user)->patchJson(route('api.categories.update', 424242), ['name' => ['en' => 'X']])->assertNotFound();
     }
 }

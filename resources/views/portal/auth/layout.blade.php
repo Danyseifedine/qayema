@@ -14,7 +14,7 @@
     $appName   = config('app.name', 'Qayema');
     $locales   = config('locales.locales');
     $currentLocale = $locales[$locale] ?? $locales['en'];
-    $seoTitle  = ($seoTitle ?? __('auth.login.eyebrow')).' — '.$appName;
+    $seoTitle  = ($seoTitle ?? __('auth.login.eyebrow')).' | '.$appName;
 @endphp
 
 @push('styles')
@@ -23,7 +23,7 @@
 @endpush
 
 @section('content')
-<div class="login" x-data="{ showPass: false }">
+<div class="login">
 
     {{-- ── Left: form column ─────────────────────────────── --}}
     <section class="form-col" dir="{{ $dir }}">

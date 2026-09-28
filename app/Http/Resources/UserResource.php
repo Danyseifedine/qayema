@@ -18,17 +18,15 @@ class UserResource extends JsonResource
     /**
      * Everything the dashboard needs to draw its shell in one call: who is
      * signed in, and the restaurant with its package, limits, features and
-     * public URLs. Intentionally explicit — never the raw model.
+     * public URLs. Intentionally explicit, never the raw model.
      *
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
             'name' => $this->name,
             'email' => $this->email,
-            'role' => $this->role->value,
             'has_completed_onboarding' => $this->hasCompletedOnboarding(),
             // Google-only accounts have no password; the SPA shows "set a
             // password" instead of "change password".
@@ -51,9 +49,6 @@ class UserResource extends JsonResource
         $base = rtrim((string) config('app.url'), '/');
 
         return [
-            'id' => $restaurant->id,
-            'name' => MenuLanguages::map($restaurant, 'name', $restaurant->menuLanguages()),
-            'slug' => $restaurant->slug,
             // What the menu is written in: English, then the second language
             // when there is one. The dashboard's text fields have a tab each.
             'languages' => $restaurant->menuLanguages(),
@@ -61,21 +56,17 @@ class UserResource extends JsonResource
             // switched off, so switching it back on shows what it was.
             'second_locale' => MenuLanguages::written($restaurant)[1] ?? null,
             'default_locale' => MenuLanguages::default($restaurant),
-            'is_active' => (bool) $restaurant->is_active,
-            // null until the owner picks a template — the dashboard stays
+            // null until the owner picks a template; the dashboard stays
             // locked to the Templates tab while this is null.
             'template_id' => $restaurant->template_id,
-            'logo_url' => $restaurant->getFirstMediaUrl('logo') ?: null,
             'public_url' => "{$base}/{$restaurant->slug}",
-            'qr_url' => $restaurant->qrUrl(),
             // The package actually in force: an assignment that has not
             // started or has ended reports as the default, because that is
-            // what the limits below came from. Its dates are null when it
-            // runs forever.
+            // what the limits below came from. Its end is null when it runs
+            // forever.
             'package' => [
                 ...$this->packageSummary($package),
                 'is_contact_only' => (bool) $package?->is_contact_only,
-                'starts_at' => $active ? $restaurant->package_started_at?->toIso8601String() : null,
                 'ends_at' => $active ? $restaurant->package_ends_at?->toIso8601String() : null,
                 // Whole days left, rounded up: "ends today" is 0.
                 'days_left' => $active && $restaurant->package_ends_at !== null
@@ -91,7 +82,6 @@ class UserResource extends JsonResource
             'upcoming' => $status === PackageStatus::Scheduled && $restaurant->package !== null ? [
                 ...$this->packageSummary($restaurant->package),
                 'starts_at' => $restaurant->package_started_at?->toIso8601String(),
-                'ends_at' => $restaurant->package_ends_at?->toIso8601String(),
             ] : null,
             // A null limit is unlimited on this package.
             'limits' => [

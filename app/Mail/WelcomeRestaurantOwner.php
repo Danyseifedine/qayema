@@ -33,9 +33,4 @@ class WelcomeRestaurantOwner extends Mailable implements ShouldQueue
             view: 'emails.welcome-restaurant-owner',
         );
     }
-
-    public function attachments(): array
-    {
-        return [];
-    }
 }

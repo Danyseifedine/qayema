@@ -19,7 +19,7 @@ class TempUploadRequest extends FormRequest
     {
         return [
             // `dimensions` reads the image header (no full decode) so it rejects a
-            // decompression bomb — a small file declaring huge pixel dimensions —
+            // decompression bomb (a small file declaring huge pixel dimensions)
             // before the optimizer ever loads it into memory. 6000px is far above
             // what any preset needs (the widest is a 1920px cover).
             'file' => ['required', 'file', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.(UploadLimits::APP_MAX_BYTES / 1024), 'dimensions:max_width=6000,max_height=6000'],
@@ -40,7 +40,7 @@ class TempUploadRequest extends FormRequest
             // PHP drops a file larger than `upload_max_filesize` before any
             // rule runs, and Laravel's built-in `uploaded` rule fires instead.
             // Without this the owner sees the framework's bare "The file
-            // failed to upload." with no hint that size was the problem — and
+            // failed to upload." with no hint that size was the problem, and
             // the limit quoted has to be the one PHP is really enforcing.
             'file.uploaded' => UploadLimits::tooLargeMessage(),
             'file.dimensions' => 'Images must be at most 6000 × 6000 pixels.',

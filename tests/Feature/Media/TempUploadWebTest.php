@@ -43,12 +43,11 @@ class TempUploadWebTest extends TestCase
                 'context' => 'logo',
             ])
             ->assertOk()
-            ->assertJsonStructure(['key', 'original_size', 'optimized_size', 'saved_percent']);
+            ->assertJsonStructure(['key', 'optimized_size', 'saved_percent']);
 
         $key = $response->json('key');
 
         $this->assertMatchesRegularExpression('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $key);
-        $this->assertIsString($response->json('original_size'));
         $this->assertIsString($response->json('optimized_size'));
         $this->assertIsInt($response->json('saved_percent'));
         $this->assertSame(["temp/{$user->id}/{$key}.webp"], Storage::disk('local')->allFiles());

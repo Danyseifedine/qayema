@@ -62,7 +62,7 @@ class MediaSyncTest extends TestCase
         $restaurantB = Restaurant::factory()->create(['user_id' => $ownerB->id]);
         $dish = Dish::factory()->create(['restaurant_id' => $restaurantB->id]);
 
-        // ownerB references ownerA's key — the per-user path means it is not found.
+        // ownerB references ownerA's key; the per-user path means it is not found.
         $service->sync($dish, 'shared-key', false, 'image', 'dish-image');
 
         $this->assertCount(0, $dish->fresh()->getMedia('image'));

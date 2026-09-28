@@ -71,12 +71,15 @@ class OnboardingEdgeTest extends TestCase
     {
         $user = $this->fresh();
         Restaurant::factory()->create(['slug' => 'taken']);
+        Restaurant::factory()->create(['slug' => 'free-slug']);
 
         $this->actingAs($user)->getJson(route('onboarding.check-slug', ['slug' => 'taken']))->assertJsonPath('available', false);
-        $this->actingAs($user)->getJson(route('onboarding.check-slug', ['slug' => 'Free Slug!']))->assertJsonPath('available', true)->assertJsonPath('slug', 'free-slug');
+        // Checked as it will be saved: "Free Slug!" is the taken "free-slug".
+        $this->actingAs($user)->getJson(route('onboarding.check-slug', ['slug' => 'Free Slug!']))->assertJsonPath('available', false);
+        $this->actingAs($user)->getJson(route('onboarding.check-slug', ['slug' => 'Free Slug 2']))->assertJsonPath('available', true);
         $this->actingAs($user)->getJson(route('onboarding.check-slug', ['slug' => 'a']))->assertJsonPath('available', false);
         // Markup is not rejected, it is slugified into something harmless.
-        $this->actingAs($user)->getJson(route('onboarding.check-slug', ['slug' => '<script>']))->assertOk()->assertJsonPath('slug', 'script')->assertJsonPath('available', true);
+        $this->actingAs($user)->getJson(route('onboarding.check-slug', ['slug' => '<script>']))->assertOk()->assertExactJson(['available' => true]);
         $this->actingAs($user)->getJson(route('onboarding.check-slug'))->assertOk()->assertJsonPath('available', false);
     }
 

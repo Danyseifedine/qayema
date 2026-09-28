@@ -3,14 +3,13 @@
 namespace Tests\Feature\Menu;
 
 use App\Enums\Feature;
-use App\Models\Package;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\CreatesOwners;
 use Tests\TestCase;
 
 /**
  * The menu's own "Scan to open this menu" pop-up draws the code the owner
- * designed in the QR studio — the same options the dashboard previews and the
+ * designed in the QR studio, the same options the dashboard previews and the
  * printable card prints.
  */
 class MenuQrTest extends TestCase
@@ -71,7 +70,7 @@ class MenuQrTest extends TestCase
             ->assertJsonPath('data.dotsOptions.color', '#000000')
             ->assertJsonPath('data.backgroundOptions.color', '#FFFFFF');
 
-        Package::default()->setFeature(Feature::QrStudio, 0);
+        $this->defaultPackageSets(Feature::QrStudio, 0);
         $this->published(['slug' => 'fig', 'qr_settings' => $this->design()]);
 
         $this->getJson(route('public.qr.options', 'fig'))->assertJsonPath('data.dotsOptions.type', 'square');

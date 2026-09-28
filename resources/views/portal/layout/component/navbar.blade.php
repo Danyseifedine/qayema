@@ -28,9 +28,8 @@
           <svg class="moon" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
         </span>
       </button>
-      {{-- Logged-in owners get a way into the app; guests get the sign-up CTA.
-           The old CTA always pointed at the guest-only register route, so an
-           authenticated visitor was bounced straight back here. --}}
+      {{-- Logged-in owners get a way into the app (register is guest-only);
+           guests get the sign-up CTA. --}}
       @auth
         @if (auth()->user()->hasCompletedOnboarding())
           <a class="btn btn-gold btn-sm" data-magnetic href="{{ config('app.dashboard_url') }}">{{ __('portal.nav.cta_dashboard') }}</a>

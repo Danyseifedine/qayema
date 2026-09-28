@@ -10,8 +10,8 @@
 @section('headline_plain', 'Terms of')
 @section('headline_italic', 'Service')
 @section('headline_ar', 'شروط الخدمة')
-@section('updated', 'Last updated: May 9, 2025')
-@section('updated_ar', 'آخر تحديث: 9 مايو 2025')
+@section('updated', 'Last updated: September 28, 2026')
+@section('updated_ar', 'آخر تحديث: 28 سبتمبر 2026')
 
 @section('toc')
     <li><a href="#acceptance">Acceptance of terms</a></li>
@@ -19,7 +19,7 @@
     <li><a href="#account">Your account</a></li>
     <li><a href="#acceptable">Acceptable use</a></li>
     <li><a href="#content">Your content</a></li>
-    <li><a href="#payment">Plans & payment</a></li>
+    <li><a href="#payment">Packages & payment</a></li>
     <li><a href="#ip">Intellectual property</a></li>
     <li><a href="#termination">Termination</a></li>
     <li><a href="#disclaimer">Disclaimers</a></li>
@@ -59,12 +59,17 @@
 
 <p>Qayema is a digital menu platform for restaurant owners and operators. The service includes:</p>
 <ul>
-    <li>A web-based dashboard for creating and managing digital menus</li>
-    <li>A public menu page accessible to your guests via QR code or direct link</li>
-    <li>Visitor analytics and statistics for your menu</li>
-    <li>QR code generation and customisation tools</li>
-    <li>Social link management and WhatsApp ordering integration</li>
+    <li>A web-based dashboard for creating and managing your restaurant's digital menu</li>
+    <li>A public menu page your guests open by scanning your QR code or following a direct link</li>
+    <li>A QR code for your menu, with tools to style it and a printable version on the packages that include them</li>
+    <li>Visitor statistics for your menu, on the packages that include them</li>
+    <li>Links from your menu to your phone, WhatsApp, map location and social pages</li>
+    <li>Guest ordering, on the packages that include it: guests choose dishes on your menu and are then sent to WhatsApp to send the order to you</li>
 </ul>
+
+<p>What each package includes is shown on the Package page of your dashboard.</p>
+
+<p>Orders placed through your menu are between your guests and you. Qayema does not take payment for orders, does not prepare or deliver them, and does not send the WhatsApp message on anyone's behalf.</p>
 
 <p>We reserve the right to modify, suspend, or discontinue any part of the service at any time with reasonable notice. We will not be liable to you or any third party for any modification, suspension, or discontinuation of the service.</p>
 
@@ -96,14 +101,18 @@
 <p>You are solely responsible for Your Content. You represent that you have all rights necessary to upload and use Your Content on Qayema. We do not endorse and take no responsibility for Your Content.</p>
 <p>We may remove any content that violates these Terms or applicable law, without notice.</p>
 
-<h2 id="payment">Plans & payment</h2>
+<h2 id="payment">Packages & payment</h2>
 
-<p>Qayema offers a free starter plan. Paid plans, if available, are described on the pricing page. By subscribing to a paid plan:</p>
+<p>Every restaurant starts on the Free package, which has no time limit and needs no payment details. The Pro, Premium and Custom packages add higher limits and more features; what each one includes is shown on the Package page of your dashboard.</p>
+<p>Qayema does not take payments inside the service. There is no checkout, we do not ask for or keep your payment or bank details, and nothing is ever charged to you automatically. Paid packages work as follows:</p>
 <ul>
-    <li>You authorise us to charge your payment method on a recurring basis</li>
-    <li>Fees are non-refundable except as required by applicable law</li>
-    <li>If payment fails, we may downgrade or suspend your account</li>
-    <li>We may change pricing with 30 days' advance notice</li>
+    <li>You ask for a package from the Package page of your dashboard or through our <a href="{{ route('contact') }}">contact form</a></li>
+    <li>Lebify Group contacts you to agree the price, the period and how you will pay, and you pay us directly as agreed</li>
+    <li>Once agreed, we switch the package on for your restaurant for the agreed period, or with no end date</li>
+    <li>When the period ends and is not extended, your restaurant returns to the Free package automatically. Nothing you made is deleted: content over the Free limits stays on your menu, but you cannot add more until you are back within those limits, and features that Free does not include stop working while their settings are kept for when a package that includes them is switched on again</li>
+    <li>If an agreed payment is not made, we may end the package early, which returns your restaurant to the Free package in the same way</li>
+    <li>Amounts paid are non-refundable except as set out in our <a href="{{ route('refund') }}">Refund Policy</a> or as required by applicable law</li>
+    <li>We may change package prices with 30 days' advance notice</li>
 </ul>
 
 <h2 id="ip">Intellectual property</h2>
@@ -113,7 +122,7 @@
 
 <h2 id="termination">Termination</h2>
 
-<p>You may delete your account at any time from your profile settings. Upon deletion, your data will be permanently removed within 30 days.</p>
+<p>You may stop using Qayema at any time. To delete your account, contact us at <a href="mailto:{{ config('seo.organization.contact.email') }}">{{ config('seo.organization.contact.email') }}</a>; we will then permanently delete your account and your restaurant's data within 30 days of your request, except where we are required by law to keep it.</p>
 <p>We may suspend or terminate your account immediately if you violate these Terms, engage in fraudulent activity, or if we are required to do so by law. We will make reasonable efforts to notify you, except where immediate action is required for security or legal reasons.</p>
 <p>Upon termination, your right to use the service ends immediately. Sections of these Terms that by their nature should survive termination will continue to apply.</p>
 
@@ -151,12 +160,17 @@
 
 <p>قائمة هي منصة قوائم رقمية لأصحاب المطاعم ومشغّليها. تشمل الخدمة:</p>
 <ul>
-    <li>لوحة تحكم إلكترونية لإنشاء القوائم الرقمية وإدارتها</li>
-    <li>صفحة قائمة عامة يمكن لضيوفك الوصول إليها عبر رمز QR أو رابط مباشر</li>
-    <li>إحصاءات وتحليلات الزوار لقائمتك</li>
-    <li>أدوات إنشاء رمز QR وتخصيصه</li>
-    <li>إدارة الروابط الاجتماعية وتكامل طلبات WhatsApp</li>
+    <li>لوحة تحكم إلكترونية لإنشاء قائمة مطعمك الرقمية وإدارتها</li>
+    <li>صفحة قائمة عامة يفتحها ضيوفك بمسح رمز QR الخاص بك أو عبر رابط مباشر</li>
+    <li>رمز QR لقائمتك، مع أدوات لتصميمه ونسخة قابلة للطباعة في الباقات التي تتضمنها</li>
+    <li>إحصاءات زوار قائمتك، في الباقات التي تتضمنها</li>
+    <li>روابط من قائمتك إلى هاتفك وWhatsApp وموقعك على الخريطة وصفحاتك على مواقع التواصل</li>
+    <li>استقبال طلبات الضيوف، في الباقات التي تتضمنه: يختار الضيف الأطباق من قائمتك ثم يُحوَّل إلى WhatsApp لإرسال الطلب إليك</li>
 </ul>
+
+<p>يظهر ما تتضمنه كل باقة في صفحة الباقة في لوحة تحكمك.</p>
+
+<p>الطلبات التي تُرسل عبر قائمتك هي بين ضيوفك وبينك. لا تتقاضى قائمة أي مبلغ مقابل الطلبات، ولا تحضّرها أو توصلها، ولا ترسل رسالة WhatsApp نيابةً عن أحد.</p>
 
 <p>نحتفظ بالحق في تعديل أي جزء من الخدمة أو تعليقه أو إيقافه في أي وقت مع إشعار معقول. لن نكون مسؤولين تجاهك أو تجاه أي طرف ثالث عن أي تعديل أو تعليق أو إيقاف للخدمة.</p>
 
@@ -190,12 +204,16 @@
 
 <h2 id="payment-ar">الباقات والدفع</h2>
 
-<p>تقدّم قائمة باقة مجانية للبدء. تتوفر الباقات المدفوعة عبر صفحة الأسعار. باشتراكك في باقة مدفوعة:</p>
+<p>يبدأ كل مطعم على الباقة المجانية، وهي بلا مدة محددة ولا تتطلب أي بيانات دفع. تضيف باقات برو ومميّز ومخصّص حدودًا أعلى وميزات إضافية، ويظهر ما تتضمنه كل منها في صفحة الباقة في لوحة تحكمك.</p>
+<p>لا تتقاضى قائمة أي مدفوعات داخل الخدمة: لا توجد صفحة دفع، ولا نطلب بيانات الدفع أو بياناتك المصرفية ولا نحتفظ بها، ولا يُخصم منك أي مبلغ تلقائيًا أبدًا. تسير الباقات المدفوعة على النحو التالي:</p>
 <ul>
-    <li>تأذن لنا بخصم المبلغ من طريقة الدفع الخاصة بك على أساس متكرر</li>
-    <li>الرسوم غير قابلة للاسترداد إلا ما يقتضيه القانون المعمول به</li>
-    <li>في حال فشل الدفع، قد نخفّض مستوى حسابك أو نعلّقه</li>
-    <li>قد نغيّر الأسعار مع إشعار مسبق مدته 30 يومًا</li>
+    <li>تطلب الباقة من صفحة الباقة في لوحة تحكمك أو عبر <a href="{{ route('contact') }}">نموذج التواصل</a></li>
+    <li>تتواصل معك مجموعة ليبيفاي للاتفاق على السعر والمدة وطريقة الدفع، وتدفع لنا مباشرةً وفق ما اتُّفق عليه</li>
+    <li>بعد الاتفاق، نفعّل الباقة لمطعمك للمدة المتفق عليها أو دون تاريخ انتهاء</li>
+    <li>عند انتهاء المدة دون تمديد، يعود مطعمك تلقائيًا إلى الباقة المجانية. لا يُحذف شيء مما أنشأته: يبقى المحتوى الذي يتجاوز حدود الباقة المجانية في قائمتك، لكن لا يمكنك إضافة المزيد حتى تعود ضمن تلك الحدود، والميزات التي لا تتضمنها الباقة المجانية تتوقف عن العمل مع الاحتفاظ بإعداداتها إلى أن تُفعَّل من جديد باقة تتضمنها</li>
+    <li>إذا لم تُسدَّد دفعة متفق عليها، قد ننهي الباقة قبل موعدها، فيعود مطعمك إلى الباقة المجانية بالطريقة نفسها</li>
+    <li>المبالغ المدفوعة غير قابلة للاسترداد إلا وفق <a href="{{ route('refund') }}">سياسة الاسترداد</a> أو ما يقتضيه القانون المعمول به</li>
+    <li>قد نغيّر أسعار الباقات مع إشعار مسبق مدته 30 يومًا</li>
 </ul>
 
 <h2 id="ip-ar">الملكية الفكرية</h2>
@@ -205,7 +223,7 @@
 
 <h2 id="termination-ar">إنهاء الخدمة</h2>
 
-<p>يمكنك حذف حسابك في أي وقت من إعدادات ملفك الشخصي. عند الحذف، ستُزال بياناتك نهائيًا خلال 30 يومًا.</p>
+<p>يمكنك التوقف عن استخدام قائمة في أي وقت. لحذف حسابك، تواصل معنا على <a href="mailto:{{ config('seo.organization.contact.email') }}">{{ config('seo.organization.contact.email') }}</a>، وسنحذف حسابك وبيانات مطعمك نهائيًا خلال 30 يومًا من طلبك، إلا ما يلزمنا القانون بالاحتفاظ به.</p>
 <p>قد نعلّق حسابك أو نوقفه فورًا إذا انتهكت هذه الشروط أو مارست نشاطًا احتياليًا أو إذا طُلب منا ذلك قانونًا. سنبذل جهودًا معقولة لإخطارك، إلا في الحالات التي تستوجب اتخاذ إجراء فوري لأسباب أمنية أو قانونية.</p>
 <p>عند الإنهاء، يتوقف حقك في استخدام الخدمة فورًا. ستستمر في السريان الأقسام التي بطبيعتها يجب أن تبقى سارية بعد الإنهاء.</p>
 

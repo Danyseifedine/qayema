@@ -18,7 +18,6 @@ return new class extends Migration
             $table->unsignedTinyInteger('onboarding_step')->default(0);
             $table->timestamp('onboarding_completed_at')->nullable();
             $table->rememberToken();
-            $table->softDeletes();
             $table->timestamps();
         });
 

@@ -98,18 +98,21 @@ class UploadEdgeTest extends TestCase
         $this->assertSame('image/webp', mime_content_type($path));
     }
 
-    public function test_the_removed_category_context_is_no_longer_accepted(): void
-    {
-        $this->upload(UploadedFile::fake()->image('x.jpg'), 'category')
-            ->assertStatus(422)->assertJsonValidationErrors('context');
-    }
-
     public function test_a_missing_context_falls_back_to_generic(): void
     {
         $this->actingAs($this->owner()->user)
             ->post(route('api.uploads.temp'), ['file' => UploadedFile::fake()->image('x.jpg', 100, 100)], ['Accept' => 'application/json'])
             ->assertOk()
-            ->assertJsonStructure(['key', 'original_size', 'optimized_size', 'saved_percent']);
+            ->assertJsonStructure(['key', 'optimized_size', 'saved_percent']);
+    }
+
+    public function test_an_empty_context_falls_back_to_generic(): void
+    {
+        // An empty field arrives as null after the request's middleware, and
+        // once reached the service as null (a 500).
+        $this->upload(UploadedFile::fake()->image('x.jpg', 100, 100), '')
+            ->assertOk()
+            ->assertJsonStructure(['key', 'optimized_size', 'saved_percent']);
     }
 
     public function test_the_upload_limiter_bites_at_twenty_one_and_feeds_the_ban(): void

@@ -7,13 +7,19 @@ return [
     | SEO Default Settings
     |--------------------------------------------------------------------------
     |
-    | Default SEO settings for the Qayema portal (by Lebify Group).
+    | The portal's <head> tags (App\View\Components\Seo), for Qayema by
+    | Lebify Group. Each page names its own title and description.
     |
     */
 
     'default_author' => 'Lebify Group',
 
     'title_separator' => '|',
+
+    'keywords' => 'Qayema, Lebify, Lebify Group, Lebify team, digital menu, restaurant menu, online menu, menu creator, food menu, Lebanon, Barja',
+
+    // Optional: a Twitter/X handle for the twitter:site and twitter:creator tags.
+    'twitter_username' => env('TWITTER_USERNAME'),
 
     'facebook_app_id' => env('FACEBOOK_APP_ID'),
 
@@ -22,7 +28,8 @@ return [
     | Organization Information (Schema.org)
     |--------------------------------------------------------------------------
     |
-    | Used for generating Organization structured data
+    | The landing page's Organization structured data, and the site name in
+    | every page's title.
     |
     */
 
@@ -47,25 +54,6 @@ return [
             'availableLanguage' => ['English', 'Arabic'],
         ],
         'social_links' => [],
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Default Meta Tags (Multi-language)
-    |--------------------------------------------------------------------------
-    */
-
-    'defaults' => [
-        'title' => [
-            'en' => 'Qayema by Lebify - Digital Menus for Restaurants',
-        ],
-        'description' => [
-            'en' => 'Qayema by Lebify Group: bilingual digital menus for your restaurant, shared as a QR code. Free to start, easy to use. Built by the Lebify team in Lebanon.',
-        ],
-        'keywords' => [
-            'en' => 'Qayema, Lebify, Lebify Group, Lebify team, digital menu, restaurant menu, online menu, menu creator, food menu, Lebanon, Barja',
-        ],
-        'image' => '/images/logo/logo.png',
     ],
 
 ];

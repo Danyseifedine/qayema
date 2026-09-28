@@ -49,7 +49,7 @@ class OpeningHoursTest extends TestCase
         $this->atUtc('2026-01-07 16:00');
         $this->assertFalse($hours->isOpenNow());
 
-        // The same instant in UTC would still be inside 09:00–17:00.
+        // The same instant in UTC would still be inside 09:00 to 17:00.
         $this->assertTrue($this->hours(['wed' => ['open' => '09:00', 'close' => '17:00']], 'UTC')->isOpenNow());
     }
 
@@ -66,12 +66,12 @@ class OpeningHoursTest extends TestCase
     {
         $hours = $this->hours(['wed' => ['open' => '18:00', 'close' => '01:00']]);
 
-        // Thursday 00:30 Beirut — still inside Wednesday's range, which is
+        // Thursday 00:30 Beirut: still inside Wednesday's range, which is
         // the whole point: the day has turned but the kitchen has not shut.
         $this->atUtc('2026-01-07 22:30');
         $this->assertTrue($hours->isOpenNow());
 
-        // Thursday 01:30 Beirut — half an hour after it closed.
+        // Thursday 01:30 Beirut, half an hour after it closed.
         $this->atUtc('2026-01-07 23:30');
         $this->assertFalse($hours->isOpenNow());
     }

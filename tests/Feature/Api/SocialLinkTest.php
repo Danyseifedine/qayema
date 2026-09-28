@@ -3,16 +3,16 @@
 namespace Tests\Feature\Api;
 
 use App\Enums\Feature;
-use App\Models\Package;
 use App\Models\Restaurant;
 use App\Models\RestaurantSocialLink;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\CreatesOwners;
 use Tests\TestCase;
 
 class SocialLinkTest extends TestCase
 {
-    use RefreshDatabase;
+    use CreatesOwners, RefreshDatabase;
 
     /**
      * @return array{0: User, 1: Restaurant}
@@ -32,7 +32,7 @@ class SocialLinkTest extends TestCase
 
     public function test_index_returns_only_the_users_links_with_meta(): void
     {
-        Package::default()->setFeature(Feature::SocialLinkLimit, 4);
+        $this->defaultPackageSets(Feature::SocialLinkLimit, 4);
         [$user, $restaurant] = $this->owner();
         RestaurantSocialLink::factory()->create(['restaurant_id' => $restaurant->id, 'platform' => 'instagram']);
         RestaurantSocialLink::factory()->create(['restaurant_id' => Restaurant::factory()->create()->id]);
@@ -107,7 +107,7 @@ class SocialLinkTest extends TestCase
 
     public function test_store_is_rejected_when_the_limit_is_reached(): void
     {
-        Package::default()->setFeature(Feature::SocialLinkLimit, 1);
+        $this->defaultPackageSets(Feature::SocialLinkLimit, 1);
         [$user, $restaurant] = $this->owner();
         RestaurantSocialLink::factory()->create(['restaurant_id' => $restaurant->id, 'platform' => 'instagram']);
 
@@ -142,7 +142,7 @@ class SocialLinkTest extends TestCase
         $link = RestaurantSocialLink::factory()->create(['restaurant_id' => $restaurant->id, 'platform' => 'instagram']);
 
         $this->actingAs($user)
-            ->putJson(route('api.social-links.update', $link), ['platform' => 'instagram', 'url' => 'https://instagram.com/new'])
+            ->patchJson(route('api.social-links.update', $link), ['platform' => 'instagram', 'url' => 'https://instagram.com/new'])
             ->assertOk()
             ->assertJsonPath('data.url', 'https://instagram.com/new');
 
@@ -156,7 +156,7 @@ class SocialLinkTest extends TestCase
 
         // The uniqueness rule must ignore the record being updated.
         $this->actingAs($user)
-            ->putJson(route('api.social-links.update', $link), ['platform' => 'instagram', 'url' => 'https://instagram.com/same'])
+            ->patchJson(route('api.social-links.update', $link), ['platform' => 'instagram', 'url' => 'https://instagram.com/same'])
             ->assertOk();
     }
 
@@ -166,7 +166,7 @@ class SocialLinkTest extends TestCase
         $foreign = RestaurantSocialLink::factory()->create(['restaurant_id' => Restaurant::factory()->create()->id]);
 
         $this->actingAs($user)
-            ->putJson(route('api.social-links.update', $foreign), ['platform' => 'facebook', 'url' => 'https://facebook.com/hijack'])
+            ->patchJson(route('api.social-links.update', $foreign), ['platform' => 'facebook', 'url' => 'https://facebook.com/hijack'])
             ->assertForbidden();
     }
 
@@ -201,7 +201,7 @@ class SocialLinkTest extends TestCase
 
         $this->actingAs($user)->getJson(route('api.social-links.index'))->assertForbidden();
         $this->actingAs($user)
-            ->putJson(route('api.social-links.update', $link), ['platform' => 'x', 'url' => 'https://x.com/x'])
+            ->patchJson(route('api.social-links.update', $link), ['platform' => 'x', 'url' => 'https://x.com/x'])
             ->assertForbidden();
         $this->actingAs($user)->deleteJson(route('api.social-links.destroy', $link))->assertForbidden();
     }

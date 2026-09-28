@@ -66,6 +66,13 @@ class Package extends Model
 
         static::saved($flush);
         static::deleted($flush);
+
+        // "Most popular" is one package: marking one takes it off the others.
+        static::saved(function (self $package): void {
+            if ($package->is_featured && ($package->wasRecentlyCreated || $package->wasChanged('is_featured'))) {
+                self::query()->whereKeyNot($package->getKey())->where('is_featured', true)->update(['is_featured' => false]);
+            }
+        });
     }
 
     /** What a new restaurant starts on, and where an expired package lands. */
@@ -102,13 +109,5 @@ class Package extends Model
         $value = $features[$feature->value];
 
         return $value === null ? null : (int) $value;
-    }
-
-    public function setFeature(Feature $feature, ?int $value): void
-    {
-        $features = $this->features ?? [];
-        $features[$feature->value] = $value;
-
-        $this->forceFill(['features' => $features])->save();
     }
 }

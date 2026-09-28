@@ -3,20 +3,15 @@
     'name'     => null,
     'required' => false,
     'optional' => null,
-    'help'     => null,
-    'error'    => null,
-    'ok'       => null,
-    'id'       => null,
 ])
 
 @php
-    $forId  = $id ?? $name;
-    $errMsg = $error ?? ($name && $errors->has($name) ? $errors->first($name) : null);
+    $errMsg = $name && $errors->has($name) ? $errors->first($name) : null;
 @endphp
 
 <div class="ui-field">
     @if ($label)
-        <label class="ui-label" @if ($forId) for="{{ $forId }}" @endif>
+        <label class="ui-label" @if ($name) for="{{ $name }}" @endif>
             <span>
                 {!! $label !!}
                 @if ($required) <span class="req">*</span> @endif
@@ -31,9 +26,5 @@
 
     @if ($errMsg)
         <div class="ui-help error">{!! $errMsg !!}</div>
-    @elseif ($ok)
-        <div class="ui-help ok">{!! $ok !!}</div>
-    @elseif ($help)
-        <div class="ui-help">{!! $help !!}</div>
     @endif
 </div>

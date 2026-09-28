@@ -23,11 +23,10 @@ class AuthTest extends TestCase
 
         $this->getJson('/api/user')
             ->assertOk()
-            ->assertJsonPath('data.id', $user->id)
             ->assertJsonPath('data.email', $user->email)
             ->assertJsonPath('data.has_completed_onboarding', false)
             ->assertJsonStructure([
-                'data' => ['id', 'name', 'email', 'role', 'has_completed_onboarding', 'has_password', 'restaurant'],
+                'data' => ['name', 'email', 'has_completed_onboarding', 'has_password', 'restaurant'],
             ]);
     }
 
@@ -86,20 +85,17 @@ class AuthTest extends TestCase
 
         $data = $this->actingAs($restaurant->user)->getJson(route('api.user'))->assertOk()->json('data');
 
-        $this->assertArrayNotHasKey('coin_balance', $data);
         $this->assertTrue($data['has_password']);
         $this->assertSame('free', $data['restaurant']['package']['slug']);
         $this->assertSame('Free', $data['restaurant']['package']['name']['en']);
         $this->assertFalse($data['restaurant']['package']['is_contact_only']);
         $this->assertNull($data['restaurant']['package']['ends_at']);
-        $this->assertSame('shell-test', $data['restaurant']['slug']);
         $this->assertNull($data['restaurant']['template_id']);
         $this->assertSame(['used' => 3, 'limit' => 40], $data['restaurant']['limits']['dishes']);
         $this->assertSame(['used' => 0, 'limit' => 8], $data['restaurant']['limits']['categories']);
         $this->assertFalse($data['restaurant']['plan']['qr_studio']);
         $this->assertFalse($data['restaurant']['plan']['advanced_analytics']);
         $this->assertStringEndsWith('/shell-test', $data['restaurant']['public_url']);
-        $this->assertStringEndsWith('/shell-test?qr=1', $data['restaurant']['qr_url']);
     }
 
     public function test_a_google_only_account_reports_no_password(): void

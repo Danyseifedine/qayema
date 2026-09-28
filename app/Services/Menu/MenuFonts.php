@@ -63,7 +63,7 @@ class MenuFonts
         return $restaurant->hasAppearance() ? self::chosen($restaurant, $script) : self::default($script);
     }
 
-    /** The owner's pick for a script, else its default — whatever the package. */
+    /** The owner's pick for a script, else its default, whatever the package. */
     public static function chosen(Restaurant $restaurant, string $script): string
     {
         $picked = ((array) $restaurant->menu_fonts)[$script] ?? null;

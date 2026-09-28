@@ -22,9 +22,9 @@ class DatabaseSeeder extends Seeder
         $this->call(PackageSeeder::class);
         $this->call(TemplateSeeder::class);
 
-        User::updateOrCreate(['email' => 'admin@admin.com'], [
+        User::updateOrCreate(['email' => 'admin@lebify.dev'], [
             'name' => 'Admin',
-            'password' => Hash::make('password'),
+            'password' => Hash::make('qayema12332@@'),
             'role' => UserRole::Admin,
         ]);
     }

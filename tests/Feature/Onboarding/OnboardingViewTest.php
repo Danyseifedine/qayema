@@ -30,6 +30,20 @@ class OnboardingViewTest extends TestCase
             ->assertDontSee('Choose the language');
     }
 
+    public function test_a_field_keeps_its_hint_while_it_shows_an_error(): void
+    {
+        // The hint and the error sit together under the control; an error
+        // used to hide the hint (x-show="!errors.name").
+        $user = User::factory()->create(['onboarding_step' => 0, 'onboarding_completed_at' => null]);
+
+        $html = $this->actingAs($user)->get(route('onboarding'))->assertOk()->getContent();
+
+        foreach (['name', 'phone', 'currency', 'logo'] as $field) {
+            $this->assertStringNotContainsString('x-show="!errors.'.$field.'"', $html);
+        }
+        $this->assertSame(5, substr_count($html, 'class="ui-helps"'));
+    }
+
     public function test_the_onboarding_page_renders_mid_flow(): void
     {
         $user = User::factory()->create(['onboarding_step' => 2, 'onboarding_completed_at' => null]);

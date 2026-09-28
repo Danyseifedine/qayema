@@ -41,7 +41,7 @@ class Restaurant extends Model implements HasMedia
      * stored in `switched_off`:
      * - `orders`: guests cannot order (no cart, the endpoint 404s), and the
      *   Orders page leaves the sidebar;
-     * - `qr`: the QR studio's styling and printable card go — the plain code
+     * - `qr`: the QR studio's styling and printable card go; the plain code
      *   and its downloads stay;
      * - `analytics`: the Analytics page leaves the sidebar;
      * - `languages`: the menu is English-only (MenuLanguages::for()).
@@ -374,7 +374,7 @@ class Restaurant extends Model implements HasMedia
 
     /**
      * A design's settings as the menu draws them: the owner's choices for
-     * that design over its defaults — only the defaults when the package has
+     * that design over its defaults, or only the defaults when the package has
      * no Appearance, with the choices kept for when it does. The design the
      * menu is drawn in when none is given.
      *
@@ -426,25 +426,13 @@ class Restaurant extends Model implements HasMedia
     }
 
     /**
-     * The column as {template_id: values}. Before designs kept their own
-     * colours it held one flat map for the design in use, which reads as
-     * that design's entry.
+     * The column as {template_id: values}.
      *
      * @return array<int, array<string, mixed>>
      */
     private function designSettingsByTemplate(): array
     {
-        $stored = (array) $this->template_settings;
-
-        $perDesign = $stored === [] || collect($stored)->every(
-            fn ($value, $key): bool => is_int($key) && is_array($value),
-        );
-
-        if ($perDesign) {
-            return $stored;
-        }
-
-        return $this->template_id !== null ? [$this->template_id => $stored] : [];
+        return (array) $this->template_settings;
     }
 
     public function entitlements(): Entitlements

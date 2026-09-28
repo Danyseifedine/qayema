@@ -70,7 +70,7 @@ class FeaturesTest extends TestCase
 
     public function test_switching_orders_off_stops_the_menu_taking_them(): void
     {
-        \App\Models\Package::default()->setFeature(\App\Enums\Feature::Ordering, 1);
+        $this->defaultPackageSets(\App\Enums\Feature::Ordering, 1);
         $owner = $this->published(['slug' => 'olive', 'switched_off' => ['orders']]);
         $dish = \App\Models\Dish::factory()->for($owner)->create(['price' => '5.00']);
 
@@ -140,7 +140,7 @@ class FeaturesTest extends TestCase
 
         // What the dashboard sends while the feature is off: no language fields.
         $this->actingAs($owner->user)
-            ->putJson(route('api.restaurant.update'), ['name' => ['en' => 'Olive'], 'phone' => '+961 70 123 456', 'currency' => 'USD'])
+            ->patchJson(route('api.restaurant.update'), ['name' => ['en' => 'Olive'], 'phone' => '+961 70 123 456', 'currency' => 'USD'])
             ->assertOk();
 
         $this->assertSame('fr', $owner->fresh()->second_locale);

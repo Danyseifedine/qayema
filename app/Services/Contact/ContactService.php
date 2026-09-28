@@ -44,7 +44,7 @@ class ContactService
     /**
      * Submit a contact message: persist it and notify the recipient, guarded by a
      * durable per-IP daily limit. The quota is enforced against the contact_messages
-     * table itself — not volatile cache — so it cannot be reset by a deploy, a queue
+     * table itself (not volatile cache), so it cannot be reset by a deploy, a queue
      * restart, or `cache:clear`/`optimize:clear`.
      *
      * A package request from a signed-in owner comes through here too, with
@@ -64,7 +64,7 @@ class ContactService
     }
 
     /**
-     * Messages from this IP within the trailing 24 hours — the rows the daily quota counts.
+     * Messages from this IP within the trailing 24 hours: the rows the daily quota counts.
      *
      * @return Builder<ContactMessage>
      */
@@ -91,7 +91,7 @@ class ContactService
 
         // The mailable is ShouldQueue, so this only pushes a job (no SMTP here).
         // Guard the dispatch anyway: the message is already saved, so a queue
-        // hiccup must not fail the submission — just record it.
+        // hiccup must not fail the submission; just record it.
         try {
             $recipient = config('services.contact.recipient');
 

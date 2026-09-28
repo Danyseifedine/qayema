@@ -20,7 +20,7 @@ return [
         // 400px + WebP keeps the mark crisp on retina headers and preserves alpha.
         'logo' => ['fit' => 'contain', 'width' => 400, 'height' => 400, 'max_kb' => 50],
         'cover_image' => ['fit' => 'cover', 'width' => 1920, 'height' => 600, 'quality' => 80],
-        // Dishes are the hero content — a larger box + higher ceiling keeps food
+        // Dishes are the hero content: a larger box + higher ceiling keeps food
         // photography sharp when a QR menu is viewed full-width on a phone.
         'dish' => ['fit' => 'cover', 'width' => 1200, 'height' => 900, 'max_kb' => 150],
         'generic' => ['fit' => 'contain', 'width' => 1200, 'height' => 1200, 'max_kb' => 200],

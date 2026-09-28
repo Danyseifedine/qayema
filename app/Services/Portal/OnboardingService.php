@@ -19,7 +19,7 @@ class OnboardingService
     public function __construct(private readonly MediaService $media) {}
 
     /**
-     * Step 1 — restaurant name, slug and the language the menu opens in.
+     * Step 1: restaurant name, slug and the language the menu opens in.
      *
      * The name goes in English, the language every name is required in. A new
      * restaurant starts with Arabic as its second language, which the owner
@@ -58,7 +58,7 @@ class OnboardingService
         return in_array($locale, $languages, true) ? (string) $locale : MenuLanguages::MAIN;
     }
 
-    /** Step 2 — country code, phone and currency. */
+    /** Step 2: country code, phone and currency. */
     public function saveContact(Restaurant $restaurant, ?string $countryCode, string $phone, string $currency): void
     {
         $restaurant->update([
@@ -68,7 +68,7 @@ class OnboardingService
         ]);
     }
 
-    /** Step 3 — move the deferred logo/cover temp uploads into the media library. */
+    /** Step 3: move the deferred logo/cover temp uploads into the media library. */
     public function saveBranding(User $user, Restaurant $restaurant, ?string $logoKey, ?string $coverImageKey): void
     {
         $uploads = ['logo' => $logoKey, 'cover_image' => $coverImageKey];
@@ -87,7 +87,7 @@ class OnboardingService
     }
 
     /**
-     * Final step — mark onboarding complete and send the welcome email. The
+     * Final step: mark onboarding complete and send the welcome email. The
      * restaurant is intentionally left WITHOUT a template: the owner chooses one
      * from the dashboard (which stays locked until they do).
      */

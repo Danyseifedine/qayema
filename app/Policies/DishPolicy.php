@@ -32,16 +32,6 @@ class DishPolicy
         return $this->belongsToUserRestaurant($user, $dish->restaurant_id);
     }
 
-    public function restore(User $user, Dish $dish): bool
-    {
-        return $this->belongsToUserRestaurant($user, $dish->restaurant_id);
-    }
-
-    public function forceDelete(User $user, Dish $dish): bool
-    {
-        return $this->belongsToUserRestaurant($user, $dish->restaurant_id);
-    }
-
     private function belongsToUserRestaurant(User $user, int $restaurantId): bool
     {
         if ($user->isAdmin()) {

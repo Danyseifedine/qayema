@@ -31,7 +31,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
         $middleware->statefulApi();
 
         // SecurityHeaders is prepended so it wraps every response. BlockAbusiveIps
-        // is appended so it runs *after* the session starts — that's what lets its
+        // is appended so it runs *after* the session starts; that's what lets its
         // admin bypass see the authenticated user (a prepended copy would run before
         // StartSession, where auth()->user() is always null and the bypass is dead).
         $middleware->web(
@@ -52,8 +52,8 @@ $app = Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        // Every `api/*` error is JSON — never a redirect to the login page or an
-        // HTML error — so the SPA can rely on one shape: {message, code} plus
+        // Every `api/*` error is JSON (never a redirect to the login page or an
+        // HTML error), so the SPA can rely on one shape: {message, code} plus
         // `errors` on 422 and `retry_after` on 429.
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request): bool => $request->is('api/*') || $request->expectsJson()
@@ -65,7 +65,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
             }
 
             // A response thrown as an exception (e.g. a rate limiter's custom
-            // 429) already is the answer — pass it through untouched.
+            // 429) already is the answer; pass it through untouched.
             if ($e instanceof HttpResponseException) {
                 return $e->getResponse();
             }

@@ -5,7 +5,6 @@ namespace Tests\Feature\Api;
 use App\Enums\Feature;
 use App\Models\Category;
 use App\Models\Dish;
-use App\Models\Package;
 use App\Models\Restaurant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -131,7 +130,7 @@ class DishTest extends TestCase
 
         // An empty string becomes null (global middleware); `nullable` lets it pass.
         $this->actingAs($user)
-            ->putJson(route('api.dishes.update', $dish), ['name' => ['en' => 'Same'], 'is_available' => ''])
+            ->patchJson(route('api.dishes.update', $dish), ['name' => ['en' => 'Same'], 'is_available' => ''])
             ->assertOk();
     }
 
@@ -158,7 +157,7 @@ class DishTest extends TestCase
 
     public function test_store_is_rejected_when_the_dish_limit_is_reached(): void
     {
-        Package::default()->setFeature(Feature::DishLimit, 1);
+        $this->defaultPackageSets(Feature::DishLimit, 1);
         [$user, $restaurant] = $this->owner();
         $category = Category::factory()->create(['restaurant_id' => $restaurant->id]);
         Dish::factory()->create(['restaurant_id' => $restaurant->id]);
@@ -211,7 +210,7 @@ class DishTest extends TestCase
         $key = $this->uploadTempImage($user);
 
         $this->actingAs($user)
-            ->putJson(route('api.dishes.update', $dish), ['name' => ['en' => 'Same'], 'image_key' => $key])
+            ->patchJson(route('api.dishes.update', $dish), ['name' => ['en' => 'Same'], 'image_key' => $key])
             ->assertOk();
 
         // The multi-image collection must not accumulate: still exactly one cover.
@@ -227,7 +226,7 @@ class DishTest extends TestCase
         $this->assertSame(1, $dish->getMedia('image')->count());
 
         $this->actingAs($user)
-            ->putJson(route('api.dishes.update', $dish), ['name' => ['en' => 'Same'], 'delete_image' => true])
+            ->patchJson(route('api.dishes.update', $dish), ['name' => ['en' => 'Same'], 'delete_image' => true])
             ->assertOk();
 
         $this->assertSame(0, $dish->refresh()->getMedia('image')->count());
@@ -239,7 +238,7 @@ class DishTest extends TestCase
         $category = Category::factory()->create(['restaurant_id' => $restaurant->id]);
         $victim = Restaurant::factory()->create();
 
-        // A tampered payload must not plant a dish in someone else's restaurant —
+        // A tampered payload must not plant a dish in someone else's restaurant;
         // restaurant_id is set server-side, not from input.
         $this->actingAs($user)
             ->postJson(route('api.dishes.store'), [
@@ -259,31 +258,12 @@ class DishTest extends TestCase
         $category = Category::factory()->create(['restaurant_id' => $restaurant->id]);
         Dish::factory()->create(['restaurant_id' => $restaurant->id, 'display_order' => 7]);
 
-        $this->actingAs($user)
+        $id = $this->actingAs($user)
             ->postJson(route('api.dishes.store'), ['name' => ['en' => 'Dessert'], 'category_id' => $category->id])
             ->assertCreated()
-            ->assertJsonPath('data.display_order', 8);
-    }
+            ->json('data.id');
 
-    public function test_a_user_can_view_their_own_dish(): void
-    {
-        [$user, $restaurant] = $this->owner();
-        $dish = Dish::factory()->create(['restaurant_id' => $restaurant->id]);
-
-        $this->actingAs($user)
-            ->getJson(route('api.dishes.show', $dish))
-            ->assertOk()
-            ->assertJsonPath('data.id', $dish->id);
-    }
-
-    public function test_a_user_cannot_view_another_restaurants_dish(): void
-    {
-        [$user] = $this->owner();
-        $foreign = Dish::factory()->create(['restaurant_id' => Restaurant::factory()->create()->id]);
-
-        $this->actingAs($user)
-            ->getJson(route('api.dishes.show', $foreign))
-            ->assertForbidden();
+        $this->assertSame(8, Dish::find($id)->display_order);
     }
 
     public function test_updating_only_the_name_preserves_the_existing_ingredients(): void
@@ -294,7 +274,7 @@ class DishTest extends TestCase
         $dish->save();
 
         $this->actingAs($user)
-            ->putJson(route('api.dishes.update', $dish), ['name' => ['en' => 'Renamed']])
+            ->patchJson(route('api.dishes.update', $dish), ['name' => ['en' => 'Renamed']])
             ->assertOk();
 
         $this->assertSame('Keep me', $dish->refresh()->getTranslation('ingredients', 'en'));
@@ -306,7 +286,7 @@ class DishTest extends TestCase
         $dish = Dish::factory()->create(['restaurant_id' => $restaurant->id, 'is_available' => true]);
 
         $this->actingAs($user)
-            ->putJson(route('api.dishes.update', $dish), ['name' => ['en' => 'Same'], 'is_available' => false])
+            ->patchJson(route('api.dishes.update', $dish), ['name' => ['en' => 'Same'], 'is_available' => false])
             ->assertOk()
             ->assertJsonPath('data.is_available', false);
 
@@ -319,7 +299,7 @@ class DishTest extends TestCase
         $foreign = Dish::factory()->create(['restaurant_id' => Restaurant::factory()->create()->id]);
 
         $this->actingAs($user)
-            ->putJson(route('api.dishes.update', $foreign), ['name' => ['en' => 'Hijack']])
+            ->patchJson(route('api.dishes.update', $foreign), ['name' => ['en' => 'Hijack']])
             ->assertForbidden();
     }
 
@@ -386,7 +366,7 @@ class DishTest extends TestCase
             ->assertStatus(422)
             ->assertJsonValidationErrors('category_id');
         $this->actingAs($user)
-            ->putJson(route('api.dishes.update', $dish), ['name' => ['en' => 'X']])
+            ->patchJson(route('api.dishes.update', $dish), ['name' => ['en' => 'X']])
             ->assertForbidden();
         $this->actingAs($user)->deleteJson(route('api.dishes.destroy', $dish))->assertForbidden();
     }
@@ -420,7 +400,7 @@ class DishTest extends TestCase
         $dish = Dish::factory()->create(['restaurant_id' => $restaurant->id, 'name' => ['en' => 'Bread', 'ar' => 'خبز']]);
 
         $this->actingAs($user)
-            ->putJson(route('api.dishes.update', $dish), ['name' => ['en' => 'Bread', 'fr' => 'Pain']])
+            ->patchJson(route('api.dishes.update', $dish), ['name' => ['en' => 'Bread', 'fr' => 'Pain']])
             ->assertOk();
 
         $this->assertSame(['en' => 'Bread', 'ar' => 'خبز', 'fr' => 'Pain'], $dish->fresh()->getTranslations('name'));
@@ -432,7 +412,7 @@ class DishTest extends TestCase
         $dish = Dish::factory()->create(['restaurant_id' => $restaurant->id, 'name' => ['en' => 'Bread', 'ar' => 'خبز']]);
 
         $this->actingAs($user)
-            ->putJson(route('api.dishes.update', $dish), ['name' => ['en' => 'Bread', 'ar' => '']])
+            ->patchJson(route('api.dishes.update', $dish), ['name' => ['en' => 'Bread', 'ar' => '']])
             ->assertOk()
             ->assertJsonPath('data.name', ['en' => 'Bread', 'ar' => null]);
     }

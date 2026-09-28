@@ -37,7 +37,6 @@ class PackageResourceTest extends TestCase
             'currency' => 'USD',
             'is_contact_only' => false,
             'is_default' => true,
-            'sort_order' => 0,
             'is_featured' => false,
             'features' => [
                 'dish_limit' => 40,
@@ -62,7 +61,6 @@ class PackageResourceTest extends TestCase
         $this->assertNull($data['price_cents']);
         $this->assertTrue($data['is_contact_only']);
         $this->assertFalse($data['is_default']);
-        $this->assertSame(3, $data['sort_order']);
         $this->assertNull($data['features']['dish_limit']);
         $this->assertNull($data['features']['category_limit']);
         $this->assertNull($data['features']['social_link_limit']);
@@ -71,9 +69,10 @@ class PackageResourceTest extends TestCase
         }
     }
 
-    public function test_pro_is_the_featured_one(): void
+    public function test_premium_is_the_featured_one(): void
     {
-        $this->assertTrue($this->resolve(Package::findBySlug('pro'))['is_featured']);
+        $this->assertTrue($this->resolve(Package::findBySlug('premium'))['is_featured']);
+        $this->assertFalse($this->resolve(Package::findBySlug('pro'))['is_featured']);
     }
 
     /** Every Feature case is a key, flags always booleans, limits always int or null. */

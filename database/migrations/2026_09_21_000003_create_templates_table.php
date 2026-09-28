@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Menu layouts. A template is a row + a Blade view of the same slug — adding
+     * Menu layouts. A template is a row + a Blade view of the same slug; adding
      * one never touches PHP. Every active template is free to every restaurant;
      * `settings_schema` declares exactly which knobs the owner may turn, so
      * "this design can change its colors, that one is fixed" is data, not code.

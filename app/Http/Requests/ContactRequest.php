@@ -9,7 +9,7 @@ class ContactRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        // Public contact form — open to guests; abuse is mitigated by rate limiting.
+        // Public contact form, open to guests; abuse is mitigated by rate limiting.
         return true;
     }
 

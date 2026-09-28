@@ -40,7 +40,7 @@ class SlugSanitizationTest extends TestCase
             'preferred_language' => 'en',
         ]);
 
-        // Must never 500 — either it advances (200) or it is a clean 422, never a crash.
+        // Must never 500: either it advances (200) or it is a clean 422, never a crash.
         $this->assertContains($response->status(), [200, 422]);
 
         $restaurant = Restaurant::where('user_id', $user->id)->first();

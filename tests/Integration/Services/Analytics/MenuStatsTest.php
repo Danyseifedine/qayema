@@ -86,8 +86,6 @@ class MenuStatsTest extends TestCase
     {
         $summary = (new MenuStats($this->restaurant(), '7d'))->summary();
 
-        $this->assertSame('7d', $summary['range']);
-        $this->assertSame('UTC', $summary['timezone']);
         $this->assertSame(
             ['views' => 0, 'unique_visitors' => 0, 'qr_scans' => 0, 'views_today' => 0, 'orders' => null],
             $summary['totals'],
@@ -95,7 +93,6 @@ class MenuStatsTest extends TestCase
         $this->assertCount(7, $summary['series']);
         $this->assertSame(['date' => '2026-09-22', 'views' => 0, 'qr_scans' => 0], $summary['series'][0]);
         $this->assertSame(['date' => '2026-09-28', 'views' => 0, 'qr_scans' => 0], $summary['series'][6]);
-        $this->assertNull($summary['last_visit_at']);
     }
 
     public function test_all_time_with_no_visits_charts_just_today(): void
@@ -110,7 +107,6 @@ class MenuStatsTest extends TestCase
     {
         $advanced = (new MenuStats($this->restaurant(), '30d'))->advanced();
 
-        $this->assertSame('30d', $advanced['range']);
         $this->assertSame(['views' => 0, 'unique_visitors' => 0, 'qr_scans' => 0, 'orders' => null], $advanced['previous']);
         $this->assertSame(array_fill(0, 24, 0), $advanced['hours']);
         $this->assertSame(array_fill(0, 7, 0), $advanced['weekdays']);
@@ -125,7 +121,7 @@ class MenuStatsTest extends TestCase
 
     public function test_an_empty_teaser_is_zero(): void
     {
-        $this->assertSame(['range' => '7d', 'views' => 0], (new MenuStats($this->restaurant(), '7d'))->teaser());
+        $this->assertSame(['views' => 0], (new MenuStats($this->restaurant(), '7d'))->teaser());
     }
 
     public function test_each_range_charts_its_own_number_of_days(): void
@@ -258,17 +254,20 @@ class MenuStatsTest extends TestCase
 
         $summary = (new MenuStats($restaurant, '7d'))->summary();
 
-        $this->assertSame('UTC', $summary['timezone']);
         $this->assertSame(1, $this->viewsByDate($summary['series'])['2026-09-26']);
     }
 
     public function test_no_timezone_uses_the_apps_own(): void
     {
         config(['app.timezone' => 'Asia/Beirut']);
+        $restaurant = $this->restaurant(['timezone' => null]);
+        // 22:30 UTC on the 27th is already the 28th in Beirut.
+        $this->visit($restaurant, '2026-09-27 22:30:00');
 
-        $summary = (new MenuStats($this->restaurant(['timezone' => null]), '7d'))->summary();
+        $summary = (new MenuStats($restaurant, '7d'))->summary();
 
-        $this->assertSame('Asia/Beirut', $summary['timezone']);
+        $this->assertSame(1, $this->viewsByDate($summary['series'])['2026-09-28']);
+        $this->assertSame(0, $this->viewsByDate($summary['series'])['2026-09-27']);
     }
 
     public function test_visitors_are_distinct_sessions_and_scans_are_qr_views(): void
@@ -286,17 +285,6 @@ class MenuStatsTest extends TestCase
         $this->assertSame(2, $summary['totals']['qr_scans']);
         $this->assertSame(['date' => '2026-09-27', 'views' => 2, 'qr_scans' => 1], $summary['series'][5]);
         $this->assertSame(['date' => '2026-09-28', 'views' => 2, 'qr_scans' => 1], $summary['series'][6]);
-    }
-
-    public function test_the_last_visit_is_the_latest_ever_whatever_the_range(): void
-    {
-        $restaurant = $this->restaurant();
-        $this->visit($restaurant, '2026-01-01 10:00:00');
-
-        $summary = (new MenuStats($restaurant, '7d'))->summary();
-
-        $this->assertSame(0, $summary['totals']['views']);
-        $this->assertStringStartsWith('2026-01-01 10:00:00', (string) $summary['last_visit_at']);
     }
 
     public function test_another_restaurants_rows_are_never_counted(): void
@@ -319,7 +307,6 @@ class MenuStatsTest extends TestCase
             ['views' => 0, 'unique_visitors' => 0, 'qr_scans' => 0, 'views_today' => 0, 'orders' => 0],
             $summary['totals'],
         );
-        $this->assertNull($summary['last_visit_at']);
         $this->assertSame(0, array_sum($advanced['actions']));
         $this->assertSame([], $advanced['top_added']);
         $this->assertSame([], $advanced['searches']);

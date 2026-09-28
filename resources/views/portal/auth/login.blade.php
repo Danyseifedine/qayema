@@ -73,7 +73,7 @@
 
         {{-- Remember me --}}
         <div class="row">
-            <x-ui.checkbox name="remember" :checked="true" :olive="true">
+            <x-ui.checkbox name="remember" :checked="true">
                 <span>{{ __('auth.login.remember') }}</span>
             </x-ui.checkbox>
         </div>

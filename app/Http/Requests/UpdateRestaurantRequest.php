@@ -38,7 +38,7 @@ class UpdateRestaurantRequest extends FormRequest
             'cover_image_key' => ['nullable', 'string', 'regex:/^[a-f0-9\-]{36}$/'],
             'delete_cover_image' => ['nullable', 'boolean'],
 
-            // ISO-3166-1 alpha-2 — the column is char(2), so cap it at exactly two
+            // ISO-3166-1 alpha-2: the column is char(2), so cap it at exactly two
             // ASCII letters (a longer value would 500 on save under strict mode).
             'country_code' => ['nullable', 'string', 'size:2', 'alpha:ascii'],
             // Literal space (not \s) so newlines/tabs can't be stored in the phone.

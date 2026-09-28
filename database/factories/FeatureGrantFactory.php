@@ -24,7 +24,6 @@ class FeatureGrantFactory extends Factory
             'feature' => Feature::DishLimit,
             'value' => 10,
             'source' => 'admin',
-            'reference' => null,
             'ends_at' => null,
         ];
     }

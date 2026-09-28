@@ -1,24 +1,22 @@
 /* =============================================================
-   Qayema — Login page styles
-   Uses the same design tokens as welcome.css
+   Qayema: Login page styles
+   Login, forgot and reset password, and the onboarding form column
    ============================================================= */
 
 :root {
     --ink:          #141109;
-    --ink-2:        #18181B;
     --paper:        #FBFAF6;
     --paper-2:      #F6F4EE;
     --sand:         #E8DCCB;
     --sand-2:       #D9CAB3;
     --accent:       #F8D38D;
     --accent-deep:  #B08A2C;
-    --accent-soft:  #FCE7BC;
     --line:         rgba(20,17,9,.10);
     --line-dark:    rgba(255,255,255,.10);
     --muted:        rgba(20,17,9,.58);
     --muted-dark:   rgba(246,241,232,.62);
     /* El Messiri is included so Arabic glyphs (absent from Geist / Instrument
-       Serif) resolve to it — matching the welcome page. */
+       Serif) resolve to it, matching the welcome page. */
     --font-sans:    'Geist', 'El Messiri', ui-sans-serif, system-ui, -apple-system, sans-serif;
     --font-display: 'Instrument Serif', 'El Messiri', 'Times New Roman', serif;
     --font-ar:      'El Messiri', 'Geist', system-ui, sans-serif;
@@ -290,7 +288,6 @@ h1.title .it {
 .form-col {
     --olive:      var(--accent);
     --olive-deep: var(--accent-deep);
-    --olive-soft: var(--accent-soft);
 }
 .form-col .ui-input-wrap {
     background: var(--surface);

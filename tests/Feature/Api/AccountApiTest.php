@@ -13,7 +13,7 @@ class AccountApiTest extends TestCase
 
     public function test_account_and_password_endpoints_require_authentication(): void
     {
-        $this->putJson(route('api.account.update'), ['name' => 'X'])->assertUnauthorized();
+        $this->patchJson(route('api.account.update'), ['name' => 'X'])->assertUnauthorized();
         $this->putJson(route('api.password.update'), [])->assertUnauthorized();
     }
 
@@ -22,7 +22,7 @@ class AccountApiTest extends TestCase
         $user = User::factory()->create(['name' => 'Old Name']);
 
         $this->actingAs($user)
-            ->putJson(route('api.account.update'), ['name' => 'New Name'])
+            ->patchJson(route('api.account.update'), ['name' => 'New Name'])
             ->assertOk()
             ->assertJsonPath('data.name', 'New Name');
 
@@ -34,7 +34,7 @@ class AccountApiTest extends TestCase
         $user = User::factory()->create(['email' => 'keep@example.com']);
 
         $this->actingAs($user)
-            ->putJson(route('api.account.update'), ['name' => 'Someone', 'email' => 'new@example.com'])
+            ->patchJson(route('api.account.update'), ['name' => 'Someone', 'email' => 'new@example.com'])
             ->assertOk();
 
         $this->assertSame('keep@example.com', $user->fresh()->email, 'Unknown fields are ignored.');
@@ -46,7 +46,7 @@ class AccountApiTest extends TestCase
 
         foreach (['', 'A', str_repeat('x', 101), "Bad\x00Name"] as $bad) {
             $this->actingAs($user)
-                ->putJson(route('api.account.update'), ['name' => $bad])
+                ->patchJson(route('api.account.update'), ['name' => $bad])
                 ->assertStatus(422)
                 ->assertJsonValidationErrors('name');
         }
@@ -86,8 +86,7 @@ class AccountApiTest extends TestCase
                 'password' => 'brand-new-password',
                 'password_confirmation' => 'brand-new-password',
             ])
-            ->assertOk()
-            ->assertJsonPath('has_password', true);
+            ->assertNoContent();
 
         $user->refresh();
         $this->assertTrue(Hash::check('brand-new-password', $user->password));
@@ -103,7 +102,7 @@ class AccountApiTest extends TestCase
                 'password' => 'brand-new-password',
                 'password_confirmation' => 'brand-new-password',
             ])
-            ->assertOk();
+            ->assertNoContent();
 
         $this->assertTrue(Hash::check('brand-new-password', $user->fresh()->password));
 

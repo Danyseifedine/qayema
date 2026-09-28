@@ -3,7 +3,6 @@
 namespace Tests\Feature\Api;
 
 use App\Enums\Feature;
-use App\Models\Package;
 use App\Models\RestaurantSocialLink;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\CreatesOwners;
@@ -35,7 +34,7 @@ class SocialLinkEdgeTest extends TestCase
 
     public function test_every_supported_platform_is_accepted_and_others_are_not(): void
     {
-        Package::default()->setFeature(Feature::SocialLinkLimit, 10);
+        $this->defaultPackageSets(Feature::SocialLinkLimit, 10);
         $owner = $this->owner();
 
         foreach (RestaurantSocialLink::PLATFORMS as $platform) {
@@ -56,7 +55,7 @@ class SocialLinkEdgeTest extends TestCase
         RestaurantSocialLink::factory()->create(['restaurant_id' => $owner->id, 'platform' => 'x']);
 
         $this->actingAs($owner->user)
-            ->putJson(route('api.social-links.update', $insta), ['platform' => 'x', 'url' => 'https://x.com/me'])
+            ->patchJson(route('api.social-links.update', $insta), ['platform' => 'x', 'url' => 'https://x.com/me'])
             ->assertStatus(422)->assertJsonValidationErrors('platform');
     }
 
@@ -72,7 +71,7 @@ class SocialLinkEdgeTest extends TestCase
 
     public function test_deleting_frees_the_slot_and_the_platform(): void
     {
-        Package::default()->setFeature(Feature::SocialLinkLimit, 1);
+        $this->defaultPackageSets(Feature::SocialLinkLimit, 1);
         $owner = $this->owner();
         $link = RestaurantSocialLink::factory()->create(['restaurant_id' => $owner->id, 'platform' => 'instagram']);
 

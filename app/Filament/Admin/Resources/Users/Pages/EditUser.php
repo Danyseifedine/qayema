@@ -22,7 +22,7 @@ class EditUser extends EditRecord
                 ->action(function (): void {
                     $record = $this->record;
                     assert($record instanceof User);
-                    $record->forceDelete();
+                    $record->delete();
                     Notification::make()
                         ->title('User deleted')
                         ->success()

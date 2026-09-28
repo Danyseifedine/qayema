@@ -49,7 +49,7 @@ class PackageGatesTest extends TestCase
 
         $this->actingAs($free->user)->getJson(route('api.analytics.teaser'))
             ->assertOk()
-            ->assertExactJson(['data' => ['range' => '7d', 'views' => 1]]);
+            ->assertExactJson(['data' => ['views' => 1]]);
     }
 
     public function test_qr_scan_counts_follow_analytics_not_the_studio(): void

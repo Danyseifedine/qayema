@@ -11,8 +11,8 @@ return new class extends Migration
      * spatie/translatable JSON ({"ar": ..., "en": ...}); the owner only ever
      * edits the locale in `default_locale`.
      *
-     * A new restaurant starts with template_id = null — the dashboard stays
-     * locked until the owner picks one — and on the default package, which is
+     * A new restaurant starts with template_id = null (the dashboard stays
+     * locked until the owner picks one) and on the default package, which is
      * what its limits and features resolve from. `package_ends_at` is an
      * admin-set expiry: once it passes, the restaurant falls back to the
      * default package until a new one is assigned.

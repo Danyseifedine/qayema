@@ -48,7 +48,6 @@ class OrderResourceTest extends TestCase
             'items' => [[
                 'id' => $line->id,
                 'name' => 'Shawarma',
-                'unit_price' => '7.25',
                 'quantity' => 2,
                 'line_total' => '14.50',
             ]],
