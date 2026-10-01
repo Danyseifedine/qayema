@@ -70,7 +70,11 @@ class LandingContentTest extends TestCase
     #[DataProvider('claimsThatAreNotTrue')]
     public function test_it_makes_no_claim_the_product_cannot_back(string $claim): void
     {
-        $this->get('/')->assertOk()->assertDontSee($claim, false);
+        // The page's random security token could spell "AI" by chance, so it
+        // is taken out, and a claim only counts as a whole word.
+        $html = preg_replace('/(name="csrf-token" content=|name="_token" value=)"[^"]*"/', '', $this->get('/')->assertOk()->getContent());
+
+        $this->assertDoesNotMatchRegularExpression('/\b'.preg_quote($claim, '/').'\b/', $html);
     }
 
     public function test_the_arabic_page_uses_the_arabic_packages(): void

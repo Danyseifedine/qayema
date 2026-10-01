@@ -42,6 +42,7 @@ return [
         'pricing' => 'الأسعار',
         'faq' => 'الأسئلة',
         'cta' => 'ابدأ مجاناً',
+        'cta_short' => 'ابدأ مجاناً',
         'cta_dashboard' => 'لوحتي',
         'cta_continue' => 'أكمل الإعداد',
     ],

@@ -16,7 +16,7 @@
   border-bottom-color: var(--line-2);
 }
 .nav-in { max-width: var(--maxw); margin: 0 auto; padding: 18px 40px; display: flex; align-items: center; justify-content: space-between; gap: 28px; }
-.brand { display: inline-flex; align-items: center; }
+.brand { display: inline-flex; align-items: center; flex-shrink: 0; }
 .brand img { height: 50px; width: auto; }
 .nav-links { display: flex; gap: 34px; }
 .nav-links a { font-size: 14px; color: var(--muted); transition: color .25s var(--ease); position: relative; }
@@ -45,6 +45,22 @@ html[data-theme="dark"] .theme-tog .moon { display: block; } html[data-theme="da
 @media (max-width: 1000px) {
   .nav-links { display: none; }
 }
+/* A phone has room for the logo, the language switch, the theme toggle and
+   the button only when each is a size smaller. */
 @media (max-width: 600px) {
-  .nav-in { padding-inline: 22px; }
+  .nav-in { padding: 14px 16px; gap: 10px; }
+  .brand img { height: 38px; }
+  .nav-right { gap: 8px; }
+  .nav-right .btn-sm { height: 38px; padding: 0 14px; font-size: 13px; }
+  .nav-right .seg a { height: 26px; min-width: 30px; padding: 0 9px; }
+  .theme-tog { width: 50px; height: 28px; }
+  .theme-tog .knob { width: 22px; height: 22px; }
+  html[data-theme="dark"] .theme-tog .knob { inset-inline-start: 23px; }
+}
+
+/* The narrowest phones: the button says less. Its text (and so its name for
+   a screen reader) stays the full label; only what is drawn changes. */
+@media (max-width: 400px) {
+  .nav-cta[data-short] .cta-full { display: none; }
+  .nav-cta[data-short]::after { content: attr(data-short); }
 }

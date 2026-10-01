@@ -23,6 +23,13 @@ foreach (PortalUrl::LOCALES as $locale) {
         ->name($root ? '' : "{$locale}.")
         ->group(function () {
             Route::get('/', fn () => view('portal.welcome'))->name('home');
+            Route::get('/qr-menu-lebanon', fn () => view('portal.pages.topic', ['topic' => 'lebanon']))->name('lebanon');
+            Route::get('/digital-menu-for-cafes', fn () => view('portal.pages.topic', ['topic' => 'cafes']))->name('cafes');
+            Route::get('/pricing', fn () => view('portal.pages.pricing'))->name('pricing');
+            Route::get('/guides', fn () => view('portal.pages.guides'))->name('guides');
+            Route::get('/guides/{guide}', fn (string $guide) => view('portal.pages.guide', ['guide' => $guide]))
+                ->whereIn('guide', PortalUrl::GUIDES)
+                ->name('guide');
             Route::get('/privacy-policy', fn () => view('portal.legal.privacy'))->name('privacy');
             Route::get('/terms-of-service', fn () => view('portal.legal.terms'))->name('terms');
             Route::get('/cookie-policy', fn () => view('portal.legal.cookies'))->name('cookies');

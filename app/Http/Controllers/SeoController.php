@@ -13,6 +13,17 @@ use Illuminate\Http\Response;
  */
 class SeoController extends Controller
 {
+    /** How much each public page matters next to the others; legal pages 0.3. */
+    private const PRIORITY = [
+        'home' => '1.0',
+        'lebanon' => '0.9',
+        'cafes' => '0.9',
+        'pricing' => '0.9',
+        'guides' => '0.7',
+        'guide' => '0.7',
+        'contact' => '0.6',
+    ];
+
     public function robots(): Response
     {
         $lines = [
@@ -41,10 +52,10 @@ class SeoController extends Controller
     {
         $pages = [];
 
-        foreach (PortalUrl::PAGES as $page) {
+        foreach (PortalUrl::all() as $entry) {
             $alternates = [];
             foreach (PortalUrl::LOCALES as $locale) {
-                $alternates[$locale] = PortalUrl::to($page, $locale);
+                $alternates[$locale] = PortalUrl::to($entry['page'], $locale, $entry['parameters']);
             }
 
             foreach ($alternates as $url) {
@@ -52,7 +63,7 @@ class SeoController extends Controller
                     'url' => $url,
                     'alternates' => $alternates,
                     'default' => $alternates[PortalUrl::LOCALES[0]],
-                    'priority' => $page === 'home' ? '1.0' : ($page === 'contact' ? '0.6' : '0.3'),
+                    'priority' => self::PRIORITY[$entry['page']] ?? '0.3',
                     'lastmod' => null,
                 ];
             }

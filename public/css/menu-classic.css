@@ -440,6 +440,9 @@ dialog.pop[open]::backdrop { animation: fade-in .2s ease; }
 
 /* ---- Chrome ---- */
 .empty { padding: 60px 16px; text-align: center; color: var(--muted); }
+.menu-credit { margin: 36px 0 0; text-align: center; font-size: 12px; color: var(--muted); }
+.menu-credit a { color: inherit; font-weight: 600; text-decoration: none; }
+.menu-credit a:hover { color: var(--text); }
 .no-results { display: none; padding: 40px 16px; text-align: center; color: var(--muted); font-size: 13.5px; }
 
 /* ---- Wide: the header carries the facts, the cart is its own column ---- */

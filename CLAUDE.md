@@ -727,6 +727,15 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
   (`switchOnWhatCameIntoReach()`, from the restaurant's and the grant's save
   hooks); one the old package already had keeps the owner's choice.
 - Locale middleware alias is `portal.locale`; the session key stays `owner_locale`.
+- **Content pages.** `/qr-menu-lebanon`, `/digital-menu-for-cafes`
+  (`portal.pages.topic`), `/pricing`, `/guides` and `/guides/{guide}`, each
+  also under `/ar`. Their text is `lang/{en,ar}/pages.php` (same keys in both,
+  tested); a new guide is a key under `articles` plus its slug in
+  `PortalUrl::GUIDES`, and every slug is a reserved restaurant link. Never
+  write a price in that text: prices come from the packages
+  (`portal.partials.pricing`, shared with home). Every page links from the
+  footer and is in the sitemap through `PortalUrl::all()`. Each menu ends
+  with a "Menu by Qayema" credit (`Menu by :brand` in every menu language).
 - **Search (SEO).** The public pages (home, contact, the four legal pages)
   live once per language: English at the root, Arabic under `/ar`
   (`App\Support\PortalUrl`; routes `privacy` and `ar.privacy`). The address

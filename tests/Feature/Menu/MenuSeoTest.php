@@ -157,6 +157,19 @@ class MenuSeoTest extends TestCase
         $this->assertSame(asset('images/og/qayema-en.jpg'), $this->meta($this->page('/olive'), 'property', 'og:image'));
     }
 
+    public function test_every_menu_credits_qayema_in_its_language(): void
+    {
+        $this->olive();
+
+        $english = $this->page('/olive')->querySelector('.menu-credit');
+        $this->assertSame('Menu by Qayema', trim($english->textContent));
+        $this->assertSame(url('/'), $english->querySelector('a')->getAttribute('href'));
+
+        $arabic = $this->page('/olive?lang=ar')->querySelector('.menu-credit');
+        $this->assertSame('منيو بواسطة Qayema', trim($arabic->textContent));
+        $this->assertSame(url('/ar'), $arabic->querySelector('a')->getAttribute('href'));
+    }
+
     private function page(string $path): HTMLDocument
     {
         return HTMLDocument::createFromString($this->get($path)->assertOk()->getContent(), LIBXML_NOERROR);

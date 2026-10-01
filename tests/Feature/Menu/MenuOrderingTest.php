@@ -182,7 +182,8 @@ class MenuOrderingTest extends TestCase
 
         $this->assertStringNotContainsString('<footer', $html);
         $this->assertStringNotContainsString('class="chip"', $html);
-        $this->assertStringNotContainsString('>'.config('app.name').'</a>', $html);
+        // Only the one quiet credit names Qayema (MenuSeoTest checks where it leads).
+        $this->assertSame(1, substr_count($html, '>Qayema</a>'));
         // The links are still reachable, once, from the popup.
         $this->assertSame(1, substr_count($html, 'href="https://instagram.com/olive"'));
     }

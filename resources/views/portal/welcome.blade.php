@@ -24,9 +24,8 @@
         ? ($owner->hasCompletedOnboarding() ? __('portal.nav.cta_dashboard') : __('portal.nav.cta_continue'))
         : null;
 
-    // Pricing comes from the packages an admin edits, so it never promises
-    // what a package does not hold.
-    $pricing = app(\App\Services\Portal\PricingCards::class)->all();
+    // Which package unlocks each feature card; the cards themselves are in
+    // portal.partials.pricing.
     $unlockedBy = app(\App\Services\Portal\PricingCards::class)->unlockedBy();
 
     // Every number here is true of the product today, and two follow it.
@@ -201,47 +200,7 @@
   </section>
 
   {{-- ===== PRICING ===== --}}
-  <section class="sec" id="pricing" style="padding-top:0;">
-    <div class="wrap">
-      <div class="sec-head reveal" style="text-align:center;max-width:680px;margin-inline:auto;">
-        <div class="eyebrow" style="justify-content:center;"><span class="bar"></span><span class="mono-label">{{ __('portal.pricing.eyebrow') }}</span></div>
-        <h2 class="display"><span>{{ __('portal.pricing.title') }}</span> <span class="gold-text">{{ __('portal.pricing.title_gold') }}</span></h2>
-        <p style="margin-inline:auto;">{{ __('portal.pricing.sub') }}</p>
-      </div>
-
-      <div class="price-grid reveal">
-        @foreach ($pricing as $card)
-          <div class="plan{{ $card['featured'] ? ' hot' : '' }}">
-            <div class="plan-top">
-              <div class="tier">{{ $card['name'] }}</div>
-              @if ($card['featured'])
-                <span class="plan-badge">{{ __('portal.pricing.popular') }}</span>
-              @endif
-            </div>
-            <div class="amt"><span class="big display gold-text" @if ($card['per']) dir="ltr" @endif>{{ $card['price'] }}</span>@if ($card['per'])<span class="per">{{ $card['per'] }}</span>@endif</div>
-            <p class="pdesc">{{ $card['description'] }}</p>
-            <p class="plabel">{{ $card['base'] ? __('portal.pricing.everything_in', ['name' => $card['base']]) : __('portal.pricing.includes') }}</p>
-            <ul>
-              @foreach ($card['lines'] as $line)
-                <li>{!! $ICON['check'] !!}<span>{{ $line }}</span></li>
-              @endforeach
-            </ul>
-            {{-- A contact-only package has no price to sign up against, so it
-                 goes to the contact form. Every other one starts with an
-                 account; a paid package is then asked for from the dashboard. --}}
-            @if ($card['contact'])
-              <a class="btn btn-line" data-magnetic href="{{ \App\Support\PortalUrl::to('contact') }}">{{ __('portal.pricing.cta_contact') }}</a>
-            @else
-              <a class="btn {{ $card['featured'] ? 'btn-gold' : 'btn-line' }}" data-magnetic href="{{ $ctaAuthedHref ?? route('register') }}">
-                {{ $ctaAuthedLabel ?? ($card['free'] ? __('portal.pricing.cta_free') : __('portal.pricing.cta_choose', ['name' => $card['name']])) }}
-              </a>
-            @endif
-          </div>
-        @endforeach
-      </div>
-      <p class="price-note reveal"><b>{{ __('portal.pricing.note_bold') }}</b> <span>{{ __('portal.pricing.note') }}</span></p>
-    </div>
-  </section>
+  @include('portal.partials.pricing')
 
   {{-- ===== HOW UPGRADING WORKS ===== --}}
   <section class="sec" id="upgrade" style="padding-top:0;">
@@ -264,21 +223,6 @@
   </section>
 
   {{-- ===== FAQ ===== --}}
-  <section class="sec" id="faq" style="padding-top:0;">
-    <div class="wrap">
-      <div class="sec-head reveal" style="text-align:center;max-width:640px;margin-inline:auto;">
-        <div class="eyebrow" style="justify-content:center;"><span class="bar"></span><span class="mono-label">{{ __('portal.faq.eyebrow') }}</span></div>
-        <h2 class="display"><span>{{ __('portal.faq.title') }}</span> <span class="gold-text">{{ __('portal.faq.title_gold') }}</span></h2>
-      </div>
-      <div class="faq" id="faqList">
-        @foreach (__('portal.faq.items') as $item)
-          <div class="faq-item">
-            <button class="faq-q" type="button"><span>{{ $item['q'] }}</span><span class="pm"></span></button>
-            <div class="faq-a"><div class="inner">{{ $item['a'] }}</div></div>
-          </div>
-        @endforeach
-      </div>
-    </div>
-  </section>
+  @include('portal.partials.faq', ['items' => __('portal.faq.items'), 'title' => __('portal.faq.title'), 'titleGold' => __('portal.faq.title_gold')])
 
 @endsection

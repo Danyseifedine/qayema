@@ -304,6 +304,10 @@
 
             <p class="no-results" id="menu-no-results">{{ __('Nothing on the menu matches that.') }}</p>
 
+            {{-- A quiet credit: guests who like the menu find where it came
+                 from, in Arabic for an Arabic menu. --}}
+            <p class="menu-credit">{!! __('Menu by :brand', ['brand' => '<a href="'.e(\App\Support\PortalUrl::to('home', $locale === 'ar' ? 'ar' : 'en')).'">Qayema</a>']) !!}</p>
+
         </div>
     </main>
 

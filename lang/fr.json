@@ -40,5 +40,6 @@
     "Follow us": "Suivez-nous",
     "Back to top": "Retour en haut",
     ":name: menu and prices": ":name : menu et prix",
-    "The :name menu with dishes, prices and opening hours.": "Le menu de :name avec les plats, les prix et les horaires d'ouverture."
+    "The :name menu with dishes, prices and opening hours.": "Le menu de :name avec les plats, les prix et les horaires d'ouverture.",
+    "Menu by :brand": "Menu créé avec :brand"
 }

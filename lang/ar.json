@@ -80,5 +80,6 @@
     "Please choose a font from the list.": "يرجى اختيار خط من القائمة.",
     "Your menu has no text in :script.": "لا يوجد في قائمتك نص بخط :script.",
     ":name: menu and prices": ":name: المنيو والأسعار",
-    "The :name menu with dishes, prices and opening hours.": "منيو :name مع الأطباق والأسعار وأوقات العمل."
+    "The :name menu with dishes, prices and opening hours.": "منيو :name مع الأطباق والأسعار وأوقات العمل.",
+    "Menu by :brand": "منيو بواسطة :brand"
 }

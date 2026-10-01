@@ -51,10 +51,14 @@ class Seo extends Component
     /** @var list<string> */
     public array $schemas;
 
+    /**
+     * @param  list<array<string, mixed>>  $schema  the page's own structured data (an article, its FAQ)
+     */
     public function __construct(
         public string $title,
         string $description,
         ?string $robots = null,
+        private array $schema = [],
     ) {
         $this->robots = $robots ?? self::INDEX;
         $this->description = Str::limit($description, 160);
@@ -112,6 +116,7 @@ class Seo extends Component
         $data = app(StructuredData::class);
         $documents = array_filter([
             $page === 'home' ? $data->home() : null,
+            ...$this->schema,
             $data->breadcrumb($page, $this->title),
         ]);
 

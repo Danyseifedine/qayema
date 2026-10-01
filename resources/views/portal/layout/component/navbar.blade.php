@@ -38,7 +38,8 @@
           <a class="btn btn-gold btn-sm" data-magnetic href="{{ route('onboarding') }}">{{ __('portal.nav.cta_continue') }}</a>
         @endif
       @else
-        <a class="btn btn-gold btn-sm" data-magnetic href="{{ route('register') }}">{{ __('portal.nav.cta') }}</a>
+        {{-- The narrowest phones show data-short instead (navbar.css). --}}
+        <a class="btn btn-gold btn-sm nav-cta" data-magnetic href="{{ route('register') }}" data-short="{{ __('portal.nav.cta_short') }}" aria-label="{{ __('portal.nav.cta') }}"><span class="cta-full">{{ __('portal.nav.cta') }}</span></a>
       @endauth
     </div>
   </div>

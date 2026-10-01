@@ -32,6 +32,13 @@ class SeoTest extends TestCase
             'terms' => ['/terms-of-service', '/ar/terms-of-service', 'Terms of Service | Qayema', 'شروط الخدمة | Qayema'],
             'cookies' => ['/cookie-policy', '/ar/cookie-policy', 'Cookie Policy | Qayema', 'سياسة ملفات تعريف الارتباط | Qayema'],
             'refund' => ['/refund-policy', '/ar/refund-policy', 'Refund Policy | Qayema', 'سياسة الاسترداد | Qayema'],
+            'lebanon' => ['/qr-menu-lebanon', '/ar/qr-menu-lebanon', 'QR Menu for Restaurants in Lebanon | Qayema', 'منيو QR للمطاعم في لبنان | Qayema'],
+            'cafes' => ['/digital-menu-for-cafes', '/ar/digital-menu-for-cafes', 'Digital Menu for Cafés | Qayema', 'منيو إلكتروني للمقاهي | Qayema'],
+            'pricing' => ['/pricing', '/ar/pricing', 'Pricing | Qayema', 'الأسعار | Qayema'],
+            'guides' => ['/guides', '/ar/guides', 'Guides for Restaurant Owners | Qayema', 'أدلة لأصحاب المطاعم | Qayema'],
+            'guide: make' => ['/guides/how-to-make-a-qr-menu', '/ar/guides/how-to-make-a-qr-menu', 'How to Make a QR Code Menu for Your Restaurant | Qayema', 'كيف تنشئ منيو QR (منيو باركود) لمطعمك | Qayema'],
+            'guide: cost' => ['/guides/qr-menu-vs-paper-menu-cost', '/ar/guides/qr-menu-vs-paper-menu-cost', 'QR Menu vs Paper Menu: What Does Each Really Cost? | Qayema', 'منيو QR أم منيو ورقي: كم يكلّف كل منهما فعلاً؟ | Qayema'],
+            'guide: prices' => ['/guides/update-menu-prices-fast', '/ar/guides/update-menu-prices-fast', 'How to Update Your Menu Prices Fast | Qayema', 'كيف تحدّث أسعار منيو مطعمك بسرعة | Qayema'],
         ];
     }
 

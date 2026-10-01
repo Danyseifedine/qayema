@@ -55,31 +55,102 @@ class StructuredData
                     'inLanguage' => $locale,
                     'publisher' => ['@id' => url('/').'#organization'],
                 ],
-                [
-                    '@type' => 'SoftwareApplication',
-                    '@id' => $home.'#app',
-                    'name' => config('seo.site_name'),
-                    'url' => $home,
-                    'inLanguage' => $locale,
-                    'description' => __('portal.seo.description'),
-                    'applicationCategory' => 'BusinessApplication',
-                    'applicationSubCategory' => __('portal.seo.category'),
-                    'operatingSystem' => 'Web',
-                    'image' => asset(config('seo.images.'.$locale, config('seo.images.en'))),
-                    'publisher' => ['@id' => url('/').'#organization'],
-                    'offers' => $this->offers(),
-                ],
-                [
-                    '@type' => 'FAQPage',
-                    '@id' => $home.'#faq',
-                    'inLanguage' => $locale,
-                    'mainEntity' => array_map(fn (array $item): array => [
-                        '@type' => 'Question',
-                        'name' => $item['q'],
-                        'acceptedAnswer' => ['@type' => 'Answer', 'text' => $item['a']],
-                    ], (array) __('portal.faq.items')),
-                ],
+                $this->app(),
+                $this->faqNode((array) __('portal.faq.items'), $home.'#faq'),
             ],
+        ];
+    }
+
+    /**
+     * The product with every package's price as an offer, for the pricing
+     * page.
+     *
+     * @return array<string, mixed>
+     */
+    public function pricing(): array
+    {
+        return ['@context' => 'https://schema.org', ...$this->app()];
+    }
+
+    /**
+     * A page's own questions, as the FAQ section shows them.
+     *
+     * @param  list<array{q: string, a: string}>  $items
+     * @return array<string, mixed>
+     */
+    public function faq(array $items): array
+    {
+        return ['@context' => 'https://schema.org', ...$this->faqNode($items, url()->current().'#faq')];
+    }
+
+    /**
+     * A guide as an article, in the page's language.
+     *
+     * @return array<string, mixed>
+     */
+    public function article(string $guide): array
+    {
+        $locale = app()->getLocale();
+        $url = PortalUrl::to('guide', null, ['guide' => $guide]);
+        $published = (string) __("pages.articles.{$guide}.published");
+
+        return [
+            '@context' => 'https://schema.org',
+            '@type' => 'Article',
+            'headline' => __("pages.articles.{$guide}.title"),
+            'description' => __("pages.articles.{$guide}.description"),
+            'inLanguage' => $locale,
+            'datePublished' => $published,
+            'dateModified' => $published,
+            'mainEntityOfPage' => $url,
+            'url' => $url,
+            'image' => asset(config('seo.images.'.$locale, config('seo.images.en'))),
+            'author' => ['@type' => 'Organization', 'name' => config('seo.site_name'), 'url' => url('/')],
+            'publisher' => [
+                '@type' => 'Organization',
+                'name' => config('seo.organization.name'),
+                'logo' => ['@type' => 'ImageObject', 'url' => asset('images/logo/logo.png')],
+            ],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function app(): array
+    {
+        $locale = app()->getLocale();
+        $home = PortalUrl::to('home');
+
+        return [
+            '@type' => 'SoftwareApplication',
+            '@id' => $home.'#app',
+            'name' => config('seo.site_name'),
+            'url' => $home,
+            'inLanguage' => $locale,
+            'description' => __('portal.seo.description'),
+            'applicationCategory' => 'BusinessApplication',
+            'applicationSubCategory' => __('portal.seo.category'),
+            'operatingSystem' => 'Web',
+            'image' => asset(config('seo.images.'.$locale, config('seo.images.en'))),
+            'publisher' => ['@id' => url('/').'#organization'],
+            'offers' => $this->offers(),
+        ];
+    }
+
+    /**
+     * @param  list<array{q: string, a: string}>  $items
+     * @return array<string, mixed>
+     */
+    private function faqNode(array $items, string $id): array
+    {
+        return [
+            '@type' => 'FAQPage',
+            '@id' => $id,
+            'inLanguage' => app()->getLocale(),
+            'mainEntity' => array_map(fn (array $item): array => [
+                '@type' => 'Question',
+                'name' => $item['q'],
+                'acceptedAnswer' => ['@type' => 'Answer', 'text' => $item['a']],
+            ], $items),
         ];
     }
 
@@ -94,13 +165,24 @@ class StructuredData
             return null;
         }
 
+        $trail = [[config('seo.site_name'), PortalUrl::to('home')]];
+
+        // A guide sits under the guides page.
+        if ($page === 'guide') {
+            $trail[] = [__('pages.guides.crumb'), PortalUrl::to('guides')];
+        }
+
+        $trail[] = [$title, PortalUrl::to($page, null, PortalUrl::currentParameters())];
+
         return [
             '@context' => 'https://schema.org',
             '@type' => 'BreadcrumbList',
-            'itemListElement' => [
-                ['@type' => 'ListItem', 'position' => 1, 'name' => config('seo.site_name'), 'item' => PortalUrl::to('home')],
-                ['@type' => 'ListItem', 'position' => 2, 'name' => $title, 'item' => PortalUrl::to($page)],
-            ],
+            'itemListElement' => array_map(fn (array $crumb, int $index): array => [
+                '@type' => 'ListItem',
+                'position' => $index + 1,
+                'name' => $crumb[0],
+                'item' => $crumb[1],
+            ], $trail, array_keys($trail)),
         ];
     }
 

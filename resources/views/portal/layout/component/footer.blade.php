@@ -19,8 +19,17 @@
       <div class="foot-col">
         <h5>{{ __('portal.footer.product') }}</h5>
         <a href="{{ $base }}#features">{{ __('portal.nav.features') }}</a>
-        <a href="{{ $base }}#pricing">{{ __('portal.nav.pricing') }}</a>
+        <a href="{{ PortalUrl::to('pricing') }}">{{ __('pages.nav.pricing') }}</a>
         <a href="{{ $base }}#how">{{ __('portal.nav.how') }}</a>
+        <a href="{{ PortalUrl::to('lebanon') }}">{{ __('pages.nav.lebanon') }}</a>
+        <a href="{{ PortalUrl::to('cafes') }}">{{ __('pages.nav.cafes') }}</a>
+      </div>
+      <div class="foot-col">
+        <h5>{{ __('pages.nav.guides') }}</h5>
+        @foreach (PortalUrl::GUIDES as $guide)
+          <a href="{{ PortalUrl::to('guide', null, ['guide' => $guide]) }}">{{ __("pages.articles.{$guide}.title") }}</a>
+        @endforeach
+        <a href="{{ PortalUrl::to('guides') }}">{{ __('pages.guides.all') }}</a>
       </div>
       <div class="foot-col">
         <h5>{{ __('portal.footer.company') }}</h5>
