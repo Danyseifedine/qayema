@@ -25,7 +25,9 @@ class EditRestaurant extends EditRecord
                 ->color('gray')
                 ->url(fn (): string => route('impersonate', $this->record->user_id))
                 ->visible(fn (): bool => $this->record->user?->canBeImpersonated() ?? false),
-            DeleteAction::make(),
+            DeleteAction::make()
+                ->modalHeading('Delete restaurant and owner')
+                ->modalDescription(RestaurantResource::DELETE_WARNING),
         ];
     }
 

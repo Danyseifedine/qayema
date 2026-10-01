@@ -781,7 +781,9 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
   goes with the record. Deletes go through the models, never a query
   delete, so images leave storage: `User::deleting` deletes the restaurant,
   `Restaurant::deleting` deletes each dish (the media library removes every
-  photo, logo and cover). A deleted category leaves its dishes uncategorised.
+  photo, logo and cover). A restaurant and its owner's account go together:
+  `Restaurant::deleted` deletes the owner (never an admin), and
+  `ownerIsBeingDeleted` stops the two hooks deleting each other twice. A deleted category leaves its dishes uncategorised.
   The default package is never deleted (hidden button, and
   `Package::deleting` refuses); restaurants on any other deleted package move
   to the default through `PackageAssigner`, with a note in their history.

@@ -218,7 +218,7 @@ class OwnerJourneyTest extends TestCase
         $this->actingAs($owner->user->fresh())->postJson(route('api.dishes.store'), ['name' => ['en' => 'x'], 'price' => 1, 'category_id' => $category->id])->assertCreated();
     }
 
-    public function test_deleting_a_restaurant_cascades_content_but_keeps_the_user_and_the_packages(): void
+    public function test_deleting_a_restaurant_takes_its_content_and_owner_but_keeps_the_packages(): void
     {
         $owner = $this->ownerOn('pro');
         $category = \App\Models\Category::factory()->create(['restaurant_id' => $owner->id]);
@@ -235,7 +235,7 @@ class OwnerJourneyTest extends TestCase
         foreach (['categories', 'dishes', 'restaurant_social_links', 'feature_grants', 'menu_sessions'] as $table) {
             $this->assertDatabaseCount($table, 0);
         }
-        $this->assertDatabaseHas('users', ['id' => $userId]);
+        $this->assertDatabaseMissing('users', ['id' => $userId]);
         $this->assertDatabaseHas('packages', ['id' => $packageId]);
         $this->assertDatabaseHas('templates', ['id' => $midnight->id]);
     }

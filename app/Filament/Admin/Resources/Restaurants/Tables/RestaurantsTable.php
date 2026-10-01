@@ -6,6 +6,7 @@ use App\Enums\PackageStatus;
 use App\Filament\Admin\Actions\ChangePackageAction;
 use App\Filament\Admin\Actions\ExtendPackageAction;
 use App\Filament\Admin\Actions\ResetPackageAction;
+use App\Filament\Admin\Resources\Restaurants\RestaurantResource;
 use App\Filament\Admin\Resources\Restaurants\Schemas\PackageFields;
 use App\Models\Restaurant;
 use Filament\Actions\Action;
@@ -194,13 +195,15 @@ class RestaurantsTable
                     ->url(fn (Restaurant $record): string => route('impersonate', $record->user_id))
                     ->visible(fn (Restaurant $record): bool => $record->user?->canBeImpersonated() ?? false),
                 DeleteAction::make()
-                    ->modalHeading('Delete restaurant')
-                    ->modalDescription('This deletes the menu for good: every category, dish and photo, the logo and cover, social links, orders, statistics and package history. The owner keeps their account. This cannot be undone.'),
+                    ->modalHeading('Delete restaurant and owner')
+                    ->modalDescription(RestaurantResource::DELETE_WARNING),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
                     ChangePackageAction::bulk(),
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->modalHeading('Delete restaurants and their owners')
+                        ->modalDescription(RestaurantResource::DELETE_WARNING),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');

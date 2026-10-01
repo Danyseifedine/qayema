@@ -177,17 +177,20 @@ class RestaurantContentPolicyTest extends TestCase
         $this->assertTrue($second->user->can('update', $dish));
     }
 
-    public function test_an_owner_whose_restaurant_is_deleted_loses_access_to_its_rows(): void
+    public function test_an_account_without_a_restaurant_reaches_no_rows(): void
     {
+        // Someone still setting up has no restaurant; a deleted restaurant
+        // takes its owner's account with it, so that account is gone.
         $restaurant = $this->owner();
         $owner = $restaurant->user;
         $category = $this->rowOf(Category::class, $restaurant);
-        $restaurant->delete();
-        $owner->refresh();
+        $settingUp = $this->userWithoutRestaurant();
 
-        $this->assertNull($owner->restaurant);
-        $this->assertFalse($owner->can('update', $category));
-        $this->assertFalse($owner->can('create', Category::class));
+        $this->assertFalse($settingUp->can('update', $category));
+        $this->assertFalse($settingUp->can('create', Category::class));
+
+        $restaurant->delete();
+        $this->assertModelMissing($owner);
     }
 
     public function test_ownership_is_judged_by_restaurant_id_not_by_user_id(): void

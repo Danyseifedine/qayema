@@ -287,7 +287,7 @@ class RestaurantAdminEdgeTest extends TestCase
         $this->assertSame('Kept', $restaurant->fresh()->getTranslation('name', 'en'));
     }
 
-    public function test_the_delete_header_action_removes_the_restaurant(): void
+    public function test_the_delete_header_action_removes_the_restaurant_and_its_owner(): void
     {
         $restaurant = $this->owner();
         $this->actingAs($this->admin());
@@ -296,7 +296,7 @@ class RestaurantAdminEdgeTest extends TestCase
             ->callAction('delete');
 
         $this->assertDatabaseMissing('restaurants', ['id' => $restaurant->id]);
-        $this->assertDatabaseHas('users', ['id' => $restaurant->user_id]);
+        $this->assertDatabaseMissing('users', ['id' => $restaurant->user_id]);
     }
 
     public function test_create_requires_an_owner_a_name_and_a_slug(): void

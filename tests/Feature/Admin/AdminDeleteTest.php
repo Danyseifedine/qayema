@@ -78,6 +78,7 @@ class AdminDeleteTest extends TestCase
 
         Livewire::test(ListUsers::class)->callAction(TestAction::make('delete')->table($user));
 
+        // Each side deletes the other once, never in a loop.
         $this->assertModelMissing($user);
         $this->assertModelMissing($restaurant);
         $this->assertModelMissing($dish);
@@ -87,33 +88,61 @@ class AdminDeleteTest extends TestCase
         }
     }
 
-    public function test_deleting_a_menu_keeps_the_owner_and_clears_the_rest(): void
+    public function test_deleting_a_restaurant_deletes_its_owners_account_too(): void
     {
         [$restaurant, $logo, $dish, $photo, $order] = $this->fullMenu();
+        $owner = $restaurant->user;
         $files = [$logo->getPath(), $photo->getPath()];
 
         Livewire::test(ListRestaurants::class)->callAction(TestAction::make('delete')->table($restaurant));
 
         $this->assertModelMissing($restaurant);
+        $this->assertModelMissing($owner);
         $this->assertModelMissing($dish);
         $this->assertModelMissing($order);
         $this->assertSame(0, RestaurantSocialLink::query()->count());
-        $this->assertModelExists($restaurant->user);
         foreach ($files as $file) {
             $this->assertFileDoesNotExist($file);
         }
+    }
+
+    public function test_the_edit_page_deletes_the_owner_too_and_says_so(): void
+    {
+        [$restaurant] = $this->fullMenu();
+        $owner = $restaurant->user;
+
+        Livewire::test(EditRestaurant::class, ['record' => $restaurant->getRouteKey()])
+            ->assertActionExists('delete', fn ($action): bool => str_contains((string) $action->getModalDescription(), "the owner's account"))
+            ->callAction('delete');
+
+        $this->assertModelMissing($restaurant);
+        $this->assertModelMissing($owner);
+    }
+
+    public function test_an_admins_account_is_never_deleted_with_a_restaurant(): void
+    {
+        $admin = $this->admin();
+        $restaurant = $this->owner(['user_id' => $admin->id]);
+
+        $restaurant->delete();
+
+        $this->assertModelMissing($restaurant);
+        $this->assertModelExists($admin);
     }
 
     public function test_menus_deleted_together_still_take_their_photos(): void
     {
         [$first, , , $photo] = $this->fullMenu();
         [$second] = $this->fullMenu();
+        $owners = [$first->user, $second->user];
 
         Livewire::test(ListRestaurants::class)
             ->selectTableRecords([$first->getKey(), $second->getKey()])
             ->callAction(TestAction::make('delete')->table()->bulk());
 
         $this->assertSame(0, Restaurant::query()->count());
+        $this->assertModelMissing($owners[0]);
+        $this->assertModelMissing($owners[1]);
         $this->assertSame(0, Media::query()->count());
         $this->assertFileDoesNotExist($photo->getPath());
     }

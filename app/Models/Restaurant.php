@@ -71,6 +71,9 @@ class Restaurant extends Model implements HasMedia
      */
     public ?string $packageChangeNote = null;
 
+    /** Set while the owner's account deletes this restaurant; never stored. */
+    public bool $ownerIsBeingDeleted = false;
+
     /**
      * What the package put in reach before the package fields changed, read
      * as the save starts; never stored on the row.
@@ -147,6 +150,21 @@ class Restaurant extends Model implements HasMedia
         // and cover go with it through the media library.
         static::deleting(function (self $restaurant): void {
             $restaurant->dishes()->get()->each->delete();
+        });
+
+        // A restaurant and its owner's account go together: an owner without
+        // a restaurant has nothing to sign in to. An admin's account is never
+        // deleted this way.
+        static::deleted(function (self $restaurant): void {
+            if ($restaurant->ownerIsBeingDeleted) {
+                return;
+            }
+
+            $owner = User::query()->find($restaurant->user_id);
+
+            if ($owner !== null && ! $owner->isAdmin()) {
+                $owner->delete();
+            }
         });
 
         static::created(function (self $restaurant): void {

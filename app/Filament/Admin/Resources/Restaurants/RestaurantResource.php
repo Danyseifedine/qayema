@@ -39,6 +39,9 @@ class RestaurantResource extends Resource
         return RestaurantsTable::configure($table);
     }
 
+    /** What deleting a restaurant takes with it, for every delete button. */
+    public const DELETE_WARNING = 'This deletes the menu and the owner\'s account for good: every category, dish and photo, the logo and cover, social links, orders, statistics and package history, and the account they sign in with. This cannot be undone.';
+
     public static function getRelations(): array
     {
         return [

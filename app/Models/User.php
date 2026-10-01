@@ -59,7 +59,14 @@ class User extends Authenticatable implements FilamentUser
         // its images: going through the model lets the media library remove
         // the logo, cover and every dish photo from storage.
         static::deleting(function (self $user): void {
-            $user->restaurant?->delete();
+            $restaurant = $user->restaurant;
+
+            if ($restaurant !== null) {
+                // This account is already on its way out; the restaurant must
+                // not try to delete it a second time.
+                $restaurant->ownerIsBeingDeleted = true;
+                $restaurant->delete();
+            }
         });
     }
 
