@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'failed' => 'These credentials do not match our records.',
+    'failed' => 'The email or password is not correct.',
     'throttle' => 'Too many login attempts. Please try again in :seconds seconds.',
     'google_no_email' => 'Google did not share an email address for this account, so we cannot sign you in with it.',
     'google_only' => 'This account uses Google sign-in. Please use the "Continue with Google" button above.',

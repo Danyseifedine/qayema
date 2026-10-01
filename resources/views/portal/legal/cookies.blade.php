@@ -4,7 +4,6 @@
     $isAr = app()->getLocale() === 'ar';
 @endphp
 
-@section('title', 'Cookie Policy')
 @section('eyebrow', 'Legal')
 @section('eyebrow_ar', 'قانوني')
 @section('headline_plain', 'Cookie')
@@ -130,7 +129,7 @@
 
 <p>We do not use analytics cookies or third-party analytics tools, and we do not track how you use the dashboard. Nothing here is used to follow anyone across websites.</p>
 
-<p>On public menu pages, statistics are recorded on our server rather than in a separate cookie. Each menu view is recorded with the session identifier from the session cookie above (or, without a session, a one-way hash of the IP address and browser; the IP address itself is not stored), the device type, browser name, operating system, menu language, whether the visit came through the menu's QR code, and the time. Some guest actions are recorded with the same identifier: adding a dish to the cart, opening a category, searches (including ones that found nothing), taps on the WhatsApp, map, call and social links, and switching language. The restaurant's owner sees these records as statistics; they are deleted after 6 months, and owners previewing their own menu are not recorded. See our <a href="{{ route('privacy') }}">Privacy Policy</a> for details.</p>
+<p>On public menu pages, statistics are recorded on our server rather than in a separate cookie. Each menu view is recorded with the session identifier from the session cookie above (or, without a session, a one-way hash of the IP address and browser; the IP address itself is not stored), the device type, browser name, operating system, menu language, whether the visit came through the menu's QR code, and the time. Some guest actions are recorded with the same identifier: adding a dish to the cart, opening a category, searches (including ones that found nothing), taps on the WhatsApp, map, call and social links, and switching language. The restaurant's owner sees these records as statistics; they are deleted after 6 months, and owners previewing their own menu are not recorded. See our <a href="{{ \App\Support\PortalUrl::to('privacy') }}">Privacy Policy</a> for details.</p>
 
 <h2 id="third">Third-party cookies</h2>
 
@@ -173,7 +172,7 @@
 @if ($isAr)
 
 <div class="legal-highlight">
-    <p>تشرح سياسة ملفات تعريف الارتباط هذه كيف تستخدم قائمة، التي تشغّلها مجموعة ليبيفاي، ملفات تعريف الارتباط والتقنيات المماثلة على qayema.com وصفحات القوائم العامة التي نستضيفها للمطاعم. باستخدامك لخدمتنا، فإنك توافق على استخدام ملفات تعريف الارتباط كما هو موضح هنا.</p>
+    <p>تشرح سياسة ملفات تعريف الارتباط هذه كيف تستخدم Qayema، التي تشغّلها مجموعة ليبيفاي، ملفات تعريف الارتباط والتقنيات المماثلة على qayema.com وصفحات القوائم العامة التي نستضيفها للمطاعم. باستخدامك لخدمتنا، فإنك توافق على استخدام ملفات تعريف الارتباط كما هو موضح هنا.</p>
 </div>
 
 <h2 id="what-ar">ما هي ملفات تعريف الارتباط</h2>
@@ -261,11 +260,11 @@
 
 <p>لا نستخدم ملفات ارتباط تحليلية أو أدوات تحليل من أطراف ثالثة، ولا نتتبّع كيفية استخدامك للوحة التحكم. ولا يُستخدم أي مما سبق لتتبّع أحد عبر المواقع.</p>
 
-<p>في صفحات القوائم العامة، تُسجَّل الإحصاءات على خادمنا وليس في ملف ارتباط منفصل. تُسجَّل كل مشاهدة للقائمة مع معرّف الجلسة المأخوذ من ملف ارتباط الجلسة أعلاه (أو، عند عدم وجود جلسة، تجزئة أحادية الاتجاه لعنوان IP والمتصفح؛ ولا يُخزَّن عنوان IP نفسه)، ونوع الجهاز واسم المتصفح ونظام التشغيل ولغة القائمة وما إذا جاءت الزيارة عبر رمز QR الخاص بالقائمة ووقتها. وتُسجَّل بعض أفعال الضيوف بالمعرّف نفسه: إضافة طبق إلى السلة، وفتح فئة، وعمليات البحث (بما فيها التي لم تجد نتيجة)، والنقر على روابط WhatsApp والخريطة والاتصال ومواقع التواصل، وتبديل اللغة. يرى صاحب المطعم هذه السجلات على شكل إحصاءات، وتُحذف بعد 6 أشهر، ولا تُسجَّل معاينة أصحاب المطاعم لقوائمهم. راجع <a href="{{ route('privacy') }}">سياسة الخصوصية</a> لمزيد من التفاصيل.</p>
+<p>في صفحات القوائم العامة، تُسجَّل الإحصاءات على خادمنا وليس في ملف ارتباط منفصل. تُسجَّل كل مشاهدة للقائمة مع معرّف الجلسة المأخوذ من ملف ارتباط الجلسة أعلاه (أو، عند عدم وجود جلسة، تجزئة أحادية الاتجاه لعنوان IP والمتصفح؛ ولا يُخزَّن عنوان IP نفسه)، ونوع الجهاز واسم المتصفح ونظام التشغيل ولغة القائمة وما إذا جاءت الزيارة عبر رمز QR الخاص بالقائمة ووقتها. وتُسجَّل بعض أفعال الضيوف بالمعرّف نفسه: إضافة طبق إلى السلة، وفتح فئة، وعمليات البحث (بما فيها التي لم تجد نتيجة)، والنقر على روابط WhatsApp والخريطة والاتصال ومواقع التواصل، وتبديل اللغة. يرى صاحب المطعم هذه السجلات على شكل إحصاءات، وتُحذف بعد 6 أشهر، ولا تُسجَّل معاينة أصحاب المطاعم لقوائمهم. راجع <a href="{{ \App\Support\PortalUrl::to('privacy') }}">سياسة الخصوصية</a> لمزيد من التفاصيل.</p>
 
 <h2 id="third-ar">ملفات الارتباط من الأطراف الثالثة</h2>
 
-<p>بعض ميزات قائمة تحمّل خدمات من أطراف ثالثة قد تضع ملفات الارتباط الخاصة بها أو تسجّل بيانات الطلبات:</p>
+<p>بعض ميزات Qayema تحمّل خدمات من أطراف ثالثة قد تضع ملفات الارتباط الخاصة بها أو تسجّل بيانات الطلبات:</p>
 
 <ul>
     <li><strong>خطوط Google:</strong> تُستخدم لتحميل الخطوط المعروضة في الموقع ولوحة التحكم والقوائم. قد تسجّل Google بيانات تعريفية للطلبات. راجع <a href="https://policies.google.com/privacy" target="_blank">سياسة خصوصية Google</a>.</li>
@@ -293,7 +292,7 @@
 
 <h2 id="changes-ar">التغييرات على هذه السياسة</h2>
 
-<p>قد نحدّث سياسة ملفات تعريف الارتباط هذه لتعكس التغييرات في ممارساتنا أو القانون المعمول به. عند إجراء تغييرات جوهرية، سنحدّث تاريخ "آخر تحديث" في أعلى هذه الصفحة. يُعدّ استمرار استخدامك لقائمة بعد التغييرات قبولاً للسياسة المحدّثة.</p>
+<p>قد نحدّث سياسة ملفات تعريف الارتباط هذه لتعكس التغييرات في ممارساتنا أو القانون المعمول به. عند إجراء تغييرات جوهرية، سنحدّث تاريخ "آخر تحديث" في أعلى هذه الصفحة. يُعدّ استمرار استخدامك لـQayema بعد التغييرات قبولاً للسياسة المحدّثة.</p>
 
 <h2 id="contact-ar">تواصل معنا</h2>
 

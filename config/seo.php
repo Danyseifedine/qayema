@@ -4,19 +4,32 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | SEO Default Settings
+    | Search and sharing
     |--------------------------------------------------------------------------
     |
-    | The portal's <head> tags (App\View\Components\Seo), for Qayema by
-    | Lebify Group. Each page names its own title and description.
+    | The public pages' <head> tags (App\View\Components\Seo) and structured
+    | data (App\Services\Portal\StructuredData). Each page names its own
+    | title and description, in its language; the product is Qayema, made by
+    | Lebify Group.
     |
     */
 
-    'default_author' => 'Lebify Group',
+    'site_name' => 'Qayema',
 
     'title_separator' => '|',
 
-    'keywords' => 'Qayema, Lebify, Lebify Group, Lebify team, digital menu, restaurant menu, online menu, menu creator, food menu, Lebanon, Barja',
+    // The image a link shows when shared (WhatsApp, Facebook, X), 1200 x 630,
+    // one per language. Made from resources/og/card.html.
+    'images' => [
+        'en' => 'images/og/qayema-en.jpg',
+        'ar' => 'images/og/qayema-ar.jpg',
+    ],
+
+    // Open Graph wants a territory with the language.
+    'og_locales' => [
+        'en' => 'en_US',
+        'ar' => 'ar_AR',
+    ],
 
     // Optional: a Twitter/X handle for the twitter:site and twitter:creator tags.
     'twitter_username' => env('TWITTER_USERNAME'),
@@ -25,34 +38,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Organization Information (Schema.org)
+    | The company (schema.org Organization)
     |--------------------------------------------------------------------------
-    |
-    | The landing page's Organization structured data, and the site name in
-    | every page's title.
-    |
     */
 
     'organization' => [
         'name' => 'Lebify Group',
-        'url' => env('APP_URL', 'http://localhost'),
-        'logo' => env('APP_URL', 'http://localhost').'/images/logo/logo.png',
-        'description' => [
-            'en' => 'Lebify Group builds Qayema: bilingual digital menus for restaurants, shared as a QR code. Free to start, easy to use. Based in Lebanon.',
-        ],
         'contact' => [
-            '@type' => 'ContactPoint',
             'telephone' => '+96103004699',
             'email' => env('CONTACT_PUBLIC_EMAIL', 'dany.a.seifeddine@gmail.com'),
-            'contactType' => 'Customer Service',
-            'areaServed' => 'LB',
-            'address' => [
-                '@type' => 'PostalAddress',
-                'addressLocality' => 'Barja',
-                'addressCountry' => 'Lebanon',
-            ],
-            'availableLanguage' => ['English', 'Arabic'],
         ],
+        'address' => [
+            'locality' => 'Barja',
+            'country' => 'LB',
+        ],
+        // Lebanon first, and the Arab countries the Arabic pages speak to.
+        'area_served' => ['LB', 'SA', 'AE', 'KW', 'QA', 'BH', 'OM', 'JO', 'IQ', 'SY', 'EG'],
+        // Profiles that are the company's own, as full URLs, when there are any.
         'social_links' => [],
     ],
 

@@ -43,6 +43,9 @@
         border-radius: 22px;
         text-align: center;
         text-decoration: none;
+        /* The card is a fixed width, so a long word (a name, a link, a row
+           of letters) breaks inside it rather than running off the edge. */
+        overflow-wrap: anywhere;
         box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 18px 44px rgba(0,0,0,.12);
     }
     .card.theme-light { background: #FFFFFF; color: #111418; border: 1px solid #E5E7EB; --muted: #6B7280; }

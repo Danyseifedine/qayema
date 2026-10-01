@@ -186,6 +186,7 @@ protected function isAccessible(User $user, ?string $path = null): bool
 
 ### Models
 - Casts can and likely should be set in a `casts()` method on a model rather than the `$casts` property. Follow existing conventions from other models.
+- Cast every integer column, foreign keys included (`'template_id' => 'integer'`), and `(int)` every count or aggregate a response sends. The production MySQL driver returns them as strings, which the dashboard's schemas reject and which fail `===` ownership checks. `IntegerCastsTest` fails on an uncast column.
 
 
 === livewire/core rules ===
@@ -726,6 +727,32 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
   (`switchOnWhatCameIntoReach()`, from the restaurant's and the grant's save
   hooks); one the old package already had keeps the owner's choice.
 - Locale middleware alias is `portal.locale`; the session key stays `owner_locale`.
+- **Search (SEO).** The public pages (home, contact, the four legal pages)
+  live once per language: English at the root, Arabic under `/ar`
+  (`App\Support\PortalUrl`; routes `privacy` and `ar.privacy`). The address
+  decides the language (`portal.locale:ar`) and is remembered for the sign-in
+  pages; a remembered Arabic choice sends only the English home to `/ar`.
+  Links between public pages go through `PortalUrl::to()`, the language
+  switch through `PortalUrl::switchTo()`. Never decide a public page's
+  language from the session alone: crawlers carry none, which once left
+  Arabic invisible to Google. `ar`, `sitemap` and `robots` are reserved slugs.
+- `<x-seo>` builds every portal head: "Page | Qayema" (once), the canonical
+  address, the hreflang twins, the sharing image per language
+  (`public/images/og/qayema-{en,ar}.jpg`, made from `resources/og/card.html`),
+  and the schema.org data (`App\Services\Portal\StructuredData`: product,
+  packages as offers, FAQ on home; a breadcrumb elsewhere). Sign-in, password
+  and onboarding pages are `noindex`. `/robots.txt` and `/sitemap.xml` come
+  from `SeoController` (no static robots.txt in public/). In production every
+  generated address is pinned to the main address (`App\Support\SiteAddress`:
+  `APP_URL` without "www.", even when `APP_URL` names www), and a GET to
+  `www.` moves there with a 301 (`RedirectToMainAddress`, first in the web
+  group), so `www.` never splits a page in two.
+- A menu's head comes from `App\Services\Menu\MenuSeo` through
+  `menu.partials.seo` (every menu design includes it): ":name: menu and
+  prices" in the menu's language, one address per language (the opening
+  language is the bare link), and Restaurant + Menu schema.org data with
+  every available dish and price. A preview or an empty menu is `noindex`.
+  On Arabic pages the brand is written "Qayema" in Latin letters.
 - API requests take their language from `Accept-Language` (`SetApiLocale`,
   first in the `api` group so even a 401 is translated), limited to
   `locales.supported`. Arabic API text: `lang/ar.json` and

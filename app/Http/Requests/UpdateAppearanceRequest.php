@@ -65,7 +65,7 @@ class UpdateAppearanceRequest extends FormRequest
 
             $keys = array_column($restaurant->menuTemplate()?->editableSettings() ?? [], 'key');
             foreach (array_diff(array_keys((array) $this->input('settings', [])), $keys) as $key) {
-                $validator->errors()->add("settings.{$key}", __('This template has no :key setting.', ['key' => $key]));
+                $validator->errors()->add("settings.{$key}", __('This design does not have that setting.', ['key' => $key]));
             }
 
             $scripts = array_keys(MenuFonts::scripts($restaurant));

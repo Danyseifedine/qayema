@@ -15,7 +15,46 @@ class LocaleTest extends TestCase
         $this->get(route('locale.switch', 'ar'))->assertRedirect(route('login'));
 
         $this->assertSame('ar', session('owner_locale'));
-        $this->get('/')->assertSee('dir="rtl"', false);
+        // Someone who chose Arabic and types qayema.com lands on /ar.
+        $this->get('/')->assertRedirect(url('/ar'));
+        $this->get('/ar')->assertOk()->assertSee('dir="rtl"', false);
+    }
+
+    public function test_the_switch_on_a_public_page_leads_to_its_twin(): void
+    {
+        $this->get(route('locale.switch', ['locale' => 'ar', 'to' => '/ar/contact']))
+            ->assertRedirect('/ar/contact');
+        $this->assertSame('ar', session('owner_locale'));
+
+        $this->get(route('locale.switch', ['locale' => 'en', 'to' => '/']))->assertRedirect('/');
+        $this->get('/')->assertOk()->assertSee('lang="en"', false);
+    }
+
+    public function test_the_switch_never_leads_off_the_site(): void
+    {
+        foreach (['https://evil.example/phish', '//evil.example', '/\\evil.example', '/ar/../../x', 'javascript:alert(1)'] as $to) {
+            $this->get(route('locale.switch', ['locale' => 'ar', 'to' => $to]))
+                ->assertRedirect(route('login'));
+        }
+    }
+
+    public function test_an_arabic_page_remembers_arabic_for_the_sign_in_pages(): void
+    {
+        $this->get('/ar/contact')->assertOk();
+
+        $this->get(route('login'))->assertOk()->assertSee('lang="ar"', false);
+    }
+
+    public function test_a_visitor_with_no_choice_gets_the_page_asked_for(): void
+    {
+        // As a search engine visits: no session, no redirect.
+        $this->get('/')->assertOk()->assertSee('lang="en"', false);
+        $this->get('/ar')->assertOk()->assertSee('lang="ar"', false);
+    }
+
+    public function test_ar_can_never_be_a_restaurant_link(): void
+    {
+        $this->assertContains('ar', \App\Models\Restaurant::RESERVED_SLUGS);
     }
 
     public function test_an_unsupported_locale_is_ignored(): void

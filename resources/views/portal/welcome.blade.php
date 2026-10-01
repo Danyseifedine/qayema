@@ -51,7 +51,10 @@
     <span class="hero-blob b3"></span>
 
     <div class="wrap hero-center">
-      <h1 class="display">{!! __('portal.hero.title') !!}</h1>
+      {{-- The kicker is part of the heading so search engines read the words
+           owners search for ("digital QR code menu", "منيو إلكتروني") as the
+           page's subject, while the slogan stays the big line. --}}
+      <h1 class="display"><span class="hero-kicker mono-label">{{ __('portal.hero.kicker') }}</span>{!! __('portal.hero.title') !!}</h1>
       <p class="hero-sub">{{ __('portal.hero.sub') }}</p>
 
       @auth
@@ -227,7 +230,7 @@
                  goes to the contact form. Every other one starts with an
                  account; a paid package is then asked for from the dashboard. --}}
             @if ($card['contact'])
-              <a class="btn btn-line" data-magnetic href="{{ route('contact') }}">{{ __('portal.pricing.cta_contact') }}</a>
+              <a class="btn btn-line" data-magnetic href="{{ \App\Support\PortalUrl::to('contact') }}">{{ __('portal.pricing.cta_contact') }}</a>
             @else
               <a class="btn {{ $card['featured'] ? 'btn-gold' : 'btn-line' }}" data-magnetic href="{{ $ctaAuthedHref ?? route('register') }}">
                 {{ $ctaAuthedLabel ?? ($card['free'] ? __('portal.pricing.cta_free') : __('portal.pricing.cta_choose', ['name' => $card['name']])) }}

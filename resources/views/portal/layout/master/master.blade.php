@@ -13,7 +13,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="csrf-token" content="{{ csrf_token() }}" />
 
-    <x-seo :title="$seoTitle ?? __('portal.seo.title')" :description="$seoDescription ?? __('portal.seo.description')" />
+    <x-seo :title="$seoTitle ?? __('portal.seo.title')" :description="$seoDescription ?? __('portal.seo.description')" :robots="$seoRobots ?? null" />
 
     <link
         href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&family=El+Messiri:wght@400;500;600;700&display=swap"
@@ -30,7 +30,7 @@
     @endif
 
     <script>
-        {{-- language + direction are server-rendered (session locale); only theme is client-side --}}
+        {{-- language + direction are server-rendered (from the address on public pages); only theme is client-side --}}
             (function() {
                 try {
                     // Dark unless the visitor chose light.

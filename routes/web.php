@@ -6,21 +6,55 @@ use App\Http\Controllers\PublicMenuController;
 use App\Http\Controllers\PublicMenuEventController;
 use App\Http\Controllers\PublicOrderController;
 use App\Http\Controllers\QrCardController;
+use App\Http\Controllers\SeoController;
 use App\Http\Controllers\TempUploadController;
 use App\Http\Middleware\EnsureUserIsAdmin;
+use App\Support\PortalUrl;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('portal.welcome');
-})->middleware('portal.locale');
+// The public pages, once per language: English at the root, Arabic under
+// /ar, so search engines index each (App\Support\PortalUrl). The address
+// decides the language.
+foreach (PortalUrl::LOCALES as $locale) {
+    $root = $locale === PortalUrl::LOCALES[0];
 
-// Guest-accessible locale switch (persists through login)
+    Route::middleware("portal.locale:{$locale}")
+        ->prefix($root ? '' : $locale)
+        ->name($root ? '' : "{$locale}.")
+        ->group(function () {
+            Route::get('/', fn () => view('portal.welcome'))->name('home');
+            Route::get('/privacy-policy', fn () => view('portal.legal.privacy'))->name('privacy');
+            Route::get('/terms-of-service', fn () => view('portal.legal.terms'))->name('terms');
+            Route::get('/cookie-policy', fn () => view('portal.legal.cookies'))->name('cookies');
+            Route::get('/refund-policy', fn () => view('portal.legal.refund'))->name('refund');
+            Route::get('/contact', [ContactController::class, 'show'])->name('contact');
+        });
+}
+
+Route::post('/contact', [ContactController::class, 'store'])
+    ->middleware(['portal.locale', 'throttle:contact'])
+    ->name('contact.store');
+
+// What search engines read first: the rules, then every page worth indexing.
+Route::get('/robots.txt', [SeoController::class, 'robots'])->name('robots');
+Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('sitemap');
+
+// Remembers a language for the pages without one in their address (sign-in,
+// onboarding). From a public page, `to` is the same page in that language.
 Route::middleware(['portal.locale'])->group(function () {
     Route::get('/locale/{locale}', function (string $locale) {
         if (in_array($locale, config('locales.supported', ['en']), true)) {
             session()->put('owner_locale', $locale);
             session()->save();
         }
+
+        // Only a plain path on this site: no full address, no "//elsewhere",
+        // no backslash (which browsers read as a slash).
+        $to = (string) request()->query('to', '');
+        if (preg_match('#^/(?:[a-z0-9_-]+(?:/[a-z0-9_-]+)*)?$#i', $to) === 1) {
+            return redirect($to);
+        }
+
         $referer = request()->headers->get('referer', '');
         $appUrl = rtrim(config('app.url'), '/');
         $target = ($referer && str_starts_with($referer, $appUrl)) ? $referer : route('login');
@@ -46,17 +80,6 @@ Route::middleware(['auth', 'portal.locale'])->group(function () {
     Route::post('/temp-upload', [TempUploadController::class, 'store'])
         ->middleware(['throttle:mutations', 'throttle:uploads'])
         ->name('temp-upload');
-});
-
-// Legal + contact (public portal pages); locale resolved from session
-Route::middleware('portal.locale')->group(function () {
-    Route::get('/privacy-policy', fn () => view('portal.legal.privacy'))->name('privacy');
-    Route::get('/terms-of-service', fn () => view('portal.legal.terms'))->name('terms');
-    Route::get('/cookie-policy', fn () => view('portal.legal.cookies'))->name('cookies');
-    Route::get('/refund-policy', fn () => view('portal.legal.refund'))->name('refund');
-
-    Route::get('/contact', [ContactController::class, 'show'])->name('contact');
-    Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:contact')->name('contact.store');
 });
 
 // Public, shareable QR table card (qr_studio owners only; 404 otherwise).

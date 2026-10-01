@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\Security\AbuseGuard;
+use App\Support\SiteAddress;
 use Closure;
 use Illuminate\Auth\SessionGuard;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -11,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Lab404\Impersonate\Events\LeaveImpersonation;
 use Lab404\Impersonate\Events\TakeImpersonation;
@@ -39,6 +41,27 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureRateLimiters();
         $this->keepImpersonationSignedIn();
+        $this->pinTheSiteAddress();
+    }
+
+    /**
+     * In production every link, canonical address, schema.org URL and
+     * sitemap entry names the one site address (APP_URL without "www."),
+     * however a visitor arrived, so a search engine never sees two copies
+     * of a page.
+     */
+    private function pinTheSiteAddress(): void
+    {
+        if (! $this->app->isProduction()) {
+            return;
+        }
+
+        $root = SiteAddress::root();
+        URL::forceRootUrl($root);
+
+        if (str_starts_with($root, 'https://')) {
+            URL::forceScheme('https');
+        }
     }
 
     /**

@@ -34,8 +34,10 @@ $app = Application::configure(basePath: dirname(__DIR__))
         // is appended so it runs *after* the session starts; that's what lets its
         // admin bypass see the authenticated user (a prepended copy would run before
         // StartSession, where auth()->user() is always null and the bypass is dead).
+        // RedirectToMainAddress comes first: a www. visit moves to the main
+        // address before anything else runs (production only).
         $middleware->web(
-            prepend: [\App\Http\Middleware\SecurityHeaders::class],
+            prepend: [\App\Http\Middleware\RedirectToMainAddress::class, \App\Http\Middleware\SecurityHeaders::class],
             append: [\App\Http\Middleware\BlockAbusiveIps::class],
         );
 
@@ -79,13 +81,13 @@ $app = Application::configure(basePath: dirname(__DIR__))
             }
 
             if ($e instanceof AuthenticationException) {
-                return response()->json(['message' => __('Unauthenticated.'), 'code' => 'unauthenticated'], 401);
+                return response()->json(['message' => __('Please sign in again.'), 'code' => 'unauthenticated'], 401);
             }
 
             if ($e instanceof TokenMismatchException) {
                 // The SPA re-primes its token from /api/csrf-token on this code.
                 return response()->json([
-                    'message' => __('Your session has expired. Please refresh and try again.'),
+                    'message' => __('This page was open for too long. Refresh it and try again.'),
                     'code' => 'csrf_expired',
                 ], 419);
             }
@@ -94,7 +96,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
                 $headers = $e->getHeaders();
 
                 return response()->json([
-                    'message' => __('Too many requests. Please slow down.'),
+                    'message' => __('Too many tries in a short time. Wait a moment and try again.'),
                     'code' => 'too_many_requests',
                     'retry_after' => isset($headers['Retry-After']) ? (int) $headers['Retry-After'] : null,
                 ], 429, $headers);
@@ -119,7 +121,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
 
                 if ($status === 419 || $previous instanceof TokenMismatchException) {
                     return response()->json([
-                        'message' => __('Your session has expired. Please refresh and try again.'),
+                        'message' => __('This page was open for too long. Refresh it and try again.'),
                         'code' => 'csrf_expired',
                     ], 419);
                 }
@@ -132,10 +134,11 @@ $app = Application::configure(basePath: dirname(__DIR__))
                 };
 
                 $fallback = match ($status) {
-                    403 => __('This action is not allowed.'),
-                    404 => __('Not found.'),
-                    405 => __('Method not allowed.'),
-                    default => Response::$statusTexts[$status] ?? __('Request failed.'),
+                    403 => __('You do not have access to this.'),
+                    404 => __('We could not find that. It may have been deleted.'),
+                    405 => __('That cannot be done here.'),
+                    // Not the HTTP reason phrase ("Unprocessable Content"): an owner reads this.
+                    default => __('Something went wrong. Please try again.'),
                 };
 
                 // Never echo "No query results for model [App\\Models\\X]".

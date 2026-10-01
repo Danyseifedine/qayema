@@ -32,8 +32,8 @@ class SelectTemplateRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'template_id.required' => __('Please choose a template.'),
-            'template_id.exists' => __('That template is not available.'),
+            'template_id.required' => __('Please choose a design.'),
+            'template_id.exists' => __('That design is not available.'),
         ];
     }
 }

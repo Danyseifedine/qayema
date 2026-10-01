@@ -322,8 +322,11 @@ class MediaService
 
     private function ensureDir(string $dir): void
     {
-        if (! is_dir($dir)) {
-            mkdir($dir, 0755, true);
+        // Two uploads at once can both see no folder; the second mkdir then
+        // fails with "File exists" although the folder is there. Only a
+        // folder that is still missing afterwards is a real failure.
+        if (! is_dir($dir) && ! @mkdir($dir, 0755, true) && ! is_dir($dir)) {
+            throw new \RuntimeException("Could not create the folder {$dir}.");
         }
     }
 

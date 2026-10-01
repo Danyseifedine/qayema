@@ -75,8 +75,7 @@ class LandingContentTest extends TestCase
 
     public function test_the_arabic_page_uses_the_arabic_packages(): void
     {
-        $this->withSession(['owner_locale' => 'ar'])
-            ->get('/')
+        $this->get('/ar')
             ->assertOk()
             ->assertSee('مميّز')
             ->assertSee('150 طبقاً')

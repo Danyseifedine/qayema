@@ -57,6 +57,6 @@ class ApiLocaleTest extends TestCase
     {
         $this->getJson(route('api.user'), ['Accept-Language' => 'ar'])
             ->assertUnauthorized()
-            ->assertJsonPath('message', 'يجب تسجيل الدخول.');
+            ->assertJsonPath('message', 'يرجى تسجيل الدخول مجدداً.');
     }
 }

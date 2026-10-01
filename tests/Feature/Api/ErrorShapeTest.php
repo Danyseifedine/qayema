@@ -22,7 +22,7 @@ class ErrorShapeTest extends TestCase
     {
         $this->getJson(route('api.user'))
             ->assertStatus(401)
-            ->assertExactJson(['message' => 'Unauthenticated.', 'code' => 'unauthenticated']);
+            ->assertExactJson(['message' => 'Please sign in again.', 'code' => 'unauthenticated']);
 
         // Even without an Accept header, api/* never redirects to the login page.
         $this->get('/api/user')
@@ -47,7 +47,7 @@ class ErrorShapeTest extends TestCase
             ->deleteJson(route('api.categories.destroy', 999999))
             ->assertStatus(404)
             ->assertJsonPath('code', 'not_found')
-            ->assertJsonPath('message', 'Not found.');
+            ->assertJsonPath('message', 'We could not find that. It may have been deleted.');
     }
 
     public function test_a_foreign_record_is_a_json_403(): void

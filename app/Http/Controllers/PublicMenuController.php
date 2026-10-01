@@ -7,6 +7,7 @@ use App\Models\Template;
 use App\Services\Analytics\MenuVisitRecorder;
 use App\Services\Menu\MapPoint;
 use App\Services\Menu\MenuLanguages;
+use App\Services\Menu\MenuSeo;
 use App\Services\Menu\OpeningHours;
 use App\Services\Orders\WhatsAppLink;
 use Illuminate\Http\Request;
@@ -24,7 +25,10 @@ use Illuminate\View\View;
  */
 class PublicMenuController extends Controller
 {
-    public function __construct(private readonly MenuVisitRecorder $visits) {}
+    public function __construct(
+        private readonly MenuVisitRecorder $visits,
+        private readonly MenuSeo $seo,
+    ) {}
 
     public function show(Request $request, Restaurant $restaurant): View
     {
@@ -92,6 +96,7 @@ class PublicMenuController extends Controller
             // Ordering is a package feature, and a preview is a dress
             // rehearsal; neither should take a real order.
             'can_order' => ! $preview && $restaurant->takesOrders(),
+            'seo' => $this->seo->for($restaurant, $locale, $preview !== null),
         ]);
     }
 

@@ -2,8 +2,9 @@
 
 @php
     $isAr = app()->getLocale() === 'ar';
-    $pageTitle = trim($__env->yieldContent('title'));
-    $seoTitle = $pageTitle !== '' ? $pageTitle.' | Qayema' : null;
+    $page = \App\Support\PortalUrl::current();
+    $seoTitle = __("portal.seo.pages.{$page}.title");
+    $seoDescription = __("portal.seo.pages.{$page}.description");
 @endphp
 
 @push('styles')

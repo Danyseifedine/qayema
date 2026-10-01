@@ -14,7 +14,9 @@
     $appName   = config('app.name', 'Qayema');
     $locales   = config('locales.locales');
     $currentLocale = $locales[$locale] ?? $locales['en'];
-    $seoTitle  = ($seoTitle ?? __('auth.login.eyebrow')).' | '.$appName;
+    $seoTitle  = $seoTitle ?? __('auth.login.eyebrow');
+    // Sign-in and password pages stay out of search results.
+    $seoRobots = \App\View\Components\Seo::NOINDEX;
 @endphp
 
 @push('styles')
@@ -101,9 +103,9 @@
         <div class="form-foot">
             <span>© {{ date('Y') }} {{ $appName }}</span>
             <span>
-                <a href="{{ route('privacy') }}">{{ __('auth.login.privacy') }}</a>
+                <a href="{{ \App\Support\PortalUrl::to('privacy') }}">{{ __('auth.login.privacy') }}</a>
                 <span class="dot-sep">·</span>
-                <a href="{{ route('terms') }}">{{ __('auth.login.terms') }}</a>
+                <a href="{{ \App\Support\PortalUrl::to('terms') }}">{{ __('auth.login.terms') }}</a>
             </span>
         </div>
     </section>

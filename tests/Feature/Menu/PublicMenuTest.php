@@ -76,7 +76,9 @@ class PublicMenuTest extends TestCase
         ]);
         Dish::factory()->create(['restaurant_id' => $restaurant->id, 'category_id' => $category->id, 'price' => 9]);
 
-        $html = $this->get(route('public.menu', $restaurant->slug))->assertOk()->getContent();
+        // The page as a guest sees it: the head's structured data names the
+        // categories too.
+        $html = strstr($this->get(route('public.menu', $restaurant->slug))->assertOk()->getContent(), '<body');
 
         $this->assertStringContainsString('<p>From noon onwards</p>', $html);
         $this->assertLessThan(strpos($html, 'From noon onwards'), strpos($html, '<h2>Plates</h2>'));
@@ -137,7 +139,9 @@ class PublicMenuTest extends TestCase
             ]);
         }
 
-        $html = $this->get(route('public.menu', $restaurant->slug))->assertOk()->getContent();
+        // The page as a guest sees it: the head's structured data names the
+        // categories too.
+        $html = strstr($this->get(route('public.menu', $restaurant->slug))->assertOk()->getContent(), '<body');
 
         // All comes first and is the one selected, so a guest sees the whole
         // menu before choosing to narrow it.

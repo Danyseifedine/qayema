@@ -4,7 +4,6 @@
     $isAr = app()->getLocale() === 'ar';
 @endphp
 
-@section('title', 'Terms of Service')
 @section('eyebrow', 'Legal')
 @section('eyebrow_ar', 'قانوني')
 @section('headline_plain', 'Terms of')
@@ -53,7 +52,7 @@
 
 <h2 id="acceptance">Acceptance of terms</h2>
 
-<p>By accessing or using Qayema, you represent that you are at least 18 years old and have the legal authority to agree to these Terms on behalf of yourself or your organisation. Use of the service constitutes acceptance of these Terms and our <a href="{{ route('privacy') }}">Privacy Policy</a>.</p>
+<p>By accessing or using Qayema, you represent that you are at least 18 years old and have the legal authority to agree to these Terms on behalf of yourself or your organisation. Use of the service constitutes acceptance of these Terms and our <a href="{{ \App\Support\PortalUrl::to('privacy') }}">Privacy Policy</a>.</p>
 
 <h2 id="service">The service</h2>
 
@@ -106,12 +105,12 @@
 <p>Every restaurant starts on the Free package, which has no time limit and needs no payment details. The Pro, Premium and Custom packages add higher limits and more features; what each one includes is shown on the Package page of your dashboard.</p>
 <p>Qayema does not take payments inside the service. There is no checkout, we do not ask for or keep your payment or bank details, and nothing is ever charged to you automatically. Paid packages work as follows:</p>
 <ul>
-    <li>You ask for a package from the Package page of your dashboard or through our <a href="{{ route('contact') }}">contact form</a></li>
+    <li>You ask for a package from the Package page of your dashboard or through our <a href="{{ \App\Support\PortalUrl::to('contact') }}">contact form</a></li>
     <li>Lebify Group contacts you to agree the price, the period and how you will pay, and you pay us directly as agreed</li>
     <li>Once agreed, we switch the package on for your restaurant for the agreed period, or with no end date</li>
     <li>When the period ends and is not extended, your restaurant returns to the Free package automatically. Nothing you made is deleted: content over the Free limits stays on your menu, but you cannot add more until you are back within those limits, and features that Free does not include stop working while their settings are kept for when a package that includes them is switched on again</li>
     <li>If an agreed payment is not made, we may end the package early, which returns your restaurant to the Free package in the same way</li>
-    <li>Amounts paid are non-refundable except as set out in our <a href="{{ route('refund') }}">Refund Policy</a> or as required by applicable law</li>
+    <li>Amounts paid are non-refundable except as set out in our <a href="{{ \App\Support\PortalUrl::to('refund') }}">Refund Policy</a> or as required by applicable law</li>
     <li>We may change package prices with 30 days' advance notice</li>
 </ul>
 
@@ -149,16 +148,16 @@
 @if ($isAr)
 
 <div class="legal-highlight">
-    <p>تحكم شروط الخدمة هذه ("الشروط") استخدامك لقائمة، التي تشغّلها مجموعة ليبيفاي ("نحن" أو "لنا"). بإنشائك حسابًا أو استخدامك لقائمة، فإنك توافق على هذه الشروط. إذا لم توافق، فلا تستخدم الخدمة.</p>
+    <p>تحكم شروط الخدمة هذه ("الشروط") استخدامك لـQayema، التي تشغّلها مجموعة ليبيفاي ("نحن" أو "لنا"). بإنشائك حسابًا أو استخدامك لـQayema، فإنك توافق على هذه الشروط. إذا لم توافق، فلا تستخدم الخدمة.</p>
 </div>
 
 <h2 id="acceptance-ar">قبول الشروط</h2>
 
-<p>بالوصول إلى قائمة أو استخدامها، فإنك تقرّ بأنك بلغت من العمر 18 عامًا على الأقل ولديك الصلاحية القانونية للموافقة على هذه الشروط بالنيابة عن نفسك أو مؤسستك. يُعدّ استخدام الخدمة قبولاً لهذه الشروط و<a href="{{ route('privacy') }}">سياسة الخصوصية</a>.</p>
+<p>بالوصول إلى Qayema أو استخدامها، فإنك تقرّ بأنك بلغت من العمر 18 عامًا على الأقل ولديك الصلاحية القانونية للموافقة على هذه الشروط بالنيابة عن نفسك أو مؤسستك. يُعدّ استخدام الخدمة قبولاً لهذه الشروط و<a href="{{ \App\Support\PortalUrl::to('privacy') }}">سياسة الخصوصية</a>.</p>
 
 <h2 id="service-ar">الخدمة</h2>
 
-<p>قائمة هي منصة قوائم رقمية لأصحاب المطاعم ومشغّليها. تشمل الخدمة:</p>
+<p>Qayema هي منصة قوائم رقمية لأصحاب المطاعم ومشغّليها. تشمل الخدمة:</p>
 <ul>
     <li>لوحة تحكم إلكترونية لإنشاء قائمة مطعمك الرقمية وإدارتها</li>
     <li>صفحة قائمة عامة يفتحها ضيوفك بمسح رمز QR الخاص بك أو عبر رابط مباشر</li>
@@ -170,7 +169,7 @@
 
 <p>يظهر ما تتضمنه كل باقة في صفحة الباقة في لوحة تحكمك.</p>
 
-<p>الطلبات التي تُرسل عبر قائمتك هي بين ضيوفك وبينك. لا تتقاضى قائمة أي مبلغ مقابل الطلبات، ولا تحضّرها أو توصلها، ولا ترسل رسالة WhatsApp نيابةً عن أحد.</p>
+<p>الطلبات التي تُرسل عبر قائمتك هي بين ضيوفك وبينك. لا تتقاضى Qayema أي مبلغ مقابل الطلبات، ولا تحضّرها أو توصلها، ولا ترسل رسالة WhatsApp نيابةً عن أحد.</p>
 
 <p>نحتفظ بالحق في تعديل أي جزء من الخدمة أو تعليقه أو إيقافه في أي وقت مع إشعار معقول. لن نكون مسؤولين تجاهك أو تجاه أي طرف ثالث عن أي تعديل أو تعليق أو إيقاف للخدمة.</p>
 
@@ -182,7 +181,7 @@
 
 <h2 id="acceptable-ar">الاستخدام المقبول</h2>
 
-<p>توافق على عدم استخدام قائمة من أجل:</p>
+<p>توافق على عدم استخدام Qayema من أجل:</p>
 <ul>
     <li>انتهاك أي قانون أو لائحة معمول بها</li>
     <li>رفع أو نقل أو عرض محتوى غير قانوني أو ضار أو تشهيري أو فاحش أو احتيالي</li>
@@ -198,32 +197,32 @@
 
 <h2 id="content-ar">محتواك</h2>
 
-<p>تحتفظ بملكية جميع المحتوى الذي ترفعه إلى قائمة، بما في ذلك أسماء الأطباق والأوصاف والأسعار والصور ومعلومات المطعم ("محتواك"). برفع المحتوى، تمنحنا ترخيصًا غير حصري وعالمي وبدون مقابل لتخزين محتواك وعرضه وتسليمه فقط لأغراض تشغيل الخدمة.</p>
-<p>أنت وحدك المسؤول عن محتواك. تُقرّ بأنك تمتلك جميع الحقوق اللازمة لرفع محتواك واستخدامه على قائمة. نحن لا نؤيد محتواك ولا نتحمل أي مسؤولية عنه.</p>
+<p>تحتفظ بملكية جميع المحتوى الذي ترفعه إلى Qayema، بما في ذلك أسماء الأطباق والأوصاف والأسعار والصور ومعلومات المطعم ("محتواك"). برفع المحتوى، تمنحنا ترخيصًا غير حصري وعالمي وبدون مقابل لتخزين محتواك وعرضه وتسليمه فقط لأغراض تشغيل الخدمة.</p>
+<p>أنت وحدك المسؤول عن محتواك. تُقرّ بأنك تمتلك جميع الحقوق اللازمة لرفع محتواك واستخدامه على Qayema. نحن لا نؤيد محتواك ولا نتحمل أي مسؤولية عنه.</p>
 <p>قد نزيل أي محتوى ينتهك هذه الشروط أو القانون المعمول به، دون إشعار.</p>
 
 <h2 id="payment-ar">الباقات والدفع</h2>
 
 <p>يبدأ كل مطعم على الباقة المجانية، وهي بلا مدة محددة ولا تتطلب أي بيانات دفع. تضيف باقات برو ومميّز ومخصّص حدودًا أعلى وميزات إضافية، ويظهر ما تتضمنه كل منها في صفحة الباقة في لوحة تحكمك.</p>
-<p>لا تتقاضى قائمة أي مدفوعات داخل الخدمة: لا توجد صفحة دفع، ولا نطلب بيانات الدفع أو بياناتك المصرفية ولا نحتفظ بها، ولا يُخصم منك أي مبلغ تلقائيًا أبدًا. تسير الباقات المدفوعة على النحو التالي:</p>
+<p>لا تتقاضى Qayema أي مدفوعات داخل الخدمة: لا توجد صفحة دفع، ولا نطلب بيانات الدفع أو بياناتك المصرفية ولا نحتفظ بها، ولا يُخصم منك أي مبلغ تلقائيًا أبدًا. تسير الباقات المدفوعة على النحو التالي:</p>
 <ul>
-    <li>تطلب الباقة من صفحة الباقة في لوحة تحكمك أو عبر <a href="{{ route('contact') }}">نموذج التواصل</a></li>
+    <li>تطلب الباقة من صفحة الباقة في لوحة تحكمك أو عبر <a href="{{ \App\Support\PortalUrl::to('contact') }}">نموذج التواصل</a></li>
     <li>تتواصل معك مجموعة ليبيفاي للاتفاق على السعر والمدة وطريقة الدفع، وتدفع لنا مباشرةً وفق ما اتُّفق عليه</li>
     <li>بعد الاتفاق، نفعّل الباقة لمطعمك للمدة المتفق عليها أو دون تاريخ انتهاء</li>
     <li>عند انتهاء المدة دون تمديد، يعود مطعمك تلقائيًا إلى الباقة المجانية. لا يُحذف شيء مما أنشأته: يبقى المحتوى الذي يتجاوز حدود الباقة المجانية في قائمتك، لكن لا يمكنك إضافة المزيد حتى تعود ضمن تلك الحدود، والميزات التي لا تتضمنها الباقة المجانية تتوقف عن العمل مع الاحتفاظ بإعداداتها إلى أن تُفعَّل من جديد باقة تتضمنها</li>
     <li>إذا لم تُسدَّد دفعة متفق عليها، قد ننهي الباقة قبل موعدها، فيعود مطعمك إلى الباقة المجانية بالطريقة نفسها</li>
-    <li>المبالغ المدفوعة غير قابلة للاسترداد إلا وفق <a href="{{ route('refund') }}">سياسة الاسترداد</a> أو ما يقتضيه القانون المعمول به</li>
+    <li>المبالغ المدفوعة غير قابلة للاسترداد إلا وفق <a href="{{ \App\Support\PortalUrl::to('refund') }}">سياسة الاسترداد</a> أو ما يقتضيه القانون المعمول به</li>
     <li>قد نغيّر أسعار الباقات مع إشعار مسبق مدته 30 يومًا</li>
 </ul>
 
 <h2 id="ip-ar">الملكية الفكرية</h2>
 
-<p>قائمة وجميع مكوّناتها، بما في ذلك البرنامج والتصميم والعلامات التجارية والمحتوى الذي أنشأناه، مملوكة لمجموعة ليبيفاي ومحمية بموجب قوانين الملكية الفكرية. لا تمنحك هذه الشروط أي حق في استخدام علاماتنا التجارية أو أسمائنا التجارية أو هويتنا البصرية.</p>
+<p>Qayema وجميع مكوّناتها، بما في ذلك البرنامج والتصميم والعلامات التجارية والمحتوى الذي أنشأناه، مملوكة لمجموعة ليبيفاي ومحمية بموجب قوانين الملكية الفكرية. لا تمنحك هذه الشروط أي حق في استخدام علاماتنا التجارية أو أسمائنا التجارية أو هويتنا البصرية.</p>
 <p>لا يجوز لك نسخ أي جزء من خدمتنا أو برنامجها أو تعديله أو توزيعه أو بيعه أو تأجيره، ولا يجوز لك عكس هندسته أو محاولة استخراج الكود المصدري، إلا إذا أجاز لك ذلك القانون المعمول به أو حصلت على إذن كتابي منا.</p>
 
 <h2 id="termination-ar">إنهاء الخدمة</h2>
 
-<p>يمكنك التوقف عن استخدام قائمة في أي وقت. لحذف حسابك، تواصل معنا على <a href="mailto:{{ config('seo.organization.contact.email') }}">{{ config('seo.organization.contact.email') }}</a>، وسنحذف حسابك وبيانات مطعمك نهائيًا خلال 30 يومًا من طلبك، إلا ما يلزمنا القانون بالاحتفاظ به.</p>
+<p>يمكنك التوقف عن استخدام Qayema في أي وقت. لحذف حسابك، تواصل معنا على <a href="mailto:{{ config('seo.organization.contact.email') }}">{{ config('seo.organization.contact.email') }}</a>، وسنحذف حسابك وبيانات مطعمك نهائيًا خلال 30 يومًا من طلبك، إلا ما يلزمنا القانون بالاحتفاظ به.</p>
 <p>قد نعلّق حسابك أو نوقفه فورًا إذا انتهكت هذه الشروط أو مارست نشاطًا احتياليًا أو إذا طُلب منا ذلك قانونًا. سنبذل جهودًا معقولة لإخطارك، إلا في الحالات التي تستوجب اتخاذ إجراء فوري لأسباب أمنية أو قانونية.</p>
 <p>عند الإنهاء، يتوقف حقك في استخدام الخدمة فورًا. ستستمر في السريان الأقسام التي بطبيعتها يجب أن تبقى سارية بعد الإنهاء.</p>
 
@@ -234,7 +233,7 @@
 
 <h2 id="liability-ar">تحديد المسؤولية</h2>
 
-<p>إلى أقصى حد يسمح به القانون المعمول به، لن تكون مجموعة ليبيفاي مسؤولة عن أي أضرار غير مباشرة أو عرضية أو خاصة أو تبعية أو عقابية، بما في ذلك خسارة الأرباح أو البيانات أو الأعمال، الناجمة عن استخدامك لقائمة أو المرتبطة به.</p>
+<p>إلى أقصى حد يسمح به القانون المعمول به، لن تكون مجموعة ليبيفاي مسؤولة عن أي أضرار غير مباشرة أو عرضية أو خاصة أو تبعية أو عقابية، بما في ذلك خسارة الأرباح أو البيانات أو الأعمال، الناجمة عن استخدامك لـQayema أو المرتبطة به.</p>
 <p>تقتصر مسؤوليتنا الإجمالية عن أي مطالبة ناشئة عن هذه الشروط أو استخدامك للخدمة على المبلغ الذي دفعته لنا في الـ 12 شهرًا السابقة للمطالبة، أو 50 دولارًا أمريكيًا، أيهما أكبر.</p>
 
 <h2 id="governing-ar">القانون الحاكم</h2>

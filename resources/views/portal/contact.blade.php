@@ -1,5 +1,10 @@
 @extends('portal.layout.master.master')
 
+@php
+    $seoTitle = __('portal.seo.pages.contact.title');
+    $seoDescription = __('portal.seo.pages.contact.description');
+@endphp
+
 @push('styles')
 <link rel="stylesheet" href="{{ asset('portal/css/pages/contact.css') }}?v={{ @filemtime(public_path('portal/css/pages/contact.css')) ?: '1' }}">
 @endpush
@@ -57,7 +62,7 @@
               </div>
               <h3>{{ __('portal.contact.success_title') }}</h3>
               <p>{{ __('portal.contact.success_body') }}</p>
-              <a href="{{ route('contact') }}" class="ctc-success-back">
+              <a href="{{ \App\Support\PortalUrl::to('contact') }}" class="ctc-success-back">
                 <span>{{ __('portal.contact.success_back') }}</span>
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </a>

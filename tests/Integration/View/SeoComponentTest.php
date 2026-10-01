@@ -4,58 +4,76 @@ namespace Tests\Integration\View;
 
 use App\View\Components\Seo;
 use Dom\HTMLDocument;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 /**
- * The <x-seo> component on its own: what it fills in around the title and
- * description a page gives it, and the optional social tags that only
- * appear once their config is set.
+ * The <x-seo> component on its own: the title it builds, what it says about
+ * indexing, and the tags that only appear once their config is set. What a
+ * real page ships is in Tests\Feature\Portal\SeoTest.
  */
 class SeoComponentTest extends TestCase
 {
+    use RefreshDatabase;
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->onPage('/menu/burgers');
+        $this->onPath('/somewhere-else');
     }
 
-    public function test_it_fills_the_rest_from_config_and_the_request(): void
+    public function test_the_title_names_qayema_once(): void
     {
-        $seo = new Seo(title: 'Menu', description: 'Lebanese food.');
+        $this->assertSame('Contact us | Qayema', (new Seo(title: 'Contact us', description: 'x'))->fullTitle());
+        // The home title already starts with the name; it is not added twice.
+        $this->assertSame('Qayema | Digital menu', (new Seo(title: 'Qayema | Digital menu', description: 'x'))->fullTitle());
 
-        $this->assertSame('Menu', $seo->title);
-        $this->assertSame('Lebanese food.', $seo->description);
-        $this->assertSame(config('seo.keywords'), $seo->keywords);
-        $this->assertStringStartsWith('Qayema', $seo->keywords);
-        $this->assertSame('Lebify Group', $seo->author);
-        $this->assertSame('Lebify Group', $seo->siteName);
-        $this->assertSame(url('/menu/burgers'), $seo->url);
-        $this->assertSame(asset('images/logo/logo.png'), $seo->image);
-        $this->assertSame('en', $seo->locale);
-        $this->assertSame('Menu | Lebify Group', $seo->fullTitle());
-    }
-
-    public function test_the_title_separator_comes_from_config(): void
-    {
         config(['seo.title_separator' => '·']);
-
-        $this->assertSame('Menu · Lebify Group', (new Seo(title: 'Menu', description: 'x'))->fullTitle());
+        $this->assertSame('Contact us · Qayema', (new Seo(title: 'Contact us', description: 'x'))->fullTitle());
     }
 
     public function test_a_long_description_is_cut_to_160_characters(): void
     {
-        $seo = new Seo(title: 'Menu', description: str_repeat('a', 200));
-
-        $this->assertSame(str_repeat('a', 160).'...', $seo->description);
+        $this->assertSame(str_repeat('a', 160).'...', (new Seo(title: 'T', description: str_repeat('a', 200)))->description);
+        $this->assertSame(str_repeat('b', 160), (new Seo(title: 'T', description: str_repeat('b', 160)))->description);
     }
 
-    public function test_a_description_of_exactly_160_characters_is_kept_whole(): void
+    public function test_a_page_is_indexed_unless_it_says_otherwise(): void
     {
-        $exact = str_repeat('b', 160);
+        $this->assertSame(Seo::INDEX, (new Seo(title: 'T', description: 'x'))->robots);
+        $this->assertSame(Seo::NOINDEX, (new Seo(title: 'T', description: 'x', robots: Seo::NOINDEX))->robots);
+        $this->assertStringContainsString('max-image-preview:large', Seo::INDEX);
+    }
 
-        $this->assertSame($exact, (new Seo(title: 'Menu', description: $exact))->description);
+    public function test_off_the_public_pages_there_is_no_twin_and_no_structured_data(): void
+    {
+        $seo = new Seo(title: 'T', description: 'x');
+
+        $this->assertSame([], $seo->alternates);
+        $this->assertNull($seo->defaultAlternate());
+        $this->assertSame([], $seo->schemas);
+        $this->assertSame(url('/somewhere-else'), $seo->url);
+    }
+
+    public function test_the_sharing_image_and_locale_follow_the_language(): void
+    {
+        $english = new Seo(title: 'T', description: 'x');
+        $this->assertSame(asset('images/og/qayema-en.jpg'), $english->image);
+        $this->assertSame('en_US', $english->ogLocale);
+
+        app()->setLocale('ar');
+        $arabic = new Seo(title: 'T', description: 'x');
+        $this->assertSame(asset('images/og/qayema-ar.jpg'), $arabic->image);
+        $this->assertSame('ar_AR', $arabic->ogLocale);
+        $this->assertSame('Qayema', $arabic->siteName);
+
+        foreach (config('seo.images') as $image) {
+            $this->assertFileExists(public_path($image));
+            $this->assertSame([1200, 630], array_slice(getimagesize(public_path($image)), 0, 2));
+        }
     }
 
     public function test_the_social_handles_appear_only_once_configured(): void
@@ -63,69 +81,43 @@ class SeoComponentTest extends TestCase
         $doc = $this->render('<x-seo title="Beit Qayema" description="Lebanese food." />');
 
         $this->assertNull($this->meta($doc, 'name', 'twitter:site'));
-        $this->assertNull($this->meta($doc, 'name', 'twitter:creator'));
         $this->assertNull($this->meta($doc, 'property', 'fb:app_id'));
 
-        config(['seo.twitter_username' => 'qayema', 'seo.facebook_app_id' => '12345']);
+        config(['seo.twitter_username' => '@qayema', 'seo.facebook_app_id' => '12345']);
         $doc = $this->render('<x-seo title="Beit Qayema" description="Lebanese food." />');
 
-        // Regression: the view used to print `@{{ $twitterSite }}`, which is
-        // Blade's escape for a literal "{{ $twitterSite }}".
         $this->assertSame('@qayema', $this->meta($doc, 'name', 'twitter:site'));
         $this->assertSame('@qayema', $this->meta($doc, 'name', 'twitter:creator'));
         $this->assertSame('12345', $this->meta($doc, 'property', 'fb:app_id'));
-
-        config(['seo.twitter_username' => '@qayema']);
-        $this->assertSame('@qayema', $this->meta($this->render('<x-seo title="T" description="D" />'), 'name', 'twitter:site'));
     }
 
-    public function test_an_inner_page_has_no_structured_data(): void
+    public function test_structured_data_cannot_close_its_script_tag(): void
     {
-        $seo = new Seo(title: 'Menu', description: 'x');
+        // A FAQ answer or package name with "</script>" must stay data.
+        $this->onPath('/', 'home');
+        app('translator')->addLines(['portal.faq.items' => [['q' => 'Q', 'a' => '</script><b>x</b>']]], 'en');
 
-        $this->assertNull($seo->schemaData);
-        $this->assertCount(0, $this->render('<x-seo title="Menu" description="x" />')->querySelectorAll('script[type="application/ld+json"]'));
+        $schemas = (new Seo(title: 'Qayema', description: 'x'))->schemas;
+
+        $this->assertStringNotContainsString('</script>', implode('', $schemas));
     }
 
-    public function test_the_home_page_carries_organization_and_website(): void
+    /** Pretend the component renders for a request to $path, on route $name. */
+    private function onPath(string $path, ?string $name = null): void
     {
-        $this->onPage('/');
+        $request = Request::create(url($path));
 
-        $schemas = json_decode((string) (new Seo(title: 'Home', description: 'x'))->schemaData, true, flags: JSON_THROW_ON_ERROR);
+        if ($name !== null) {
+            $request->setRouteResolver(fn () => Route::getRoutes()->getByName($name));
+        }
 
-        $this->assertSame(['Organization', 'WebSite'], array_column($schemas, '@type'));
-        $this->assertSame(config('seo.organization.name'), $schemas[0]['name']);
-        $this->assertSame(config('seo.organization.contact'), $schemas[0]['contactPoint']);
-        $this->assertSame(config('app.url'), $schemas[1]['url']);
+        $this->app->instance('request', $request);
     }
 
-    public function test_the_arabic_locale_is_announced(): void
-    {
-        app()->setLocale('ar');
-
-        $seo = new Seo(title: 'Menu', description: 'x');
-
-        $this->assertSame('ar', $seo->locale);
-        $this->assertSame('Lebify Group', $seo->siteName);
-        $this->assertSame('ar', $this->meta($this->render('<x-seo title="Menu" description="x" />'), 'property', 'og:locale'));
-    }
-
-    /**
-     * Pretend the component is rendering for a request to $path, so
-     * `request()->is('/')` and `url()->current()` answer for that page.
-     */
-    private function onPage(string $path): void
-    {
-        $this->app->instance('request', Request::create(url($path)));
-    }
-
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    private function render(string $blade, array $data = []): HTMLDocument
+    private function render(string $blade): HTMLDocument
     {
         return HTMLDocument::createFromString(
-            '<!DOCTYPE html><html><head>'.$this->blade($blade, $data).'</head></html>',
+            '<!DOCTYPE html><html><head>'.$this->blade($blade).'</head></html>',
             LIBXML_NOERROR,
         );
     }

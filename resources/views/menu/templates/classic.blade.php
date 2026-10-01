@@ -98,13 +98,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="{{ $accent }}">
-    <title>{{ $name }}</title>
-    <meta name="description" content="{{ $description ?: $name }}">
-
-    @foreach ($locales as $code => $link)
-        <link rel="alternate" hreflang="{{ $code }}" href="{{ $link['url'] }}">
-    @endforeach
-    <link rel="alternate" hreflang="x-default" href="{{ route('public.menu', $restaurant->slug) }}">
+    @include('menu.partials.seo')
 
     @include('menu.partials.theme')
 

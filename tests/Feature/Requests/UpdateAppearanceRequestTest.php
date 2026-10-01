@@ -70,6 +70,6 @@ class UpdateAppearanceRequestTest extends TestCase
         $request->withValidator($validator);
 
         $this->assertFalse($validator->passes());
-        $this->assertSame(['settings.anything' => ['This template has no anything setting.']], $validator->errors()->toArray());
+        $this->assertSame(['settings.anything' => ['This design does not have that setting.']], $validator->errors()->toArray());
     }
 }

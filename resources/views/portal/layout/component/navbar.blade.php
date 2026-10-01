@@ -1,13 +1,14 @@
 {{-- ===== Portal navbar ===== --}}
+@use('App\Support\PortalUrl')
 @php
     // On the home page, section links are same-page anchors (Lenis smooth-scrolls
-    // them). On any other portal page they jump home first, then to the section.
-    $base = request()->is('/') ? '' : '/';
+    // them). On any other page they jump to home in this language first.
+    $base = PortalUrl::current() === 'home' ? '' : PortalUrl::to('home');
     $locale = app()->getLocale();
 @endphp
 <nav class="nav">
   <div class="nav-in">
-    <a class="brand" href="{{ $base }}#top">
+    <a class="brand" href="{{ $base === '' ? '#top' : PortalUrl::to('home') }}">
         <img src="{{ asset('images/logo/logo.svg') }}" alt="Qayema" />
     </a>
     <div class="nav-links">
@@ -17,10 +18,10 @@
       <a href="{{ $base }}#faq">{{ __('portal.nav.faq') }}</a>
     </div>
     <div class="nav-right">
-      {{-- language switch: reloads the page in the chosen locale (server-side) --}}
+      {{-- language switch: the same page in the other language --}}
       <div class="seg lang" role="group" aria-label="language">
-        <a href="{{ route('locale.switch', 'ar') }}" class="{{ $locale === 'ar' ? 'on' : '' }}">ع</a>
-        <a href="{{ route('locale.switch', 'en') }}" class="{{ $locale === 'en' ? 'on' : '' }}">EN</a>
+        <a href="{{ PortalUrl::switchTo('ar') }}" hreflang="ar" lang="ar" class="{{ $locale === 'ar' ? 'on' : '' }}">ع</a>
+        <a href="{{ PortalUrl::switchTo('en') }}" hreflang="en" lang="en" class="{{ $locale === 'en' ? 'on' : '' }}">EN</a>
       </div>
       <button class="theme-tog" id="themeTog" aria-label="theme">
         <span class="knob">

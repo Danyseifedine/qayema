@@ -29,6 +29,7 @@ class LegalPagesTest extends TestCase
     public function test_the_page_is_public_and_named(string $path, string $route): void
     {
         $this->assertSame(url($path), route($route));
+        $this->assertSame(url('/ar'.$path), route('ar.'.$route));
 
         $this->get($path)->assertOk()->assertHeader('Content-Type', 'text/html; charset=utf-8');
     }
@@ -36,11 +37,13 @@ class LegalPagesTest extends TestCase
     #[DataProvider('pages')]
     public function test_the_english_page_shows_the_english_text_only(string $path, string $route, string $title, string $section, string $titleAr, string $sectionAr): void
     {
-        $this->withSession(['owner_locale' => 'en'])
+        // An Arabic visitor opening the English address still gets English:
+        // the address decides.
+        $this->withSession(['owner_locale' => 'ar'])
             ->get($path)
             ->assertOk()
             ->assertSee('<html lang="en" dir="ltr"', false)
-            ->assertSee("<meta name=\"title\" content=\"{$title} | Qayema\">", false)
+            ->assertSee("<title>{$title} | Qayema</title>", false)
             ->assertSee("<h2 id=\"{$section}\">", false)
             ->assertDontSee("<h2 id=\"{$sectionAr}\">", false)
             ->assertDontSee($titleAr);
@@ -49,8 +52,8 @@ class LegalPagesTest extends TestCase
     #[DataProvider('pages')]
     public function test_the_arabic_page_shows_the_arabic_text_only(string $path, string $route, string $title, string $section, string $titleAr, string $sectionAr): void
     {
-        $this->withSession(['owner_locale' => 'ar'])
-            ->get($path)
+        // Its own address, no cookie needed: what a search engine sees.
+        $this->get('/ar'.$path)
             ->assertOk()
             ->assertSee('<html lang="ar" dir="rtl"', false)
             ->assertSee($titleAr)
@@ -59,7 +62,7 @@ class LegalPagesTest extends TestCase
     }
 
     #[DataProvider('pages')]
-    public function test_an_unsupported_session_locale_falls_back_to_english(string $path, string $route, string $title, string $section): void
+    public function test_an_unsupported_session_locale_changes_nothing(string $path, string $route, string $title, string $section): void
     {
         $this->withSession(['owner_locale' => 'xx'])
             ->get($path)

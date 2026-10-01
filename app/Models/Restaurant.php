@@ -31,6 +31,8 @@ class Restaurant extends Model implements HasMedia
         'contact', 'privacy-policy', 'terms-of-service', 'cookie-policy', 'refund-policy',
         'get-started', 'register', 'login', 'logout', 'onboarding', 'auth', 'locale',
         'password', 'forgot-password', 'reset-password', 'temp-upload', 'impersonate',
+        // The Arabic public pages live under /ar (App\Support\PortalUrl).
+        'ar', 'sitemap', 'robots',
     ];
 
     /** @var string[] */

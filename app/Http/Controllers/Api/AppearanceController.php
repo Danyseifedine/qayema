@@ -98,7 +98,7 @@ class AppearanceController extends Controller
     {
         $restaurant = $this->restaurant($request);
 
-        abort_if($restaurant->menuTemplate() === null, 403, __('Choose a template first.'));
+        abort_if($restaurant->menuTemplate() === null, 403, __('Choose a design first.'));
 
         return $restaurant;
     }

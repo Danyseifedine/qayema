@@ -5,6 +5,8 @@ namespace Tests\Integration\Services\Media;
 use App\Services\Media\MediaService;
 use App\Services\Media\UploadLimits;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 use Tests\TestCase;
 
 /**
@@ -53,6 +55,33 @@ class MediaServiceEdgeTest extends TestCase
     private function optimize(UploadedFile $file, array $preset): string
     {
         return $this->track(app(MediaService::class)->optimize($file, ['fit' => 'contain', 'width' => 300, 'height' => 300, ...$preset]));
+    }
+
+    public function test_an_upload_into_a_folder_that_is_already_there_goes_through(): void
+    {
+        // Two uploads at once both saw no folder; the second one's mkdir
+        // then failed with "File exists" and the owner saw that error.
+        Storage::fake('local');
+        $media = app(MediaService::class);
+        mkdir($media->tempDir(7), 0755, true);
+
+        $stored = $media->storeTempUpload(UploadedFile::fake()->image('logo.png', 50, 50), 'logo', 7);
+
+        $this->assertFileExists($media->tempPath(7, $stored['key']));
+    }
+
+    public function test_a_folder_that_cannot_be_made_says_so(): void
+    {
+        Storage::fake('local');
+        $media = app(MediaService::class);
+        // A file where the folder should go: no folder can be made there.
+        mkdir($media->tempRoot(), 0755, true);
+        touch($media->tempDir(7));
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Could not create the folder');
+
+        $media->storeTempUpload(UploadedFile::fake()->image('logo.png', 50, 50), 'logo', 7);
     }
 
     public function test_a_size_ceiling_steps_quality_down_and_stops_at_thirty(): void

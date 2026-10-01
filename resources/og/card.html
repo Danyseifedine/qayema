@@ -1,0 +1,95 @@
+<!doctype html>
+<!--
+  The image a qayema.com link shows when it is shared (WhatsApp, Facebook,
+  X, LinkedIn): 1200 x 630, one per language. config('seo.images') points
+  at the results. To make them again after a change, from qayema/:
+
+    npx --prefix ../qayema-dashboard playwright screenshot --viewport-size=1200,630 \
+      "file://$PWD/resources/og/card.html?lang=en" public/images/og/qayema-en.png
+    (and ?lang=ar into qayema-ar.png), then convert each to JPEG.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=El+Messiri:wght@500;600;700&display=block" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    background:
+      radial-gradient(900px 520px at 85% 110%, rgba(248, 211, 141, .16), transparent 60%),
+      radial-gradient(700px 420px at 0% -10%, rgba(248, 211, 141, .10), transparent 60%),
+      #000;
+    color: #F4EFE3;
+    font-family: 'Geist', system-ui, sans-serif;
+    position: relative;
+  }
+  .copy { position: absolute; top: 74px; inset-inline-start: 72px; width: 560px; }
+  .brand { display: flex; align-items: center; gap: 14px; margin-bottom: 46px; }
+  .brand img { width: 54px; height: 54px; }
+  .brand span { font-size: 30px; font-weight: 600; letter-spacing: .02em; }
+  .kicker {
+    font-size: 15px; font-weight: 500; letter-spacing: .24em; text-transform: uppercase;
+    color: #F8D38D; margin-bottom: 18px;
+  }
+  h1 { font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 74px; line-height: 1.02; letter-spacing: -.01em; }
+  h1 em { color: #F8D38D; }
+  p { margin-top: 24px; font-size: 22px; line-height: 1.45; color: rgba(244, 239, 227, .72); }
+  .points { display: flex; gap: 12px; margin-top: 34px; flex-wrap: wrap; }
+  .points span {
+    font-size: 17px; padding: 9px 16px; border-radius: 999px;
+    border: 1px solid rgba(248, 211, 141, .35); color: #FCE7BC;
+  }
+  .shot {
+    position: absolute; top: 96px; inset-inline-end: -150px; width: 640px;
+    border-radius: 18px; border: 1px solid rgba(248, 211, 141, .28);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, .7);
+  }
+  .rule { position: absolute; bottom: 0; inset-inline: 0; height: 6px; background: linear-gradient(105deg, #FCE7BC, #F8D38D 45%, #E9BD66); }
+
+  html[dir="rtl"] body, html[dir="rtl"] h1 { font-family: 'El Messiri', 'Geist', sans-serif; }
+  html[dir="rtl"] .kicker { letter-spacing: 0; font-size: 19px; font-weight: 600; }
+  html[dir="rtl"] h1 { font-size: 64px; line-height: 1.25; font-weight: 600; }
+  html[dir="rtl"] h1 em { font-style: normal; }
+  html[dir="rtl"] .brand span { font-family: 'Geist', sans-serif; }
+</style>
+</head>
+<body>
+  <div class="copy">
+    <div class="brand"><img src="../../public/images/logo/logo.svg" alt=""><span>Qayema</span></div>
+    <div class="kicker" data-text="kicker"></div>
+    <h1 data-text="title"></h1>
+    <p data-text="sub"></p>
+    <div class="points" data-points></div>
+  </div>
+  <img class="shot" data-shot alt="">
+  <div class="rule"></div>
+
+  <script>
+    const copy = {
+      en: {
+        kicker: 'Digital QR code menu',
+        title: 'Your restaurant menu, <em>live</em> on every phone.',
+        sub: 'One QR code that never changes. Prices updated in seconds. English and Arabic.',
+        points: ['Free to start', 'No app for guests', 'qayema.com'],
+      },
+      ar: {
+        kicker: 'منيو إلكتروني ومنيو QR للمطاعم',
+        title: 'منيو مطعمك <em>حيّ</em> على كل هاتف.',
+        sub: 'رمز QR واحد لا يتغيّر، وأسعار تحدّثها في ثوانٍ، بالعربية والإنجليزية.',
+        points: ['ابدأ مجاناً', 'بلا تطبيق لضيوفك', 'qayema.com/ar'],
+      },
+    };
+
+    const lang = new URLSearchParams(location.search).get('lang') === 'ar' ? 'ar' : 'en';
+    const text = copy[lang];
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+    document.querySelector('[data-text="kicker"]').textContent = text.kicker;
+    document.querySelector('[data-text="title"]').innerHTML = text.title;
+    document.querySelector('[data-text="sub"]').textContent = text.sub;
+    document.querySelector('[data-points]').innerHTML = text.points.map((point) => `<span>${point}</span>`).join('');
+    document.querySelector('[data-shot]').src = `../../public/images/landing/dashboard-${lang}-dark.webp`;
+  </script>
+</body>
+</html>

@@ -77,12 +77,14 @@ class E2eController extends Controller
             'opening_hours' => $input['opening_hours'] ?? null,
             'default_locale' => 'en',
             'second_locale' => $input['second_locale'] ?? null,
-            'switched_off' => $input['switched_off'] ?? [],
             'qr_settings' => $input['qr_settings'] ?? null,
             'template_settings' => $template && isset($input['settings']) ? [$template->id => $input['settings']] : null,
         ]);
 
         $this->assignPackage($restaurant, $input);
+        // After the package: a package arriving switches on what it brings,
+        // and this is the owner's choice as it stands.
+        $restaurant->update(['switched_off' => $input['switched_off'] ?? []]);
 
         if ($input['logo'] ?? false) {
             $restaurant->addMediaFromString($this->png())->usingFileName('logo.png')->toMediaCollection('logo');

@@ -1,6 +1,11 @@
 @extends('portal.layout.master.master')
 
-@php $bare = true; @endphp
+@php
+    $bare = true;
+    // Setting up an account is not a page anyone should find in a search.
+    $seoTitle = __('portal.seo.pages.onboarding.title');
+    $seoRobots = \App\View\Components\Seo::NOINDEX;
+@endphp
 
 @php
     $appName    = config('app.name', 'Qayema');

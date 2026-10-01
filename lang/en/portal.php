@@ -1,9 +1,40 @@
 <?php
 
 return [
+    // What search results and shared links show. The home title and
+    // description carry the words owners search for: digital menu, QR code
+    // menu, restaurant, café.
     'seo' => [
-        'title' => 'Qayema | Your restaurant menu, live with one QR',
-        'description' => 'Build your restaurant menu in minutes, share one QR code that never changes, and update prices in seconds. English plus a second language, free to start.',
+        'title' => 'Qayema | Digital QR Code Menu for Restaurants and Cafés',
+        'description' => 'Make a digital QR code menu for your restaurant or café in minutes. One QR that never changes, prices updated in seconds, English plus Arabic. Free to start.',
+        'category' => 'Digital menu and QR code menu',
+        'image_alt' => 'Qayema: the digital QR code menu for restaurants',
+        'pages' => [
+            'contact' => [
+                'title' => 'Contact us',
+                'description' => 'Questions about Qayema, a package or your restaurant menu? Write to us and we will reply by email.',
+            ],
+            'privacy' => [
+                'title' => 'Privacy Policy',
+                'description' => 'How Qayema collects, uses and protects the data of restaurant owners and their guests.',
+            ],
+            'terms' => [
+                'title' => 'Terms of Service',
+                'description' => 'The terms for using Qayema, the digital QR code menu for restaurants and cafés.',
+            ],
+            'cookies' => [
+                'title' => 'Cookie Policy',
+                'description' => 'The cookies Qayema uses, what each one does and how long it lasts.',
+            ],
+            'refund' => [
+                'title' => 'Refund Policy',
+                'description' => 'How paid Qayema packages are handled and when a refund applies.',
+            ],
+            'onboarding' => [
+                'title' => 'Set up your menu',
+                'description' => 'Set up your restaurant on Qayema.',
+            ],
+        ],
     ],
     'nav' => [
         'features' => 'Features',
@@ -15,6 +46,7 @@ return [
         'cta_continue' => 'Continue setup',
     ],
     'hero' => [
+        'kicker' => 'Digital QR code menu for restaurants and cafés',
         'title' => 'Your menu, <span class=\'it\'>live</span><br>on every phone.',
         'sub' => 'Build your menu in minutes, share one QR code that never changes, and update a price or a sold-out dish in seconds. English plus a second language, free to start.',
         'email_placeholder' => 'Enter your restaurant email',

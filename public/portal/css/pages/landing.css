@@ -119,6 +119,8 @@ html[data-theme="dark"] .hero-blob { opacity: .38; }
 html[lang="ar"] .hero-center h1 { font-family: var(--font-ar); line-height: 1.28; letter-spacing: 0; font-weight: 500; }
 .hero-center h1 .it { font-style: italic; }
 html[lang="ar"] .hero-center h1 .it { font-style: normal; color: var(--gold-on); }
+.hero-center h1 .hero-kicker { display: block; margin: 0 auto 22px; line-height: 1.6; }
+html[lang="ar"] .hero-center h1 .hero-kicker { font-family: var(--font-ar); font-size: 15px; font-weight: 600; }
 .hero-sub { margin: 24px auto 0; max-width: 48ch; font-size: clamp(15px, 1.3vw, 18px); line-height: 1.6; color: var(--muted); }
 
 .hero-form { margin: 36px auto 0; display: flex; align-items: center; gap: 6px; padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 100px; box-shadow: var(--shadow); width: min(460px, 92vw); }
