@@ -11,6 +11,7 @@ use App\Models\Restaurant;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -192,6 +193,9 @@ class RestaurantsTable
                     ->icon(Heroicon::OutlinedUserCircle)
                     ->url(fn (Restaurant $record): string => route('impersonate', $record->user_id))
                     ->visible(fn (Restaurant $record): bool => $record->user?->canBeImpersonated() ?? false),
+                DeleteAction::make()
+                    ->modalHeading('Delete restaurant')
+                    ->modalDescription('This deletes the menu for good: every category, dish and photo, the logo and cover, social links, orders, statistics and package history. The owner keeps their account. This cannot be undone.'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

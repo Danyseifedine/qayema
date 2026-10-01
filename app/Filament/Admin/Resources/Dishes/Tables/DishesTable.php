@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\Dishes\Tables;
 
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -77,6 +78,8 @@ class DishesTable
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
+                DeleteAction::make()
+                    ->modalDescription('The dish and its photo are deleted for good.'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

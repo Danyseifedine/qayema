@@ -2,7 +2,9 @@
 
 namespace App\Filament\Admin\Resources\Templates\Tables;
 
+use App\Models\Template;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -47,6 +49,8 @@ class TemplatesTable
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
+                DeleteAction::make()
+                    ->modalDescription(fn (Template $record): string => self::deleteWarning($record)),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
@@ -54,5 +58,15 @@ class TemplatesTable
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
+    }
+
+    /** What deleting a design does to the menus that use it. */
+    public static function deleteWarning(Template $template): string
+    {
+        $using = $template->restaurants()->count();
+
+        return $using === 0
+            ? 'No restaurant uses this design. It and its preview image are deleted for good.'
+            : "{$using} ".str('restaurant')->plural($using).' use this design. Their menus go offline until they choose another design. The design and its preview image are deleted for good.';
     }
 }

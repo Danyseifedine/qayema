@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources\ContactMessages\Pages;
 use App\Filament\Admin\Actions\ChangePackageAction;
 use App\Filament\Admin\Resources\ContactMessages\ContactMessageResource;
 use App\Filament\Admin\Resources\Restaurants\RestaurantResource;
+use Filament\Actions\DeleteAction;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Components\Section;
@@ -18,6 +19,7 @@ class ViewContactMessage extends ViewRecord
     {
         return [
             ChangePackageAction::forRequest(),
+            DeleteAction::make(),
         ];
     }
 

@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources\Packages\Pages;
 use App\Enums\Feature;
 use App\Filament\Admin\Concerns\KeepsTranslations;
 use App\Filament\Admin\Resources\Packages\PackageResource;
+use Filament\Actions\DeleteAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 
@@ -13,6 +14,15 @@ class EditPackage extends EditRecord
     use KeepsTranslations;
 
     protected static string $resource = PackageResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            DeleteAction::make()
+                ->visible(fn (): bool => PackageResource::canDelete($this->record))
+                ->modalDescription(fn (): string => PackageResource::deleteWarning($this->record)),
+        ];
+    }
 
     /**
      * Flags are stored as 0/1 so they can share the features map with limits,

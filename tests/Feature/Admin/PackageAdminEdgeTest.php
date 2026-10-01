@@ -85,18 +85,22 @@ class PackageAdminEdgeTest extends TestCase
             ->assertCanNotSeeTableRecords([Package::findBySlug('free'), Package::findBySlug('pro')]);
     }
 
-    public function test_a_package_cannot_be_deleted_one_by_one_either(): void
+    public function test_only_the_default_package_is_kept_from_deletion(): void
     {
+        // Every restaurant falls back on the default; any other one may go.
         $pro = Package::findBySlug('pro');
+        $default = Package::default();
 
-        $this->assertFalse(PackageResource::canDelete($pro));
+        $this->assertTrue(PackageResource::canDelete($pro));
+        $this->assertFalse(PackageResource::canDelete($default));
 
         Livewire::test(ListPackages::class)
-            ->assertActionDoesNotExist(TestAction::make('delete')->table($pro))
+            ->assertActionVisible(TestAction::make('delete')->table($pro))
+            ->assertActionHidden(TestAction::make('delete')->table($default))
             ->assertActionVisible(TestAction::make('edit')->table($pro));
 
-        Livewire::test(EditPackage::class, ['record' => $pro->id])
-            ->assertActionDoesNotExist('delete');
+        Livewire::test(EditPackage::class, ['record' => $pro->id])->assertActionVisible('delete');
+        Livewire::test(EditPackage::class, ['record' => $default->id])->assertActionHidden('delete');
     }
 
     public function test_the_edit_page_renders_over_http(): void

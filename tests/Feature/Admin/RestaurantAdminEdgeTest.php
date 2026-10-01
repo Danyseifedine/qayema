@@ -346,7 +346,7 @@ class RestaurantAdminEdgeTest extends TestCase
             ->assertSee('Paid cash.');
     }
 
-    public function test_the_history_is_read_only(): void
+    public function test_the_history_can_be_trimmed_but_never_written_by_hand(): void
     {
         $restaurant = $this->owner();
         $this->actingAs($this->admin());
@@ -356,7 +356,10 @@ class RestaurantAdminEdgeTest extends TestCase
             'pageClass' => EditRestaurant::class,
         ]);
 
-        $this->assertTrue($manager->instance()->isReadOnly());
+        // Lines come only from the restaurant's own save hook.
         $manager->assertActionDoesNotExist(TestAction::make('create')->table());
+        $line = $restaurant->packageChanges()->first();
+        $manager->assertActionDoesNotExist(TestAction::make('edit')->table($line))
+            ->assertActionVisible(TestAction::make('delete')->table($line));
     }
 }

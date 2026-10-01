@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\Categories\Tables;
 
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -51,6 +52,9 @@ class CategoriesTable
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
+                // Its dishes stay on the menu, under "No category".
+                DeleteAction::make()
+                    ->modalDescription('The category is deleted. Its dishes stay on the menu, without a category.'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

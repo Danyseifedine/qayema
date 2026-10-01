@@ -4,6 +4,9 @@ namespace App\Filament\Admin\Resources\ContactMessages\Pages;
 
 use App\Filament\Admin\Resources\ContactMessages\ContactMessageResource;
 use App\Models\ContactMessage;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Tables\Columns\TextColumn;
@@ -56,6 +59,12 @@ class ListContactMessages extends ListRecords
             ])
             ->recordActions([
                 ViewAction::make(),
+                DeleteAction::make(),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                ]),
             ])
             ->defaultSort('created_at', 'desc');
     }

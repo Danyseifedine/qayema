@@ -4,7 +4,9 @@ namespace App\Filament\Admin\Resources\Packages\Tables;
 
 use App\Enums\Feature;
 use App\Enums\FeatureKind;
+use App\Filament\Admin\Resources\Packages\PackageResource;
 use App\Models\Package;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -42,6 +44,9 @@ class PackagesTable
             ])
             ->recordActions([
                 EditAction::make(),
+                DeleteAction::make()
+                    ->visible(fn (Package $record): bool => PackageResource::canDelete($record))
+                    ->modalDescription(fn (Package $record): string => PackageResource::deleteWarning($record)),
             ])
             ->defaultSort('sort_order');
     }

@@ -33,10 +33,10 @@ class PackageAdminTest extends TestCase
         $this->actingAs($owner->user)->get(PackageResource::getUrl('index'))->assertForbidden();
     }
 
-    public function test_packages_can_be_neither_created_nor_deleted(): void
+    public function test_packages_cannot_be_created_in_the_admin(): void
     {
+        // They come from config/package.php; deleting one is in AdminDeleteTest.
         $this->assertFalse(PackageResource::canCreate());
-        $this->assertFalse(PackageResource::canDeleteAny());
         $this->assertArrayNotHasKey('create', PackageResource::getPages());
     }
 

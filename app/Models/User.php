@@ -53,6 +53,16 @@ class User extends Authenticatable implements FilamentUser
         ];
     }
 
+    protected static function booted(): void
+    {
+        // The database would delete the restaurant on its own, but without
+        // its images: going through the model lets the media library remove
+        // the logo, cover and every dish photo from storage.
+        static::deleting(function (self $user): void {
+            $user->restaurant?->delete();
+        });
+    }
+
     public function restaurant(): HasOne
     {
         return $this->hasOne(Restaurant::class);

@@ -3,13 +3,17 @@
 namespace App\Filament\Admin\Resources\Restaurants\RelationManagers;
 
 use App\Models\PackageChange;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
 /**
  * Every package this restaurant has been on: what it moved from and to, the
- * dates it was given, who did it and why. Read-only: it is a record.
+ * dates it was given, who did it and why. Written only by the restaurant's
+ * own save hook; an admin can delete a line but never add or edit one.
  */
 class PackageChangesRelationManager extends RelationManager
 {
@@ -19,7 +23,7 @@ class PackageChangesRelationManager extends RelationManager
 
     public function isReadOnly(): bool
     {
-        return true;
+        return false;
     }
 
     public function table(Table $table): Table
@@ -50,6 +54,13 @@ class PackageChangesRelationManager extends RelationManager
                 TextColumn::make('note')
                     ->placeholder('-')
                     ->wrap(),
+            ])
+            ->recordActions([
+                DeleteAction::make()
+                    ->modalDescription('This line is removed from the history. The restaurant stays on its current package.'),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make([DeleteBulkAction::make()]),
             ])
             ->defaultSort('created_at', 'desc');
     }

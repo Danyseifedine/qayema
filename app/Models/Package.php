@@ -67,6 +67,24 @@ class Package extends Model
         static::saved($flush);
         static::deleted($flush);
 
+        // Every restaurant falls back on the default package, so it is never
+        // deleted. Restaurants on any other one move to the default first,
+        // through the assigner, so their history says why.
+        static::deleting(function (self $package): bool {
+            if ($package->is_default) {
+                return false;
+            }
+
+            $default = self::default();
+            $assigner = app(\App\Services\Packages\PackageAssigner::class);
+
+            foreach ($default === null ? [] : $package->restaurants()->get() as $restaurant) {
+                $assigner->assign($restaurant, $default, note: "The {$package->name} package was deleted.");
+            }
+
+            return true;
+        });
+
         // "Most popular" is one package: marking one takes it off the others.
         static::saved(function (self $package): void {
             if ($package->is_featured && ($package->wasRecentlyCreated || $package->wasChanged('is_featured'))) {

@@ -142,6 +142,13 @@ class Restaurant extends Model implements HasMedia
 
         // Every write to the package fields lands in the history, whichever
         // path made it (PackageAssigner, the admin form, a console command).
+        // Dishes are deleted one by one rather than by the database's cascade,
+        // so each takes its photo out of storage; the restaurant's own logo
+        // and cover go with it through the media library.
+        static::deleting(function (self $restaurant): void {
+            $restaurant->dishes()->get()->each->delete();
+        });
+
         static::created(function (self $restaurant): void {
             $restaurant->recordPackageChange(null);
         });

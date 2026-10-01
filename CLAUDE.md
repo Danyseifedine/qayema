@@ -776,6 +776,17 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
   cross-origin fetch without CORS. The phone field's flag images are
   published to `public/vendor/filament-phone-input` (also on
   `composer update`); without them the flag is an empty box.
+- **Deleting in the admin.** Every list has a Delete on each row and in
+  bulk, and every edit page one in its header; the confirmation says what
+  goes with the record. Deletes go through the models, never a query
+  delete, so images leave storage: `User::deleting` deletes the restaurant,
+  `Restaurant::deleting` deletes each dish (the media library removes every
+  photo, logo and cover). A deleted category leaves its dishes uncategorised.
+  The default package is never deleted (hidden button, and
+  `Package::deleting` refuses); restaurants on any other deleted package move
+  to the default through `PackageAssigner`, with a note in their history.
+  Orders and the package history are read and deleted on the restaurant's
+  page, never added or edited there.
 - Filament v4 testing: table **header** actions need
   `callAction(TestAction::make('create')->table())`, not `callAction('create')`.
 - `Restaurant::RESERVED_SLUGS` is the single list behind both the public menu

@@ -48,14 +48,21 @@ class PackageResource extends Resource
         return false;
     }
 
+    /** Any package but the default, which every restaurant falls back on. */
     public static function canDelete(mixed $record): bool
     {
-        return false;
+        return $record instanceof Package && ! $record->is_default;
     }
 
-    public static function canDeleteAny(): bool
+    /** What deleting a package does to the restaurants on it. */
+    public static function deleteWarning(Package $package): string
     {
-        return false;
+        $on = $package->restaurants()->count();
+        $default = Package::default()?->name ?? 'the default package';
+
+        return $on === 0
+            ? 'No restaurant is on this package. It is deleted for good.'
+            : "{$on} ".str('restaurant')->plural($on)." on this package move to {$default}, and their package history says why. The package is deleted for good.";
     }
 
     public static function getPages(): array
