@@ -86,10 +86,13 @@ class MenuSeoTest extends TestCase
         }
         $doc = $this->page('/olive?lang=ar');
         $this->assertSame(url('/olive').'?lang=ar', $this->link($doc, 'canonical'));
-        $this->assertSame(
-            ['en' => url('/olive'), 'ar' => url('/olive').'?lang=ar', 'x-default' => url('/olive')],
-            $this->hreflang($doc),
-        );
+
+        // Each version names the other, both ways, so Google pairs them as
+        // the English and Arabic copies of one menu.
+        $twins = ['en' => url('/olive'), 'ar' => url('/olive').'?lang=ar', 'x-default' => url('/olive')];
+        foreach (['/olive', '/olive?lang=en', '/olive?lang=ar'] as $path) {
+            $this->assertSame($twins, $this->hreflang($this->page($path)), $path);
+        }
     }
 
     public function test_a_one_language_menu_lists_no_twins(): void

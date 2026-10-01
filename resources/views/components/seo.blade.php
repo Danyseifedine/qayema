@@ -52,8 +52,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-{{-- Icons --}}
+{{-- Icons: the Q centered on black (search results crop it to a circle) --}}
+<link rel="icon" type="image/svg+xml" href="{{ asset('images/favicons/favicon.svg') }}">
 <link rel="icon" type="image/x-icon" href="{{ asset('images/favicons/favicon.ico') }}">
+<link rel="icon" type="image/png" sizes="48x48" href="{{ asset('images/favicons/favicon-48x48.png') }}">
 <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/favicons/favicon-32x32.png') }}">
 <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('images/favicons/favicon-16x16.png') }}">
 <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('images/favicons/android-chrome-192x192.png') }}">
