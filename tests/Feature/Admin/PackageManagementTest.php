@@ -68,7 +68,7 @@ class PackageManagementTest extends TestCase
             ->assertHasNoFormErrors();
 
         $this->assertNull($restaurant->fresh()->package_ends_at);
-        $this->assertSame(500, $restaurant->fresh()->dish_limit);
+        $this->assertSame(1000, $restaurant->fresh()->dish_limit);
     }
 
     public function test_an_end_before_the_start_is_refused(): void

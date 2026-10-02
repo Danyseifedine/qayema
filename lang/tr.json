@@ -41,5 +41,13 @@
     "Back to top": "Başa dön",
     ":name: menu and prices": ":name: menü ve fiyatlar",
     "The :name menu with dishes, prices and opening hours.": ":name menüsü: yemekler, fiyatlar ve çalışma saatleri.",
-    "Menu by :brand": ":brand ile hazırlandı"
+    "Menu by :brand": ":brand ile hazırlandı",
+    "Free": "Ücretsiz",
+    "See options": "Seçenekleri gör",
+    "Pick 1": "1 seçin",
+    "Optional": "İsteğe bağlı",
+    "Add-ons": "Ekstralar",
+    "Quantity": "Adet",
+    "Choose a :variant for :dish.": ":dish için :variant seçin.",
+    "Choose only one :variant for :dish.": ":dish için yalnızca bir :variant seçin."
 }

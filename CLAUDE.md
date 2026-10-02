@@ -454,6 +454,12 @@ Forms\Components\Select::make('user_id')
    (English or Arabic), tests, docs or messages. Write a comma, colon,
    semicolon, parentheses or a new sentence instead (in Arabic, the Arabic comma ، or a colon);
    never an en dash or `--` in its place. An empty-value placeholder is `-`.
+6. **Never run a full suite unless the user says to.** Not `composer check`,
+   not a whole `php artisan test`, not `npm run check` or `npm run e2e` in the
+   dashboard. Check your work with targeted runs only: the test files you
+   touched (`php artisan test tests/Feature/...` or `--filter`). When you are
+   done, say which full suites have not been run and leave the decision to
+   the user.
 
 # Qayema: Project Architecture
 
@@ -486,8 +492,8 @@ the admin owns the numbers after install):
 
 | | Free | Pro | Premium | Custom |
 |---|---|---|---|---|
-| dishes / categories / social links | 40 / 8 / 1 | 150 / 15 / 2 | 500 / 30 / 10 | unlimited |
-| `multiple_languages`, `appearance`, `analytics` | - | ✓ | ✓ | ✓ |
+| dishes / categories / social links | 40 / 8 / 1 | 150 / 15 / 2 | 1,000 / 1,000 (fair use, shown as unlimited) / 10 | unlimited |
+| `multiple_languages`, `variants`, `addons`, `appearance`, `analytics` | - | ✓ | ✓ | ✓ |
 | `premium_designs`, `qr_studio`, `ordering`, `advanced_analytics` | - | - | ✓ | ✓ |
 
 Premium is `is_featured` ("Most popular" on the dashboard and the landing page); only one package holds it, and marking another in the admin takes it off the rest.
@@ -645,8 +651,8 @@ One name per thing, shared with the dashboard (`../qayema-dashboard`):
 | Account | `/api/account` |
 
 Three words that are never swapped: **plan** = what a restaurant may use
-(`restaurant.plan.{multiple_languages, appearance, premium_designs, qr_studio,
-ordering, analytics, advanced_analytics}` in `/api/user`,
+(`restaurant.plan.{multiple_languages, variants, addons, appearance,
+premium_designs, qr_studio, ordering, analytics, advanced_analytics}` in `/api/user`,
 resolved by `Entitlements`); **grant** = an admin giving one restaurant more
 than its package (`FeatureGrant`, table `feature_grants`); **switched off** =
 what the owner turned off on the Features page (`restaurant.switched_off`).
@@ -654,7 +660,7 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
 
 - `app/Services/<Group>/`: `Analytics` (MenuStats, MenuEventRecorder,
   MenuVisitRecorder), `Menu` (MenuLanguages, OpeningHours, MapPoint,
-  DisplayOrder), `Orders` (OrderPlacer, WhatsAppLink), `Packages`
+  DisplayOrder, DishOptionsSync, MenuDishOptions), `Orders` (OrderPlacer, WhatsAppLink), `Packages`
   (Entitlements, PackageAssigner), `Qr` (QrStyle), `Media` (MediaService, UploadLimits),
   `Security` (AbuseGuard, Captcha), `Contact` (ContactService), `Portal`
   (OnboardingService). A new service goes in the group it serves.
@@ -721,7 +727,9 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
   `{off: [...]}`, limited to `Restaurant::OPTIONAL_FEATURES`): `orders` (no ordering at all:
   `takesOrders()`), `qr` (studio styling and printable card off, plain code
   kept: `hasQrStudio()`), `analytics` (page hidden), `languages` (English-only
-  menu: `MenuLanguages::for()`; `written()` ignores the switch). Nothing is
+  menu: `MenuLanguages::for()`; `written()` ignores the switch), `variants` and
+  `addons` (a dish's choices leave the menu and orders: `showsVariants()`,
+  `showsAddons()`; see Variants and add-ons). Nothing is
   deleted by switching one off. The package still decides what can be on.
   A feature a new package or grant brings arrives switched on
   (`switchOnWhatCameIntoReach()`, from the restaurant's and the grant's save
@@ -785,6 +793,23 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
   cross-origin fetch without CORS. The phone field's flag images are
   published to `public/vendor/filament-phone-input` (also on
   `composer update`); without them the flag is an empty box.
+- **Telemetry (Grafana Cloud).** `keepsuit/laravel-opentelemetry` sends
+  request traces (HTTP, queries with `?` placeholders, cache, queue, views,
+  Livewire) and logs (`otlp` channel, from `info` up, added to the log stack)
+  to Grafana when `GRAFANA_OTLP_ENDPOINT` is set; `GRAFANA_AUTH_HEADER` is
+  passed as a header map (the SDK does not URL-decode a "key=value" string).
+  No metrics, no console traces. Tests and the e2e suite set
+  `OTEL_SDK_DISABLED=true`. Every trace carries
+  `deployment.environment.name` (APP_ENV). The Privacy Policy names Grafana.
+- **Fair use.** A package can show a limit as unlimited while a number
+  holds (`packages.fair_use`, ticked in the admin's Limits box; Premium's
+  dishes and categories, 1,000 each). `Entitlements::limit()` is enforced,
+  `shownLimit()` is what the API sends (null), and `Package::shownValue()`
+  is what the pricing cards and `/api/packages` show ("Unlimited dishes*").
+  The number is stated under the pricing cards (`PricingCards::fairUseNote()`),
+  in the pricing FAQ and in the Terms, and an owner who reaches it is told
+  "the fair-use limit of N". Never show "Unlimited" for a limit without one
+  of these: an empty limit is truly unlimited.
 - **Deleting in the admin.** Every list has a Delete on each row and in
   bulk, and every edit page one in its header; the confirmation says what
   goes with the record. Deletes go through the models, never a query
@@ -823,6 +848,44 @@ reaches the owner.
 - Gated on the `ordering` package flag (Premium and Custom). Off means the menu
   renders with no cart and the endpoint 404s.
 - The owner reads them at `GET /api/orders`; only `status` is writable.
+
+## Variants and add-ons
+
+A dish can carry **variants** (owner-named choices such as Size or Spice
+level; the guest picks exactly one option of each) and **add-ons** (Extra
+cheese; the guest picks any). Every option and add-on has a `price` that is
+**added** to the dish's (0 for a choice that costs nothing more). Tables
+`dish_variants`, `dish_variant_options`, `dish_addons` (models `DishVariant`,
+`DishVariantOption`, `DishAddon`, names translatable like the dish's).
+
+- Package flags `variants` and `addons` (Pro, Premium, Custom), each with its
+  own switch on the Features page. Off, or not on the package: the rows stay
+  saved but leave the menu and orders, and dish saves leave them alone.
+- **Writing:** the dashboard's dish form sends each whole list in order
+  (`variants: [{id?, name, options: [{id?, name, price}]}]`, `addons: [{id?,
+  name, price}]`). `ValidatesDishOptions` (on Store/UpdateDishRequest) checks a
+  list only while it is shown, so a switched-off list never reaches
+  `validated()`. `App\Services\Menu\DishOptionsSync` writes it: an id of this
+  dish's row updates it (hidden languages kept), anything else is created, a
+  saved row left out is deleted. Validated nested input can come back with
+  its indexes shuffled; the sync orders rows by index. Caps per dish are
+  `config/menu.php` (5 variants, 10 options each, 20 add-ons). A dish with
+  choices needs a price.
+- **Menu:** `App\Services\Menu\MenuDishOptions` builds each dish's choices in
+  the guest's language (only dishes with a price, only variants with 2+
+  options), passed to the template as `$dish_options`. The card shows "from"
+  the cheapest combination and a "Size · Spice level · Add-ons" line; one
+  `#dish-sheet` dialog is filled by `public/js/menu-dish.js` from the
+  `#dish-options` JSON. With ordering it hands `qayema:add` events to
+  `menu-cart.js` (a cart line is a dish plus its choice ids, so one dish can
+  sit in the cart twice); without ordering the sheet only shows the choices.
+- **Ordering:** `items.*.options` (option ids) and `items.*.addons`.
+  `OrderPlacer` requires one option of every variant ("Choose a Size for
+  Burger." in the guest's language), ignores ids that are not this dish's,
+  prices `unit_price` = dish + options + add-ons, merges identical lines and
+  snapshots `order_items.options` `{variants: [{name, choice, price}], addons:
+  [{name, price}]}`. `OrderItem::choices()` is the readable form used by the
+  WhatsApp message and the admin's orders list.
 
 ## Maps
 

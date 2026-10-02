@@ -5,6 +5,10 @@
  * reload or a phone locking does not lose the order, and the totals shown are
  * only a preview. The server re-reads every dish and recomputes every price
  * when the order is placed, so nothing in this file is trusted.
+ *
+ * A line is a dish with the guest's choices (its variants' options and its
+ * add-ons, picked in the dish sheet, menu-dish.js), so the same burger can
+ * be in the cart as a Small and as a Large.
  */
 (function () {
     'use strict';
@@ -21,7 +25,11 @@
     var toggle = document.querySelector('[data-cart-toggle]');
     var panels = Array.prototype.slice.call(document.querySelectorAll('[data-cart-panel]'));
 
-    /** dish id -> quantity. Ids are strings because dataset values are. */
+    /** Each dish's choices, by dish id (App\Services\Menu\MenuDishOptions). */
+    var choices = readChoices();
+
+    /** line key -> { dish, options, addons, qty }. Dish ids are strings
+     *  because dataset values are; choice ids are numbers. */
     var cart = load();
 
     /** What each dish's action slot currently shows, so a repaint that would
@@ -31,15 +39,57 @@
     /** The last count rendered, so the counters only pulse on a change. */
     var counted = null;
 
-    function load() {
+    function readChoices() {
+        var source = document.getElementById('dish-options');
         try {
-            var stored = JSON.parse(window.localStorage.getItem(config.storageKey) || '{}');
-            return stored && typeof stored === 'object' ? stored : {};
+            return source ? JSON.parse(source.textContent || '{}') : {};
+        } catch (error) {
+            return {};
+        }
+    }
+
+    function sorted(ids) {
+        return ids.map(Number).sort(function (a, b) {
+            return a - b;
+        });
+    }
+
+    function keyOf(dish, options, addons) {
+        return dish + '|' + sorted(options).join(',') + '|' + sorted(addons).join(',');
+    }
+
+    function load() {
+        var stored;
+        try {
+            stored = JSON.parse(window.localStorage.getItem(config.storageKey) || '{}');
         } catch (error) {
             // Private mode, blocked storage, corrupted value: start empty
             // rather than break the menu.
             return {};
         }
+
+        var lines = {};
+        if (!stored || typeof stored !== 'object') {
+            return lines;
+        }
+
+        Object.keys(stored).forEach(function (key) {
+            var value = stored[key];
+
+            // A cart saved before dishes had choices: dish id -> quantity.
+            if (typeof value === 'number') {
+                lines[keyOf(key, [], [])] = { dish: key, options: [], addons: [], qty: value };
+            } else if (value && typeof value === 'object' && Array.isArray(value.options) && Array.isArray(value.addons)) {
+                lines[keyOf(value.dish, value.options, value.addons)] = {
+                    dish: String(value.dish),
+                    options: sorted(value.options),
+                    addons: sorted(value.addons),
+                    qty: Number(value.qty) || 0,
+                };
+            }
+        });
+
+        return lines;
     }
 
     function save() {
@@ -62,36 +112,101 @@
         return parseFloat(element.dataset.price || '0') || 0;
     }
 
-    /** Drop anything no longer on the menu, so a stale cart cannot linger. */
-    function prune() {
-        var live = {};
-        dishes().forEach(function (dish) {
-            live[dish.dataset.dish] = true;
+    function findDish(id) {
+        return document.querySelector('.dish[data-dish="' + id + '"][data-price]:not([data-price=""])');
+    }
+
+    /**
+     * The line's choices as the menu offers them now: one option of each
+     * variant and add-ons of this dish, or null when that no longer holds
+     * (the owner changed the dish, or switched its choices off).
+     */
+    function picked(line) {
+        var data = choices[line.dish];
+
+        if (!data) {
+            return line.options.length === 0 && line.addons.length === 0 ? { extra: 0, labels: [] } : null;
+        }
+
+        var extra = 0;
+        var labels = [];
+        var used = 0;
+
+        for (var v = 0; v < data.variants.length; v++) {
+            var hits = data.variants[v].options.filter(function (option) {
+                return line.options.indexOf(option.id) !== -1;
+            });
+            if (hits.length !== 1) {
+                return null;
+            }
+            used++;
+            extra += parseFloat(hits[0].price) || 0;
+            labels.push(hits[0].name);
+        }
+
+        if (used !== line.options.length) {
+            return null;
+        }
+
+        var addons = data.addons.filter(function (addon) {
+            return line.addons.indexOf(addon.id) !== -1;
+        });
+        if (addons.length !== line.addons.length) {
+            return null;
+        }
+        addons.forEach(function (addon) {
+            extra += parseFloat(addon.price) || 0;
+            labels.push('+ ' + addon.name);
         });
 
-        Object.keys(cart).forEach(function (id) {
-            if (!live[id]) {
-                delete cart[id];
+        return { extra: extra, labels: labels };
+    }
+
+    /** Drop anything no longer on the menu, so a stale cart cannot linger. */
+    function prune() {
+        Object.keys(cart).forEach(function (key) {
+            if (!(cart[key].qty > 0) || !findDish(cart[key].dish) || !picked(cart[key])) {
+                delete cart[key];
             }
         });
     }
 
+    /** The lines in the menu's order, a dish's lines in the order added. */
     function lines() {
-        return dishes()
-            .filter(function (dish) {
-                return (cart[dish.dataset.dish] || 0) > 0;
-            })
-            .map(function (dish) {
-                var quantity = cart[dish.dataset.dish];
-                return {
-                    id: dish.dataset.dish,
+        var result = [];
+
+        dishes().forEach(function (dish) {
+            Object.keys(cart).forEach(function (key) {
+                var line = cart[key];
+                if (line.dish !== dish.dataset.dish) {
+                    return;
+                }
+
+                var choice = picked(line);
+                var unit = priceOf(dish) + choice.extra;
+                result.push({
+                    key: key,
+                    id: line.dish,
+                    options: line.options,
+                    addons: line.addons,
                     name: dish.dataset.name,
+                    choices: choice.labels.join(', '),
                     image: dish.dataset.image || '',
-                    unit: priceOf(dish),
-                    quantity: quantity,
-                    total: priceOf(dish) * quantity,
-                };
+                    unit: unit,
+                    quantity: line.qty,
+                    total: unit * line.qty,
+                });
             });
+        });
+
+        return result;
+    }
+
+    /** How many of a dish are in the cart, whatever was chosen. */
+    function countOf(id) {
+        return Object.keys(cart).reduce(function (count, key) {
+            return cart[key].dish === id ? count + cart[key].qty : count;
+        }, 0);
     }
 
     function totals() {
@@ -105,18 +220,25 @@
         );
     }
 
-    function setQuantity(id, quantity) {
+    /**
+     * @param {string} key  the line, from keyOf()
+     * @param {{dish: string, options: number[], addons: number[]}} what  the line, when it is new
+     */
+    function setQuantity(key, quantity, what) {
+        var line = cart[key] || { dish: what.dish, options: sorted(what.options), addons: sorted(what.addons), qty: 0 };
+
         // Every step up is one "added to cart" for the owner's analytics.
-        if (quantity > (cart[id] || 0)) {
+        if (quantity > line.qty) {
             document.dispatchEvent(new CustomEvent('qayema:track', {
-                detail: { type: 'dish_add', dish_id: parseInt(id, 10) },
+                detail: { type: 'dish_add', dish_id: parseInt(line.dish, 10) },
             }));
         }
 
         if (quantity > 0) {
-            cart[id] = Math.min(quantity, 99);
+            line.qty = Math.min(quantity, 99);
+            cart[key] = line;
         } else {
-            delete cart[id];
+            delete cart[key];
         }
 
         save();
@@ -151,18 +273,35 @@
         return button;
     }
 
-    function stepper(id, quantity) {
+    function stepper(key, quantity, what) {
         var wrap = element('div', 'qty');
 
         wrap.appendChild(iconButton(null, icons.minus, strings.remove, function () {
-            setQuantity(id, quantity - 1);
+            setQuantity(key, quantity - 1, what);
         }));
         wrap.appendChild(element('output', null, String(quantity)));
         wrap.appendChild(iconButton('plus', icons.plus, strings.add, function () {
-            setQuantity(id, quantity + 1);
+            setQuantity(key, quantity + 1, what);
         }));
 
         return wrap;
+    }
+
+    /**
+     * A dish with choices keeps its add button, which opens the dish sheet
+     * (menu-dish.js) for another line; how many are in the cart already
+     * sits on it as a badge.
+     */
+    function chooseButton(dish, count) {
+        var button = iconButton('add', icons.plus, strings.add + ' ' + dish.dataset.name, function () {});
+        button.setAttribute('data-dish-open', '');
+        button.setAttribute('aria-haspopup', 'dialog');
+
+        if (count > 0) {
+            button.appendChild(element('span', 'add-count', String(count)));
+        }
+
+        return button;
     }
 
     function renderDishActions() {
@@ -173,7 +312,10 @@
             }
 
             var id = dish.dataset.dish;
-            var quantity = cart[id] || 0;
+            var hasChoices = dish.hasAttribute('data-choices');
+            var what = { dish: id, options: [], addons: [] };
+            var key = keyOf(id, [], []);
+            var quantity = hasChoices ? countOf(id) : (cart[key] ? cart[key].qty : 0);
             var before = painted[id];
 
             if (before === quantity && slot.firstChild) {
@@ -183,16 +325,21 @@
             // Only swapping the add button for the stepper is worth animating.
             // Stepping 2 → 3 should not make the control jump, and the first
             // paint of the page should not animate at all.
-            var entering = before !== undefined && (before === 0) !== (quantity === 0);
+            var entering = !hasChoices && before !== undefined && (before === 0) !== (quantity === 0);
 
             painted[id] = quantity;
             slot.textContent = '';
 
-            var control = quantity > 0
-                ? stepper(id, quantity)
-                : iconButton('add', icons.plus, strings.add + ' ' + dish.dataset.name, function () {
-                    setQuantity(id, 1);
+            var control;
+            if (hasChoices) {
+                control = chooseButton(dish, quantity);
+            } else if (quantity > 0) {
+                control = stepper(key, quantity, what);
+            } else {
+                control = iconButton('add', icons.plus, strings.add + ' ' + dish.dataset.name, function () {
+                    setQuantity(key, 1, what);
                 });
+            }
 
             if (entering) {
                 control.classList.add('enter');
@@ -216,10 +363,13 @@
 
         var body = element('div', 'cart-line-body');
         body.appendChild(element('div', 'cart-line-name', line.name));
+        if (line.choices) {
+            body.appendChild(element('div', 'cart-line-choices', line.choices));
+        }
         body.appendChild(element('div', 'cart-line-each', money(line.unit) + ' ' + strings.each));
 
         var bottom = element('div', 'cart-line-foot');
-        bottom.appendChild(stepper(line.id, line.quantity));
+        bottom.appendChild(stepper(line.key, line.quantity, { dish: line.id, options: line.options, addons: line.addons }));
         bottom.appendChild(element('div', 'cart-line-total', money(line.total)));
         body.appendChild(bottom);
 
@@ -339,7 +489,7 @@
                 credentials: 'same-origin',
                 body: JSON.stringify({
                     items: current.map(function (line) {
-                        return { dish_id: Number(line.id), quantity: line.quantity };
+                        return { dish_id: Number(line.id), quantity: line.quantity, options: line.options, addons: line.addons };
                     }),
                     // The language the guest is reading, so the WhatsApp
                     // message and any error come back in it.
@@ -432,6 +582,15 @@
 
         sheet.addEventListener('animationend', onEnd);
     }
+
+    // A dish and its choices, from the dish sheet (menu-dish.js).
+    document.addEventListener('qayema:add', function (event) {
+        var what = event.detail;
+        var key = keyOf(what.dish, what.options, what.addons);
+        var quantity = cart[key] ? cart[key].qty : 0;
+
+        setQuantity(key, quantity + what.quantity, what);
+    });
 
     document.addEventListener('click', function (event) {
         if (event.target.closest('[data-open-cart]')) {

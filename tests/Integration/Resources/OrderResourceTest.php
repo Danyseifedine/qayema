@@ -30,8 +30,10 @@ class OrderResourceTest extends TestCase
             'note' => 'Extra garlic',
             'placed_at' => CarbonImmutable::parse('2026-06-01 18:30:00', 'UTC'),
         ]);
+        $options = ['variants' => [['name' => 'Size', 'choice' => 'Large', 'price' => '1.00']], 'addons' => []];
         $line = OrderItem::factory()->for($order)->create([
             'name' => 'Shawarma',
+            'options' => $options,
             'unit_price' => '7.25',
             'quantity' => 2,
             'line_total' => '14.50',
@@ -48,6 +50,7 @@ class OrderResourceTest extends TestCase
             'items' => [[
                 'id' => $line->id,
                 'name' => 'Shawarma',
+                'options' => $options,
                 'quantity' => 2,
                 'line_total' => '14.50',
             ]],

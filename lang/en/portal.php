@@ -200,6 +200,8 @@ return [
         ],
         'rows' => [
             'multiple_languages' => 'Second menu language',
+            'variants' => 'Dish variants (size, spice level)',
+            'addons' => 'Dish add-ons (extra cheese)',
             'appearance' => 'Your colours and fonts',
             'premium_designs' => 'Premium designs',
             'qr_studio' => 'QR studio',
@@ -207,6 +209,8 @@ return [
             'analytics' => 'Analytics',
             'advanced_analytics' => 'Advanced analytics',
         ],
+        'fair_use_note' => 'Fair use on :package: up to :limits.',
+        'and' => ' and ',
         'note_bold' => 'Your menu is safe.',
         'note' => 'If a package ends, your menu goes back to Free. Nothing you made is deleted.',
     ],

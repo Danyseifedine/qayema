@@ -39,8 +39,9 @@ class PricingCards
 
             $features = array_values(array_filter(
                 Feature::cases(),
+                // Compared as owners see them: two "Unlimited"s are no change.
                 fn (Feature $feature): bool => $feature->isLimit()
-                    ? ! $covers || $package->featureValue($feature) !== $previous->featureValue($feature)
+                    ? ! $covers || $package->shownValue($feature) !== $previous->shownValue($feature)
                     : $package->featureValue($feature) > 0 && (! $covers || $previous->featureValue($feature) === 0),
             ));
 
@@ -81,6 +82,36 @@ class PricingCards
         }
 
         return $names;
+    }
+
+    /**
+     * The fair-use numbers behind every "Unlimited*" on the cards, as the
+     * footnote under them: "* Fair use on Premium: up to 1,000 dishes and
+     * 1,000 categories." Null when no package has one.
+     */
+    public function fairUseNote(): ?string
+    {
+        $notes = [];
+
+        foreach (Package::query()->orderBy('sort_order')->orderBy('id')->get() as $package) {
+            $limits = [];
+
+            foreach (Feature::limits() as $feature) {
+                if ($package->isFairUse($feature)) {
+                    $value = (int) $package->featureValue($feature);
+                    $limits[] = trans_choice('portal.pricing.limits.'.$feature->value, $value, ['count' => Number::format($value)]);
+                }
+            }
+
+            if ($limits !== []) {
+                $notes[] = __('portal.pricing.fair_use_note', [
+                    'package' => $package->name,
+                    'limits' => implode(__('portal.pricing.and'), $limits),
+                ]);
+            }
+        }
+
+        return $notes === [] ? null : '* '.implode(' ', $notes);
     }
 
     /** Whether a package has at least everything the one before it has. */
@@ -125,10 +156,12 @@ class PricingCards
             return __('portal.pricing.rows.'.$feature->value);
         }
 
-        $value = $package->featureValue($feature);
+        $value = $package->shownValue($feature);
 
+        // A fair-use limit reads "Unlimited dishes*", with the number in the
+        // footnote under the cards (fairUseNote()).
         return $value === null
-            ? __('portal.pricing.unlimited.'.$feature->value)
+            ? __('portal.pricing.unlimited.'.$feature->value).($package->isFairUse($feature) ? '*' : '')
             : trans_choice('portal.pricing.limits.'.$feature->value, $value, ['count' => Number::format($value)]);
     }
 }

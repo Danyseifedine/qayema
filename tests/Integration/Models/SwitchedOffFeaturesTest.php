@@ -20,7 +20,7 @@ class SwitchedOffFeaturesTest extends TestCase
 
     public function test_moving_up_to_premium_switches_on_everything_it_brings(): void
     {
-        $restaurant = $this->owner(['switched_off' => ['orders', 'qr', 'analytics', 'languages']]);
+        $restaurant = $this->owner(['switched_off' => ['orders', 'qr', 'analytics', 'languages', 'variants', 'addons']]);
 
         app(PackageAssigner::class)->assign($restaurant, Package::findBySlug('premium'));
 
@@ -36,6 +36,18 @@ class SwitchedOffFeaturesTest extends TestCase
         app(PackageAssigner::class)->assign($restaurant, Package::findBySlug('premium'));
 
         $this->assertSame(['analytics'], $restaurant->fresh()->switchedOff());
+    }
+
+    public function test_moving_up_to_pro_switches_on_variants_and_addons(): void
+    {
+        $restaurant = $this->owner(['switched_off' => ['variants', 'addons', 'orders']]);
+
+        app(PackageAssigner::class)->assign($restaurant, Package::findBySlug('pro'));
+
+        // Pro has no ordering, so that choice is left as it was.
+        $this->assertSame(['orders'], $restaurant->fresh()->switchedOff());
+        $this->assertTrue($restaurant->fresh()->showsVariants());
+        $this->assertTrue($restaurant->fresh()->showsAddons());
     }
 
     public function test_moving_down_forgets_no_choice(): void

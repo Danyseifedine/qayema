@@ -35,9 +35,11 @@ class E2eController extends Controller
      * (false for a user mid-onboarding), has_password, name, description,
      * slug, second_locale, is_active, switched_off, phone, google_maps_url,
      * opening_hours, categories [{name, description, dishes: [{name, price,
-     * ingredients, is_available}]}], social_links [{platform, url}], orders
-     * (count), visits (count), qr_scans (count), settings {key: value} for
-     * the design, qr_settings {…}, logo (bool).
+     * ingredients, is_available, variants: [{name, options: [{name, price}]}],
+     * addons: [{name, price}]}]}], social_links [{platform, url}], orders
+     * (count), order_choices (bool: their line carries a size and an add-on),
+     * visits (count), qr_scans (count), settings {key: value} for the
+     * design, qr_settings {…}, logo (bool).
      */
     public function scenario(Request $request): JsonResponse
     {
@@ -101,7 +103,7 @@ class E2eController extends Controller
 
             $dishes = [];
             foreach (array_values($row['dishes'] ?? []) as $order => $dish) {
-                $dishes[] = Dish::query()->create([
+                $created = Dish::query()->create([
                     'restaurant_id' => $restaurant->id,
                     'category_id' => $category->id,
                     'name' => $dish['name'],
@@ -109,7 +111,9 @@ class E2eController extends Controller
                     'price' => $dish['price'] ?? 10,
                     'is_available' => $dish['is_available'] ?? true,
                     'display_order' => $order,
-                ])->only(['id']);
+                ]);
+                $this->dishOptions($created, $dish);
+                $dishes[] = $created->only(['id']);
             }
 
             $categories[] = ['id' => $category->id, 'dishes' => $dishes];
@@ -127,7 +131,15 @@ class E2eController extends Controller
                 'total' => '12.50',
                 'placed_at' => now()->subMinutes(10 * ($i + 1)),
             ]);
-            $order->items()->create(['name' => 'Kafta', 'unit_price' => '12.50', 'quantity' => 1, 'line_total' => '12.50']);
+            $order->items()->create([
+                'name' => 'Kafta',
+                'options' => ($input['order_choices'] ?? false)
+                    ? ['variants' => [['name' => 'Size', 'choice' => 'Large', 'price' => '2.00']], 'addons' => [['name' => 'Extra garlic', 'price' => '0.50']]]
+                    : null,
+                'unit_price' => '12.50',
+                'quantity' => 1,
+                'line_total' => '12.50',
+            ]);
         }
 
         $visits = (int) ($input['visits'] ?? 0);
@@ -206,5 +218,25 @@ class E2eController extends Controller
         imagepng($image);
 
         return (string) ob_get_clean();
+    }
+
+    /**
+     * A scenario dish's variants and add-ons, in the order given.
+     *
+     * @param  array<string, mixed>  $input
+     */
+    private function dishOptions(Dish $dish, array $input): void
+    {
+        foreach (array_values($input['variants'] ?? []) as $position => $row) {
+            $variant = $dish->variants()->create(['name' => $row['name'], 'display_order' => $position]);
+
+            foreach (array_values($row['options'] ?? []) as $place => $option) {
+                $variant->options()->create(['name' => $option['name'], 'price' => $option['price'] ?? 0, 'display_order' => $place]);
+            }
+        }
+
+        foreach (array_values($input['addons'] ?? []) as $position => $addon) {
+            $dish->addons()->create(['name' => $addon['name'], 'price' => $addon['price'] ?? 0, 'display_order' => $position]);
+        }
     }
 }

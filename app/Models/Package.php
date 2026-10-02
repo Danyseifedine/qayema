@@ -40,6 +40,7 @@ class Package extends Model
         'sort_order',
         'is_featured',
         'features',
+        'fair_use',
     ];
 
     protected function casts(): array
@@ -51,6 +52,7 @@ class Package extends Model
             'sort_order' => 'integer',
             'is_featured' => 'boolean',
             'features' => 'array',
+            'fair_use' => 'array',
         ];
     }
 
@@ -116,6 +118,25 @@ class Package extends Model
     }
 
     /** This package's value for a feature, or null when it is unlimited. */
+    /**
+     * A limit shown to owners as unlimited while a fair-use number holds in
+     * practice (Premium's dishes and categories): the number in `features`
+     * is enforced, "Unlimited" is what the dashboard and pricing say, and the
+     * pricing page and Terms state the fair-use number.
+     */
+    public function isFairUse(Feature $feature): bool
+    {
+        return $feature->isLimit()
+            && in_array($feature->value, (array) $this->fair_use, true)
+            && $this->featureValue($feature) !== null;
+    }
+
+    /** What owners are shown: null (unlimited) for a fair-use limit, else the value. */
+    public function shownValue(Feature $feature): ?int
+    {
+        return $this->isFairUse($feature) ? null : $this->featureValue($feature);
+    }
+
     public function featureValue(Feature $feature): ?int
     {
         $features = $this->features ?? [];

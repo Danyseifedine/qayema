@@ -53,8 +53,9 @@ class OrdersRelationManager extends RelationManager
                 TextColumn::make('items')
                     ->label('What was ordered')
                     ->state(fn (Order $record): string => $record->items
-                        ->map(fn (OrderItem $item): string => $item->quantity.' × '.$item->name)
-                        ->implode(', '))
+                        ->map(fn (OrderItem $item): string => $item->quantity.' × '.$item->name
+                            .($item->choices() === [] ? '' : ' ('.implode(', ', $item->choices()).')'))
+                        ->implode('; '))
                     ->wrap(),
                 TextColumn::make('total')
                     ->state(fn (Order $record): string => $record->total.' '.$record->currency)

@@ -70,6 +70,10 @@ class WhatsAppLink
 
         foreach ($order->items as $item) {
             $lines[] = $item->quantity.' × '.$item->name.'  '.$symbol.number_format((float) $item->line_total, 2);
+
+            if ($item->choices() !== []) {
+                $lines[] = '    '.implode(', ', $item->choices());
+            }
         }
 
         $lines[] = '';

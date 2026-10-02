@@ -24,6 +24,7 @@ class PackageSeeder extends Seeder
                 'is_default' => $package['is_default'] ?? false,
                 'sort_order' => $package['sort_order'] ?? 0,
                 'features' => $package['features'] ?? [],
+                'fair_use' => $package['fair_use'] ?? null,
             ]);
         }
     }

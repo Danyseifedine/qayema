@@ -25,6 +25,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // Grafana Cloud telemetry (config/opentelemetry.php) loads only when it
+        // will send: once loaded it hooks every query and request and leaves
+        // exporters to flush at exit, which tests and the e2e suite (no
+        // GRAFANA_OTLP_ENDPOINT) should never pay for.
+        if (! config('opentelemetry.disabled', true)) {
+            $this->app->register(\Keepsuit\LaravelOpenTelemetry\LaravelOpenTelemetryServiceProvider::class);
+        }
+
         // Telescope is a dev tool: never load it outside local. It's excluded from
         // package auto-discovery (composer.json dont-discover) and registered here
         // only in local, so a production (or --no-dev) deploy can never expose

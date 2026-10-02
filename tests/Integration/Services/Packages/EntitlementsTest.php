@@ -54,7 +54,7 @@ class EntitlementsTest extends TestCase
             'package_ends_at' => now()->addDay(),
         ]);
 
-        $this->assertSame(500, $restaurant->dish_limit);
+        $this->assertSame(1000, $restaurant->dish_limit);
 
         $restaurant->update(['package_ends_at' => now()->subDay()]);
         $restaurant = $restaurant->fresh();

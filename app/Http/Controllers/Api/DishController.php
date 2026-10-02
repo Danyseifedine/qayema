@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\Feature;
 use App\Http\Controllers\Concerns\ResolvesRestaurant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ReorderDishesRequest;
@@ -12,6 +13,7 @@ use App\Http\Resources\DishResource;
 use App\Models\Dish;
 use App\Models\Restaurant;
 use App\Services\Media\MediaService;
+use App\Services\Menu\DishOptionsSync;
 use App\Services\Menu\DisplayOrder;
 use App\Services\Menu\MenuLanguages;
 use Illuminate\Http\JsonResponse;
@@ -28,7 +30,13 @@ class DishController extends Controller
 {
     use ResolvesRestaurant;
 
-    public function __construct(private readonly MediaService $media) {}
+    /** What DishResource reads, loaded up front so a list is not one query per dish. */
+    private const WITH = ['media', 'variants.options', 'addons'];
+
+    public function __construct(
+        private readonly MediaService $media,
+        private readonly DishOptionsSync $options,
+    ) {}
 
     public function index(Request $request): AnonymousResourceCollection
     {
@@ -36,7 +44,7 @@ class DishController extends Controller
         $restaurant = $this->restaurant($request);
 
         $dishes = $restaurant->dishes()
-            ->with('media')
+            ->with(self::WITH)
             ->orderBy('display_order')
             ->orderBy('id')
             ->get();
@@ -60,7 +68,9 @@ class DishController extends Controller
 
             if ($locked->hasReachedDishLimit()) {
                 throw ValidationException::withMessages([
-                    'name' => __('You have reached your plan limit of :limit dishes.', ['limit' => $locked->dish_limit]),
+                    'name' => $locked->entitlements()->isFairUse(Feature::DishLimit)
+                        ? __('You have reached the fair-use limit of :limit dishes. Contact us if you need more.', ['limit' => number_format($locked->dish_limit)])
+                        : __('You have reached your plan limit of :limit dishes.', ['limit' => $locked->dish_limit]),
                 ]);
             }
 
@@ -75,13 +85,14 @@ class DishController extends Controller
             MenuLanguages::fill($dish, 'ingredients', MenuLanguages::input($request, 'ingredients', $languages), $languages);
             $dish->restaurant()->associate($locked);
             $dish->save();
+            $this->syncOptions($request, $dish, $languages);
 
             return $dish;
         });
 
         $this->syncImage($request, $dish);
 
-        return (new DishResource($dish->load('media')))
+        return (new DishResource($dish->load(self::WITH)))
             ->response()
             ->setStatusCode(201);
     }
@@ -103,11 +114,15 @@ class DishController extends Controller
         if ($request->has('is_available')) {
             $dish->is_available = $request->boolean('is_available');
         }
-        $dish->save();
+
+        DB::transaction(function () use ($request, $dish, $languages): void {
+            $dish->save();
+            $this->syncOptions($request, $dish, $languages);
+        });
 
         $this->syncImage($request, $dish);
 
-        return new DishResource($dish->load('media'));
+        return new DishResource($dish->load(self::WITH));
     }
 
     public function destroy(Dish $dish): JsonResponse
@@ -140,7 +155,7 @@ class DishController extends Controller
         DisplayOrder::apply($restaurant->dishes(), $ordered);
 
         $dishes = $restaurant->dishes()
-            ->with('media')
+            ->with(self::WITH)
             ->orderBy('display_order')
             ->orderBy('id')
             ->get();
@@ -158,7 +173,18 @@ class DishController extends Controller
 
         $dish->update(['is_available' => $request->boolean('is_available')]);
 
-        return new DishResource($dish->load('media'));
+        return new DishResource($dish->load(self::WITH));
+    }
+
+    /**
+     * The variants and add-ons the form sent. A list the request leaves out
+     * (not sent, or switched off: see ValidatesDishOptions) stays as it is.
+     *
+     * @param  array<int, string>  $languages
+     */
+    private function syncOptions(StoreDishRequest|UpdateDishRequest $request, Dish $dish, array $languages): void
+    {
+        $this->options->sync($dish, $request->validated('variants'), $request->validated('addons'), $languages);
     }
 
     /**

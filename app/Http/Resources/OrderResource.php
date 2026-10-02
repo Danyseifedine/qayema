@@ -30,6 +30,8 @@ class OrderResource extends JsonResource
             'items' => $this->whenLoaded('items', fn () => $this->items->map(fn ($item): array => [
                 'id' => $item->id,
                 'name' => $item->name,
+                // The guest's choices as they were: {variants, addons}, or null.
+                'options' => $item->options,
                 'quantity' => $item->quantity,
                 'line_total' => (string) $item->line_total,
             ])->all()),

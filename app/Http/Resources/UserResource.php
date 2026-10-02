@@ -83,11 +83,12 @@ class UserResource extends JsonResource
                 ...$this->packageSummary($restaurant->package),
                 'starts_at' => $restaurant->package_started_at?->toIso8601String(),
             ] : null,
-            // A null limit is unlimited on this package.
+            // A null limit is unlimited on this package, or shown so under
+            // fair use (Premium's dishes); the number then holds on save.
             'limits' => [
-                'dishes' => ['used' => $restaurant->dishes()->count(), 'limit' => $entitlements->limit(Feature::DishLimit)],
-                'categories' => ['used' => $restaurant->categories()->count(), 'limit' => $entitlements->limit(Feature::CategoryLimit)],
-                'social_links' => ['used' => $restaurant->socialLinks()->count(), 'limit' => $entitlements->limit(Feature::SocialLinkLimit)],
+                'dishes' => ['used' => $restaurant->dishes()->count(), 'limit' => $entitlements->shownLimit(Feature::DishLimit)],
+                'categories' => ['used' => $restaurant->categories()->count(), 'limit' => $entitlements->shownLimit(Feature::CategoryLimit)],
+                'social_links' => ['used' => $restaurant->socialLinks()->count(), 'limit' => $entitlements->shownLimit(Feature::SocialLinkLimit)],
             ],
             // Optional features the owner switched off (Features page).
             'switched_off' => $restaurant->switchedOff(),

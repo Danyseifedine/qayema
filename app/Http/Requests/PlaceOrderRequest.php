@@ -25,6 +25,11 @@ class PlaceOrderRequest extends FormRequest
             'items' => ['required', 'array', 'min:1', 'max:50'],
             'items.*.dish_id' => ['required', 'integer', 'min:1'],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:99'],
+            // The guest's choices, as ids: one option per variant, any add-ons.
+            'items.*.options' => ['nullable', 'array', 'max:'.config('menu.dish_options.variants')],
+            'items.*.options.*' => ['integer', 'min:1'],
+            'items.*.addons' => ['nullable', 'array', 'max:'.config('menu.dish_options.addons')],
+            'items.*.addons.*' => ['integer', 'min:1'],
             'note' => ['nullable', 'string', 'max:500'],
             // The language the guest was reading; checked against the menu's
             // own languages in the controller.

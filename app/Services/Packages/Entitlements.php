@@ -37,6 +37,22 @@ class Entitlements
             : $feature->defaultValue();
     }
 
+    /**
+     * The allowance as owners are shown it: null (unlimited) when the
+     * package in force shows this limit as fair use, the enforced number
+     * otherwise. limit() is what is enforced.
+     */
+    public function shownLimit(Feature $feature): ?int
+    {
+        return $this->isFairUse($feature) ? null : $this->limit($feature);
+    }
+
+    /** The package in force shows this limit as unlimited, under fair use. */
+    public function isFairUse(Feature $feature): bool
+    {
+        return (bool) $this->restaurant->effectivePackage()?->isFairUse($feature);
+    }
+
     public function can(Feature $feature): bool
     {
         $all = $this->all();

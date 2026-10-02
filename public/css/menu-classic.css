@@ -167,18 +167,32 @@ a.fact:hover { color: var(--text); }
 .category-head p { margin: 3px 0 0; font-size: 12.5px; color: var(--muted); line-height: 1.4; }
 .dishes { display: flex; flex-direction: column; gap: 10px; padding: 0 16px; }
 .dish { display: flex; gap: 12px; padding: 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; }
-.dish-photo { flex-shrink: 0; width: 88px; height: 88px; border-radius: 8px; object-fit: cover; background: var(--soft); }
+.dish-photo { flex-shrink: 0; width: 72px; height: 72px; border-radius: 8px; object-fit: cover; background: var(--soft); }
 .dish-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .dish-name { font-size: 15px; font-weight: 600; letter-spacing: -0.005em; line-height: 1.3; }
 .ingredients { margin: 2px 0 0; font-size: 11.5px; color: var(--muted); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .dish-foot { margin-top: auto; padding-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .price { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
 
+/* A dish with variants or add-ons: the card opens its sheet. */
+.dish.has-choices { cursor: pointer; transition: border-color .15s ease; }
+@media (hover: hover) {
+    .dish.has-choices:hover { border-color: color-mix(in srgb, var(--text) 24%, var(--bg)); }
+}
+.dish-more { flex-shrink: 0; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%; background: var(--soft); color: var(--text); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform .12s ease; }
+.dish-more:active { transform: scale(.88); }
+.dish-more .icon { width: 18px; height: 18px; }
+/* The arrow points the way the page reads. */
+[dir="rtl"] .dish-more .icon { transform: scaleX(-1); }
+
 /* ---- Add / quantity ---- */
 .add, .qty button { border: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform .12s ease; }
 .add:active, .qty button:active { transform: scale(.88); }
 .add { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
 .add .icon { width: 18px; height: 18px; }
+/* How many of a dish with choices are in the cart, on its add button. */
+.add { position: relative; }
+.add-count { position: absolute; top: -6px; inset-inline-end: -6px; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 999px; border: 2px solid var(--bg); background: var(--text); color: var(--bg); font-size: 10.5px; font-weight: 700; line-height: 15px; text-align: center; font-variant-numeric: tabular-nums; }
 .qty { display: inline-flex; align-items: center; background: var(--soft); border-radius: 999px; padding: 3px; }
 .qty button { width: 28px; height: 28px; border-radius: 50%; background: transparent; }
 .qty button .icon { width: 18px; height: 18px; }
@@ -197,6 +211,7 @@ a.fact:hover { color: var(--text); }
 .cart-line-photo { width: 56px; height: 56px; flex-shrink: 0; border-radius: 8px; object-fit: cover; background: var(--soft); }
 .cart-line-body { flex: 1; min-width: 0; }
 .cart-line-name { font-size: 14px; font-weight: 600; letter-spacing: -0.005em; line-height: 1.3; }
+.cart-line-choices { font-size: 12px; color: var(--text); opacity: .78; margin-top: 2px; line-height: 1.4; }
 .cart-line-each { font-size: 12px; color: var(--muted); margin-top: 2px; }
 .cart-line-foot { margin-top: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .cart-line-total { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -224,6 +239,71 @@ dialog.sheet.closing::backdrop { animation: fade-in .22s ease reverse forwards; 
 .sheet-scroll { flex: 1; overflow-y: auto; padding: 16px 16px 32px; }
 .sheet-foot { padding: 14px 14px calc(14px + env(safe-area-inset-bottom)); background: var(--bg); border-top: 1px solid var(--line); }
 .sheet-foot:empty { display: none; }
+
+/* ---- Dish sheet: a dish's variants and add-ons (menu-dish.js) ---- */
+/* Rises from the bottom on a phone; a centred card on a wider screen. */
+dialog.dish-sheet { border: 0; padding: 0; margin: auto auto 0; width: 100%; max-width: 100%; max-height: 92dvh; border-radius: 20px 20px 0 0; background: var(--bg); color: var(--text); overflow: hidden; box-shadow: 0 -8px 40px rgba(0,0,0,.18); }
+dialog.dish-sheet::backdrop { background: rgba(0,0,0,.45); }
+dialog.dish-sheet[open] { animation: sheet-in .32s cubic-bezier(.2,.9,.3,1); }
+dialog.dish-sheet[open]::backdrop { animation: fade-in .32s ease; }
+dialog.dish-sheet.closing { animation: sheet-out .22s cubic-bezier(.4,0,1,1) forwards; }
+dialog.dish-sheet.closing::backdrop { animation: fade-in .22s ease reverse forwards; }
+.dish-sheet-body { position: relative; display: flex; flex-direction: column; max-height: 92dvh; }
+.dish-sheet-close { position: absolute; top: 12px; inset-inline-end: 12px; z-index: 2; width: 36px; height: 36px; border: 0; border-radius: 999px; background: var(--bg); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,.2); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.dish-sheet-close .icon { width: 18px; height: 18px; }
+.dish-sheet-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 12px; }
+.dish-sheet-photo { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; background: var(--soft); }
+.dish-sheet-head { padding: 18px 18px 4px; }
+/* Without a photo, the title sits clear of the close button. */
+.dish-sheet-photo[hidden] + .dish-sheet-head { padding-top: 22px; padding-inline-end: 60px; }
+.dish-sheet-head h2 { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.25; }
+.dish-sheet-price { display: block; margin-top: 4px; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.dish-sheet-ingredients { margin: 8px 0 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+.choice-group { --tag-inset: 9px; min-width: 0; margin: 0; padding: 16px 18px 4px; border: 0; }
+.choice-group + .choice-group { margin-top: 8px; border-top: 1px solid var(--line); }
+/* A legend will not lay out as flex in place; floated, it will. */
+.choice-legend { float: left; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0; margin-bottom: 12px; }
+.choice-title { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+.choice-tag { flex-shrink: 0; padding: 3px var(--tag-inset); border-radius: 999px; background: var(--soft); color: var(--muted); font-size: 11px; font-weight: 600; }
+.choice-pills, .choice-rows { clear: both; }
+/* Equal tiles in an even grid, so options line up whatever their names; the
+   extra price sits under the name instead of widening the tile. */
+.choice-pills { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.choice-pill { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 54px; padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--bg); font-size: 14px; font-weight: 500; line-height: 1.25; text-align: center; overflow-wrap: break-word; hyphens: auto; cursor: pointer; transition: border-color .15s ease, background-color .15s ease, transform .12s ease; }
+.choice-pill:active { transform: scale(.97); }
+/* Mixed toward the text so a pale accent still reads as picked. */
+.choice-pill:has(input:checked) { border-color: color-mix(in srgb, var(--accent) 65%, var(--text)); background: color-mix(in srgb, var(--accent) 22%, var(--bg)); font-weight: 600; }
+.choice-pill input, .choice-row input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.choice-pill:has(input:focus-visible), .choice-row:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.choice-price { font-size: 12.5px; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+.choice-rows { display: flex; flex-direction: column; }
+.choice-row { position: relative; display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 6px 0; border-radius: 8px; cursor: pointer; }
+.choice-row + .choice-row { border-top: 1px solid var(--line); }
+.choice-row .choice-name { flex: 1; min-width: 0; font-size: 14px; }
+/* Inset like the text inside "Optional" above, so the price and that word
+   end on the same line. */
+.choice-row .choice-price { padding-inline-end: var(--tag-inset); }
+.choice-check { flex-shrink: 0; width: 22px; height: 22px; border: 1.5px solid color-mix(in srgb, var(--text) 32%, var(--bg)); border-radius: 7px; color: transparent; display: flex; align-items: center; justify-content: center; transition: background-color .15s ease, border-color .15s ease; }
+.choice-check .icon { width: 14px; height: 14px; }
+.choice-row:has(input:checked) .choice-check { border-color: var(--accent); background: var(--accent); color: var(--accent-ink); }
+
+.dish-sheet-foot { display: flex; align-items: center; gap: 12px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: var(--bg); }
+.dish-sheet-foot:empty { display: none; }
+.dish-sheet-qty { flex-shrink: 0; height: 48px; padding: 4px; }
+.dish-sheet-qty button { width: 40px; height: 40px; }
+.dish-sheet-qty button[disabled] { opacity: .35; cursor: default; }
+.dish-sheet-qty output { min-width: 30px; padding: 0; font-size: 14px; }
+.choice-pill .choice-price { font-size: 12px; }
+/* The same height as the stepper beside it. */
+.dish-sheet-add { flex: 1; height: 48px; padding-block: 0; }
+
+@media (min-width: 640px) {
+    dialog.dish-sheet { margin: auto; width: calc(100% - 48px); max-width: 460px; max-height: min(88dvh, 760px); border-radius: 20px; box-shadow: 0 24px 60px rgba(0,0,0,.25); }
+    .dish-sheet-body { max-height: min(88dvh, 760px); }
+    dialog.dish-sheet[open] { animation: dish-in .24s cubic-bezier(.2,.9,.3,1); }
+    dialog.dish-sheet.closing { animation: dish-out .18s ease forwards; }
+}
 
 /* ---- Dock: a floating row of actions ---- */
 .dock {
@@ -424,6 +504,8 @@ dialog.pop[open]::backdrop { animation: fade-in .2s ease; }
 @keyframes sheet-out { from { transform: none; } to { transform: translateY(100%); } }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes pop-in { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes dish-in { from { transform: translateY(12px) scale(.97); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes dish-out { from { transform: none; opacity: 1; } to { transform: translateY(8px) scale(.98); opacity: 0; } }
 @keyframes count-pop { 0%, 100% { transform: scale(1); } 45% { transform: scale(1.32); } }
 
 .dish-action > .enter { animation: pop-in .22s cubic-bezier(.2,.9,.3,1); }

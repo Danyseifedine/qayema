@@ -41,5 +41,13 @@
     "Back to top": "返回顶部",
     ":name: menu and prices": ":name：菜单和价格",
     "The :name menu with dishes, prices and opening hours.": ":name 的菜单，包含菜品、价格和营业时间。",
-    "Menu by :brand": "菜单由 :brand 提供"
+    "Menu by :brand": "菜单由 :brand 提供",
+    "Free": "免费",
+    "See options": "查看选项",
+    "Pick 1": "选 1 项",
+    "Optional": "可选",
+    "Add-ons": "加料",
+    "Quantity": "数量",
+    "Choose a :variant for :dish.": "请为 :dish 选择:variant。",
+    "Choose only one :variant for :dish.": "请为 :dish 只选择一个:variant。"
 }

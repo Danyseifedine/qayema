@@ -40,7 +40,7 @@ class RestaurantPackageTest extends TestCase
 
         $owner = $owner->fresh();
         $this->assertSame('premium', $owner->package->slug);
-        $this->assertSame(500, $owner->dish_limit);
+        $this->assertSame(1000, $owner->dish_limit);
         $this->assertTrue($owner->entitlements()->can(Feature::QrStudio));
     }
 

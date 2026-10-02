@@ -43,7 +43,7 @@ class PricingCardsTest extends TestCase
         $this->assertFalse($pro['featured']);
         $this->assertSame('Free', $pro['base']);
         $this->assertSame(
-            ['150 dishes', '15 categories', '2 social links', 'Second menu language', 'Your colours and fonts', 'Analytics'],
+            ['150 dishes', '15 categories', '2 social links', 'Second menu language', 'Dish variants (size, spice level)', 'Dish add-ons (extra cheese)', 'Your colours and fonts', 'Analytics'],
             $pro['lines'],
         );
 
@@ -51,7 +51,7 @@ class PricingCardsTest extends TestCase
         $this->assertTrue($premium['featured']);
         $this->assertSame('Pro', $premium['base']);
         $this->assertSame(
-            ['500 dishes', '30 categories', '10 social links', 'Premium designs', 'QR studio', 'Orders on WhatsApp', 'Advanced analytics'],
+            ['Unlimited dishes*', 'Unlimited categories*', '10 social links', 'Premium designs', 'QR studio', 'Orders on WhatsApp', 'Advanced analytics'],
             $premium['lines'],
         );
 
@@ -59,13 +59,18 @@ class PricingCardsTest extends TestCase
         $this->assertNull($custom['per']);
         $this->assertTrue($custom['contact']);
         $this->assertSame('Premium', $custom['base']);
-        $this->assertSame(['Unlimited dishes', 'Unlimited categories', 'Unlimited social links'], $custom['lines']);
+        // Premium already reads unlimited dishes and categories, so Custom adds
+        // only what is new.
+        $this->assertSame(['Unlimited social links'], $custom['lines']);
+        $this->assertSame('* Fair use on Premium: up to 1,000 dishes and 1,000 categories.', app(PricingCards::class)->fairUseNote());
     }
 
     public function test_each_feature_is_unlocked_by_the_first_package_that_has_it(): void
     {
         $this->assertSame([
             'multiple_languages' => 'Pro',
+            'variants' => 'Pro',
+            'addons' => 'Pro',
             'appearance' => 'Pro',
             'premium_designs' => 'Premium',
             'qr_studio' => 'Premium',
@@ -107,7 +112,7 @@ class PricingCardsTest extends TestCase
         $card = $this->cards()['Premium'];
 
         $this->assertNull($card['base']);
-        $this->assertContains('500 dishes', $card['lines']);
+        $this->assertContains('Unlimited dishes*', $card['lines']);
         $this->assertContains('Second menu language', $card['lines']);
         $this->assertNotContains('Analytics', $card['lines']);
     }
@@ -122,7 +127,8 @@ class PricingCardsTest extends TestCase
         $this->assertSame('مجانية', $cards[0]['price']);
         $this->assertSame(['40 طبقاً', '8 أقسام', 'رابط تواصل واحد'], $cards[0]['lines']);
         $this->assertSame('150 طبقاً', $cards[1]['lines'][0]);
-        $this->assertSame('500 طبق', $cards[2]['lines'][0]);
+        $this->assertSame('أطباق بلا حدود*', $cards[2]['lines'][0]);
+        $this->assertSame('* الاستخدام العادل في باقة مميّز: حتى 1,000 طبق و1,000 قسم.', app(PricingCards::class)->fairUseNote());
         $this->assertSame('لنتحدّث', $cards[3]['price']);
         // A price reads the same in both languages.
         $this->assertSame('$12', $cards[1]['price']);

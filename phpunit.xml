@@ -30,6 +30,9 @@
         <env name="DB_CONNECTION" value="sqlite"/>
         <env name="DB_DATABASE" value=":memory:"/>
         <env name="MEDIA_DISK" value="public"/>
+        <!-- Tests never send traces or logs to Grafana Cloud. -->
+        <env name="OTEL_SDK_DISABLED" value="true"/>
+        <env name="GRAFANA_OTLP_ENDPOINT" value=""/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>

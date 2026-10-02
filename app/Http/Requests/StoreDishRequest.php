@@ -2,12 +2,16 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ValidatesDishOptions;
 use App\Services\Menu\MenuLanguages;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreDishRequest extends FormRequest
 {
+    use ValidatesDishOptions;
+
     public function authorize(): bool
     {
         return true;
@@ -35,6 +39,7 @@ class StoreDishRequest extends FormRequest
             // MediaService), never as a raw file. `delete_image` clears it.
             'image_key' => ['nullable', 'string', 'regex:/^[a-f0-9\-]{36}$/'],
             'delete_image' => ['nullable', 'boolean'],
+            ...$this->dishOptionRules($languages),
         ];
     }
 
@@ -46,6 +51,15 @@ class StoreDishRequest extends FormRequest
         return [
             'name.en.required' => __('A dish name is required in English.'),
             'name.en.required_with' => __('A dish name is required in English.'),
+            ...$this->dishOptionMessages(),
         ];
+    }
+
+    /**
+     * @return array<int, callable>
+     */
+    public function after(): array
+    {
+        return [fn (Validator $validator) => $this->priceForOptions($validator, null)];
     }
 }

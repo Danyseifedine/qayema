@@ -62,7 +62,6 @@ class LandingContentTest extends TestCase
             'payment logos' => ['payment-logos'],
             'an invented rating' => ['Riyadh to Lisbon'],
             'an invented review' => ['Layla Othman'],
-            'dish variants' => ['variants'],
             'the missing product shot' => ['qayema-dashboard.html'],
         ];
     }

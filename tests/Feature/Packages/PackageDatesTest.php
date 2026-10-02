@@ -38,7 +38,7 @@ class PackageDatesTest extends TestCase
         $this->travel(8)->days();
 
         $this->assertSame(PackageStatus::Active, $restaurant->fresh()->packageStatus());
-        $this->assertSame(500, $restaurant->fresh()->dish_limit);
+        $this->assertSame(1000, $restaurant->fresh()->dish_limit);
     }
 
     public function test_the_cached_answer_ends_when_the_package_does(): void

@@ -41,5 +41,13 @@
     "Back to top": "Наверх",
     ":name: menu and prices": ":name: меню и цены",
     "The :name menu with dishes, prices and opening hours.": "Меню :name: блюда, цены и часы работы.",
-    "Menu by :brand": "Меню создано в :brand"
+    "Menu by :brand": "Меню создано в :brand",
+    "Free": "Бесплатно",
+    "See options": "Варианты",
+    "Pick 1": "Выберите 1",
+    "Optional": "По желанию",
+    "Add-ons": "Добавки",
+    "Quantity": "Количество",
+    "Choose a :variant for :dish.": "Выберите :variant для :dish.",
+    "Choose only one :variant for :dish.": "Выберите только один вариант «:variant» для :dish."
 }

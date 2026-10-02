@@ -192,6 +192,8 @@ class DishEdgeTest extends TestCase
                 'is_available' => false,
                 'category_id' => $category->id,
                 'image_url' => null,
+                'variants' => [],
+                'addons' => [],
             ]);
     }
 

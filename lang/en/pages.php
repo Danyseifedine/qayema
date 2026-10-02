@@ -168,6 +168,10 @@ return [
                 'a' => 'Your menu goes back to Free and nothing is deleted. Your settings wait for you if you move up again.',
             ],
             [
+                'q' => 'What does "Unlimited" mean?',
+                'a' => 'Where a package says unlimited dishes or categories, a fair-use limit applies: the number is under the packages above, far more than a restaurant menu needs. If you ever reach it, contact us.',
+            ],
+            [
                 'q' => 'Do you have a package for several restaurants?',
                 'a' => 'Yes, Custom. Tell us what your group needs and we build the package around it.',
             ],

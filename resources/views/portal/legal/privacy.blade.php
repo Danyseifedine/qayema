@@ -9,8 +9,8 @@
 @section('headline_plain', 'Privacy')
 @section('headline_italic', 'Policy')
 @section('headline_ar', 'سياسة الخصوصية')
-@section('updated', 'Last updated: September 28, 2026')
-@section('updated_ar', 'آخر تحديث: 28 سبتمبر 2026')
+@section('updated', 'Last updated: October 2, 2026')
+@section('updated_ar', 'آخر تحديث: 2 أكتوبر 2026')
 
 @section('toc')
     <li><a href="#information">Information we collect</a></li>
@@ -90,7 +90,7 @@
 
 <ul>
     <li><strong>The restaurant's owner:</strong> Visit statistics, guest actions and orders from a menu are shown to that restaurant's owner.</li>
-    <li><strong>Service providers:</strong> The providers that run the service for us: hosting and database, Cloudflare R2 (image storage), and an email delivery service.</li>
+    <li><strong>Service providers:</strong> The providers that run the service for us: hosting and database, Cloudflare R2 (image storage), an email delivery service, and Grafana Labs (Grafana Cloud, on servers in the EU), which receives technical records of how the service runs: request timings, errors and log messages, with an account's internal ID where one is signed in. These records are designed to leave out names, email addresses and menu content, although an error message can occasionally quote the data involved in the error. They are kept by Grafana for a limited period and used only to keep the service running well.</li>
     <li><strong>Google:</strong> Sign-in with Google; Google reCAPTCHA, which checks for automated abuse on the sign-in and contact pages where it is enabled; and Google Fonts, which serves the typefaces on our website, dashboard and menus, so Google receives your IP address and browser details when a page loads them.</li>
     <li><strong>OpenStreetMap:</strong> Menus that show the restaurant's location load a map from OpenStreetMap, which receives the guest's IP address and the page address.</li>
     <li><strong>jsDelivr:</strong> Some scripts on our website pages are loaded from the jsDelivr content delivery network, which receives your IP address.</li>
@@ -197,7 +197,7 @@
 
 <ul>
     <li><strong>صاحب المطعم:</strong> تُعرض إحصاءات الزيارات وما يفعله الضيوف والطلبات الخاصة بقائمة ما على صاحب ذلك المطعم.</li>
-    <li><strong>مزودو الخدمة:</strong> الجهات التي تشغّل الخدمة لصالحنا: الاستضافة وقاعدة البيانات، وCloudflare R2 (تخزين الصور)، وخدمة لتسليم البريد الإلكتروني.</li>
+    <li><strong>مزودو الخدمة:</strong> الجهات التي تشغّل الخدمة لصالحنا: الاستضافة وقاعدة البيانات، وCloudflare R2 (تخزين الصور)، وخدمة لتسليم البريد الإلكتروني، وGrafana Labs (خدمة Grafana Cloud على خوادم في الاتحاد الأوروبي) التي تتلقى سجلات تقنية عن عمل الخدمة: أوقات الطلبات والأخطاء ورسائل السجل، مع المعرّف الداخلي للحساب حين يكون المستخدم مسجّلاً دخوله. صُمّمت هذه السجلات لتخلو من الأسماء وعناوين البريد الإلكتروني ومحتوى القوائم، وإن كانت رسالة خطأ قد تتضمن أحياناً البيانات المتعلقة بذلك الخطأ. تحتفظ بها Grafana لفترة محدودة، ولا تُستخدم إلا لضمان حسن عمل الخدمة.</li>
     <li><strong>Google:</strong> تسجيل الدخول عبر Google؛ وGoogle reCAPTCHA الذي يتحقق من الإساءة الآلية في صفحتي تسجيل الدخول والتواصل حين يكون مفعّلًا؛ وخطوط Google التي تقدّم الخطوط المستخدمة في موقعنا ولوحة التحكم والقوائم، فتتلقى Google عنوان IP وتفاصيل متصفحك عند تحميل الصفحة لها.</li>
     <li><strong>OpenStreetMap:</strong> القوائم التي تعرض موقع المطعم تحمّل خريطة من OpenStreetMap، التي تتلقى عنوان IP الخاص بالضيف وعنوان الصفحة.</li>
     <li><strong>jsDelivr:</strong> تُحمَّل بعض البرامج النصية في صفحات موقعنا من شبكة توصيل المحتوى jsDelivr، التي تتلقى عنوان IP الخاص بك.</li>

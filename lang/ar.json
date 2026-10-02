@@ -71,6 +71,8 @@
     "You have reached your plan limit of :limit categories.": "وصلت إلى حد باقتك: :limit قسماً.",
     "You have reached your plan limit of :limit dishes.": "وصلت إلى حد باقتك: :limit طبقاً.",
     "You have reached your plan limit of :limit social links.": "وصلت إلى حد باقتك: :limit رابطاً للتواصل.",
+    "You have reached the fair-use limit of :limit dishes. Contact us if you need more.": "وصلت إلى حد الاستخدام العادل: :limit طبق. تواصل معنا إن احتجت إلى المزيد.",
+    "You have reached the fair-use limit of :limit categories. Contact us if you need more.": "وصلت إلى حد الاستخدام العادل: :limit قسم. تواصل معنا إن احتجت إلى المزيد.",
     "This page was open for too long. Refresh it and try again.": "بقيت هذه الصفحة مفتوحة لوقت طويل. حدّثها وحاول مجدداً.",
     "Please sign in again.": "يرجى تسجيل الدخول مجدداً.",
     "The given data was invalid.": "البيانات المُدخلة غير صالحة.",
@@ -81,5 +83,18 @@
     "Your menu has no text in :script.": "لا يوجد في قائمتك نص بخط :script.",
     ":name: menu and prices": ":name: المنيو والأسعار",
     "The :name menu with dishes, prices and opening hours.": "منيو :name مع الأطباق والأسعار وأوقات العمل.",
-    "Menu by :brand": "منيو بواسطة :brand"
+    "Menu by :brand": "منيو بواسطة :brand",
+    "Free": "مجانًا",
+    "See options": "عرض الخيارات",
+    "Pick 1": "اختر واحدًا",
+    "Optional": "اختياري",
+    "Add-ons": "الإضافات",
+    "Quantity": "الكمية",
+    "Choose a :variant for :dish.": "اختر :variant لطبق :dish.",
+    "Choose only one :variant for :dish.": "اختر :variant واحدًا فقط لطبق :dish.",
+    "Give every variant a name in English.": "اكتب اسم كل خيار بالإنجليزية.",
+    "A variant needs at least 2 options.": "يحتاج كل خيار إلى اختيارين على الأقل.",
+    "Give every option a name in English.": "اكتب اسم كل اختيار بالإنجليزية.",
+    "Give every add-on a name in English.": "اكتب اسم كل إضافة بالإنجليزية.",
+    "Give the dish a price before adding variants or add-ons.": "أضف سعرًا للطبق قبل إضافة الخيارات أو الإضافات."
 }

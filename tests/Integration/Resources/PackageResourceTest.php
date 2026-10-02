@@ -43,6 +43,8 @@ class PackageResourceTest extends TestCase
                 'category_limit' => 8,
                 'social_link_limit' => 1,
                 'multiple_languages' => false,
+                'variants' => false,
+                'addons' => false,
                 'appearance' => false,
                 'premium_designs' => false,
                 'qr_studio' => false,

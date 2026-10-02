@@ -51,7 +51,8 @@ class PackageResource extends JsonResource
         $features = [];
 
         foreach (Feature::cases() as $feature) {
-            $value = $this->featureValue($feature);
+            // As owners are shown it: a fair-use limit reads as unlimited.
+            $value = $this->shownValue($feature);
 
             $features[$feature->value] = $feature->kind() === FeatureKind::Flag
                 ? ($value === null || $value > 0)

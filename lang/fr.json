@@ -41,5 +41,13 @@
     "Back to top": "Retour en haut",
     ":name: menu and prices": ":name : menu et prix",
     "The :name menu with dishes, prices and opening hours.": "Le menu de :name avec les plats, les prix et les horaires d'ouverture.",
-    "Menu by :brand": "Menu créé avec :brand"
+    "Menu by :brand": "Menu créé avec :brand",
+    "Free": "Gratuit",
+    "See options": "Voir les options",
+    "Pick 1": "Choisir 1",
+    "Optional": "Facultatif",
+    "Add-ons": "Suppléments",
+    "Quantity": "Quantité",
+    "Choose a :variant for :dish.": "Choisissez :variant pour :dish.",
+    "Choose only one :variant for :dish.": "Choisissez une seule option de :variant pour :dish."
 }

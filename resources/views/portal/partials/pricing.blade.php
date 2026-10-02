@@ -3,7 +3,9 @@
      hold. $heading = false leaves out the section title (the pricing page
      has its own). --}}
 @php
-    $pricing = app(\App\Services\Portal\PricingCards::class)->all();
+    $cards = app(\App\Services\Portal\PricingCards::class);
+    $pricing = $cards->all();
+    $fairUse = $cards->fairUseNote();
     $owner = auth()->user();
     $ctaAuthedHref = $owner?->afterLoginUrl();
     $ctaAuthedLabel = $owner
@@ -52,5 +54,9 @@
       @endforeach
     </div>
     <p class="price-note reveal"><b>{{ __('portal.pricing.note_bold') }}</b> <span>{{ __('portal.pricing.note') }}</span></p>
+    @if ($fairUse)
+      {{-- What every "Unlimited*" on the cards means in practice. --}}
+      <p class="price-note fair-use reveal">{{ $fairUse }}</p>
+    @endif
   </div>
 </section>

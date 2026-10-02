@@ -52,10 +52,23 @@ return [
 
     'channels' => [
 
+        // When Grafana Cloud is configured (GRAFANA_OTLP_ENDPOINT), logs also
+        // go there through the `otlp` channel, next to the request traces.
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', (string) env('LOG_STACK', 'single')),
+            'channels' => array_values(array_unique(array_filter([
+                ...explode(',', (string) env('LOG_STACK', 'single')),
+                blank(env('GRAFANA_OTLP_ENDPOINT')) ? null : 'otlp',
+            ]))),
             'ignore_exceptions' => false,
+        ],
+
+        // keepsuit/laravel-opentelemetry's channel (config/opentelemetry.php),
+        // from `info` up unless OTEL_LOG_LEVEL says otherwise.
+        'otlp' => [
+            'driver' => 'monolog',
+            'handler' => \Keepsuit\LaravelOpenTelemetry\Support\OpenTelemetryMonologHandler::class,
+            'level' => env('OTEL_LOG_LEVEL', 'info'),
         ],
 
         'single' => [

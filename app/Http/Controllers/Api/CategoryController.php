@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\Feature;
 use App\Http\Controllers\Concerns\ResolvesRestaurant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ReorderCategoriesRequest;
@@ -57,7 +58,9 @@ class CategoryController extends Controller
 
             if ($locked->hasReachedCategoryLimit()) {
                 throw ValidationException::withMessages([
-                    'name' => __('You have reached your plan limit of :limit categories.', ['limit' => $locked->category_limit]),
+                    'name' => $locked->entitlements()->isFairUse(Feature::CategoryLimit)
+                        ? __('You have reached the fair-use limit of :limit categories. Contact us if you need more.', ['limit' => number_format($locked->category_limit)])
+                        : __('You have reached your plan limit of :limit categories.', ['limit' => $locked->category_limit]),
                 ]);
             }
 

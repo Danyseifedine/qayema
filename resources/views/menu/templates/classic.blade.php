@@ -3,7 +3,8 @@
 
     Every menu template is a standalone page: it receives $restaurant, $template,
     $settings (the owner's choices merged over the template's defaults), $locale
-    (the language the owner writes in), $hours, $can_order and $is_preview.
+    (the language the owner writes in), $hours, $can_order, $is_preview and
+    $dish_options (each dish's variants and add-ons, App\Services\Menu\MenuDishOptions).
     Its static styles are public/css/menu-classic.css; the owner's fonts and
     the design's colour variables come from menu.partials.theme, and only the
     colours this design names differently stay inline below. Run
@@ -270,10 +271,13 @@
                                 $image = $dish->getFirstMediaUrl('image') ?: null;
                                 $ingredients = $text($dish, 'ingredients');
                                 $dishName = $text($dish, 'name');
+                                $choices = $dish_options[$dish->id] ?? null;
                             @endphp
-                            <article class="dish" data-dish="{{ $dish->id }}" data-name="{{ $dishName }}"
+                            {{-- A dish with choices opens its sheet (menu-dish.js) when tapped. --}}
+                            <article @class(['dish', 'has-choices' => $choices]) data-dish="{{ $dish->id }}" data-name="{{ $dishName }}"
                                      data-image="{{ $image }}"
                                      data-price="{{ $dish->price !== null ? (string) $dish->price : '' }}"
+                                     @if ($choices) data-choices data-ingredients="{{ $ingredients }}" @endif
                                      data-search="{{ Str::lower($dishName.' '.$ingredients) }}">
                                 @if ($image)
                                     <img class="dish-photo" src="{{ $image }}" alt="{{ $dishName }}" loading="lazy" decoding="async">
@@ -285,12 +289,19 @@
                                     @endif
                                     <div class="dish-foot">
                                         @if ($dish->price !== null)
-                                            <span class="price">{{ $currency }}{{ number_format((float) $dish->price, 2) }}</span>
+                                            <span class="price">{{ $currency }}{{ number_format((float) ($choices['lowest'] ?? $dish->price), 2) }}</span>
                                         @else
                                             <span></span>
                                         @endif
                                         @if ($can_order && $dish->price !== null)
                                             <span class="dish-action"></span>
+                                        @elseif ($choices)
+                                            {{-- The + button's place and size, so a menu that
+                                                 takes no orders looks the same. --}}
+                                            <button type="button" class="dish-more" data-dish-open aria-haspopup="dialog"
+                                                    aria-label="{{ __('See options') }}">
+                                                <span class="icon">{!! $icons['chevron'] !!}</span>
+                                            </button>
                                         @endif
                                     </div>
                                 </div>
@@ -499,6 +510,49 @@
         };
     </script>
     <script src="{{ asset('js/menu-cart.js') }}" defer></script>
+@endif
+
+@if ($dish_options)
+    {{-- One sheet for every dish with choices, filled by menu-dish.js from
+         the data below: a bottom sheet on a phone, a card on a wide screen.
+         Without ordering it only shows the choices and their prices. --}}
+    <dialog class="dish-sheet" id="dish-sheet" aria-labelledby="dish-sheet-title">
+        <div class="dish-sheet-body">
+            <button type="button" class="dish-sheet-close" data-dish-close aria-label="{{ __('Close') }}">
+                <span class="icon">{!! $icons['close'] !!}</span>
+            </button>
+            <div class="dish-sheet-scroll">
+                <img class="dish-sheet-photo" data-dish-photo alt="" hidden>
+                <div class="dish-sheet-head">
+                    <h2 id="dish-sheet-title" data-dish-title></h2>
+                    <span class="dish-sheet-price" data-dish-price></span>
+                    <p class="dish-sheet-ingredients" data-dish-ingredients></p>
+                </div>
+                <div data-dish-groups></div>
+            </div>
+            <div class="dish-sheet-foot" data-dish-foot></div>
+        </div>
+    </dialog>
+
+    <script type="application/json" id="dish-options">@json($dish_options)</script>
+    <script>
+        window.QAYEMA_DISH = {
+            currency: @js($currency),
+            canOrder: @js($can_order),
+            icons: { plus: @js($icons['plus']), minus: @js($icons['minus']), check: @js($icons['check']) },
+            strings: {
+                pickOne: @js(__('Pick 1')),
+                optional: @js(__('Optional')),
+                addons: @js(__('Add-ons')),
+                add: @js(__('Add')),
+                remove: @js(__('Remove')),
+                quantity: @js(__('Quantity')),
+                free: @js(__('Free')),
+                close: @js(__('Close')),
+            },
+        };
+    </script>
+    <script src="{{ asset('js/menu-dish.js') }}" defer></script>
 @endif
 
 @unless ($is_preview)

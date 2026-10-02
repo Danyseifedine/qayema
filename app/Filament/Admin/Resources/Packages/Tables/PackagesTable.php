@@ -73,9 +73,13 @@ class PackagesTable
 
             $columns[] = TextColumn::make("feature_{$feature->value}")
                 ->label($feature->label())
-                ->getStateUsing(fn (Package $record): string => $record->featureValue($feature) === null
-                    ? '∞'
-                    : (string) $record->featureValue($feature));
+                // The admin sees the number that holds, and when owners are
+                // shown "Unlimited" instead.
+                ->getStateUsing(fn (Package $record): string => match (true) {
+                    $record->featureValue($feature) === null => '∞',
+                    $record->isFairUse($feature) => $record->featureValue($feature).' (fair use)',
+                    default => (string) $record->featureValue($feature),
+                });
         }
 
         return $columns;

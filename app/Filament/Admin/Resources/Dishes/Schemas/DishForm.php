@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\Dishes\Schemas;
 
 use App\Models\Restaurant;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\Textarea;
@@ -48,6 +49,64 @@ class DishForm
                                 ->rows(3)
                                 ->helperText('Optional. Shown under the dish name on the menu.')
                                 ->columnSpanFull(),
+                        ]),
+                    Section::make('Variants and add-ons')
+                        ->description('Choices guests make on this dish. Each price is added to the dish price.')
+                        ->collapsible()
+                        ->schema([
+                            // English names, like the rest of this form; a
+                            // repeater row keeps the languages it does not show.
+                            Repeater::make('variants')
+                                ->label('Variants')
+                                ->helperText('For example Size or Spice level. Guests pick one option of each.')
+                                ->relationship()
+                                ->orderColumn('display_order')
+                                ->maxItems(config('menu.dish_options.variants'))
+                                ->collapsible()
+                                ->itemLabel(fn (array $state): ?string => $state['name']['en'] ?? null)
+                                ->addActionLabel('Add variant')
+                                ->defaultItems(0)
+                                ->schema([
+                                    TextInput::make('name.en')
+                                        ->label('Name (English)')
+                                        ->placeholder('e.g. Size')
+                                        ->required()
+                                        ->maxLength(config('menu.dish_options.name_max')),
+                                    Repeater::make('options')
+                                        ->label('Options')
+                                        ->relationship()
+                                        ->orderColumn('display_order')
+                                        ->minItems(2)
+                                        ->maxItems(config('menu.dish_options.options'))
+                                        ->defaultItems(2)
+                                        ->addActionLabel('Add option')
+                                        ->columns(2)
+                                        ->schema([
+                                            TextInput::make('name.en')
+                                                ->label('Name (English)')
+                                                ->placeholder('e.g. Large')
+                                                ->required()
+                                                ->maxLength(config('menu.dish_options.name_max')),
+                                            self::extraPrice(),
+                                        ]),
+                                ]),
+                            Repeater::make('addons')
+                                ->label('Add-ons')
+                                ->helperText('For example Extra cheese. Guests pick any number.')
+                                ->relationship()
+                                ->orderColumn('display_order')
+                                ->maxItems(config('menu.dish_options.addons'))
+                                ->addActionLabel('Add add-on')
+                                ->defaultItems(0)
+                                ->columns(2)
+                                ->schema([
+                                    TextInput::make('name.en')
+                                        ->label('Name (English)')
+                                        ->placeholder('e.g. Extra cheese')
+                                        ->required()
+                                        ->maxLength(config('menu.dish_options.name_max')),
+                                    self::extraPrice(),
+                                ]),
                         ]),
                     Section::make('Assignment')
                         ->description('Which restaurant and category this dish belongs to.')
@@ -100,5 +159,18 @@ class DishForm
                         ]),
                 ])->columnSpan(['lg' => 1]),
             ]);
+    }
+
+    /** What a variant option or add-on adds to the dish's price. */
+    private static function extraPrice(): TextInput
+    {
+        return TextInput::make('price')
+            ->label('Adds to the price')
+            ->numeric()
+            ->default(0)
+            ->required()
+            ->step(0.01)
+            ->minValue(0)
+            ->maxValue(config('menu.dish_options.price_max'));
     }
 }

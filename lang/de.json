@@ -41,5 +41,13 @@
     "Back to top": "Nach oben",
     ":name: menu and prices": ":name: Speisekarte und Preise",
     "The :name menu with dishes, prices and opening hours.": "Die Speisekarte von :name mit Gerichten, Preisen und Öffnungszeiten.",
-    "Menu by :brand": "Speisekarte erstellt mit :brand"
+    "Menu by :brand": "Speisekarte erstellt mit :brand",
+    "Free": "Gratis",
+    "See options": "Optionen ansehen",
+    "Pick 1": "1 wählen",
+    "Optional": "Optional",
+    "Add-ons": "Extras",
+    "Quantity": "Menge",
+    "Choose a :variant for :dish.": "Bitte :variant für :dish wählen.",
+    "Choose only one :variant for :dish.": "Bitte nur eine Option bei :variant für :dish wählen."
 }

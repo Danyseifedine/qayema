@@ -6,6 +6,7 @@ use App\Models\Restaurant;
 use App\Models\Template;
 use App\Services\Analytics\MenuVisitRecorder;
 use App\Services\Menu\MapPoint;
+use App\Services\Menu\MenuDishOptions;
 use App\Services\Menu\MenuLanguages;
 use App\Services\Menu\MenuSeo;
 use App\Services\Menu\OpeningHours;
@@ -57,6 +58,7 @@ class PublicMenuController extends Controller
                 ->orderBy('display_order')
                 ->orderBy('id'),
             'categories.dishes.media',
+            ...MenuDishOptions::relations($restaurant, 'categories.dishes.'),
             'socialLinks',
             'media',
         ]);
@@ -96,6 +98,8 @@ class PublicMenuController extends Controller
             // Ordering is a package feature, and a preview is a dress
             // rehearsal; neither should take a real order.
             'can_order' => ! $preview && $restaurant->takesOrders(),
+            // Each dish's variants and add-ons, for its sheet and the cart.
+            'dish_options' => MenuDishOptions::for($restaurant, $restaurant->categories->flatMap->dishes, $locale),
             'seo' => $this->seo->for($restaurant, $locale, $preview !== null),
         ]);
     }

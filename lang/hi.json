@@ -41,5 +41,13 @@
     "Back to top": "ऊपर जाएँ",
     ":name: menu and prices": ":name: मेन्यू और कीमतें",
     "The :name menu with dishes, prices and opening hours.": ":name का मेन्यू: व्यंजन, कीमतें और खुलने का समय।",
-    "Menu by :brand": "मेन्यू :brand द्वारा"
+    "Menu by :brand": "मेन्यू :brand द्वारा",
+    "Free": "मुफ़्त",
+    "See options": "विकल्प देखें",
+    "Pick 1": "1 चुनें",
+    "Optional": "वैकल्पिक",
+    "Add-ons": "ऐड-ऑन",
+    "Quantity": "मात्रा",
+    "Choose a :variant for :dish.": ":dish के लिए :variant चुनें।",
+    "Choose only one :variant for :dish.": ":dish के लिए केवल एक :variant चुनें।"
 }

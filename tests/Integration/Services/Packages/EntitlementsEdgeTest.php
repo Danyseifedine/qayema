@@ -88,7 +88,7 @@ class EntitlementsEdgeTest extends TestCase
 
         // No write and no flush: only the clock passes the start.
         $this->travel(2)->seconds();
-        $this->assertSame(500, $this->dishLimit($restaurant));
+        $this->assertSame(1000, $this->dishLimit($restaurant));
     }
 
     public function test_a_package_ends_the_moment_it_ends(): void

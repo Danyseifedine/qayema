@@ -13,7 +13,7 @@ class MenuIconsTest extends TestCase
     public function test_it_offers_exactly_the_known_icons(): void
     {
         $this->assertSame([
-            'clock', 'pin', 'phone', 'search', 'cart', 'back', 'plus', 'minus', 'language',
+            'clock', 'pin', 'phone', 'search', 'cart', 'back', 'plus', 'close', 'check', 'chevron', 'minus', 'language',
             'qr', 'whatsapp', 'top', 'heart', 'instagram', 'facebook', 'x', 'tiktok',
         ], array_keys(MenuIcons::all()));
     }

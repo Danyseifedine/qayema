@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\Dishes\Tables;
 
+use App\Models\Dish;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -12,12 +13,14 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class DishesTable
 {
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query) => $query->withCount(['variants', 'addons']))
             ->columns([
                 SpatieMediaLibraryImageColumn::make('image')
                     ->collection('image')
@@ -46,6 +49,10 @@ class DishesTable
                     ->placeholder('N/A')
                     ->money('USD')
                     ->sortable()
+                    ->toggleable(),
+                TextColumn::make('choices')
+                    ->label('Variants / add-ons')
+                    ->state(fn (Dish $record): string => $record->variants_count.' / '.$record->addons_count)
                     ->toggleable(),
                 ToggleColumn::make('is_available')
                     ->label('Available'),

@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\Packages\Schemas;
 
 use App\Enums\Feature;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -76,7 +77,13 @@ class PackageForm
                 Group::make([
                     Section::make('Limits')
                         ->description('How many of each item a restaurant on this package may create. Grants on a single restaurant stack on top of these.')
-                        ->schema(self::limitFields()),
+                        ->schema([
+                            ...self::limitFields(),
+                            CheckboxList::make('fair_use')
+                                ->label('Shown as unlimited (fair use)')
+                                ->options(collect(Feature::limits())->mapWithKeys(fn (Feature $feature): array => [$feature->value => $feature->label()])->all())
+                                ->helperText('Owners see "Unlimited" for a ticked limit, while the number above still holds. The pricing page states the number under the packages, and the Terms explain fair use. Has no effect on a limit left empty, which is truly unlimited.'),
+                        ]),
                 ])->columnSpan(['lg' => 1]),
             ]);
     }

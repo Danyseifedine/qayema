@@ -17,7 +17,7 @@ class DishResourceTest extends TestCase
 {
     use CreatesOwners, RefreshDatabase;
 
-    private const KEYS = ['id', 'name', 'ingredients', 'price', 'is_available', 'category_id', 'image_url'];
+    private const KEYS = ['id', 'name', 'ingredients', 'price', 'is_available', 'category_id', 'image_url', 'variants', 'addons'];
 
     /** @return array<string, mixed> */
     private function resolve(Dish $dish, ?User $user): array
@@ -49,7 +49,38 @@ class DishResourceTest extends TestCase
             'is_available' => true,
             'category_id' => $category->id,
             'image_url' => null,
+            'variants' => [],
+            'addons' => [],
         ], $this->resolve($dish, $restaurant->user));
+    }
+
+    public function test_variants_and_addons_come_in_order_in_every_menu_language(): void
+    {
+        $this->defaultPackageIncludes(Feature::MultipleLanguages);
+        $restaurant = $this->owner(['second_locale' => 'ar']);
+        $dish = Dish::factory()->for($restaurant)
+            ->withVariants(['Size' => ['Small' => 0, 'Large' => 2.5]])
+            ->withAddons(['Extra cheese' => 1])
+            ->create();
+        $dish->variants->first()->setTranslation('name', 'ar', 'الحجم')->save();
+
+        $data = $this->resolve($dish->fresh(), $restaurant->user);
+        $variant = $dish->variants()->first();
+        [$small, $large] = $variant->options->all();
+
+        $this->assertSame([[
+            'id' => $variant->id,
+            'name' => ['en' => 'Size', 'ar' => 'الحجم'],
+            'options' => [
+                ['id' => $small->id, 'name' => ['en' => 'Small', 'ar' => null], 'price' => '0.00'],
+                ['id' => $large->id, 'name' => ['en' => 'Large', 'ar' => null], 'price' => '2.50'],
+            ],
+        ]], $data['variants']);
+        $this->assertSame([[
+            'id' => $dish->addons()->first()->id,
+            'name' => ['en' => 'Extra cheese', 'ar' => null],
+            'price' => '1.00',
+        ]], $data['addons']);
     }
 
     public function test_the_nullable_fields(): void

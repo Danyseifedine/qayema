@@ -46,6 +46,19 @@ class FeaturesTest extends TestCase
             ->assertJsonPath('data.off', []);
     }
 
+    public function test_variants_and_addons_can_be_switched_off_each_on_its_own(): void
+    {
+        $owner = $this->ownerOn('pro');
+
+        $this->actingAs($owner->user)
+            ->putJson(route('api.features.update'), ['off' => ['addons']])
+            ->assertOk()
+            ->assertJsonPath('data.off', ['addons']);
+
+        $this->assertTrue($owner->fresh()->showsVariants());
+        $this->assertFalse($owner->fresh()->showsAddons());
+    }
+
     public function test_only_optional_features_can_be_switched_off(): void
     {
         $owner = $this->owner();

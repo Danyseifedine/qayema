@@ -9,8 +9,8 @@
 @section('headline_plain', 'Terms of')
 @section('headline_italic', 'Service')
 @section('headline_ar', 'شروط الخدمة')
-@section('updated', 'Last updated: September 28, 2026')
-@section('updated_ar', 'آخر تحديث: 28 سبتمبر 2026')
+@section('updated', 'Last updated: October 2, 2026')
+@section('updated_ar', 'آخر تحديث: 2 أكتوبر 2026')
 
 @section('toc')
     <li><a href="#acceptance">Acceptance of terms</a></li>
@@ -113,6 +113,7 @@
     <li>Amounts paid are non-refundable except as set out in our <a href="{{ \App\Support\PortalUrl::to('refund') }}">Refund Policy</a> or as required by applicable law</li>
     <li>We may change package prices with 30 days' advance notice</li>
 </ul>
+<p><strong>Fair use.</strong> Where a package shows a limit as unlimited, such as dishes and categories on Premium, a fair-use limit applies. The number for each is stated under the packages on our <a href="{{ \App\Support\PortalUrl::to('pricing') }}">pricing page</a>, and it is far above what a restaurant menu needs. If you reach it, the dashboard tells you, and you can contact us to discuss what you need.</p>
 
 <h2 id="ip">Intellectual property</h2>
 
@@ -214,6 +215,7 @@
     <li>المبالغ المدفوعة غير قابلة للاسترداد إلا وفق <a href="{{ \App\Support\PortalUrl::to('refund') }}">سياسة الاسترداد</a> أو ما يقتضيه القانون المعمول به</li>
     <li>قد نغيّر أسعار الباقات مع إشعار مسبق مدته 30 يومًا</li>
 </ul>
+<p><strong>الاستخدام العادل.</strong> حين تعرض باقةٌ حدًّا ما على أنه بلا حدود، مثل الأطباق والأقسام في باقة مميّز، يُطبَّق عليه حد للاستخدام العادل. يُذكر الرقم الخاص بكل منها تحت الباقات في <a href="{{ \App\Support\PortalUrl::to('pricing') }}">صفحة الأسعار</a>، وهو أعلى بكثير مما يحتاجه منيو أي مطعم. وإن وصلت إليه، تُعلمك لوحة التحكم بذلك، ويمكنك التواصل معنا لبحث ما تحتاجه.</p>
 
 <h2 id="ip-ar">الملكية الفكرية</h2>
 

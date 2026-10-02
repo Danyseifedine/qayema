@@ -48,12 +48,14 @@ class Restaurant extends Model implements HasMedia
      *   and its downloads stay;
      * - `analytics`: the Analytics page leaves the sidebar;
      * - `languages`: the menu is English-only (MenuLanguages::for()).
+     * - `variants` / `addons`: a dish's variants or add-ons leave the menu
+     *   and orders, and dish saves leave them as they are.
      * Nothing is deleted by switching one off; the package still decides what
      * can be switched on at all.
      *
      * @var array<int, string>
      */
-    public const OPTIONAL_FEATURES = ['orders', 'qr', 'analytics', 'languages'];
+    public const OPTIONAL_FEATURES = ['orders', 'qr', 'analytics', 'languages', 'variants', 'addons'];
 
     /** The package flag each optional feature needs before it can be on. */
     private const FLAG_OF = [
@@ -61,6 +63,8 @@ class Restaurant extends Model implements HasMedia
         'qr' => Feature::QrStudio,
         'analytics' => Feature::Analytics,
         'languages' => Feature::MultipleLanguages,
+        'variants' => Feature::Variants,
+        'addons' => Feature::Addons,
     ];
 
     /** The columns that say which package applies and when. */
@@ -429,6 +433,18 @@ class Restaurant extends Model implements HasMedia
     public function showsSecondLanguage(): bool
     {
         return $this->entitlements()->can(Feature::MultipleLanguages) && ! $this->isSwitchedOff('languages');
+    }
+
+    /** Dishes show their variants (size, spice level): in the package and not switched off. */
+    public function showsVariants(): bool
+    {
+        return $this->entitlements()->can(Feature::Variants) && ! $this->isSwitchedOff('variants');
+    }
+
+    /** Dishes show their add-ons (extra cheese): in the package and not switched off. */
+    public function showsAddons(): bool
+    {
+        return $this->entitlements()->can(Feature::Addons) && ! $this->isSwitchedOff('addons');
     }
 
     /** The owner's colours, fonts and other design choices reach the menu. */

@@ -172,6 +172,8 @@ class PackageGatesTest extends TestCase
         $this->actingAs($premium->user)->getJson(route('api.user'))
             ->assertJsonPath('data.restaurant.plan', [
                 'multiple_languages' => true,
+                'variants' => true,
+                'addons' => true,
                 'appearance' => true,
                 'premium_designs' => true,
                 'qr_studio' => true,
