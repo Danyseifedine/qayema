@@ -14,6 +14,8 @@ use App\Services\Orders\WhatsAppLink;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
+use function Illuminate\Support\defer;
+
 /**
  * The public menu at /{slug}: the page a guest lands on after scanning the QR
  * code. Each template renders from its own Blade view
@@ -71,8 +73,9 @@ class PublicMenuController extends Controller
 
         // A guest switching language navigates from this menu back to it.
         // That is one visit, not two, so a self-referred load is not recorded.
+        // Written after the page is on its way: the guest never waits on it.
         if ($preview === null && ! $this->cameFromThisMenu($request, $restaurant)) {
-            $this->visits->record($restaurant, $request, $locale);
+            defer(fn () => $this->visits->record($restaurant, $request, $locale));
         }
 
         // The menu route carries no locale middleware, so without this every

@@ -233,8 +233,9 @@
         ingredients.textContent = dish.dataset.ingredients || '';
         ingredients.hidden = !dish.dataset.ingredients;
 
-        if (dish.dataset.image) {
-            photo.src = dish.dataset.image;
+        // The full photo, not the card's small one.
+        if (dish.dataset.photo) {
+            photo.src = dish.dataset.photo;
             photo.hidden = false;
         } else {
             photo.removeAttribute('src');

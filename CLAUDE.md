@@ -887,6 +887,26 @@ cheese; the guest picks any). Every option and add-on has a `price` that is
   [{name, price}]}`. `OrderItem::choices()` is the readable form used by the
   WhatsApp message and the admin's orders list.
 
+## Menu speed
+
+The public menu is opened on a phone, often on mobile data, so it stays light
+(`tests/Feature/Menu/MenuSpeedTest`):
+- Pictures: a dish photo has a 240px `thumb` (the card and the cart) and the
+  full one only for its sheet (`data-photo`); the cover has a 960px `phone`
+  version in a `srcset`, is never `loading="lazy"` and has
+  `fetchpriority="high"`. Conversions are made with the upload (`nonQueued`);
+  a photo from before them falls back to the full one until
+  `php artisan media-library:regenerate --only-missing` runs.
+- Uploads go to R2 with `Cache-Control: public, max-age=31536000, immutable`
+  (`config/media-library.php`): a new photo is always a new address.
+- Fonts load without blocking the first paint (`media="print"` swapped on
+  load, `display=swap`).
+- Every local script and stylesheet is linked with `?v=filemtime(...)`:
+  `public/.htaccess` keeps css/js for a year, so one without a version would
+  go stale for guests. It also compresses text (mod_deflate).
+- The visit is written after the response (`defer()`), and entitlements are
+  memoized per request (`Cache::memo()`), so a view is one read of them.
+
 ## Maps
 
 `restaurants.google_maps_url` is the only thing stored; there are no lat/lng

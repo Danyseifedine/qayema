@@ -23,3 +23,27 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+# Text is compressed on its way out: a menu page travels at about a fifth of
+# its size.
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/css text/javascript application/javascript application/json application/xml image/svg+xml application/manifest+json
+</IfModule>
+
+<IfModule mod_headers.c>
+    # Every stylesheet and script is linked with a version (?v= its change
+    # time, or a hashed build name), so a new one is a new address: a phone
+    # keeps these for a year and never asks again. A file linked without a
+    # version must not be added to public/ without one.
+    <FilesMatch "\.(css|js)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    # Fonts and the site's own images (icons, share cards) can change under
+    # the same name, so they are kept for a month and a week.
+    <FilesMatch "\.(woff2?|ttf)$">
+        Header set Cache-Control "public, max-age=2592000"
+    </FilesMatch>
+    <FilesMatch "\.(png|jpe?g|webp|gif|svg|ico)$">
+        Header set Cache-Control "public, max-age=604800"
+    </FilesMatch>
+</IfModule>

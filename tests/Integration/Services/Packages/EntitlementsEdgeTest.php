@@ -44,6 +44,10 @@ class EntitlementsEdgeTest extends TestCase
 
     private function dishLimit(Restaurant $restaurant): ?int
     {
+        // Each check is its own request, as it is live: the answer memoized
+        // for one request never carries into the next.
+        app()->forgetScopedInstances();
+
         return Entitlements::for($restaurant->fresh())->limit(Feature::DishLimit);
     }
 

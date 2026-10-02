@@ -6,8 +6,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\Translatable\HasTranslations;
 
 /**
@@ -68,5 +70,22 @@ class Dish extends Model implements HasMedia
         $this->addMediaCollection('image')
             ->singleFile()
             ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp']);
+    }
+
+    /**
+     * The photo as the menu card draws it (72px, so 240px stays sharp on a
+     * 3x phone screen): a few KB instead of the full photo, which only the
+     * dish's sheet loads. Made with the upload, not on a queue that may not
+     * run. A photo stored before this has none; the menu falls back to the
+     * full one until `media-library:regenerate` makes it.
+     */
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        $this->addMediaConversion('thumb')
+            ->performOnCollections('image')
+            ->fit(Fit::Crop, 240, 240)
+            ->format('webp')
+            ->quality(76)
+            ->nonQueued();
     }
 }

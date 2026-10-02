@@ -27,7 +27,11 @@
 @endphp
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="{{ MenuFonts::href($menuFonts) }}" rel="stylesheet">
+{{-- Fetched early but never waited on: the menu draws at once in the
+     system font and switches when the owner's arrives (display=swap). --}}
+<link rel="preload" as="style" href="{{ MenuFonts::href($menuFonts) }}">
+<link rel="stylesheet" href="{{ MenuFonts::href($menuFonts) }}" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="{{ MenuFonts::href($menuFonts) }}"></noscript>
 <style>
     :root {
 @foreach ($colorVariables as $name => $value)

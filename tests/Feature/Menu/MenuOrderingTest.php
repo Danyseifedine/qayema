@@ -109,7 +109,7 @@ class MenuOrderingTest extends TestCase
         // The QR library and the owner's design are fetched on demand, not on
         // every menu render.
         $this->assertStringNotContainsString('<script src="'.asset('js/qr-code-styling.js'), $html);
-        $this->assertStringContainsString('data-lib="'.asset('js/qr-code-styling.js').'"', $html);
+        $this->assertStringContainsString('data-lib="'.asset('js/qr-code-styling.js').'?v=', $html);
         $this->assertStringContainsString('data-options="'.route('public.qr.options', $shop->slug).'"', $html);
     }
 

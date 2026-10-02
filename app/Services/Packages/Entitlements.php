@@ -73,7 +73,9 @@ class Entitlements
             return $this->resolved;
         }
 
-        return $this->resolved = Cache::remember(
+        // Memoized for the rest of the request: a menu asks about several
+        // features, and each used to be a read of the cache table.
+        return $this->resolved = Cache::memo()->remember(
             self::cacheKey($this->restaurant->id),
             // A closure, so the boundaries are only read on a miss.
             fn (): int => $this->cacheSeconds(),
@@ -100,7 +102,8 @@ class Entitlements
 
     public static function flush(int $restaurantId): void
     {
-        Cache::forget(self::cacheKey($restaurantId));
+        // Through the memo, so this request stops answering from it too.
+        Cache::memo()->forget(self::cacheKey($restaurantId));
     }
 
     /**

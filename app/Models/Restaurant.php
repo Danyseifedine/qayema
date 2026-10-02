@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\Translatable\HasTranslations;
 
 class Restaurant extends Model implements HasMedia
@@ -658,5 +659,20 @@ class Restaurant extends Model implements HasMedia
         $this->addMediaCollection('cover_image')
             ->singleFile()
             ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp']);
+    }
+
+    /**
+     * The cover at phone size: the first picture a guest sees, so a phone
+     * gets a third of the 1920px file. Made with the upload; a cover stored
+     * before this falls back to the full one until regenerated.
+     */
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        $this->addMediaConversion('phone')
+            ->performOnCollections('cover_image')
+            ->width(960)
+            ->format('webp')
+            ->quality(78)
+            ->nonQueued();
     }
 }

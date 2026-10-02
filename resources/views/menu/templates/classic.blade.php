@@ -21,7 +21,15 @@
     // name is required in), so nothing on the menu is ever blank.
     $text = fn ($model, string $field): string => MenuLanguages::text($model, $field, $locale);
     $logo = $restaurant->getFirstMediaUrl('logo') ?: null;
-    $cover = $restaurant->getFirstMediaUrl('cover_image') ?: null;
+    // The cover is the first picture on the page: a phone gets its 960px
+    // version (registerMediaConversions), a wide screen the full one.
+    $coverMedia = $restaurant->getFirstMedia('cover_image');
+    $cover = $coverMedia?->getUrl();
+    $coverPhone = $coverMedia?->hasGeneratedConversion('phone') ? $coverMedia->getUrl('phone') : null;
+    // Pictures come from the media disk's own host; connecting to it early
+    // saves a round trip before the first one.
+    $mediaHost = parse_url((string) config('filesystems.disks.'.config('media-library.disk_name').'.url'), PHP_URL_HOST);
+    $mediaOrigin = $mediaHost && $mediaHost !== request()->getHost() ? 'https://'.$mediaHost : null;
     $currency = config("currencies.{$restaurant->currency}.symbol", $restaurant->currency);
     $name = $text($restaurant, 'name');
     $description = $text($restaurant, 'description');
@@ -100,6 +108,9 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="{{ $accent }}">
     @include('menu.partials.seo')
+    @if ($mediaOrigin)
+        <link rel="preconnect" href="{{ $mediaOrigin }}">
+    @endif
 
     @include('menu.partials.theme')
 
@@ -205,7 +216,9 @@
     <main class="col-main">
         <div class="cover">
             @if ($cover)
-                <img class="cover-photo" src="{{ $cover }}" alt="" loading="lazy">
+                {{-- Above the fold, so never lazy: it is what the page waits on. --}}
+                <img class="cover-photo" src="{{ $cover }}" alt="" fetchpriority="high" decoding="async"
+                     @if ($coverPhone) srcset="{{ $coverPhone }} 960w, {{ $cover }} 1920w" sizes="(min-width: 1024px) 1000px, 100vw" @endif>
             @endif
             <span class="cover-shade"></span>
             <div class="cover-body">
@@ -268,19 +281,23 @@
                     <div class="dishes">
                         @foreach ($category->dishes as $dish)
                             @php
-                                $image = $dish->getFirstMediaUrl('image') ?: null;
+                                // The card and the cart draw the small version; the
+                                // full photo is only fetched when the dish's sheet opens.
+                                $photoMedia = $dish->getFirstMedia('image');
+                                $photo = $photoMedia?->getUrl();
+                                $image = $photoMedia?->getAvailableUrl(['thumb']);
                                 $ingredients = $text($dish, 'ingredients');
                                 $dishName = $text($dish, 'name');
                                 $choices = $dish_options[$dish->id] ?? null;
                             @endphp
                             {{-- A dish with choices opens its sheet (menu-dish.js) when tapped. --}}
                             <article @class(['dish', 'has-choices' => $choices]) data-dish="{{ $dish->id }}" data-name="{{ $dishName }}"
-                                     data-image="{{ $image }}"
+                                     data-image="{{ $image }}" data-photo="{{ $photo }}"
                                      data-price="{{ $dish->price !== null ? (string) $dish->price : '' }}"
                                      @if ($choices) data-choices data-ingredients="{{ $ingredients }}" @endif
                                      data-search="{{ Str::lower($dishName.' '.$ingredients) }}">
                                 @if ($image)
-                                    <img class="dish-photo" src="{{ $image }}" alt="{{ $dishName }}" loading="lazy" decoding="async">
+                                    <img class="dish-photo" src="{{ $image }}" alt="{{ $dishName }}" width="72" height="72" loading="lazy" decoding="async">
                                 @endif
                                 <div class="dish-body">
                                     <span class="dish-name">{{ $dishName }}</span>
@@ -387,7 +404,7 @@
              rather than on every menu render. --}}
         <div class="qr-code" data-qr-canvas role="img" aria-label="{{ __('QR code for the menu') }}"
              data-options="{{ route('public.qr.options', $restaurant->slug) }}"
-             data-lib="{{ asset('js/qr-code-styling.js') }}"></div>
+             data-lib="{{ asset('js/qr-code-styling.js') }}?v={{ filemtime(public_path('js/qr-code-styling.js')) }}"></div>
         <p class="pop-note" dir="ltr">{{ $menu_url }}</p>
         <button type="button" class="pop-done" data-pop-close>{{ __('Close') }}</button>
     </div>
@@ -509,7 +526,7 @@
             },
         };
     </script>
-    <script src="{{ asset('js/menu-cart.js') }}" defer></script>
+    <script src="{{ asset('js/menu-cart.js') }}?v={{ filemtime(public_path('js/menu-cart.js')) }}" defer></script>
 @endif
 
 @if ($dish_options)
@@ -552,15 +569,15 @@
             },
         };
     </script>
-    <script src="{{ asset('js/menu-dish.js') }}" defer></script>
+    <script src="{{ asset('js/menu-dish.js') }}?v={{ filemtime(public_path('js/menu-dish.js')) }}" defer></script>
 @endif
 
 @unless ($is_preview)
     <script>
         window.QAYEMA_TRACK = { url: @js(route('public.events', $restaurant->slug)) };
     </script>
-    <script src="{{ asset('js/menu-track.js') }}" defer></script>
+    <script src="{{ asset('js/menu-track.js') }}?v={{ filemtime(public_path('js/menu-track.js')) }}" defer></script>
 @endunless
-<script src="{{ asset('js/menu-nav.js') }}" defer></script>
+<script src="{{ asset('js/menu-nav.js') }}?v={{ filemtime(public_path('js/menu-nav.js')) }}" defer></script>
 </body>
 </html>
