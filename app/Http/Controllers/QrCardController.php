@@ -59,6 +59,11 @@ class QrCardController extends Controller
         $design = $restaurant->hasQrStudio() ? $restaurant->qrDesign() : $restaurant->qrDefaultDesign();
         $logo = $design['logo'] ? QrStyle::logoDataUrl($restaurant) : null;
 
-        return response()->json(['data' => QrStyle::options($design, $restaurant->qrUrl(), $logo)]);
+        // Every menu visit now fetches this in the background (menu-nav.js),
+        // so a guest's browser reuses it for a few minutes; a change in the
+        // QR studio still reaches the menu soon after.
+        return response()->json(['data' => QrStyle::options($design, $restaurant->qrUrl(), $logo)])
+            ->setPublic()
+            ->setMaxAge(300);
     }
 }

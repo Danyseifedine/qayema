@@ -93,7 +93,7 @@ Route::middleware(['auth', 'portal.locale'])->group(function () {
 Route::get('/{restaurant:slug}/qr', [QrCardController::class, 'show'])->name('public.qr');
 
 // The owner's QR design for the menu's "Scan to open this menu" pop-up,
-// fetched when it first opens.
+// fetched once the menu has loaded so the pop-up opens at once.
 Route::get('/{restaurant:slug}/qr-options', [QrCardController::class, 'options'])->name('public.qr.options');
 
 // A guest placing an order from the public menu. Two segments, so it is safe

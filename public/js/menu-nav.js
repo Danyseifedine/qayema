@@ -156,23 +156,34 @@
     /**
      * The owner's QR design, drawn by the same library the dashboard previews
      * with and the printable card uses (qr-code-styling), from the same
-     * options (App\Services\Qr\QrStyle). Both are fetched on first use;
-     * they are far too big to ship with every menu.
+     * options (App\Services\Qr\QrStyle). Too big to hold up the menu, so
+     * both are fetched once the page has loaded (see the bottom of this
+     * section) and the popup opens at once; a tap before then waits for the
+     * same requests rather than starting new ones.
      */
     var qrOptions = null;
+    var libraryLoading = null;
+    var optionsLoading = null;
 
     function loadLibrary() {
         if (window.QRCodeStyling) {
             return Promise.resolve();
         }
 
-        return new Promise(function (resolve, reject) {
+        libraryLoading = libraryLoading || new Promise(function (resolve, reject) {
             var tag = document.createElement('script');
             tag.src = qrCode.dataset.lib;
             tag.onload = resolve;
-            tag.onerror = reject;
+            tag.onerror = function (error) {
+                // A later tap tries again.
+                libraryLoading = null;
+                tag.remove();
+                reject(error);
+            };
             document.head.appendChild(tag);
         });
+
+        return libraryLoading;
     }
 
     function loadOptions() {
@@ -180,7 +191,7 @@
             return Promise.resolve();
         }
 
-        return fetch(qrCode.dataset.options, { headers: { Accept: 'application/json' } })
+        optionsLoading = optionsLoading || fetch(qrCode.dataset.options, { headers: { Accept: 'application/json' } })
             .then(function (response) {
                 if (!response.ok) {
                     throw new Error('QR options ' + response.status);
@@ -190,7 +201,12 @@
             })
             .then(function (body) {
                 qrOptions = body.data;
+            }, function (error) {
+                optionsLoading = null;
+                throw error;
             });
+
+        return optionsLoading;
     }
 
     function withGenerator(then, otherwise) {
@@ -206,6 +222,28 @@
 
         var options = Object.assign({}, qrOptions, { width: 196, height: 196, type: 'svg' });
         new window.QRCodeStyling(options).append(qrCode);
+    }
+
+    // Ready before it is asked for: once the menu has loaded and the phone
+    // has a quiet moment, the code is fetched and drawn in the closed popup.
+    // A failure here is silent; a tap simply tries again.
+    if (qrCode) {
+        var prepare = function () {
+            withGenerator(drawCode, function () {});
+        };
+        var whenIdle = function () {
+            if (window.requestIdleCallback) {
+                window.requestIdleCallback(prepare, { timeout: 2000 });
+            } else {
+                window.setTimeout(prepare, 300);
+            }
+        };
+
+        if (document.readyState === 'complete') {
+            whenIdle();
+        } else {
+            window.addEventListener('load', whenIdle, { once: true });
+        }
     }
 
     var dockItems = Array.prototype.slice.call(document.querySelectorAll('.dockitem'));

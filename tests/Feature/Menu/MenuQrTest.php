@@ -76,6 +76,17 @@ class MenuQrTest extends TestCase
         $this->getJson(route('public.qr.options', 'fig'))->assertJsonPath('data.dotsOptions.type', 'square');
     }
 
+    public function test_a_guests_browser_reuses_the_design_for_a_few_minutes(): void
+    {
+        // The menu fetches it on every visit, ahead of the tap.
+        $this->published(['slug' => 'olive']);
+
+        $cache = (string) $this->getJson(route('public.qr.options', 'olive'))->assertOk()->headers->get('Cache-Control');
+
+        $this->assertStringContainsString('public', $cache);
+        $this->assertStringContainsString('max-age=300', $cache);
+    }
+
     public function test_a_closed_or_unknown_menu_has_no_code(): void
     {
         $this->published(['slug' => 'olive', 'is_active' => false]);

@@ -288,12 +288,13 @@
     }
 
     /**
-     * A dish with choices keeps its add button, which opens the dish sheet
-     * (menu-dish.js) for another line; how many are in the cart already
+     * A dish with choices gets the arrow a menu without ordering shows: it
+     * opens the dish's sheet (menu-dish.js), where the guest picks and adds.
+     * A + would promise an instant add. How many are in the cart already
      * sits on it as a badge.
      */
     function chooseButton(dish, count) {
-        var button = iconButton('add', icons.plus, strings.add + ' ' + dish.dataset.name, function () {});
+        var button = iconButton('dish-more', icons.chevron, strings.options + ': ' + dish.dataset.name, function () {});
         button.setAttribute('data-dish-open', '');
         button.setAttribute('aria-haspopup', 'dialog');
 

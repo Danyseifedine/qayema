@@ -511,7 +511,7 @@
             locale: @js($locale),
             currency: @js($currency),
             storageKey: @js('qayema-cart-'.$restaurant->slug),
-            icons: { plus: @js($icons['plus']), minus: @js($icons['minus']) },
+            icons: { plus: @js($icons['plus']), minus: @js($icons['minus']), chevron: @js($icons['chevron']) },
             strings: {
                 empty: @js(__('Nothing added yet.')),
                 each: @js(__('each')),
@@ -523,6 +523,7 @@
                 failed: @js(__('That did not send. Please try again.')),
                 remove: @js(__('Remove')),
                 add: @js(__('Add')),
+                options: @js(__('See options')),
             },
         };
     </script>

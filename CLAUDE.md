@@ -906,6 +906,11 @@ The public menu is opened on a phone, often on mobile data, so it stays light
   go stale for guests. It also compresses text (mod_deflate).
 - The visit is written after the response (`defer()`), and entitlements are
   memoized per request (`Cache::memo()`), so a view is one read of them.
+- The QR pop-up is ready before it is tapped: once the page has loaded and
+  the phone is idle, `menu-nav.js` fetches the library and
+  `/{slug}/qr-options` (browser-cached 5 minutes) and draws the code in the
+  closed dialog. `QrStyle::logoDataUrl()` keeps the inlined logo per media id,
+  so those requests do not download the logo from the disk each time.
 
 ## Maps
 

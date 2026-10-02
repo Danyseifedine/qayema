@@ -5,8 +5,10 @@ namespace App\Services\Qr;
 use App\Models\Restaurant;
 use App\Models\Template;
 use App\Support\Color;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Throwable;
 
 /**
@@ -95,6 +97,15 @@ class QrStyle
             return null;
         }
 
+        // Kept by the uploaded file's id: a new logo is a new id, so this
+        // never goes stale, and the menu, which asks on every visit, does
+        // not download the logo from the disk each time. A failed read
+        // returns null, which is never kept.
+        return Cache::remember('qr-logo:'.$media->id, now()->addDay(), fn (): ?string => self::readLogo($restaurant, $media));
+    }
+
+    private static function readLogo(Restaurant $restaurant, Media $media): ?string
+    {
         try {
             $bytes = Storage::disk($media->disk)->get($media->getPathRelativeToRoot());
         } catch (Throwable $exception) {

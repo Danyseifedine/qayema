@@ -30,6 +30,18 @@ class QrStyleTest extends TestCase
         return [$restaurant, $media];
     }
 
+    public function test_the_logo_is_read_from_its_disk_once(): void
+    {
+        [$restaurant, $media] = $this->withLogo();
+        $first = QrStyle::logoDataUrl($restaurant->fresh());
+
+        // Gone from the disk, yet still drawn: the second answer is the kept one.
+        Storage::disk($media->disk)->delete($media->getPathRelativeToRoot());
+
+        $this->assertStringStartsWith('data:image/png;base64,', (string) $first);
+        $this->assertSame($first, QrStyle::logoDataUrl($restaurant->fresh()));
+    }
+
     public function test_no_logo_is_no_data_url(): void
     {
         $this->assertNull(QrStyle::logoDataUrl($this->owner()));
