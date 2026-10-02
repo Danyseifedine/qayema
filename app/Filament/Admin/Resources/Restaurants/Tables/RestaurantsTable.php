@@ -8,6 +8,7 @@ use App\Filament\Admin\Actions\ExtendPackageAction;
 use App\Filament\Admin\Actions\ResetPackageAction;
 use App\Filament\Admin\Resources\Restaurants\RestaurantResource;
 use App\Filament\Admin\Resources\Restaurants\Schemas\PackageFields;
+use App\Models\MenuSession;
 use App\Models\Restaurant;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -30,6 +31,18 @@ class RestaurantsTable
     public static function configure(Table $table): Table
     {
         return $table
+            // Everything a row shows, read with the page rather than once
+            // per row (a page of ten restaurants was sixty queries).
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query
+                ->with(['user', 'package', 'template'])
+                ->withCount([
+                    'menuSessions as total_views',
+                    'menuSessions as qr_scans' => fn (Builder $sessions): Builder => $sessions->where('via_qr', true),
+                ])
+                ->addSelect(['unique_visitors' => MenuSession::query()
+                    ->selectRaw('count(distinct session_id)')
+                    ->whereColumn('menu_sessions.restaurant_id', 'restaurants.id'),
+                ]))
             ->columns([
                 SpatieMediaLibraryImageColumn::make('logo')
                     ->collection('logo')
@@ -92,21 +105,21 @@ class RestaurantsTable
 
                 TextColumn::make('total_views')
                     ->label('Total Views')
-                    ->getStateUsing(fn (Restaurant $record): int => $record->getTotalViews())
+                    ->getStateUsing(fn (Restaurant $record): int => (int) $record->total_views)
                     ->badge()
                     ->color('info')
                     ->sortable(false),
 
                 TextColumn::make('unique_visitors')
                     ->label('Unique Visitors')
-                    ->getStateUsing(fn (Restaurant $record): int => $record->menuSessions()->distinct('session_id')->count('session_id'))
+                    ->getStateUsing(fn (Restaurant $record): int => (int) $record->unique_visitors)
                     ->badge()
                     ->color('success')
                     ->toggleable(),
 
                 TextColumn::make('qr_scans')
                     ->label('QR Scans')
-                    ->getStateUsing(fn (Restaurant $record): int => $record->menuSessions()->where('via_qr', true)->count())
+                    ->getStateUsing(fn (Restaurant $record): int => (int) $record->qr_scans)
                     ->badge()
                     ->color('warning')
                     ->toggleable(),

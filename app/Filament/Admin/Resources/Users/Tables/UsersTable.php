@@ -21,6 +21,10 @@ class UsersTable
     public static function configure(Table $table): Table
     {
         return $table
+            // The restaurant and its two counts come with the page, not one
+            // query per row each.
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query
+                ->with(['restaurant' => fn ($restaurant) => $restaurant->withCount(['dishes', 'menuSessions'])]))
             ->columns([
                 TextColumn::make('name')
                     ->placeholder('N/A')
@@ -73,13 +77,13 @@ class UsersTable
 
                 TextColumn::make('dishes_count')
                     ->label('Dishes')
-                    ->getStateUsing(fn (User $record): string => (string) ($record->restaurant?->dishes()->count() ?? '-'))
+                    ->getStateUsing(fn (User $record): string => (string) ($record->restaurant?->dishes_count ?? '-'))
                     ->placeholder('-')
                     ->toggleable(),
 
                 TextColumn::make('views_count')
                     ->label('Total Views')
-                    ->getStateUsing(fn (User $record): string => (string) ($record->restaurant?->getTotalViews() ?? '-'))
+                    ->getStateUsing(fn (User $record): string => (string) ($record->restaurant?->menu_sessions_count ?? '-'))
                     ->placeholder('-')
                     ->badge()
                     ->color('info')

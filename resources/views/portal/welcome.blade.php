@@ -26,7 +26,9 @@
 
     // Which package unlocks each feature card; the cards themselves are in
     // portal.partials.pricing.
-    $unlockedBy = app(\App\Services\Portal\PricingCards::class)->unlockedBy();
+    // One instance for this page, handed to the cards below: one query.
+    $pricingCards = app(\App\Services\Portal\PricingCards::class);
+    $unlockedBy = $pricingCards->unlockedBy();
 
     // Every number here is true of the product today, and two follow it.
     $freeDishes = \App\Models\Package::default()?->featureValue(\App\Enums\Feature::DishLimit);

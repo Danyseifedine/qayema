@@ -1,9 +1,9 @@
 {{-- The package cards, on home and on the pricing page. Prices come from the
      packages an admin edits, so they never promise what a package does not
      hold. $heading = false leaves out the section title (the pricing page
-     has its own). --}}
+     has its own); $pricingCards reuses the page's PricingCards. --}}
 @php
-    $cards = app(\App\Services\Portal\PricingCards::class);
+    $cards = $pricingCards ?? app(\App\Services\Portal\PricingCards::class);
     $pricing = $cards->all();
     $fairUse = $cards->fairUseNote();
     $owner = auth()->user();

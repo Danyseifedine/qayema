@@ -4,6 +4,7 @@ namespace App\Services\Portal;
 
 use App\Enums\Feature;
 use App\Models\Package;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Number;
 
 /**
@@ -15,6 +16,9 @@ use Illuminate\Support\Number;
  */
 class PricingCards
 {
+    /** @var Collection<int, Package>|null */
+    private ?Collection $packages = null;
+
     /**
      * @return list<array{
      *     name: string,
@@ -30,7 +34,7 @@ class PricingCards
      */
     public function all(): array
     {
-        $packages = Package::query()->orderBy('sort_order')->orderBy('id')->get();
+        $packages = $this->packages();
         $cards = [];
 
         foreach ($packages as $index => $package) {
@@ -70,7 +74,7 @@ class PricingCards
      */
     public function unlockedBy(): array
     {
-        $packages = Package::query()->orderBy('sort_order')->orderBy('id')->get();
+        $packages = $this->packages();
         $names = [];
 
         foreach (Feature::flags() as $feature) {
@@ -93,7 +97,7 @@ class PricingCards
     {
         $notes = [];
 
-        foreach (Package::query()->orderBy('sort_order')->orderBy('id')->get() as $package) {
+        foreach ($this->packages() as $package) {
             $limits = [];
 
             foreach (Feature::limits() as $feature) {
@@ -163,5 +167,17 @@ class PricingCards
         return $value === null
             ? __('portal.pricing.unlimited.'.$feature->value).($package->isFairUse($feature) ? '*' : '')
             : trans_choice('portal.pricing.limits.'.$feature->value, $value, ['count' => Number::format($value)]);
+    }
+
+    /**
+     * The packages in the order they are shown, read once for everything
+     * this instance is asked: a page that shows the cards, their footnote
+     * and the feature chips shares one instance and one query.
+     *
+     * @return Collection<int, Package>
+     */
+    private function packages(): Collection
+    {
+        return $this->packages ??= Package::query()->orderBy('sort_order')->orderBy('id')->get();
     }
 }

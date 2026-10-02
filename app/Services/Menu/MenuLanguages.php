@@ -120,8 +120,11 @@ class MenuLanguages
      */
     public static function text(Model $model, string $field, string $locale): string
     {
-        return (string) ($model->getTranslation($field, $locale, false)
-            ?: $model->getTranslation($field, self::MAIN, false));
+        // Every language at once: spatie's getTranslation() decodes the
+        // column several times per call, and a menu asks hundreds of times.
+        $all = $model->getTranslations($field);
+
+        return (string) (($all[$locale] ?? '') ?: ($all[self::MAIN] ?? ''));
     }
 
     /**
@@ -133,10 +136,11 @@ class MenuLanguages
      */
     public static function map(Model $model, string $field, array $languages): array
     {
+        $all = $model->getTranslations($field);
         $map = [];
 
         foreach ($languages as $code) {
-            $map[$code] = $model->getTranslation($field, $code, false) ?: null;
+            $map[$code] = ($all[$code] ?? null) ?: null;
         }
 
         return $map;

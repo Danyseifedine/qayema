@@ -801,6 +801,13 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
   No metrics, no console traces. Tests and the e2e suite set
   `OTEL_SDK_DISABLED=true`. Every trace carries
   `deployment.environment.name` (APP_ENV). The Privacy Policy names Grafana.
+  In production the app sends to Grafana Alloy on the same machine
+  (`GRAFANA_OTLP_ENDPOINT=http://127.0.0.1:4318`, no auth header), which
+  batches and forwards: PHP has no background thread, and sending straight
+  to Grafana Cloud kept each worker busy 1 to 3 s after its response
+  (`docs/grafana-alloy.md`). A long-running script that sends many requests
+  also stalls wherever the batch fills, so a slow span there is not the
+  code's.
 - **Fair use.** A package can show a limit as unlimited while a number
   holds (`packages.fair_use`, ticked in the admin's Limits box; Premium's
   dishes and categories, 1,000 each). `Entitlements::limit()` is enforced,
@@ -886,6 +893,18 @@ cheese; the guest picks any). Every option and add-on has a `price` that is
   snapshots `order_items.options` `{variants: [{name, choice, price}], addons:
   [{name, price}]}`. `OrderItem::choices()` is the readable form used by the
   WhatsApp message and the admin's orders list.
+
+## Queries
+
+- Never one query per row. An admin table reads what its columns show with
+  the page (`modifyQueryUsing`: `with`, `withCount`, a sub-select), never in
+  a column's `getStateUsing` (`tests/Feature/Admin/AdminListQueriesTest`).
+- Translatable text is read with `MenuLanguages::text()` / `map()`, which
+  decode the column once; spatie's `getTranslation()` decodes it several
+  times per call and a menu asks hundreds of times.
+- Something a page needs from several places is read once:
+  `PricingCards` keeps its packages per instance (a page shares one),
+  `Entitlements` is memoized per request.
 
 ## Menu speed
 

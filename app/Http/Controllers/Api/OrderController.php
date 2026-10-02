@@ -24,17 +24,21 @@ class OrderController extends Controller
     public function index(IndexOrdersRequest $request): AnonymousResourceCollection
     {
         $restaurant = $this->restaurant($request);
+        $status = $request->validated('status');
 
         $orders = $restaurant->orders()
             ->with('items')
-            ->when($request->validated('status'), fn ($query, $status) => $query->where('status', $status))
+            ->when($status, fn ($query, $status) => $query->where('status', $status))
             ->paginate(self::PER_PAGE);
 
         return OrderResource::collection($orders)->additional([
             'meta' => [
                 // The count the owner actually cares about: what is still
                 // waiting, whatever page they are looking at.
-                'open' => $restaurant->orders()->where('status', OrderStatus::Placed)->count(),
+                // Filtered to those already, the page's own total is it.
+                'open' => $status === OrderStatus::Placed->value
+                    ? $orders->total()
+                    : $restaurant->orders()->where('status', OrderStatus::Placed)->count(),
             ],
         ]);
     }
@@ -45,6 +49,6 @@ class OrderController extends Controller
 
         $order->update(['status' => $request->validated('status')]);
 
-        return new OrderResource($order->fresh()->load('items'));
+        return new OrderResource($order->load('items'));
     }
 }

@@ -43,7 +43,7 @@ class PricingCardsTest extends TestCase
         $this->assertFalse($pro['featured']);
         $this->assertSame('Free', $pro['base']);
         $this->assertSame(
-            ['150 dishes', '15 categories', '2 social links', 'Second menu language', 'Dish variants (size, spice level)', 'Dish add-ons (extra cheese)', 'Your colours and fonts', 'Analytics'],
+            ['150 dishes', '15 categories', '2 social links', 'Second menu language', 'Dish variants', 'Dish add-ons (extra cheese)', 'Your colours and fonts', 'Analytics'],
             $pro['lines'],
         );
 

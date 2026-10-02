@@ -200,7 +200,7 @@ return [
         ],
         'rows' => [
             'multiple_languages' => 'Second menu language',
-            'variants' => 'Dish variants (size, spice level)',
+            'variants' => 'Dish variants',
             'addons' => 'Dish add-ons (extra cheese)',
             'appearance' => 'Your colours and fonts',
             'premium_designs' => 'Premium designs',
