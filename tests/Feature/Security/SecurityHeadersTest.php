@@ -5,11 +5,12 @@ namespace Tests\Feature\Security;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
+use Tests\Support\CreatesOwners;
 use Tests\TestCase;
 
 class SecurityHeadersTest extends TestCase
 {
-    use RefreshDatabase;
+    use CreatesOwners, RefreshDatabase;
 
     protected function setUp(): void
     {
@@ -34,6 +35,18 @@ class SecurityHeadersTest extends TestCase
 
         $response->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->assertHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+    }
+
+    /** "Use my current location" in the cart: the menu may ask, nothing inside it may. */
+    public function test_only_the_public_menu_may_ask_where_the_guest_is(): void
+    {
+        $restaurant = $this->published(['slug' => 'olive']);
+
+        $this->get(route('public.menu', $restaurant->slug))
+            ->assertOk()
+            ->assertHeader('Permissions-Policy', 'geolocation=(self), microphone=(), camera=()');
+        $this->get(route('home'))
+            ->assertHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
     }
 
     public function test_forms_may_lead_to_the_dashboard_origin(): void

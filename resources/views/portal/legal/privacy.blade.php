@@ -9,8 +9,8 @@
 @section('headline_plain', 'Privacy')
 @section('headline_italic', 'Policy')
 @section('headline_ar', 'سياسة الخصوصية')
-@section('updated', 'Last updated: October 2, 2026')
-@section('updated_ar', 'آخر تحديث: 2 أكتوبر 2026')
+@section('updated', 'Last updated: October 3, 2026')
+@section('updated_ar', 'آخر تحديث: 3 أكتوبر 2026')
 
 @section('toc')
     <li><a href="#information">Information we collect</a></li>
@@ -57,10 +57,16 @@
 
 <h3>Guests on public menus</h3>
 <p>We do not track how you use the dashboard. When a guest opens a public menu, we record one entry per menu view with: a session identifier (the browser session's ID or, when there is no session, a one-way hash of the IP address and browser; the IP address itself is not stored in these entries), the device type (mobile, tablet or desktop), the browser name, the operating system, the menu language, whether the visit came through the menu's QR code, and the time.</p>
-<p>We also record some of the actions guests take on a menu, tied to the same session identifier: adding a dish to the cart, opening a category, search terms (in a normalised form) and searches that found nothing, taps on the WhatsApp, map, call and social links, and switching language. The restaurant's owner sees these records as statistics. Both kinds of records are deleted automatically after 6 months. Owners previewing their own menu are not recorded. We do not collect guests' names, phone numbers or other contact details.</p>
+<p>We also record some of the actions guests take on a menu, tied to the same session identifier: adding a dish to the cart, opening a category, search terms (in a normalised form) and searches that found nothing, taps on the WhatsApp, map, call and social links, and switching language. The restaurant's owner sees these records as statistics. Both kinds of records are deleted automatically after 6 months. Owners previewing their own menu are not recorded. These records hold no names, phone numbers or other contact details; the only guest contact details we keep are those a guest types into an order placed in the menu (see Orders).</p>
 
 <h3>Orders</h3>
-<p>On menus whose package includes ordering, when a guest places an order we store the dishes ordered (name, price and quantity), the total, the currency, an optional note written by the guest, and the time. We do not ask for the guest's name, phone number or address. The guest is then sent to WhatsApp with the order written out; that message goes from the guest to the restaurant through WhatsApp (operated by Meta) and is not processed by us. The restaurant's owner sees the order in the dashboard.</p>
+<p>On menus whose package includes ordering, the restaurant takes orders in one of two ways. Either way, when a guest places an order we store the dishes ordered (name, price and quantity), the total, the currency, an optional note written by the guest, and the time.</p>
+<ul>
+    <li><strong>On WhatsApp:</strong> we do not ask for the guest's name, phone number or address. The guest is sent to WhatsApp with the order written out; that message goes from the guest to the restaurant through WhatsApp (operated by Meta) and is not processed by us.</li>
+    <li><strong>In the menu:</strong> the guest also gives their name, a phone number, whether they want delivery or pickup and, for a delivery, an address. They may also share their device's location by tapping "Use my current location"; the browser asks first, and the location is only sent if they agree. To fill in the street for them, our server asks OpenStreetMap's address service for the street at that location; it receives the location, not who the guest is. Only that restaurant's owner sees these details, in the dashboard, so they can call the guest and bring the order. Opening the location on a map sends it to Google Maps.</li>
+</ul>
+<p>After ordering in the menu, the guest gets a private link to follow the order (sent, accepted, on its way or ready). The page shows what they ordered, their address and the order's status, and only someone with that link can open it.</p>
+<p>We delete a guest's name, phone number, address and location from an order 90 days after it was placed. The rest of the order stays as part of the restaurant's records.</p>
 
 <h3>Technical data</h3>
 <p>Like any website, our servers receive the IP address, browser details and time of each request, which we use for security, debugging, and keeping the service running. We keep a session record for each browser that visits, including guests on a menu, holding its IP address, browser user agent and last activity time; it is removed after a year without activity. An IP address that sends abusive traffic can be blocked automatically for a period, and we keep the blocked address, the reason and when the block ends.</p>
@@ -94,7 +100,7 @@
     <li><strong>Google:</strong> Sign-in with Google; Google reCAPTCHA, which checks for automated abuse on the sign-in and contact pages where it is enabled; and Google Fonts, which serves the typefaces on our website, dashboard and menus, so Google receives your IP address and browser details when a page loads them.</li>
     <li><strong>OpenStreetMap:</strong> Menus that show the restaurant's location load a map from OpenStreetMap, which receives the guest's IP address and the page address.</li>
     <li><strong>jsDelivr:</strong> Some scripts on our website pages are loaded from the jsDelivr content delivery network, which receives your IP address.</li>
-    <li><strong>WhatsApp:</strong> When a guest taps a WhatsApp link or places an order, the conversation happens in WhatsApp (operated by Meta) under its own terms and privacy policy.</li>
+    <li><strong>WhatsApp:</strong> When a guest taps a WhatsApp link or sends an order on WhatsApp, the conversation happens in WhatsApp (operated by Meta) under its own terms and privacy policy.</li>
     <li><strong>Legal requirements:</strong> If required by law, court order, or to protect the rights and safety of Qayema or others.</li>
     <li><strong>Business transfers:</strong> In connection with a merger, acquisition, or sale of assets, with appropriate confidentiality obligations.</li>
 </ul>
@@ -164,10 +170,16 @@
 
 <h3>ضيوف القوائم العامة</h3>
 <p>لا نتتبّع كيفية استخدامك للوحة التحكم. عندما يفتح ضيف قائمة عامة، نسجّل إدخالًا واحدًا لكل مشاهدة للقائمة يتضمن: معرّف جلسة (معرّف جلسة المتصفح، أو عند عدم وجود جلسة، تجزئة أحادية الاتجاه لعنوان IP والمتصفح؛ ولا يُخزَّن عنوان IP نفسه في هذه الإدخالات)، ونوع الجهاز (هاتف أو جهاز لوحي أو حاسوب)، واسم المتصفح، ونظام التشغيل، ولغة القائمة، وما إذا جاءت الزيارة عبر رمز QR الخاص بالقائمة، ووقت الزيارة.</p>
-<p>ونسجّل أيضًا بعض ما يفعله الضيوف في القائمة، مرتبطًا بمعرّف الجلسة نفسه: إضافة طبق إلى السلة، وفتح فئة، وكلمات البحث (بصيغة موحّدة) وعمليات البحث التي لم تجد نتيجة، والنقر على روابط WhatsApp والخريطة والاتصال ومواقع التواصل، وتبديل اللغة. يرى صاحب المطعم هذه السجلات على شكل إحصاءات. ويُحذف النوعان تلقائيًا بعد 6 أشهر. لا تُسجَّل معاينة أصحاب المطاعم لقوائمهم. ولا نجمع أسماء الضيوف أو أرقام هواتفهم أو أي بيانات تواصل أخرى خاصة بهم.</p>
+<p>ونسجّل أيضًا بعض ما يفعله الضيوف في القائمة، مرتبطًا بمعرّف الجلسة نفسه: إضافة طبق إلى السلة، وفتح فئة، وكلمات البحث (بصيغة موحّدة) وعمليات البحث التي لم تجد نتيجة، والنقر على روابط WhatsApp والخريطة والاتصال ومواقع التواصل، وتبديل اللغة. يرى صاحب المطعم هذه السجلات على شكل إحصاءات. ويُحذف النوعان تلقائيًا بعد 6 أشهر. لا تُسجَّل معاينة أصحاب المطاعم لقوائمهم. ولا تتضمن هذه السجلات أسماء أو أرقام هواتف أو أي بيانات تواصل؛ فبيانات التواصل الوحيدة التي نحتفظ بها هي ما يكتبه الضيف في طلب يرسله من داخل القائمة (انظر الطلبات).</p>
 
 <h3>الطلبات</h3>
-<p>في القوائم التي تتضمن باقتها استقبال الطلبات، عندما يرسل ضيف طلبًا نحتفظ بالأطباق المطلوبة (الاسم والسعر والكمية) والمجموع والعملة وملاحظة اختيارية يكتبها الضيف ووقت الطلب. لا نطلب اسم الضيف أو رقم هاتفه أو عنوانه. ثم يُحوَّل الضيف إلى WhatsApp مع نص الطلب؛ وتنتقل تلك الرسالة من الضيف إلى المطعم عبر WhatsApp (الذي تشغّله Meta) ولا نعالجها نحن. يرى صاحب المطعم الطلب في لوحة التحكم.</p>
+<p>في القوائم التي تتضمن باقتها استقبال الطلبات، يستقبل المطعم الطلبات بإحدى طريقتين. وفي الحالتين، عندما يرسل ضيف طلبًا نحتفظ بالأطباق المطلوبة (الاسم والسعر والكمية) والمجموع والعملة وملاحظة اختيارية يكتبها الضيف ووقت الطلب.</p>
+<ul>
+    <li><strong>عبر WhatsApp:</strong> لا نطلب اسم الضيف أو رقم هاتفه أو عنوانه. يُحوَّل الضيف إلى WhatsApp مع نص الطلب؛ وتنتقل تلك الرسالة من الضيف إلى المطعم عبر WhatsApp (الذي تشغّله Meta) ولا نعالجها نحن.</li>
+    <li><strong>من داخل القائمة:</strong> يضيف الضيف أيضًا اسمه ورقم هاتف، ويختار التوصيل أو الاستلام، ويكتب عنوانًا في حال التوصيل. ويمكنه أيضًا مشاركة موقع جهازه بالضغط على "استخدم موقعي الحالي"؛ يطلب المتصفح الإذن أولًا، ولا يُرسَل الموقع إلا بموافقته. ولملء اسم الشارع عنه، يسأل خادمنا خدمة العناوين في OpenStreetMap عن الشارع في ذلك الموقع؛ فتتلقى الموقع دون معرفة هوية الضيف. لا يرى هذه البيانات إلا صاحب ذلك المطعم، في لوحة التحكم، ليتصل بالضيف ويوصل الطلب. وفتح الموقع على الخريطة يرسله إلى خرائط Google.</li>
+</ul>
+<p>بعد الطلب من داخل القائمة، يحصل الضيف على رابط خاص لمتابعة طلبه (أُرسل، قُبل، في الطريق أو جاهز). تعرض الصفحة ما طلبه وعنوانه وحالة الطلب، ولا يفتحها إلا من لديه هذا الرابط.</p>
+<p>نحذف اسم الضيف ورقم هاتفه وعنوانه وموقعه من الطلب بعد 90 يومًا من إرساله. ويبقى باقي الطلب ضمن سجلات المطعم.</p>
 
 <h3>البيانات التقنية</h3>
 <p>كما في أي موقع إلكتروني، تتلقى خوادمنا عنوان IP وتفاصيل المتصفح ووقت كل طلب، ونستخدمها لأغراض الأمان والتصحيح والحفاظ على عمل الخدمة. ونحتفظ بسجل جلسة لكل متصفح يزورنا، بما في ذلك ضيوف القوائم، يتضمن عنوان IP ووكيل المستخدم للمتصفح ووقت آخر نشاط، ويُحذف بعد سنة دون نشاط. وقد يُحظر تلقائيًا لفترة محددة عنوان IP يرسل حركة مسيئة، ونحتفظ بالعنوان المحظور وسبب الحظر وموعد انتهائه.</p>
@@ -201,7 +213,7 @@
     <li><strong>Google:</strong> تسجيل الدخول عبر Google؛ وGoogle reCAPTCHA الذي يتحقق من الإساءة الآلية في صفحتي تسجيل الدخول والتواصل حين يكون مفعّلًا؛ وخطوط Google التي تقدّم الخطوط المستخدمة في موقعنا ولوحة التحكم والقوائم، فتتلقى Google عنوان IP وتفاصيل متصفحك عند تحميل الصفحة لها.</li>
     <li><strong>OpenStreetMap:</strong> القوائم التي تعرض موقع المطعم تحمّل خريطة من OpenStreetMap، التي تتلقى عنوان IP الخاص بالضيف وعنوان الصفحة.</li>
     <li><strong>jsDelivr:</strong> تُحمَّل بعض البرامج النصية في صفحات موقعنا من شبكة توصيل المحتوى jsDelivr، التي تتلقى عنوان IP الخاص بك.</li>
-    <li><strong>WhatsApp:</strong> عندما ينقر ضيف على رابط WhatsApp أو يرسل طلبًا، تجري المحادثة داخل WhatsApp (الذي تشغّله Meta) وفق شروطه وسياسة خصوصيته.</li>
+    <li><strong>WhatsApp:</strong> عندما ينقر ضيف على رابط WhatsApp أو يرسل طلبًا عبره، تجري المحادثة داخل WhatsApp (الذي تشغّله Meta) وفق شروطه وسياسة خصوصيته.</li>
     <li><strong>المتطلبات القانونية:</strong> إذا طُلب ذلك بموجب القانون أو أمر قضائي أو لحماية حقوق وسلامة Qayema أو الآخرين.</li>
     <li><strong>التحويلات التجارية:</strong> في سياق الاندماج أو الاستحواذ أو بيع الأصول، مع التزامات سرية مناسبة.</li>
 </ul>

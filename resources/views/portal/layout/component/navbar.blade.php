@@ -30,8 +30,9 @@
         </span>
       </button>
       {{-- Logged-in owners get a way into the app (register is guest-only);
-           guests get the sign-up CTA. --}}
-      @auth
+           guests get the sign-up CTA. A server error page ($safeChrome) does
+           not ask who is signed in: the database may be what failed. --}}
+      @if (! ($safeChrome ?? false) && auth()->check())
         @if (auth()->user()->hasCompletedOnboarding())
           <a class="btn btn-gold btn-sm" data-magnetic href="{{ config('app.dashboard_url') }}">{{ __('portal.nav.cta_dashboard') }}</a>
         @else
@@ -40,7 +41,7 @@
       @else
         {{-- The narrowest phones show data-short instead (navbar.css). --}}
         <a class="btn btn-gold btn-sm nav-cta" data-magnetic href="{{ route('register') }}" data-short="{{ __('portal.nav.cta_short') }}" aria-label="{{ __('portal.nav.cta') }}"><span class="cta-full">{{ __('portal.nav.cta') }}</span></a>
-      @endauth
+      @endif
     </div>
   </div>
 </nav>

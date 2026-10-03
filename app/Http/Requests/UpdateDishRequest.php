@@ -62,6 +62,8 @@ class UpdateDishRequest extends FormRequest
      */
     public function after(): array
     {
-        return [fn (Validator $validator) => $this->priceForOptions($validator, $this->route('dish')?->price)];
+        $dish = $this->route('dish');
+
+        return [fn (Validator $validator) => $this->priceForOptions($validator, $dish?->price, (bool) $dish?->variants()->exists())];
     }
 }

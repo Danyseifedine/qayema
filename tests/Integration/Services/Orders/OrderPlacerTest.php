@@ -3,11 +3,14 @@
 namespace Tests\Integration\Services\Orders;
 
 use App\Enums\Feature;
+use App\Enums\Fulfilment;
+use App\Enums\OrderChannel;
 use App\Enums\OrderStatus;
 use App\Models\Dish;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Restaurant;
+use App\Services\Orders\OrderDetails;
 use App\Services\Orders\OrderPlacer;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -199,9 +202,9 @@ class OrderPlacerTest extends TestCase
         $dish = $this->dish($restaurant, ['en' => 'Kebab'], '6.00');
         $line = [['dish_id' => $dish->id, 'quantity' => 1]];
 
-        $this->assertSame('No onions', $this->placer()->place($restaurant, $line, "  No onions \n")->note);
-        $this->assertNull($this->placer()->place($restaurant, $line, "   \t ")->note);
-        $this->assertNull($this->placer()->place($restaurant, $line, '')->note);
+        $this->assertSame('No onions', $this->placer()->place($restaurant, $line, details: new OrderDetails(note: "  No onions \n"))->note);
+        $this->assertNull($this->placer()->place($restaurant, $line, details: new OrderDetails(note: "   \t "))->note);
+        $this->assertNull($this->placer()->place($restaurant, $line, details: new OrderDetails(note: ''))->note);
         $this->assertNull($this->placer()->place($restaurant, $line)->note);
     }
 
@@ -223,5 +226,81 @@ class OrderPlacerTest extends TestCase
         }
 
         $this->assertSame(20, Order::query()->where('restaurant_id', $restaurant->id)->count());
+    }
+
+    public function test_an_order_from_whatsapp_carries_no_guest_details(): void
+    {
+        $restaurant = $this->owner();
+        $order = $this->placer()->place($restaurant, [['dish_id' => $this->dish($restaurant, ['en' => 'Kebab'], '6.00')->id, 'quantity' => 1]]);
+
+        $this->assertSame(OrderChannel::WhatsApp, $order->channel);
+        $this->assertNull($order->fulfilment);
+        $this->assertNull($order->guest_phone);
+        $this->assertNull($order->mapUrl());
+    }
+
+    public function test_an_order_placed_in_the_menu_keeps_how_to_reach_the_guest(): void
+    {
+        $restaurant = $this->owner();
+        $dish = $this->dish($restaurant, ['en' => 'Kebab'], '6.00');
+
+        $order = $this->placer()->place($restaurant, [['dish_id' => $dish->id, 'quantity' => 1]], details: new OrderDetails(
+            channel: OrderChannel::Menu,
+            note: ' Ring twice ',
+            fulfilment: Fulfilment::Delivery,
+            name: ' Rami ',
+            phone: '+96170123456',
+            address: '  Hamra, Bliss St, 3rd floor ',
+            latitude: '33.8959000',
+            longitude: '35.4784000',
+            clientToken: '1b4e28ba-2fa1-41d2-883f-0016d3cca427',
+        ))->fresh();
+
+        $this->assertSame(OrderChannel::Menu, $order->channel);
+        $this->assertSame(Fulfilment::Delivery, $order->fulfilment);
+        $this->assertSame('Rami', $order->guest_name);
+        $this->assertSame('+96170123456', $order->guest_phone);
+        $this->assertSame('Hamra, Bliss St, 3rd floor', $order->address);
+        $this->assertSame('Ring twice', $order->note);
+        $this->assertSame('https://www.google.com/maps?q=33.8959000,35.4784000', $order->mapUrl());
+    }
+
+    public function test_a_pickup_keeps_no_address_or_location(): void
+    {
+        $restaurant = $this->owner();
+        $dish = $this->dish($restaurant, ['en' => 'Kebab'], '6.00');
+
+        $order = $this->placer()->place($restaurant, [['dish_id' => $dish->id, 'quantity' => 1]], details: new OrderDetails(
+            channel: OrderChannel::Menu,
+            fulfilment: Fulfilment::Pickup,
+            phone: '+96170123456',
+            address: 'Somewhere',
+            latitude: '33.9',
+            longitude: '35.5',
+        ));
+
+        $this->assertNull($order->address);
+        $this->assertNull($order->latitude);
+        $this->assertNull($order->mapUrl());
+    }
+
+    /** A double tap or a retry sends the same token: one order, not two. */
+    public function test_the_same_token_gets_the_same_order_back(): void
+    {
+        $restaurant = $this->owner();
+        $dish = $this->dish($restaurant, ['en' => 'Kebab'], '6.00');
+        $details = new OrderDetails(channel: OrderChannel::Menu, fulfilment: Fulfilment::Pickup, phone: '+96170123456', clientToken: '1b4e28ba-2fa1-41d2-883f-0016d3cca427');
+
+        $first = $this->placer()->place($restaurant, [['dish_id' => $dish->id, 'quantity' => 1]], details: $details);
+        $second = $this->placer()->place($restaurant, [['dish_id' => $dish->id, 'quantity' => 3]], details: $details);
+
+        $this->assertSame($first->id, $second->id);
+        $this->assertSame(1, $second->items[0]->quantity);
+        $this->assertSame(1, Order::query()->count());
+
+        // The token is this restaurant's: another one may use the same.
+        $elsewhere = $this->owner();
+        $other = $this->placer()->place($elsewhere, [['dish_id' => $this->dish($elsewhere, ['en' => 'Wrap'], '4.00')->id, 'quantity' => 1]], details: $details);
+        $this->assertNotSame($first->id, $other->id);
     }
 }

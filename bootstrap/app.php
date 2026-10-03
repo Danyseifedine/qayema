@@ -22,6 +22,11 @@ $app = Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    // Pusher's sign-in for the owner's private orders channel, beside the
+    // rest of the API and with the same session (routes/channels.php).
+    // Pusher asks once per channel and per reconnect; the dashboard's own
+    // ceiling keeps a stuck page from asking without end.
+    ->withBroadcasting(__DIR__.'/../routes/channels.php', ['prefix' => 'api', 'middleware' => ['api', 'auth:sanctum', 'throttle:api']])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: env('TRUSTED_PROXIES'));
 

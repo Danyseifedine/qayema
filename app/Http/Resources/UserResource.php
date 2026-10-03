@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Enums\Feature;
+use App\Enums\OrderChannel;
 use App\Enums\PackageStatus;
 use App\Models\Package;
 use App\Models\Restaurant;
@@ -49,6 +50,8 @@ class UserResource extends JsonResource
         $base = rtrim((string) config('app.url'), '/');
 
         return [
+            // The live orders channel is named after it (routes/channels.php).
+            'id' => $restaurant->id,
             // What the menu is written in: English, then the second language
             // when there is one. The dashboard's text fields have a tab each.
             'languages' => $restaurant->menuLanguages(),
@@ -92,6 +95,14 @@ class UserResource extends JsonResource
             ],
             // Optional features the owner switched off (Features page).
             'switched_off' => $restaurant->switchedOff(),
+            // How guests send their orders, when ordering is on: the menu
+            // only while the package includes it (Restaurant::orderChannel()).
+            'ordering' => [
+                'mode' => $restaurant->order_mode === OrderChannel::Menu->value && $entitlements->can(Feature::MenuOrdering)
+                    ? OrderChannel::Menu->value
+                    : OrderChannel::WhatsApp->value,
+                'types' => $restaurant->orderTypes(),
+            ],
             // What this restaurant may use: its package plus any grants. Every
             // flag in App\Enums\Feature, so a new one needs no edit here.
             'plan' => collect(Feature::flags())

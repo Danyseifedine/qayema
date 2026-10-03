@@ -2,9 +2,11 @@
 
 use App\Http\Controllers\Admin\MediaPreviewController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\PublicAddressController;
 use App\Http\Controllers\PublicMenuController;
 use App\Http\Controllers\PublicMenuEventController;
 use App\Http\Controllers\PublicOrderController;
+use App\Http\Controllers\PublicOrderTrackingController;
 use App\Http\Controllers\QrCardController;
 use App\Http\Controllers\SeoController;
 use App\Http\Controllers\TempUploadController;
@@ -96,12 +98,35 @@ Route::get('/{restaurant:slug}/qr', [QrCardController::class, 'show'])->name('pu
 // fetched once the menu has loaded so the pop-up opens at once.
 Route::get('/{restaurant:slug}/qr-options', [QrCardController::class, 'options'])->name('public.qr.options');
 
+// "Use my location" in the cart, as an address line. A guest taps it once
+// or twice; the limit keeps anyone from using us as a free geocoder.
+Route::get('/{restaurant:slug}/address', [PublicAddressController::class, 'show'])
+    ->middleware('throttle:geocode')
+    ->name('public.address');
+
 // A guest placing an order from the public menu. Two segments, so it is safe
 // beside the one-segment catch-all below; the limiter is deliberately gentle
 // because a whole restaurant shares one wifi and therefore one IP.
 Route::post('/{restaurant:slug}/order', [PublicOrderController::class, 'store'])
     ->middleware('throttle:orders')
     ->name('public.order');
+
+// A guest following an order they placed in the menu, in the menu's
+// tracking sheet. The token is long and random, so it cannot be found by
+// guessing; opened as a page it is the menu with the sheet up.
+Route::get('/{restaurant:slug}/order/{token}', [PublicOrderTrackingController::class, 'show'])
+    ->where('token', '[A-Za-z0-9]{40}')
+    ->middleware('throttle:order-status')
+    ->name('public.order.track');
+// The guest changing it from the menu, until the restaurant accepts it.
+Route::get('/{restaurant:slug}/order/{token}/cart', [PublicOrderTrackingController::class, 'cart'])
+    ->where('token', '[A-Za-z0-9]{40}')
+    ->middleware('throttle:order-status')
+    ->name('public.order.cart');
+Route::put('/{restaurant:slug}/order/{token}', [PublicOrderController::class, 'update'])
+    ->where('token', '[A-Za-z0-9]{40}')
+    ->middleware('throttle:orders')
+    ->name('public.order.update');
 
 // What guests do on a menu once it is open, in small batches. Keyed per IP
 // like ordering, and for the same reason never a ban: a full dining room

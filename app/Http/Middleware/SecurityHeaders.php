@@ -20,7 +20,11 @@ class SecurityHeaders
         $response->headers->set('X-Frame-Options', 'DENY');
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
-        $response->headers->set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+        // A guest ordering in the menu may share where they are ("Use my
+        // location"), so the menu itself may ask; nothing else, and no frame
+        // inside it (the map), ever can.
+        $geolocation = $request->routeIs('public.menu') ? '(self)' : '()';
+        $response->headers->set('Permissions-Policy', "geolocation={$geolocation}, microphone=(), camera=()");
 
         // script-src/default-src are intentionally omitted: the app runs standard
         // Alpine.js (needs eval), Livewire/Filament inline scripts, CDN scripts and

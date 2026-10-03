@@ -255,7 +255,9 @@ class MenuOrderingTest extends TestCase
 
     public function test_without_whatsapp_the_links_still_get_the_item(): void
     {
-        $shop = $this->shop(true, ['phone' => null]);
+        // Ordering in the menu needs no number, so the cart stays.
+        $shop = $this->shop(true, ['phone' => null, 'order_mode' => 'menu']);
+        $this->defaultPackageSets(Feature::MenuOrdering, 1);
         RestaurantSocialLink::create(['restaurant_id' => $shop->id, 'platform' => 'instagram', 'url' => 'https://instagram.com/olive']);
 
         $html = $this->get(route('public.menu', $shop->slug))->assertOk()->getContent();
@@ -295,6 +297,75 @@ class MenuOrderingTest extends TestCase
             ->assertSee('House Bowl')
             ->assertDontSee('menu-cart.js', false)
             ->assertDontSee('Place order');
+    }
+
+    public function test_ordering_on_whatsapp_needs_a_number_to_send_to(): void
+    {
+        // Without a usable number the order would be stored and the guest
+        // sent nowhere, so there is no cart at all.
+        $shop = $this->shop(true, ['phone' => null]);
+
+        $this->get(route('public.menu', $shop->slug))
+            ->assertOk()
+            ->assertDontSee('menu-cart.js', false);
+    }
+
+    public function test_on_whatsapp_the_cart_asks_only_for_a_note(): void
+    {
+        $shop = $this->shop(true);
+
+        $this->get(route('public.menu', $shop->slug))
+            ->assertOk()
+            ->assertSee("mode: 'whatsapp'", false)
+            ->assertSee("note: 'Note for the restaurant'", false)
+            ->assertDontSee('guestKey', false)
+            ->assertDontSee('countries:', false);
+    }
+
+    public function test_in_the_menu_the_cart_asks_for_a_phone_and_an_address(): void
+    {
+        $shop = $this->shop(true, ['order_mode' => 'menu', 'order_types' => ['delivery'], 'country_code' => 'AE']);
+        $this->defaultPackageSets(Feature::MenuOrdering, 1);
+
+        $this->get(route('public.menu', $shop->slug))
+            ->assertOk()
+            ->assertSee("mode: 'menu'", false)
+            ->assertSee("guestKey: 'qayema-guest-olive'", false)
+            // Arrays reach the page through @js as JSON.parse('...').
+            ->assertSee('types: JSON.parse(\'[\u0022delivery\u0022]\')', false)
+            ->assertSee("country: 'AE'", false)
+            ->assertSee('\u0022dial\u0022:\u0022+961\u0022', false)
+            ->assertSee('closed: false', false)
+            ->assertSee("name: 'Your name'", false)
+            ->assertSee("phone: 'Phone number'", false)
+            ->assertSee("locate: 'Use my current location'", false)
+            ->assertSee("addressUrl: '", false)
+            ->assertSee("sent: 'Order sent'", false);
+    }
+
+    public function test_in_the_menu_without_the_package_flag_the_cart_goes_to_whatsapp(): void
+    {
+        $shop = $this->shop(true, ['order_mode' => 'menu']);
+
+        $this->get(route('public.menu', $shop->slug))
+            ->assertOk()
+            ->assertSee("mode: 'whatsapp'", false);
+    }
+
+    public function test_in_the_menu_outside_the_hours_the_cart_is_closed(): void
+    {
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-10-05 03:00', 'Asia/Beirut'));
+        $shop = $this->shop(true, [
+            'order_mode' => 'menu',
+            'timezone' => 'Asia/Beirut',
+            'opening_hours' => array_fill_keys(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'], ['open' => '09:00', 'close' => '17:00']),
+        ]);
+        $this->defaultPackageSets(Feature::MenuOrdering, 1);
+
+        $this->get(route('public.menu', $shop->slug))
+            ->assertOk()
+            ->assertSee('closed: true', false)
+            ->assertSee("closed: 'Closed now'", false);
     }
 
     public function test_a_preview_never_takes_a_real_order(): void

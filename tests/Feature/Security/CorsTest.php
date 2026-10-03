@@ -42,7 +42,9 @@ class CorsTest extends TestCase
         ])
             ->assertNoContent()
             ->assertHeader('Access-Control-Allow-Origin', self::DASHBOARD)
-            ->assertHeader('Access-Control-Allow-Methods');
+            ->assertHeader('Access-Control-Allow-Methods')
+            // Remembered for two hours, so each call is not asked about again.
+            ->assertHeader('Access-Control-Max-Age', '7200');
     }
 
     public function test_an_unknown_origin_gets_no_cors_headers(): void

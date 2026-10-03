@@ -14,11 +14,14 @@ class IndexOrdersRequestTest extends TestCase
 {
     use CreatesOwners, RefreshDatabase;
 
-    /** One order in each status, in the order of OrderStatus::cases(). */
+    /**
+     * One order placed in the menu in each status, in the order of
+     * OrderStatus::cases(); the Orders page lists only those.
+     */
     private function oneOfEach(Restaurant $shop): void
     {
         foreach (OrderStatus::cases() as $status) {
-            Order::factory()->for($shop)->status($status)->create(['reference' => strtoupper($status->value)]);
+            Order::factory()->for($shop)->inMenu()->status($status)->create(['reference' => strtoupper($status->value)]);
         }
     }
 
@@ -32,7 +35,7 @@ class IndexOrdersRequestTest extends TestCase
             ->assertOk()
             ->assertJsonPath('meta.open', 1);
 
-        $this->assertEqualsCanonicalizing(['placed', 'done', 'cancelled'], array_column($response->json('data'), 'status'));
+        $this->assertEqualsCanonicalizing(array_column(OrderStatus::cases(), 'value'), array_column($response->json('data'), 'status'));
     }
 
     public function test_a_blank_status_is_the_same_as_none(): void
@@ -43,7 +46,7 @@ class IndexOrdersRequestTest extends TestCase
         $this->actingAs($shop->user)
             ->getJson(route('api.orders.index').'?status=')
             ->assertOk()
-            ->assertJsonCount(3, 'data');
+            ->assertJsonCount(count(OrderStatus::cases()), 'data');
     }
 
     public function test_each_status_filters_the_list(): void

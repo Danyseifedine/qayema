@@ -193,7 +193,7 @@ a.fact:hover { color: var(--text); }
 .add .icon { width: 18px; height: 18px; }
 /* How many of a dish with choices are in the cart, on its add button. */
 .add { position: relative; }
-.add-count { position: absolute; top: -6px; inset-inline-end: -6px; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 999px; border: 2px solid var(--bg); background: var(--text); color: var(--bg); font-size: 10.5px; font-weight: 700; line-height: 15px; text-align: center; font-variant-numeric: tabular-nums; }
+.add-count { position: absolute; top: -6px; inset-inline-end: -6px; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 999px; border: 2px solid var(--bg); background: var(--accent); color: var(--accent-ink); font-size: 10.5px; font-weight: 700; line-height: 15px; text-align: center; font-variant-numeric: tabular-nums; }
 .qty { display: inline-flex; align-items: center; background: var(--soft); border-radius: 999px; padding: 3px; }
 .qty button { width: 28px; height: 28px; border-radius: 50%; background: transparent; }
 .qty button .icon { width: 18px; height: 18px; }
@@ -224,6 +224,163 @@ a.fact:hover { color: var(--text); }
 .place[disabled] { opacity: .6; cursor: progress; }
 .cart-error { margin: 10px 0 0; font-size: 13px; color: #b3261e; }
 .cart-empty { padding: 60px 0; text-align: center; color: var(--muted); }
+
+/* ---- Following an order: the tracking sheet (menu-order.js) ---- */
+.track-sheet .dish-sheet-body { background: var(--bg); }
+.track-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 14px 14px 18px; background: var(--bg); border-bottom: 1px solid var(--line); }
+[dir="rtl"] .track-sheet-head { padding: 14px 18px 14px 14px; }
+.track-sheet-head h2 { margin: 0; font-size: 16px; font-weight: 700; }
+.track-sheet-close { flex-shrink: 0; width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 50%; background: var(--bg); color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.track-sheet-close .icon { width: 16px; height: 16px; }
+/* One page, not a stack of cards: sections follow each other, a thin line
+   between them. */
+.track-sheet-scroll { padding: 0 0 env(safe-area-inset-bottom); }
+.track-card { padding: 18px 20px; }
+.track-card + .track-card { border-top: 1px solid var(--line); }
+.track-section { margin: 0 0 10px; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.track-status { text-align: center; padding: 24px 20px 20px; }
+.track-mark { display: inline-flex; align-items: center; justify-content: center; width: 52px; height: 52px; border-radius: 50%; }
+.track-mark .icon { width: 24px; height: 24px; }
+.is-waiting .track-mark { background: color-mix(in srgb, var(--accent) 22%, var(--bg)); color: color-mix(in srgb, var(--accent) 55%, var(--text)); }
+.is-waiting .track-mark .icon { animation: track-pulse 1.4s ease-in-out infinite alternate; }
+.is-moving .track-mark { background: var(--accent); color: var(--accent-ink); }
+.is-done .track-mark { background: #17803d; color: #fff; }
+.is-cancelled .track-mark { background: color-mix(in srgb, #b3261e 12%, var(--bg)); color: #b3261e; }
+.track-title { margin: 10px 0 4px; font-size: 21px; font-weight: 700; letter-spacing: -0.01em; }
+.track-body { margin: 0 auto; max-width: 320px; color: var(--muted); font-size: 13.5px; }
+.track-ref { margin: 8px 0 0; font-size: 12.5px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+.track-changed { margin: 12px 0 0; font-size: 12.5px; font-weight: 600; color: color-mix(in srgb, var(--accent) 50%, var(--text)); }
+/* The steps, top to bottom, joined by a line that fills in as the order
+   moves on: each row is 40px with a 24px dot in its middle. */
+.track-steps { margin: 18px auto 0; padding: 16px 0 0; max-width: 300px; border-top: 1px solid var(--line); list-style: none; text-align: start; }
+.track-steps li { position: relative; display: flex; align-items: center; gap: 12px; height: 40px; color: var(--muted); }
+.track-steps li + li::before { content: ""; position: absolute; inset-inline-start: 11px; top: -8px; height: 16px; width: 2px; border-radius: 2px; background: var(--line); }
+.track-steps li.reached + li.reached::before { background: color-mix(in srgb, var(--accent) 70%, var(--text)); }
+.track-dot { position: relative; z-index: 1; flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--line); background: var(--bg); display: flex; align-items: center; justify-content: center; }
+.track-dot .icon { width: 13px; height: 13px; }
+.track-steps li.reached .track-dot { border-color: transparent; background: var(--accent); color: var(--accent-ink); }
+.track-steps li.current .track-dot { box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 22%, transparent); }
+.track-steps li.reached { color: var(--text); }
+.track-step-label { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; }
+.track-steps li:not(.reached) .track-step-label { font-weight: 500; }
+.track-step-time { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.track-lines { margin: 0; padding: 0; list-style: none; }
+.track-lines li { display: flex; align-items: baseline; gap: 8px; padding: 8px 0; font-size: 14px; }
+.track-lines li + li { border-top: 1px solid var(--line); }
+.track-qty { color: var(--muted); font-variant-numeric: tabular-nums; }
+.track-line-name { flex: 1; min-width: 0; font-weight: 500; }
+.track-line-choices { display: block; font-size: 12.5px; font-weight: 400; color: var(--muted); }
+.track-line-total { font-variant-numeric: tabular-nums; }
+.track-total { display: flex; justify-content: space-between; margin: 8px 0 0; padding-top: 10px; border-top: 1px solid var(--line); font-size: 15px; font-weight: 700; }
+.track-total span:last-child { font-variant-numeric: tabular-nums; }
+.track-note { margin: 10px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--soft); font-size: 13px; color: var(--muted); }
+.track-address { display: flex; align-items: flex-start; gap: 8px; margin: 0; font-size: 14px; }
+.track-address .icon { margin-top: 2px; color: var(--muted); }
+.track-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.track-actions:empty { display: none; }
+.track-button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--text); font: inherit; font-size: 13.5px; font-weight: 600; text-decoration: none; cursor: pointer; }
+.track-button:hover { background: var(--soft); }
+.track-edit { margin-top: 16px; width: 100%; }
+
+/* ---- Changing an order already placed ---- */
+.cart-editing { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; padding: 10px 12px; border: 1px dashed color-mix(in srgb, var(--accent) 70%, var(--line)); border-radius: 12px; background: color-mix(in srgb, var(--accent) 10%, var(--bg)); }
+.cart-editing-text { font-size: 13px; font-weight: 700; }
+.cart-editing.is-waiting { border-style: solid; border-color: var(--line); background: var(--soft); }
+.cart-editing.is-waiting .cart-editing-text { font-weight: 500; color: var(--muted); line-height: 1.45; }
+.cart-editing-stop { flex-shrink: 0; padding: 6px 2px; border: 0; background: transparent; color: var(--muted); font-size: 12.5px; font-weight: 600; text-decoration: underline; cursor: pointer; }
+
+/* ---- The guest's details: who to call, where to bring it, a note ---- */
+.cart-details { margin-top: 18px; display: flex; flex-direction: column; gap: 14px; }
+.cart-field { margin: 0; padding: 0; border: 0; min-width: 0; }
+.cart-label { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px; padding: 0; font-size: 12.5px; font-weight: 600; }
+.cart-optional { font-size: 11px; font-weight: 500; color: var(--muted); }
+.cart-types .choice-pills { grid-template-columns: repeat(2, 1fr); }
+.cart-types .choice-pill { min-height: 40px; padding: 6px 10px; font-size: 13.5px; border-radius: 10px; }
+/* 14px like the rest of the cart. An iPhone would zoom the page in on a
+   box under 16px; the menu's head stops that on iPhones only. */
+.cart-input, .cart-phone { border: 1px solid var(--line); border-radius: 10px; background: var(--bg); transition: border-color .15s ease, box-shadow .15s ease; }
+.cart-input { display: block; width: 100%; min-height: 42px; padding: 10px 12px; color: var(--text); font-size: 14px; line-height: 1.4; resize: vertical; outline: none; }
+textarea.cart-input { min-height: 62px; }
+.cart-input:focus, .cart-phone:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.cart-input::placeholder, .cart-phone input::placeholder { color: var(--muted); opacity: .85; }
+.cart-phone { display: flex; align-items: stretch; height: 42px; padding: 0; gap: 0; overflow: hidden; color: var(--text); }
+.cart-phone input { flex: 1; min-width: 0; padding: 0 12px; border: 0; background: transparent; color: var(--text); font-size: 14px; outline: none; }
+/* The country code reads as part of the number: a thin divider, no box. */
+.cart-phone-field { position: relative; }
+.cart-country { flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; padding: 0 10px 0 12px; border: 0; border-inline-end: 1px solid var(--line); background: transparent; color: var(--text); font-size: 14px; font-variant-numeric: tabular-nums; cursor: pointer; }
+.cart-country:hover { background: color-mix(in srgb, var(--text) 4%, var(--bg)); }
+.cart-country-chevron { width: 12px; height: 12px; color: var(--muted); transform: rotate(90deg); transition: transform .15s ease; }
+.cart-country[aria-expanded="true"] .cart-country-chevron { transform: rotate(-90deg); }
+.cart-country-panel { position: absolute; z-index: 20; inset-inline: 0; top: calc(100% + 6px); display: flex; flex-direction: column; max-height: 300px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); box-shadow: 0 14px 36px rgba(0,0,0,.16); overflow: hidden; animation: fade-in .15s ease; }
+.cart-country-search { flex-shrink: 0; margin: 8px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--page); color: var(--text); font-size: 14px; outline: none; }
+.cart-country-search:focus { border-color: var(--accent); }
+/* The browser's own clear cross does not match the menu; emptying the box
+   is one long press away anyway. */
+.cart-country-search::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+.cart-country-list { margin: 0; padding: 0 6px 6px; list-style: none; overflow-y: auto; overscroll-behavior: contain; }
+.cart-country-option { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 6px 10px; border-radius: 8px; font-size: 14px; cursor: pointer; }
+.cart-country-option.active { background: color-mix(in srgb, var(--accent) 14%, var(--bg)); }
+.cart-country-option[aria-selected="true"] { font-weight: 600; }
+.cart-country-flag { flex-shrink: 0; font-size: 17px; line-height: 1; }
+.cart-country-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cart-country-dial { flex-shrink: 0; color: var(--muted); font-variant-numeric: tabular-nums; direction: ltr; }
+.cart-country-empty { margin: 0; padding: 4px 16px 14px; font-size: 13px; color: var(--muted); }
+.cart-field:has(.cart-field-error:not([hidden])) :is(.cart-input, .cart-phone) { border-color: #b3261e; }
+.cart-field-error { margin: 6px 0 0; font-size: 12px; color: #b3261e; }
+/* "Use my current location": a soft accent row above the address box,
+   which it fills in. */
+.cart-locate-button { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 40px; margin-bottom: 8px; padding: 8px 12px; border: 1px dashed color-mix(in srgb, var(--accent) 70%, var(--line)); border-radius: 10px; background: color-mix(in srgb, var(--accent) 9%, var(--bg)); color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; transition: background-color .15s ease; }
+.cart-locate-button:hover { background: color-mix(in srgb, var(--accent) 16%, var(--bg)); }
+.cart-locate-button .icon { width: 16px; height: 16px; color: color-mix(in srgb, var(--accent) 65%, var(--text)); }
+.cart-locate-button[disabled] { cursor: progress; }
+.cart-locate-button[disabled] .icon { animation: locate-pulse .8s ease-in-out infinite alternate; }
+.cart-locate-status { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+.cart-locate-status.added { padding: 8px 10px 8px 12px; border-radius: 10px; background: color-mix(in srgb, #17803d 9%, var(--bg)); color: var(--text); }
+.cart-locate-status .icon { flex-shrink: 0; width: 16px; height: 16px; color: #17803d; }
+.cart-locate-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cart-locate-text strong { font-size: 13px; font-weight: 600; }
+.cart-locate-text span { color: var(--muted); }
+.cart-locate-remove { flex-shrink: 0; padding: 6px 4px; border: 0; background: transparent; color: var(--muted); font-size: 12.5px; font-weight: 600; text-decoration: underline; cursor: pointer; }
+.cart-trap { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.cart-closed { margin: 16px 0 0; padding: 12px 14px; border-radius: 10px; background: var(--soft); color: var(--muted); font-size: 13px; line-height: 1.5; }
+
+/* ---- The note that an order went, at the top of the screen ---- */
+.menu-toast { position: fixed; z-index: 100; top: calc(12px + env(safe-area-inset-top)); left: 50%; width: min(420px, calc(100% - 24px)); transform: translateX(-50%); display: flex; align-items: flex-start; gap: 12px; padding: 14px 10px 14px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); color: var(--text); box-shadow: 0 12px 32px rgba(0,0,0,.16); animation: toast-in .3s cubic-bezier(.2,.9,.3,1.2); }
+[dir="rtl"] .menu-toast { padding: 14px 14px 14px 10px; }
+.menu-toast.leaving { animation: toast-out .25s ease forwards; }
+.menu-toast-mark { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; background: #17803d; color: #fff; display: flex; align-items: center; justify-content: center; }
+.menu-toast-mark .icon { width: 16px; height: 16px; }
+.menu-toast-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding-top: 4px; font-size: 13px; line-height: 1.45; color: var(--muted); }
+.menu-toast-text strong { font-size: 14.5px; color: var(--text); }
+.menu-toast-link { align-self: flex-start; margin-top: 4px; font-size: 13px; font-weight: 700; color: var(--text); text-decoration: underline; text-underline-offset: 2px; }
+
+/* While the order is fetched for its sheet: the button spins. */
+.order-bar-link.is-loading .order-bar-cta { position: relative; color: transparent; }
+.is-loading .order-bar-cta::after, .menu-toast-link.is-loading::after { content: ""; position: absolute; top: 50%; left: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; }
+.order-bar-link.is-loading .order-bar-cta::after { border-color: var(--accent-ink); border-right-color: transparent; }
+.menu-toast-link.is-loading { position: relative; padding-inline-end: 22px; }
+.menu-toast-link.is-loading::after { left: auto; right: 0; }
+[dir="rtl"] .menu-toast-link.is-loading::after { right: auto; left: 0; }
+
+/* ---- Back to the order just placed, at the top of the menu ---- */
+.order-bar { position: relative; display: flex; align-items: center; margin: 12px 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--bg); box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 6px 18px rgba(0,0,0,.05); }
+.order-bar-link { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 12px 8px 12px 12px; color: var(--text); text-decoration: none; }
+[dir="rtl"] .order-bar-link { padding: 12px 12px 12px 8px; }
+.order-bar-mark { flex-shrink: 0; width: 40px; height: 40px; border-radius: 12px; background: color-mix(in srgb, var(--accent) 18%, var(--bg)); color: color-mix(in srgb, var(--accent) 55%, var(--text)); display: flex; align-items: center; justify-content: center; }
+.order-bar-mark .icon { width: 20px; height: 20px; }
+.order-bar-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.order-bar-text strong { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.order-bar-status { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.order-bar-dot { flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.order-bar-status[data-tone="waiting"] .order-bar-dot { animation: track-pulse 1.2s ease-in-out infinite alternate; }
+.order-bar-status[data-tone="done"] .order-bar-dot { background: #17803d; }
+.order-bar-status[data-tone="cancelled"] .order-bar-dot { background: #b3261e; }
+.order-bar-cta { flex-shrink: 0; padding: 8px 14px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-size: 13px; font-weight: 700; }
+.order-bar-close { flex-shrink: 0; width: 36px; height: 36px; margin-inline-end: 6px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.order-bar-close:hover { background: var(--soft); }
+.order-bar-close .icon { width: 15px; height: 15px; }
+.menu-toast-close { flex-shrink: 0; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.menu-toast-close .icon { width: 16px; height: 16px; }
 
 /* ---- Cart sheet: its own screen on a phone, as the design has it ---- */
 dialog.sheet { border: 0; padding: 0; margin: 0; width: 100%; max-width: 100%; height: 100%; max-height: 100%; background: var(--page); color: var(--text); }
@@ -507,6 +664,11 @@ dialog.pop[open]::backdrop { animation: fade-in .2s ease; }
 @keyframes pop-in { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @keyframes dish-in { from { transform: translateY(12px) scale(.97); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes dish-out { from { transform: none; opacity: 1; } to { transform: translateY(8px) scale(.98); opacity: 0; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes track-pulse { from { opacity: 1; } to { opacity: .35; } }
+@keyframes locate-pulse { from { opacity: 1; } to { opacity: .35; } }
+@keyframes toast-in { from { transform: translate(-50%, -24px); opacity: 0; } to { transform: translateX(-50%); opacity: 1; } }
+@keyframes toast-out { to { transform: translate(-50%, -16px); opacity: 0; } }
 @keyframes count-pop { 0%, 100% { transform: scale(1); } 45% { transform: scale(1.32); } }
 
 .dish-action > .enter { animation: pop-in .22s cubic-bezier(.2,.9,.3,1); }
@@ -551,6 +713,7 @@ dialog.pop[open]::backdrop { animation: fade-in .2s ease; }
     .col-main { overflow-y: auto; scroll-behavior: smooth; }
 
     .cover { margin: 24px 32px 0; height: 200px; border-radius: 14px; }
+    .order-bar { margin: 24px 32px -8px; }
     .cover-body { padding: 28px 32px; }
     .cover-body h1 { font-size: 36px; }
     .cover-body p { margin-top: 8px; font-size: 15px; }

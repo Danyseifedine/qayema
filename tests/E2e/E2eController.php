@@ -36,8 +36,11 @@ class E2eController extends Controller
      * slug, second_locale, is_active, switched_off, phone, google_maps_url,
      * opening_hours, categories [{name, description, dishes: [{name, price,
      * ingredients, is_available, variants: [{name, options: [{name, price}]}],
-     * addons: [{name, price}]}]}], social_links [{platform, url}], orders
-     * (count), order_choices (bool: their line carries a size and an add-on),
+     * addons: [{name, price}]}]}], social_links [{platform, url}], order_mode
+     * (whatsapp|menu), order_types ([delivery, pickup]), orders (count),
+     * order_channel (menu, the default: placed in the menu with a phone and
+     * an address | whatsapp), order_choices (bool: their line carries a
+     * size and an add-on),
      * visits (count), qr_scans (count), settings {key: value} for the
      * design, qr_settings {…}, logo (bool).
      */
@@ -80,6 +83,8 @@ class E2eController extends Controller
             'default_locale' => 'en',
             'second_locale' => $input['second_locale'] ?? null,
             'qr_settings' => $input['qr_settings'] ?? null,
+            'order_mode' => $input['order_mode'] ?? 'whatsapp',
+            'order_types' => $input['order_types'] ?? null,
             'template_settings' => $template && isset($input['settings']) ? [$template->id => $input['settings']] : null,
         ]);
 
@@ -108,7 +113,7 @@ class E2eController extends Controller
                     'category_id' => $category->id,
                     'name' => $dish['name'],
                     'ingredients' => $dish['ingredients'] ?? null,
-                    'price' => $dish['price'] ?? 10,
+                    'price' => array_key_exists('price', $dish) ? $dish['price'] : 10,
                     'is_available' => $dish['is_available'] ?? true,
                     'display_order' => $order,
                 ]);
@@ -124,7 +129,8 @@ class E2eController extends Controller
         }
 
         for ($i = 0; $i < (int) ($input['orders'] ?? 0); $i++) {
-            $order = Order::factory()->create([
+            $factory = ($input['order_channel'] ?? 'menu') === 'menu' ? Order::factory()->inMenu() : Order::factory();
+            $order = $factory->create([
                 'restaurant_id' => $restaurant->id,
                 'status' => OrderStatus::Placed,
                 'currency' => $restaurant->currency,

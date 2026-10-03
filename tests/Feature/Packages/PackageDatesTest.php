@@ -19,6 +19,15 @@ class PackageDatesTest extends TestCase
 {
     use CreatesOwners, RefreshDatabase;
 
+    /**
+     * Entitlements are memoized for one request; a later moment is a later
+     * request, as it is live.
+     */
+    private function newRequest(): void
+    {
+        app()->forgetScopedInstances();
+    }
+
     private function assigner(): PackageAssigner
     {
         return app(PackageAssigner::class);
@@ -36,6 +45,7 @@ class PackageDatesTest extends TestCase
         $this->assertSame(40, $restaurant->dish_limit);
 
         $this->travel(8)->days();
+        $this->newRequest();
 
         $this->assertSame(PackageStatus::Active, $restaurant->fresh()->packageStatus());
         $this->assertSame(1000, $restaurant->fresh()->dish_limit);
@@ -50,6 +60,7 @@ class PackageDatesTest extends TestCase
 
         // No write, no flush: only the clock moves past the end.
         $this->travel(2)->minutes();
+        $this->newRequest();
 
         $this->assertSame(40, $restaurant->fresh()->dish_limit);
     }
@@ -62,6 +73,7 @@ class PackageDatesTest extends TestCase
         $this->assertSame(50, $restaurant->fresh()->dish_limit);
 
         $this->travel(2)->minutes();
+        $this->newRequest();
 
         $this->assertSame(40, $restaurant->fresh()->dish_limit);
     }

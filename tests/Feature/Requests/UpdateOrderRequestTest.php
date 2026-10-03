@@ -40,7 +40,9 @@ class UpdateOrderRequestTest extends TestCase
     public function test_every_status_can_be_set(string $status): void
     {
         $shop = $this->owner();
-        $order = Order::factory()->for($shop)->status($status === 'placed' ? OrderStatus::Done : OrderStatus::Placed)->create();
+        // From a new order every status is ahead of it, or it already (a
+        // second tap on the same button answers as the first).
+        $order = Order::factory()->for($shop)->create();
 
         $this->actingAs($shop->user)
             ->patchJson(route('api.orders.update', $order), ['status' => $status])

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\OrderChannel;
 use App\Models\Restaurant;
 use App\Models\Template;
 use App\Services\Analytics\MenuVisitRecorder;
@@ -83,6 +84,9 @@ class PublicMenuController extends Controller
         // prints English.
         app()->setLocale($locale);
 
+        // A preview is a dress rehearsal and never takes a real order.
+        $channel = $preview === null ? $restaurant->orderChannel() : null;
+
         return view($view, [
             'restaurant' => $restaurant,
             'template' => $template,
@@ -98,9 +102,14 @@ class PublicMenuController extends Controller
             'whatsapp_url' => ($number = WhatsAppLink::internationalNumber($restaurant))
                 ? 'https://wa.me/'.$number
                 : null,
-            // Ordering is a package feature, and a preview is a dress
-            // rehearsal; neither should take a real order.
-            'can_order' => ! $preview && $restaurant->takesOrders(),
+            // Ordering is a package feature; on WhatsApp it also needs a
+            // number to send to.
+            'can_order' => match ($channel) {
+                OrderChannel::Menu => true,
+                OrderChannel::WhatsApp => $number !== null,
+                null => false,
+            },
+            'order_channel' => $channel,
             // Each dish's variants and add-ons, for its sheet and the cart.
             'dish_options' => MenuDishOptions::for($restaurant, $restaurant->categories->flatMap->dishes, $locale),
             'seo' => $this->seo->for($restaurant, $locale, $preview !== null),

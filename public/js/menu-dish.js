@@ -88,15 +88,22 @@
         return node;
     }
 
-    /** What a choice adds, or "Free" for one with no price. */
-    function priceLabel(price) {
+    /**
+     * What a choice adds, or "Free" for one with no price. `full` is for the
+     * first variant of a dish with no price of its own: its options are the
+     * prices themselves (Small $7.00), not extras.
+     */
+    function priceLabel(price, full) {
         var amount = parseFloat(price) || 0;
+        if (full) {
+            return element('span', 'choice-price', money(amount));
+        }
         return amount > 0
             ? element('span', 'choice-price', extra(amount))
             : element('span', 'choice-price is-free', strings.free);
     }
 
-    function variantGroup(variant) {
+    function variantGroup(variant, full) {
         var set = element('fieldset', 'choice-group');
         set.appendChild(legend(variant.name, strings.pickOne));
 
@@ -115,7 +122,7 @@
 
             label.appendChild(input);
             label.appendChild(element('span', 'choice-name', option.name));
-            label.appendChild(priceLabel(option.price));
+            label.appendChild(priceLabel(option.price, full));
             pills.appendChild(label);
         });
 
@@ -243,8 +250,8 @@
         }
 
         groups.textContent = '';
-        data.variants.forEach(function (variant) {
-            groups.appendChild(variantGroup(variant));
+        data.variants.forEach(function (variant, index) {
+            groups.appendChild(variantGroup(variant, index === 0 && !data.priced));
         });
         if (data.addons.length > 0) {
             groups.appendChild(addonGroup(data.addons));

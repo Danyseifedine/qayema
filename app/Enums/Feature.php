@@ -21,6 +21,7 @@ enum Feature: string
     case PremiumDesigns = 'premium_designs';
     case QrStudio = 'qr_studio';
     case Ordering = 'ordering';
+    case MenuOrdering = 'menu_ordering';
     case Analytics = 'analytics';
     case AdvancedAnalytics = 'advanced_analytics';
 
@@ -33,7 +34,7 @@ enum Feature: string
         return match ($this) {
             self::DishLimit, self::CategoryLimit, self::SocialLinkLimit => FeatureKind::Limit,
             self::MultipleLanguages, self::Variants, self::Addons, self::Appearance, self::PremiumDesigns,
-            self::QrStudio, self::Ordering, self::Analytics, self::AdvancedAnalytics => FeatureKind::Flag,
+            self::QrStudio, self::Ordering, self::MenuOrdering, self::Analytics, self::AdvancedAnalytics => FeatureKind::Flag,
         };
     }
 
@@ -66,7 +67,7 @@ enum Feature: string
             self::CategoryLimit => 8,
             self::SocialLinkLimit => 1,
             self::MultipleLanguages, self::Variants, self::Addons, self::Appearance, self::PremiumDesigns,
-            self::QrStudio, self::Ordering, self::Analytics, self::AdvancedAnalytics => 0,
+            self::QrStudio, self::Ordering, self::MenuOrdering, self::Analytics, self::AdvancedAnalytics => 0,
         };
     }
 

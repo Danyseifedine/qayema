@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Enums\Feature;
+use App\Enums\Fulfilment;
+use App\Enums\OrderChannel;
 use App\Enums\PackageStatus;
 use App\Services\Menu\MenuLanguages;
 use App\Services\Packages\Entitlements;
@@ -109,6 +111,8 @@ class Restaurant extends Model implements HasMedia
         'template_settings',
         'qr_settings',
         'switched_off',
+        'order_mode',
+        'order_types',
         'menu_fonts',
     ];
 
@@ -125,6 +129,7 @@ class Restaurant extends Model implements HasMedia
             'template_settings' => 'array',
             'qr_settings' => 'array',
             'switched_off' => 'array',
+            'order_types' => 'array',
             'menu_fonts' => 'array',
         ];
     }
@@ -422,6 +427,37 @@ class Restaurant extends Model implements HasMedia
     public function takesOrders(): bool
     {
         return $this->entitlements()->can(Feature::Ordering) && ! $this->isSwitchedOff('orders');
+    }
+
+    /**
+     * How guests' orders reach this restaurant, or null when it takes none.
+     *
+     * The owner picks one way (`order_mode`). Ordering in the menu needs its
+     * own package flag, and without it the restaurant quietly falls back to
+     * WhatsApp: a downgrade never leaves guests with a cart that goes nowhere.
+     */
+    public function orderChannel(): ?OrderChannel
+    {
+        if (! $this->takesOrders()) {
+            return null;
+        }
+
+        return $this->order_mode === OrderChannel::Menu->value && $this->entitlements()->can(Feature::MenuOrdering)
+            ? OrderChannel::Menu
+            : OrderChannel::WhatsApp;
+    }
+
+    /**
+     * The kinds of order this restaurant accepts in the menu, in a fixed
+     * order. Nothing chosen yet means all of them.
+     *
+     * @return array<int, string>
+     */
+    public function orderTypes(): array
+    {
+        $types = array_values(array_intersect(Fulfilment::values(), (array) $this->order_types));
+
+        return $types === [] ? Fulfilment::values() : $types;
     }
 
     /** The QR studio's styling is on: in the package and not switched off. */

@@ -78,15 +78,16 @@ class OrderChoicesTest extends TestCase
         $line = $this->shop->orders()->first()->items()->first();
         $this->assertSame('14.50', (string) $line->unit_price);
         $this->assertSame('29.00', (string) $line->line_total);
-        // The dish's order, not the order the ids came in.
+        // The dish's order, not the order the ids came in. The ids are kept
+        // so the guest's cart can be built again to change the order.
         $this->assertSame([
             'variants' => [
-                ['name' => 'Size', 'choice' => 'Large', 'price' => '3.00'],
-                ['name' => 'Spice level', 'choice' => 'Hot', 'price' => '0.00'],
+                ['name' => 'Size', 'choice' => 'Large', 'price' => '3.00', 'option_id' => $id['Large']],
+                ['name' => 'Spice level', 'choice' => 'Hot', 'price' => '0.00', 'option_id' => $id['Hot']],
             ],
             'addons' => [
-                ['name' => 'Extra cheese', 'price' => '1.00'],
-                ['name' => 'Bacon', 'price' => '2.50'],
+                ['name' => 'Extra cheese', 'price' => '1.00', 'addon_id' => $id['Extra cheese']],
+                ['name' => 'Bacon', 'price' => '2.50', 'addon_id' => $id['Bacon']],
             ],
         ], $line->options);
         $this->assertSame(['Size: Large', 'Spice level: Hot', '+ Extra cheese', '+ Bacon'], $line->choices());
@@ -186,6 +187,32 @@ class OrderChoicesTest extends TestCase
             ->assertJsonPath('data.total', '9.00');
 
         $this->assertSame(['+ Extra cheese'], $this->shop->orders()->first()->items()->first()->choices());
+    }
+
+    public function test_a_dish_priced_by_its_sizes_costs_what_the_size_costs(): void
+    {
+        $sandwich = Dish::factory()->withVariants(['Size' => ['Small' => 7, 'Large' => 12]])->withAddons(['Cheese' => 1])->create([
+            'restaurant_id' => $this->shop->id,
+            'name' => ['en' => 'Sandwich'],
+            'price' => null,
+        ]);
+        $large = $sandwich->variants()->first()->options()->get()->firstWhere(fn ($option) => $option->getTranslation('name', 'en') === 'Large');
+
+        $this->order([['dish_id' => $sandwich->id, 'quantity' => 2, 'options' => [$large->id], 'addons' => [$sandwich->addons()->first()->id]]])
+            ->assertCreated()
+            ->assertJsonPath('data.total', '26.00');
+
+        $this->assertSame('13.00', (string) $this->shop->orders()->first()->items()->first()->unit_price);
+    }
+
+    public function test_without_its_sizes_a_dish_with_no_price_is_not_for_sale(): void
+    {
+        $sandwich = Dish::factory()->withVariants(['Size' => ['Small' => 7, 'Large' => 12]])->create(['restaurant_id' => $this->shop->id, 'price' => null]);
+        $this->shop->update(['switched_off' => ['variants']]);
+
+        $this->order([['dish_id' => $sandwich->id, 'quantity' => 1]])
+            ->assertUnprocessable()
+            ->assertJsonPath('errors.items.0', 'Nothing in your order is available any more.');
     }
 
     public function test_the_whatsapp_message_lists_the_choices_under_the_line(): void

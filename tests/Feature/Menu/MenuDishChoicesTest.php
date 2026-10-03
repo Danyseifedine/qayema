@@ -83,6 +83,7 @@ class MenuDishChoicesTest extends TestCase
         $this->assertSame([['Small', '0.00'], ['Large', '3.00']], array_map(fn (array $option): array => [$option['name'], $option['price']], $data['variants'][0]['options']));
         $this->assertSame('Extra cheese', $data['addons'][0]['name']);
         $this->assertSame('8.00', $data['lowest']);
+        $this->assertTrue($data['priced']);
     }
 
     public function test_the_card_price_starts_at_the_cheapest_choice(): void
@@ -146,6 +147,24 @@ class MenuDishChoicesTest extends TestCase
         Dish::factory()->withVariants()->withAddons()->create(['restaurant_id' => $this->shop->id, 'category_id' => $this->plates->id]);
 
         $this->menu()->assertDontSee('id="dish-sheet"', false)->assertDontSee('has-choices', false);
+    }
+
+    public function test_a_dish_priced_by_its_sizes_starts_at_the_smallest(): void
+    {
+        // No price of its own: Small $7, Large $12, and add-ons on top.
+        $sandwich = Dish::factory()
+            ->withVariants(['Size' => ['Small' => 7, 'Large' => 12], 'Spice level' => ['Mild' => 0, 'Hot' => 0.5]])
+            ->withAddons(['Cheese' => 1])
+            ->create(['restaurant_id' => $this->shop->id, 'category_id' => $this->plates->id, 'name' => ['en' => 'Sandwich'], 'price' => null]);
+
+        $response = $this->menu()
+            ->assertSee('<span class="price">$7.00</span>', false)
+            ->assertSee('data-dish="'.$sandwich->id.'"', false);
+        $this->assertMatchesRegularExpression('/data-dish="'.$sandwich->id.'"[^>]*data-price="0.00"/', (string) $response->getContent());
+
+        $data = $this->choices($response)[$sandwich->id];
+        $this->assertFalse($data['priced']);
+        $this->assertSame('7.00', $data['lowest']);
     }
 
     public function test_nothing_to_choose_is_not_a_choice(): void

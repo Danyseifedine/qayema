@@ -87,7 +87,7 @@ class MenuStatsTest extends TestCase
         $summary = (new MenuStats($this->restaurant(), '7d'))->summary();
 
         $this->assertSame(
-            ['views' => 0, 'unique_visitors' => 0, 'qr_scans' => 0, 'views_today' => 0, 'orders' => null],
+            ['views' => 0, 'unique_visitors' => 0, 'qr_scans' => 0, 'views_today' => 0, 'orders' => null, 'orders_done' => null],
             $summary['totals'],
         );
         $this->assertCount(7, $summary['series']);
@@ -304,13 +304,13 @@ class MenuStatsTest extends TestCase
         $advanced = $stats->advanced();
 
         $this->assertSame(
-            ['views' => 0, 'unique_visitors' => 0, 'qr_scans' => 0, 'views_today' => 0, 'orders' => 0],
+            ['views' => 0, 'unique_visitors' => 0, 'qr_scans' => 0, 'views_today' => 0, 'orders' => 0, 'orders_done' => null],
             $summary['totals'],
         );
         $this->assertSame(0, array_sum($advanced['actions']));
         $this->assertSame([], $advanced['top_added']);
         $this->assertSame([], $advanced['searches']);
-        $this->assertSame(['visitors' => 0, 'carted' => 0, 'ordered' => 0], $advanced['funnel']);
+        $this->assertSame(['visitors' => 0, 'carted' => 0, 'ordered' => 0, 'channel' => 'whatsapp'], $advanced['funnel']);
         $this->assertSame(0, (new MenuStats($mine, 'all'))->teaser()['views']);
     }
 
@@ -390,9 +390,53 @@ class MenuStatsTest extends TestCase
         $this->order($restaurant, '2026-09-28 08:40:00', OrderStatus::Cancelled);
 
         $this->assertSame(
-            ['visitors' => 3, 'carted' => 2, 'ordered' => 1],
+            ['visitors' => 3, 'carted' => 2, 'ordered' => 1, 'channel' => 'whatsapp'],
             (new MenuStats($restaurant, '7d'))->advanced()['funnel'],
         );
+    }
+
+    /**
+     * Only the way the restaurant takes orders now is counted: a tap that
+     * opened WhatsApp is not an order placed in the menu.
+     */
+    public function test_orders_in_the_menu_count_on_their_own_with_those_done(): void
+    {
+        $this->defaultPackageIncludes(Feature::Ordering, Feature::MenuOrdering);
+        $restaurant = $this->restaurant(['order_mode' => 'menu']);
+
+        $this->order($restaurant, '2026-09-27 08:00:00');
+        Order::factory()->for($restaurant)->inMenu()->create(['placed_at' => CarbonImmutable::parse('2026-09-27 09:00:00', 'UTC')]);
+        Order::factory()->for($restaurant)->inMenu()->status(OrderStatus::Done)->create(['placed_at' => CarbonImmutable::parse('2026-09-27 10:00:00', 'UTC')]);
+        Order::factory()->for($restaurant)->inMenu()->status(OrderStatus::Cancelled)->create(['placed_at' => CarbonImmutable::parse('2026-09-27 11:00:00', 'UTC')]);
+
+        $stats = new MenuStats($restaurant, '7d');
+        $summary = $stats->summary();
+
+        $this->assertSame('menu', $summary['order_channel']);
+        $this->assertSame(2, $summary['totals']['orders']);
+        $this->assertSame(1, $summary['totals']['orders_done']);
+        $this->assertSame(2, $stats->advanced()['funnel']['ordered']);
+        $this->assertSame('menu', $stats->advanced()['funnel']['channel']);
+    }
+
+    public function test_on_whatsapp_only_the_taps_count_and_nothing_is_done(): void
+    {
+        $this->defaultPackageIncludes(Feature::Ordering);
+        $restaurant = $this->restaurant();
+
+        $this->order($restaurant, '2026-09-27 08:00:00');
+        Order::factory()->for($restaurant)->inMenu()->create(['placed_at' => CarbonImmutable::parse('2026-09-27 09:00:00', 'UTC')]);
+
+        $summary = (new MenuStats($restaurant, '7d'))->summary();
+
+        $this->assertSame('whatsapp', $summary['order_channel']);
+        $this->assertSame(1, $summary['totals']['orders']);
+        $this->assertNull($summary['totals']['orders_done']);
+    }
+
+    public function test_without_ordering_there_is_no_channel(): void
+    {
+        $this->assertNull((new MenuStats($this->restaurant(), '7d'))->summary()['order_channel']);
     }
 
     public function test_the_top_dishes_are_five_and_skip_ones_since_deleted(): void

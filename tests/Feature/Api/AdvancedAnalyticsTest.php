@@ -83,7 +83,7 @@ class AdvancedAnalyticsTest extends TestCase
         $this->assertSame(array_fill(0, 7, 0), $data['weekdays']);
         $this->assertSame([], $data['languages']);
         $this->assertSame(0, $data['actions']['dish_add']);
-        $this->assertSame(['visitors' => 0, 'carted' => 0, 'ordered' => 0], $data['funnel']);
+        $this->assertSame(['visitors' => 0, 'carted' => 0, 'ordered' => 0, 'channel' => 'whatsapp'], $data['funnel']);
         $this->assertSame([], $data['top_added']);
     }
 
@@ -214,7 +214,7 @@ class AdvancedAnalyticsTest extends TestCase
         $this->event($restaurant, MenuEventType::DishAdd, ['session_id' => 'b', 'dish_id' => $dish->id]);
         Order::factory()->for($restaurant)->create();
 
-        $this->assertSame(['visitors' => 3, 'carted' => 2, 'ordered' => 1], $this->advanced($restaurant)['funnel']);
+        $this->assertSame(['visitors' => 3, 'carted' => 2, 'ordered' => 1, 'channel' => 'whatsapp'], $this->advanced($restaurant)['funnel']);
     }
 
     public function test_the_funnel_is_null_when_the_package_does_not_take_orders(): void

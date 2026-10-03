@@ -5,6 +5,7 @@ namespace App\Services\Orders;
 use App\Models\Order;
 use App\Models\Restaurant;
 use App\Services\Menu\MenuLanguages;
+use App\Support\PhoneNumber;
 
 /**
  * The hand-off that actually reaches an owner.
@@ -28,31 +29,10 @@ class WhatsAppLink
         return 'https://wa.me/'.$number.'?text='.rawurlencode(self::message($restaurant, $order));
     }
 
-    /**
-     * The phone as wa.me wants it: digits only, country code included, no
-     * leading zero from the national format.
-     */
+    /** The restaurant's phone as wa.me wants it (App\Support\PhoneNumber). */
     public static function internationalNumber(Restaurant $restaurant): ?string
     {
-        $national = preg_replace('/\D+/', '', (string) $restaurant->phone) ?? '';
-
-        if ($national === '') {
-            return null;
-        }
-
-        $dial = preg_replace('/\D+/', '', (string) config("countries.{$restaurant->country_code}.dial", '')) ?? '';
-
-        if ($dial === '') {
-            // Without a country we can only trust a number that already looks
-            // international; guessing a dial code would message a stranger.
-            return strlen($national) > 9 ? $national : null;
-        }
-
-        // A number typed in national form often keeps its trunk zero, which is
-        // never part of the international number.
-        $national = ltrim($national, '0');
-
-        return str_starts_with($national, $dial) ? $national : $dial.$national;
+        return PhoneNumber::international($restaurant->country_code, $restaurant->phone);
     }
 
     private static function message(Restaurant $restaurant, Order $order): string

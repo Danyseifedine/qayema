@@ -49,6 +49,7 @@ class PackageResourceTest extends TestCase
                 'premium_designs' => false,
                 'qr_studio' => false,
                 'ordering' => false,
+                'menu_ordering' => false,
                 'analytics' => false,
                 'advanced_analytics' => false,
             ],

@@ -21,8 +21,8 @@ class UserResourceTest extends TestCase
     private const USER_KEYS = ['name', 'email', 'has_completed_onboarding', 'has_password'];
 
     private const RESTAURANT_KEYS = [
-        'languages', 'second_locale', 'default_locale', 'template_id', 'public_url',
-        'package', 'lapsed', 'upcoming', 'limits', 'switched_off', 'plan',
+        'id', 'languages', 'second_locale', 'default_locale', 'template_id', 'public_url',
+        'package', 'lapsed', 'upcoming', 'limits', 'switched_off', 'ordering', 'plan',
     ];
 
     protected function setUp(): void
@@ -103,6 +103,7 @@ class UserResourceTest extends TestCase
             'social_links' => ['used' => 0, 'limit' => 1],
         ], $data['limits']);
         $this->assertSame([], $data['switched_off']);
+        $this->assertSame(['mode' => 'whatsapp', 'types' => ['delivery', 'pickup']], $data['ordering']);
         $this->assertSame(array_column(Feature::flags(), 'value'), array_keys($data['plan']));
         $this->assertSame(array_fill_keys(array_column(Feature::flags(), 'value'), false), $data['plan']);
     }
@@ -123,6 +124,22 @@ class UserResourceTest extends TestCase
         $this->assertSame(['qr'], $data['switched_off']);
         $this->assertTrue($data['plan']['ordering']);
         $this->assertSame(['en', 'ar'], $data['languages']);
+    }
+
+    /** Ordering in the menu shows only while the package includes it; the choice is kept. */
+    public function test_the_ordering_mode_follows_the_package(): void
+    {
+        $restaurant = $this->ownerOn('premium', ['order_mode' => 'menu', 'order_types' => ['pickup']]);
+
+        $this->assertSame(
+            ['mode' => 'menu', 'types' => ['pickup']],
+            $this->resolve($restaurant->user->load('restaurant'))['restaurant']['ordering'],
+        );
+
+        $restaurant = $this->ownerOn('pro', ['order_mode' => 'menu']);
+
+        $this->assertSame('whatsapp', $this->resolve($restaurant->user->load('restaurant'))['restaurant']['ordering']['mode']);
+        $this->assertSame('menu', $restaurant->fresh()->order_mode);
     }
 
     /** "Ends today" is 0, not a negative number, and part of a day rounds up. */

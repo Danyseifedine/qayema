@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\DishController;
 use App\Http\Controllers\Api\FeaturesController;
 use App\Http\Controllers\Api\MenuLanguagesController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\OrderingSettingsController;
 use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\PackageRequestController;
 use App\Http\Controllers\Api\QrController;
@@ -47,6 +48,9 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::put('/features', [FeaturesController::class, 'update'])
         ->middleware('throttle:mutations')
         ->name('api.features.update');
+    Route::put('/features/ordering', [OrderingSettingsController::class, 'update'])
+        ->middleware('throttle:mutations')
+        ->name('api.features.ordering');
     Route::put('/menu-languages', [MenuLanguagesController::class, 'update'])
         ->middleware('throttle:mutations')
         ->name('api.menu-languages.update');
@@ -113,6 +117,8 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // Orders placed from the public menu. Read-only apart from the status:
     // what was ordered is written once, by the guest, and never edited.
     Route::get('/orders', [OrderController::class, 'index'])->name('api.orders.index');
+    // Polled by the dashboard for new orders placed in the menu.
+    Route::get('/orders/pulse', [OrderController::class, 'pulse'])->name('api.orders.pulse');
     Route::patch('/orders/{order}', [OrderController::class, 'update'])
         ->middleware('throttle:mutations')
         ->name('api.orders.update');

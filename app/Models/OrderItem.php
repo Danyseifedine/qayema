@@ -58,4 +58,21 @@ class OrderItem extends Model
             ...array_map(fn (array $addon): string => '+ '.$addon['name'], $options['addons'] ?? []),
         ];
     }
+
+    /**
+     * Only what the guest picked, as their cart showed it: "Large", "Hot",
+     * "+ Extra cheese". For the guest's own order page, where they know what
+     * each one was a choice of.
+     *
+     * @return array<int, string>
+     */
+    public function picks(): array
+    {
+        $options = (array) $this->options;
+
+        return [
+            ...array_map(fn (array $variant): string => $variant['choice'], $options['variants'] ?? []),
+            ...array_map(fn (array $addon): string => '+ '.$addon['name'], $options['addons'] ?? []),
+        ];
+    }
 }

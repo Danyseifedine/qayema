@@ -2,6 +2,7 @@
 
 namespace App\Services\Orders;
 
+use App\Enums\OrderChannel;
 use App\Enums\OrderStatus;
 use App\Models\Dish;
 use App\Models\DishAddon;
@@ -9,7 +10,9 @@ use App\Models\DishVariant;
 use App\Models\Order;
 use App\Models\Restaurant;
 use App\Services\Menu\MenuLanguages;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -29,73 +32,148 @@ use Illuminate\Validation\ValidationException;
 class OrderPlacer
 {
     /**
+     * A page that sends the same `client_token` twice (a double tap, a retry
+     * after a dropped connection) gets the order it already placed back.
+     *
      * @param  array<int, array{dish_id: int, quantity: int, options?: array<int, int>, addons?: array<int, int>}>  $lines
      *
      * @throws ValidationException when nothing in the cart can be ordered, or a dish misses a choice
      */
-    public function place(Restaurant $restaurant, array $lines, ?string $note = null, ?string $locale = null): Order
+    public function place(Restaurant $restaurant, array $lines, ?string $locale = null, OrderDetails $details = new OrderDetails): Order
     {
+        $placed = $this->alreadyPlaced($restaurant, $details);
+
+        if ($placed !== null) {
+            return $placed;
+        }
+
         // Lines are named in the language the guest ordered in, when it is one
         // of this menu's; the menu's opening language otherwise.
         $locale = in_array($locale, $restaurant->menuLanguages(), true) ? (string) $locale : MenuLanguages::default($restaurant);
         $variantsOn = $restaurant->showsVariants();
         $addonsOn = $restaurant->showsAddons();
 
-        return DB::transaction(function () use ($restaurant, $lines, $note, $locale, $variantsOn, $addonsOn): Order {
-            // One query for the whole cart, scoped to this restaurant: a dish
-            // id from somewhere else simply is not in the result.
-            $dishes = Dish::query()
-                ->where('restaurant_id', $restaurant->id)
-                ->where('is_available', true)
-                ->whereIn('id', array_column($lines, 'dish_id'))
-                ->with(array_keys(array_filter(['variants.options' => $variantsOn, 'addons' => $addonsOn])))
-                ->get()
-                ->keyBy('id');
+        try {
+            return $this->create($restaurant, $lines, $details, $locale, $variantsOn, $addonsOn);
+        } catch (UniqueConstraintViolationException $exception) {
+            // Two presses raced past the check above; the first one won.
+            return $this->alreadyPlaced($restaurant, $details) ?? throw $exception;
+        }
+    }
 
-            $items = [];
-            $total = '0.00';
+    private function alreadyPlaced(Restaurant $restaurant, OrderDetails $details): ?Order
+    {
+        if ($details->clientToken === null) {
+            return null;
+        }
 
-            foreach ($this->merge($lines, $variantsOn, $addonsOn) as $line) {
-                $dish = $dishes->get($line['dish_id']);
+        return $restaurant->orders()->where('client_token', $details->clientToken)->with('items')->first();
+    }
 
-                if ($dish === null || $dish->price === null) {
-                    continue;
-                }
+    /**
+     * The guest changes an order placed in the menu: new lines, priced again
+     * from the menu as it is now, and new details. Only until the restaurant
+     * accepts it (OrderStatus::isOpenToGuest()); the check is made on the
+     * locked row, so an owner accepting at the same moment wins.
+     *
+     * `$version` is how many changes the order had when the guest's page read
+     * it (`guest_updates`): a change made from an older one would undo what
+     * another tab or phone did since. The details' `clientToken` is the
+     * page's id for this change: sent again, it is already made.
+     *
+     * @param  array<int, array{dish_id: int, quantity: int, options?: array<int, int>, addons?: array<int, int>}>  $lines
+     *
+     * @throws OrderLocked when the restaurant has already accepted the order
+     * @throws OrderChanged when the order changed since the page read it
+     * @throws ValidationException when nothing in the cart can be ordered, or a dish misses a choice
+     */
+    public function change(Order $order, array $lines, ?string $locale, OrderDetails $details, int $version): Order
+    {
+        $restaurant = $order->restaurant;
+        $locale = in_array($locale, $restaurant->menuLanguages(), true) ? (string) $locale : MenuLanguages::default($restaurant);
+        $variantsOn = $restaurant->showsVariants();
+        $addonsOn = $restaurant->showsAddons();
 
-                $variants = $variantsOn ? $this->variantChoices($dish, $line['options'], $locale) : [];
-                $addons = $addonsOn ? $this->addonChoices($dish, $line['addons'], $locale) : [];
+        return DB::transaction(function () use ($order, $restaurant, $lines, $details, $locale, $variantsOn, $addonsOn, $version): Order {
+            $locked = Order::query()->lockForUpdate()->findOrFail($order->id);
 
-                $unitPrice = (string) $dish->price;
-                foreach ([...$variants, ...$addons] as $choice) {
-                    $unitPrice = bcadd($unitPrice, $choice['price'], 2);
-                }
-                $lineTotal = bcmul($unitPrice, (string) $line['quantity'], 2);
-                $total = bcadd($total, $lineTotal, 2);
-
-                $items[] = [
-                    'dish_id' => $dish->id,
-                    // Copied, not looked up: the menu may change tomorrow.
-                    'name' => MenuLanguages::text($dish, 'name', $locale),
-                    'options' => $variants === [] && $addons === [] ? null : ['variants' => $variants, 'addons' => $addons],
-                    'unit_price' => $unitPrice,
-                    'quantity' => $line['quantity'],
-                    'line_total' => $lineTotal,
-                ];
+            if ($details->clientToken !== null && $locked->change_token === $details->clientToken) {
+                return $locked->load('items');
             }
 
-            if ($items === []) {
-                throw ValidationException::withMessages([
-                    'items' => __('Nothing in your order is available any more.'),
-                ]);
+            if (! $locked->status->isOpenToGuest()) {
+                throw new OrderLocked;
             }
+
+            if ($version !== $locked->guest_updates) {
+                throw new OrderChanged;
+            }
+
+            [$items, $total] = $this->priced($restaurant, $lines, $locale, $variantsOn, $addonsOn);
+
+            $locked->items()->delete();
+            $locked->items()->createMany($items);
+            $changed = array_diff_key($details->attributes(), array_flip(['channel', 'client_token']));
+
+            // A location shared with the order stays while the address it
+            // came with does (adding a dish does not ask for it again); a
+            // new address without one leaves the old spot behind.
+            if ($changed['latitude'] === null && $changed['address'] !== null && $changed['address'] === $locked->address) {
+                unset($changed['latitude'], $changed['longitude']);
+            }
+
+            $locked->forceFill([
+                // How it came in, and the page's own id for that first
+                // press, stay as they were.
+                ...$changed,
+                'total' => $total,
+                'guest_updated_at' => now(),
+                'guest_updates' => $locked->guest_updates + 1,
+                'change_token' => $details->clientToken,
+            ])->save();
+
+            return $locked->load('items');
+        });
+    }
+
+    /**
+     * The dishes asked for that this menu no longer sells (marked unavailable
+     * since the order was placed), by name in the guest's language: a change
+     * goes without them, and the guest is told which.
+     *
+     * @param  array<int, array{dish_id: int, quantity: int, options?: array<int, int>, addons?: array<int, int>}>  $lines
+     * @return array<int, string>
+     */
+    public function unavailable(Restaurant $restaurant, array $lines, ?string $locale): array
+    {
+        $locale = in_array($locale, $restaurant->menuLanguages(), true) ? (string) $locale : MenuLanguages::default($restaurant);
+
+        return Dish::query()
+            ->where('restaurant_id', $restaurant->id)
+            ->where('is_available', false)
+            ->whereIn('id', array_column($lines, 'dish_id'))
+            ->get()
+            ->map(fn (Dish $dish): string => MenuLanguages::text($dish, 'name', $locale))
+            ->all();
+    }
+
+    /**
+     * @param  array<int, array{dish_id: int, quantity: int, options?: array<int, int>, addons?: array<int, int>}>  $lines
+     */
+    private function create(Restaurant $restaurant, array $lines, OrderDetails $details, string $locale, bool $variantsOn, bool $addonsOn): Order
+    {
+        return DB::transaction(function () use ($restaurant, $lines, $details, $locale, $variantsOn, $addonsOn): Order {
+            [$items, $total] = $this->priced($restaurant, $lines, $locale, $variantsOn, $addonsOn);
 
             $order = $restaurant->orders()->create([
                 'reference' => Order::newReference(),
                 'status' => OrderStatus::Placed,
                 'currency' => $restaurant->currency,
                 'total' => $total,
-                'note' => $note !== null && trim($note) !== '' ? trim($note) : null,
                 'placed_at' => now(),
+                ...$details->attributes(),
+                // Followed on a page of its own when placed in the menu.
+                'tracking_token' => $details->channel === OrderChannel::Menu ? Str::random(40) : null,
             ]);
 
             $order->items()->createMany($items);
@@ -105,11 +183,78 @@ class OrderPlacer
     }
 
     /**
+     * The cart as order lines, every price from this restaurant's menu.
+     *
+     * @param  array<int, array{dish_id: int, quantity: int, options?: array<int, int>, addons?: array<int, int>}>  $lines
+     * @return array{0: array<int, array<string, mixed>>, 1: string} the lines and the total
+     *
+     * @throws ValidationException when nothing in the cart can be ordered, or a dish misses a choice
+     */
+    private function priced(Restaurant $restaurant, array $lines, string $locale, bool $variantsOn, bool $addonsOn): array
+    {
+        // One query for the whole cart, scoped to this restaurant: a dish
+        // id from somewhere else simply is not in the result.
+        $dishes = Dish::query()
+            ->where('restaurant_id', $restaurant->id)
+            ->where('is_available', true)
+            ->whereIn('id', array_column($lines, 'dish_id'))
+            ->with(array_keys(array_filter(['variants.options' => $variantsOn, 'addons' => $addonsOn])))
+            ->get()
+            ->keyBy('id');
+
+        $items = [];
+        $total = '0.00';
+
+        foreach ($this->merge($lines, $variantsOn, $addonsOn) as $line) {
+            $dish = $dishes->get($line['dish_id']);
+
+            if ($dish === null) {
+                continue;
+            }
+
+            $variants = $variantsOn ? $this->variantChoices($dish, $line['options'], $locale) : [];
+
+            // No price of its own: its variants price it (a sandwich by
+            // size), and without one to pick it is not for sale.
+            if ($dish->price === null && $variants === []) {
+                continue;
+            }
+
+            $addons = $addonsOn ? $this->addonChoices($dish, $line['addons'], $locale) : [];
+
+            $unitPrice = $dish->price === null ? '0.00' : (string) $dish->price;
+            foreach ([...$variants, ...$addons] as $choice) {
+                $unitPrice = bcadd($unitPrice, $choice['price'], 2);
+            }
+            $lineTotal = bcmul($unitPrice, (string) $line['quantity'], 2);
+            $total = bcadd($total, $lineTotal, 2);
+
+            $items[] = [
+                'dish_id' => $dish->id,
+                // Copied, not looked up: the menu may change tomorrow.
+                'name' => MenuLanguages::text($dish, 'name', $locale),
+                'options' => $variants === [] && $addons === [] ? null : ['variants' => $variants, 'addons' => $addons],
+                'unit_price' => $unitPrice,
+                'quantity' => $line['quantity'],
+                'line_total' => $lineTotal,
+            ];
+        }
+
+        if ($items === []) {
+            throw ValidationException::withMessages([
+                'items' => __('Nothing in your order is available any more.'),
+            ]);
+        }
+
+        return [$items, $total];
+    }
+
+    /**
      * The option the guest picked for each of the dish's variants, in the
      * dish's order.
      *
      * @param  array<int, int>  $chosen
-     * @return array<int, array{name: string, choice: string, price: string}>
+     * @return array<int, array{name: string, choice: string, price: string, option_id: int}>
      *
      * @throws ValidationException when a variant has no option picked, or more than one
      */
@@ -137,6 +282,8 @@ class OrderPlacer
                 'name' => $replace['variant'],
                 'choice' => MenuLanguages::text($option, 'name', $locale),
                 'price' => (string) $option->price,
+                // So the guest's cart can be built again to change it.
+                'option_id' => $option->id,
             ];
         })->values()->all();
     }
@@ -145,7 +292,7 @@ class OrderPlacer
      * The dish's add-ons the guest picked, in the dish's order.
      *
      * @param  array<int, int>  $chosen
-     * @return array<int, array{name: string, price: string}>
+     * @return array<int, array{name: string, price: string, addon_id: int}>
      */
     private function addonChoices(Dish $dish, array $chosen, string $locale): array
     {
@@ -154,6 +301,7 @@ class OrderPlacer
             ->map(fn (DishAddon $addon): array => [
                 'name' => MenuLanguages::text($addon, 'name', $locale),
                 'price' => (string) $addon->price,
+                'addon_id' => $addon->id,
             ])
             ->values()
             ->all();

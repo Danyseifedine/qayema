@@ -178,6 +178,7 @@ class PackageGatesTest extends TestCase
                 'premium_designs' => true,
                 'qr_studio' => true,
                 'ordering' => true,
+                'menu_ordering' => true,
                 'analytics' => true,
                 'advanced_analytics' => true,
             ]);

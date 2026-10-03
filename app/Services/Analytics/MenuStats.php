@@ -3,6 +3,7 @@
 namespace App\Services\Analytics;
 
 use App\Enums\MenuEventType;
+use App\Enums\OrderChannel;
 use App\Enums\OrderStatus;
 use App\Models\Category;
 use App\Models\Dish;
@@ -70,7 +71,13 @@ class MenuStats
                 ...$this->visitTotals($this->inRange($this->restaurant->menuSessions(), 'viewed_at')),
                 'views_today' => $this->restaurant->menuSessions()->where('viewed_at', '>=', $this->today->utc())->count(),
                 'orders' => $this->takesOrders() ? $this->orderCount($this->from, null) : null,
+                // Only an order placed in the menu can be marked done; a
+                // WhatsApp one is never known to be.
+                'orders_done' => $this->channel() === OrderChannel::Menu ? $this->orderCount($this->from, null, OrderStatus::Done) : null,
             ],
+            // Which orders "orders" counts: taps that opened WhatsApp, or
+            // orders placed in the menu. Null when the restaurant takes none.
+            'order_channel' => $this->channel()?->value,
             'series' => $this->series(),
         ];
     }
@@ -298,9 +305,10 @@ class MenuStats
 
     /**
      * From opening the menu to ordering: visitors, then those who put
-     * something in the cart, then orders placed.
+     * something in the cart, then orders placed (or, on WhatsApp, sent
+     * there: `channel` says which).
      *
-     * @return array{visitors: int, carted: int, ordered: int}
+     * @return array{visitors: int, carted: int, ordered: int, channel: string}
      */
     private function funnel(HasMany $visits): array
     {
@@ -311,6 +319,7 @@ class MenuStats
                 ->distinct('session_id')
                 ->count('session_id'),
             'ordered' => $this->orderCount($this->from, null),
+            'channel' => $this->channel()->value,
         ];
     }
 
@@ -318,7 +327,17 @@ class MenuStats
 
     private function takesOrders(): bool
     {
-        return $this->restaurant->takesOrders();
+        return $this->channel() !== null;
+    }
+
+    /**
+     * How the restaurant takes orders now. Only that channel's orders are
+     * counted: a WhatsApp tap and an order placed in the menu are not the
+     * same thing, and adding them up would say more than we know.
+     */
+    private function channel(): ?OrderChannel
+    {
+        return $this->restaurant->orderChannel();
     }
 
     /**
@@ -381,10 +400,16 @@ class MenuStats
             ->when($until, fn ($query) => $query->where('placed_at', '<', $until->utc()));
     }
 
-    private function orderCount(?CarbonImmutable $from, ?CarbonImmutable $until): int
+    /** Orders of the current channel, cancelled ones left out, or only those of one status. */
+    private function orderCount(?CarbonImmutable $from, ?CarbonImmutable $until, ?OrderStatus $status = null): int
     {
         return $this->ordersInRange($from, $until)
-            ->where('status', '!=', OrderStatus::Cancelled->value)
+            ->where('channel', $this->channel())
+            ->when(
+                $status,
+                fn ($query, OrderStatus $status) => $query->where('status', $status->value),
+                fn ($query) => $query->where('status', '!=', OrderStatus::Cancelled->value),
+            )
             ->count();
     }
 

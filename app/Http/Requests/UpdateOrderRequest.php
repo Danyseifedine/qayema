@@ -21,6 +21,9 @@ class UpdateOrderRequest extends FormRequest
     {
         return [
             'status' => ['required', Rule::enum(OrderStatus::class)],
+            // How many times the guest had changed it when the owner's
+            // screen showed it: taking it on means taking on that version.
+            'guest_updates' => ['nullable', 'integer', 'min:0'],
         ];
     }
 }

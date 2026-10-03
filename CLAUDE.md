@@ -494,7 +494,7 @@ the admin owns the numbers after install):
 |---|---|---|---|---|
 | dishes / categories / social links | 40 / 8 / 1 | 150 / 15 / 2 | 1,000 / 1,000 (fair use, shown as unlimited) / 10 | unlimited |
 | `multiple_languages`, `variants`, `addons`, `appearance`, `analytics` | - | ✓ | ✓ | ✓ |
-| `premium_designs`, `qr_studio`, `ordering`, `advanced_analytics` | - | - | ✓ | ✓ |
+| `premium_designs`, `qr_studio`, `ordering`, `menu_ordering`, `advanced_analytics` | - | - | ✓ | ✓ |
 
 Premium is `is_featured` ("Most popular" on the dashboard and the landing page); only one package holds it, and marking another in the admin takes it off the rest.
 Prices are still placeholders. The landing page's pricing is read from the
@@ -652,7 +652,7 @@ One name per thing, shared with the dashboard (`../qayema-dashboard`):
 
 Three words that are never swapped: **plan** = what a restaurant may use
 (`restaurant.plan.{multiple_languages, variants, addons, appearance,
-premium_designs, qr_studio, ordering, analytics, advanced_analytics}` in `/api/user`,
+premium_designs, qr_studio, ordering, menu_ordering, analytics, advanced_analytics}` in `/api/user`,
 resolved by `Entitlements`); **grant** = an admin giving one restaurant more
 than its package (`FeatureGrant`, table `feature_grants`); **switched off** =
 what the owner turned off on the Features page (`restaurant.switched_off`).
@@ -836,25 +836,150 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
   route constraint and onboarding's slug validation. Add new top-level pages there.
 - Every `api/*` error is `{message, code}` JSON (see `bootstrap/app.php`); a
   rate limiter's custom response arrives as `HttpResponseException` and must pass through.
+- CORS (`config/cors.php`) answers a preflight with `max_age` 7200: at 0 the
+  browser sent an `OPTIONS` round trip before nearly every dashboard call,
+  about as slow as the call itself. `POST /api/broadcasting/auth` is under
+  `throttle:api` like the rest.
+- `App\Support\PhoneNumber::international()`: "+…" or "00…" is taken as
+  typed; otherwise it is national and gets the dial code, unless it starts
+  with that code and is longer than 10 digits (an Indian mobile may begin
+  with 91). Italy, San Marino and the Vatican keep their leading 0.
 
 ## Ordering
 
-A guest builds a cart on the public menu and places an order. It is **stored**
-(`orders` + `order_items`) and the guest is then sent to **WhatsApp** with the
-order written out. Nothing here is realtime, so the hand-off is what actually
-reaches the owner.
+A guest builds a cart on the public menu and places an order. The restaurant
+takes orders **one way at a time** (`restaurants.order_mode`, chosen on the
+Features page, `PUT /api/features/ordering`), and every order records the way
+it came in (`orders.channel`, `App\Enums\OrderChannel`):
+
+- **WhatsApp** (`ordering` flag, Premium and Custom): the order is stored and
+  the guest is sent to WhatsApp with it written out (`WhatsAppLink`), an
+  optional note included. We never learn whether it was sent or served, so
+  these orders are **not** listed on the Orders page and analytics call them
+  "Sent to WhatsApp". It needs a usable number: without one the menu has no
+  cart.
+- **In the menu** (also needs the `menu_ordering` flag, Premium and Custom):
+  the guest gives their name, a phone number (country code from `config/countries.php`,
+  stored international through `App\Support\PhoneNumber`), Delivery or
+  Pickup (`restaurants.order_types`, null = both; `App\Enums\Fulfilment`),
+  a typed address for a delivery, optionally their location ("Use my
+  location": `latitude`/`longitude`, shown to the owner as a Google Maps
+  link), and a note. The menu shows a toast with the order number; the order
+  waits on the Orders page. Refused while the restaurant is closed by its
+  opening hours (no hours = always open). A page may ask for the location
+  only on the menu itself (`SecurityHeaders`: `geolocation=(self)` there,
+  `()` everywhere else).
+
+`Restaurant::orderChannel()` is the rule: null without ordering, Menu only
+while the package has `menu_ordering` (a downgrade falls back to WhatsApp),
+WhatsApp otherwise.
 
 - `App\Services\Orders\OrderPlacer` is the only way an order is created. Every
   dish is re-read scoped to the restaurant and every price comes from the
-  database; a price in the request body is ignored.
+  database; a price in the request body is ignored. It takes an
+  `OrderDetails` (channel, note, fulfilment, name, phone, address, location,
+  `client_token`): a token this restaurant already has returns that order, so
+  a double tap or a retry never orders twice.
 - Order lines carry **their own** `name` and `unit_price`. A dish renamed,
   repriced or deleted later must not rewrite what was ordered, which is why
   `order_items.dish_id` is `nullOnDelete`.
 - `POST /{slug}/order` is public, on the `web` group (session + CSRF), limited
-  to 10/min per IP with **`autoBan: false`**: a dining room is one IP.
-- Gated on the `ordering` package flag (Premium and Custom). Off means the menu
-  renders with no cart and the endpoint 404s.
-- The owner reads them at `GET /api/orders`; only `status` is writable.
+  to 10/min per IP with **`autoBan: false`**: a dining room is one IP. The page
+  sends `mode`, the way it was built for; a mismatch (the owner switched while
+  the guest had the menu open) is a 409 asking to refresh. A hidden `website`
+  box is a spam trap. `PlaceOrderRequest` sets the guest's menu language
+  before validating, so field errors come back in it.
+- "Use my current location" also fills the address box with the street, area
+  and town (`GET /{slug}/address`, `throttle:geocode` 10/min,
+  `App\Services\Orders\ReverseGeocoder`): our server asks OpenStreetMap's
+  Nominatim, with the app's name as User-Agent, and keeps each spot (~11 m)
+  for 30 days. It never overwrites what the guest typed. The e2e environment
+  fakes Nominatim (`E2eServiceProvider`).
+- The country code is a searchable list of our own (names in the menu's
+  language from PHP's `intl`, English too; digits; letters), not a select.
+  The cart's boxes use 14px text; an iPhone would zoom on focus below 16px,
+  so the menu's head adds `maximum-scale=1` on iPhones and iPads only (iOS
+  still allows pinch zoom; Android would not, so it never gets it).
+- The cart's details form (`public/js/menu-cart.js`) is built once per panel
+  and never redrawn, so typing survives cart changes. What the guest types is
+  kept in their browser (`qayema-guest-{slug}`) until the order goes, then the
+  form starts over, empty.
+- **Tracking.** An order placed in the menu gets a 40-character
+  `tracking_token`. The guest follows it in a sheet over the menu
+  (`#track-sheet`, `public/js/menu-order.js`), never on a page of its own:
+  `GET /{slug}/order/{token}` answers JSON (status, `closed`, `closed_at` and
+  `html`, drawn by `menu/partials/order-tracking.blade.php`); opened as a page
+  it redirects to the menu with `?track={token}`, which opens the sheet.
+  Steps: sent → accepted → on its way (delivery) or ready for pickup →
+  delivered or picked up, or cancelled, with the times (`accepted_at`,
+  `ready_at`, `closed_at`, set by `Order::moveTo()`); a skipped step shows as
+  passed with no time. Choices show as the guest picked them ("Large, + Extra
+  cheese", `OrderItem::picks()`); the owner and WhatsApp keep "Size: Large".
+  The short reference never opens it. The "Order sent" toast and a bar at the
+  top of the menu (`qayema-order-{slug}` in the guest's browser, live status)
+  open the sheet; the bar goes once the order is done, an hour after a
+  cancelled one, and after 12 hours anyway. `OrderStatus` is placed,
+  accepted, ready, done, cancelled: the dashboard's one button moves an
+  in-menu order on (Accept, then On its way or Ready, then Done), and Accept
+  is what tells the guest a person saw it. No SMS and no WhatsApp messages to
+  the guest.
+- **Live, through Pusher** (`config/broadcasting.php`, `pusher/pusher-php-server`;
+  keys `PUSHER_APP_*` in `.env`, never committed). `App\Services\Orders\OrderNews`
+  sends after the response (`defer`) and never throws (`rescue`): a guest's
+  new or changed order → `OrdersChanged` on `private-orders.{restaurant id}`
+  (the pulse: open, latest, changed; only that owner may join,
+  `routes/channels.php`, signed at `POST /api/broadcasting/auth` with the
+  Sanctum session); the owner moving it → also `OrderMoved` on
+  `order.{tracking token}` (public, the token is the secret). Both are
+  `ShouldBroadcastNow` (no queue worker on shared hosting). The menu loads
+  `public/js/pusher.min.js` (pusher-js 8.6, vendored) only when there is an
+  order to follow. Without keys (local, tests, e2e: `BROADCAST_CONNECTION=null`)
+  nothing is sent, and the sheet, the bar and the dashboard ask once a minute;
+  they do the same whenever Pusher cannot be heard.
+- **One order at a time** (per browser; guests have no accounts). While the
+  guest's order is going (menu-order.js tells the cart, `qayema:order-state`),
+  the cart **adds to it** ("Adding to your order #…", "Add to order": the
+  order's lines come back from `/cart`, the new ones are added, and the whole
+  goes as a change, with no details asked again). Once the restaurant has
+  accepted it, the cart waits ("One order at a time") until it is done or
+  cancelled.
+- **Changing an order.** Only while it waits to be accepted
+  (`OrderStatus::isOpenToGuest()`, placed), the guest may change an order
+  placed in the menu: the tracking sheet's "Change my order"
+  hands it to `menu-cart.js`, which loads
+  `GET /{slug}/order/{token}/cart` (lines with their choice ids, kept in the
+  `order_items.options` snapshot as `option_id` / `addon_id`, and the details,
+  the phone split back by `PhoneNumber::split()`) into the cart without
+  touching the guest's own cart or form in storage, and "Update order" sends
+  `PUT /{slug}/order/{token}` (`PlaceOrderRequest`, priced again by
+  `OrderPlacer::change()` on a locked row; a shared location stays unless a
+  new one comes, and a new address drops the old spot). Once accepted it answers 409 (`OrderLocked`).
+  A change carries `version` (the `guest_updates` its page read from `/cart`;
+  older is a 409, `OrderChanged`, so two phones never undo each other) and a
+  `client_token` of its own, kept in `orders.change_token`: the same change
+  sent twice (an answer lost on mobile data) is made once. Dishes marked
+  unavailable since are left out and named (`unavailable` in the answer,
+  `OrderPlacer::unavailable()`). Each change sets `guest_updated_at` and counts
+  `guest_updates`; the dashboard's pulse carries `changed` and chimes, and the
+  card says "Changed by the guest at 13:05" (amber while it waits to be
+  accepted). The
+  sheet's "Change my order" hands the token to the cart (`qayema:edit`).
+- The owner reads in-menu orders at `GET /api/orders` (only `channel = menu`;
+  only `status` is writable). `PATCH /api/orders/{order}` works on the locked
+  row and only moves an order on (`OrderStatus::canMoveTo()`: forward, a step
+  may be skipped, or cancelled while open; the same status again is a no-op);
+  anything else is a 409 `order_moved_on`. Taking on a new order sends the
+  `guest_updates` the card showed; a change made since is a 409
+  `order_changed` and the dashboard polls `GET /api/orders/pulse`
+  (`{open, latest, changed}`) only while Pusher cannot be heard; the same
+  pulse arrives live otherwise. Either way: a sound, a toast, the sidebar
+  count and the tab title.
+- `orders:forget-guests` (daily, 03:20) clears the name, phone, address and
+  location from orders older than 90 days; the order itself stays. Production
+  needs the scheduler's cron (`schedule:run` every minute) for it to run.
+- Analytics (`MenuStats`) count only the current channel's orders
+  (`order_channel` in the summary, `channel` in the funnel), and
+  `orders_done` for orders placed in the menu.
 
 ## Variants and add-ons
 
@@ -876,12 +1001,18 @@ cheese; the guest picks any). Every option and add-on has a `price` that is
   dish's row updates it (hidden languages kept), anything else is created, a
   saved row left out is deleted. Validated nested input can come back with
   its indexes shuffled; the sync orders rows by index. Caps per dish are
-  `config/menu.php` (5 variants, 10 options each, 20 add-ons). A dish with
-  choices needs a price.
+  `config/menu.php` (5 variants, 10 options each, 20 add-ons).
+- **Price:** a dish may have no price of its own when it has variants: its
+  first variant's options are then full prices (a sandwich: Small $7, Large
+  $12), each one required, and everything else (other variants, add-ons)
+  still adds on top. Add-ons alone need a dish price. `MenuDishOptions` sends
+  `priced: false` so the sheet shows those options as "$7.00", not "+$7.00";
+  the card, the cart (`data-price="0.00"`) and `OrderPlacer` start from 0.
 - **Menu:** `App\Services\Menu\MenuDishOptions` builds each dish's choices in
-  the guest's language (only dishes with a price, only variants with 2+
-  options), passed to the template as `$dish_options`. The card shows "from"
-  the cheapest combination and a "Size · Spice level · Add-ons" line; one
+  the guest's language (a dish with a price or one variant to price it,
+  only variants with 2+
+  options), passed to the template as `$dish_options`. The card shows the
+  cheapest combination's price; one
   `#dish-sheet` dialog is filled by `public/js/menu-dish.js` from the
   `#dish-options` JSON. With ordering it hands `qayema:add` events to
   `menu-cart.js` (a cart line is a dish plus its choice ids, so one dish can
@@ -907,6 +1038,13 @@ cheese; the guest picks any). Every option and add-on has a `price` that is
   `Entitlements` is memoized per request.
 
 ## Menu speed
+
+Production (qayema.com, A2 Hosting with Redis turned on) keeps the cache, sessions and rate
+limits in Redis (`CACHE_STORE=redis`, `SESSION_DRIVER=redis`): on the
+database they cost 4 to 6 queries on every request. The account has its own
+Redis on its own port with a password (cPanel's Redis page), set in
+`REDIS_HOST`, `REDIS_PORT` and `REDIS_PASSWORD`; `redis-cli` needs `-p` and
+the password too. Local and the tests keep the database and array stores.
 
 The public menu is opened on a phone, often on mobile data, so it stays light
 (`tests/Feature/Menu/MenuSpeedTest`):
@@ -1013,7 +1151,7 @@ with the design**, so a printed code keeps working whatever is saved.
   across MySQL and SQLite) and shifted in PHP. The funnel (visit → cart → order)
   is null when the package does not take orders. Devices, browsers, systems
   and order money are deliberately **not** reported: the owner decided they
-  do not help a restaurant (the order itself reaches them on WhatsApp). The
+  do not help a restaurant. The
   visit rows still record device/browser/OS.
 - `stats:rollup` prunes `menu_sessions` and `menu_events` after 6 months.
 
@@ -1061,8 +1199,9 @@ close is at or before its open, which runs past midnight.
 
 ## Not yet built
 
-- **Realtime.** Nothing pushes. The dashboard's Orders page polls every 60s
-  while it is open; WhatsApp is the notification.
+- **Push notifications** to a phone (web push, SMS). Orders placed in the menu
+  are live through Pusher while a page is open; on WhatsApp, WhatsApp is the
+  notification.
 - More template designs. Only the `classic` view exists.
 - **Taking payment.** Pro/Premium/Custom are requested, not bought: there is no
   checkout, no subscription and no billing provider. An admin assigns a package

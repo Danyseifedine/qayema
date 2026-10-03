@@ -160,19 +160,19 @@ class DishOptionsTest extends TestCase
     {
         $errors = $this->actingAs($this->restaurant->user)
             ->withHeader('Accept-Language', 'ar')
-            ->postJson(route('api.dishes.store'), $this->form(['price' => null, 'addons' => [['name' => ['en' => ''], 'price' => 1]]]))
+            ->postJson(route('api.dishes.store'), $this->form(['price' => null, 'variants' => [], 'addons' => [['name' => ['en' => ''], 'price' => 1]]]))
             ->assertUnprocessable()
             ->json('errors');
 
         $this->assertSame(['اكتب اسم كل إضافة بالإنجليزية.'], $errors['addons.0.name.en']);
-        $this->assertSame(['أضف سعرًا للطبق قبل إضافة الخيارات أو الإضافات.'], $errors['price']);
+        $this->assertSame(['أضف سعرًا للطبق قبل إضافة الإضافات.'], $errors['price']);
     }
 
-    public function test_choices_need_the_dish_to_have_a_price(): void
+    public function test_addons_alone_need_the_dish_to_have_a_price(): void
     {
-        $this->store($this->form(['price' => null]))
+        $this->store($this->form(['price' => null, 'variants' => []]))
             ->assertUnprocessable()
-            ->assertJsonPath('errors.price.0', 'Give the dish a price before adding variants or add-ons.');
+            ->assertJsonPath('errors.price.0', 'Give the dish a price before adding add-ons.');
 
         // An edit that sends no price is checked against the saved one.
         $dish = Dish::factory()->create(['restaurant_id' => $this->restaurant->id, 'category_id' => $this->category->id, 'price' => null]);
@@ -182,6 +182,31 @@ class DishOptionsTest extends TestCase
 
         // Empty lists ask for nothing.
         $this->store($this->form(['price' => null, 'variants' => [], 'addons' => []]))->assertCreated();
+    }
+
+    public function test_a_dish_with_variants_may_be_priced_by_them_alone(): void
+    {
+        // A sandwich: no price of its own, Small $7 and Large $12.
+        $this->store($this->form([
+            'price' => null,
+            'variants' => [[
+                'name' => ['en' => 'Size'],
+                'options' => [['name' => ['en' => 'Small'], 'price' => 7], ['name' => ['en' => 'Large'], 'price' => 12]],
+            ]],
+        ]))->assertCreated()->assertJsonPath('data.price', null)->assertJsonPath('data.variants.0.options.1.price', '12.00');
+
+        // Then every size needs its price: an empty one is a mistake, not free.
+        $this->store($this->form([
+            'price' => null,
+            'variants' => [[
+                'name' => ['en' => 'Size'],
+                'options' => [['name' => ['en' => 'Small'], 'price' => 7], ['name' => ['en' => 'Large'], 'price' => null]],
+            ]],
+        ]))->assertUnprocessable()->assertJsonPath('errors', fn (array $errors): bool => $errors['variants.0.options.1.price'] === ['Give it a price, or give the dish one.']);
+
+        // An edit that adds add-ons to a dish whose saved variants price it.
+        $dish = Dish::factory()->withVariants()->create(['restaurant_id' => $this->restaurant->id, 'category_id' => $this->category->id, 'price' => null]);
+        $this->update($dish, ['addons' => [['name' => ['en' => 'Cheese'], 'price' => 1]]])->assertOk();
     }
 
     public function test_a_dish_holds_at_most_the_configured_number_of_each(): void

@@ -112,6 +112,13 @@ class AppServiceProvider extends ServiceProvider
         // keyed per IP but must never escalate to a ban: a busy lunch service
         // is not an attack.
         $this->defineRateLimiter('orders', fn (): Limit => Limit::perMinute(10), autoBan: false);
+        // A guest's "Use my location": a few taps at most, from a dining
+        // room that shares one IP.
+        $this->defineRateLimiter('geocode', fn (): Limit => Limit::perMinute(10), autoBan: false);
+        // The tracking sheet asks for its order when it opens and when
+        // Pusher says it moved (once a minute while Pusher cannot be heard);
+        // a dining room of them shares one IP.
+        $this->defineRateLimiter('order-status', fn (): Limit => Limit::perMinute(120), autoBan: false);
         // The menu batches what guests do, so one guest sends a handful of
         // these a visit. The ceiling is for a full room on one wifi.
         $this->defineRateLimiter('menu-events', fn (): Limit => Limit::perMinute(300), autoBan: false);

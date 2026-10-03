@@ -11,6 +11,7 @@ return [
     'premium_designs' => 'Premium designs',
     'qr_studio' => 'QR Studio',
     'ordering' => 'Ordering',
+    'menu_ordering' => 'Ordering in the menu',
     'analytics' => 'Analytics',
     'advanced_analytics' => 'Advanced analytics',
 
@@ -24,7 +25,8 @@ return [
         'appearance' => 'Colours, fonts and the other settings of the design in use.',
         'premium_designs' => 'Designs marked "Premium design" in Templates.',
         'qr_studio' => 'Styled QR code, centre logo and the printable card.',
-        'ordering' => 'Guests order from the menu and send it on WhatsApp.',
+        'ordering' => 'Guests fill a cart on the menu and send it on WhatsApp.',
+        'menu_ordering' => 'Guests place the order in the menu with their phone and address; it arrives on the Orders page.',
         'analytics' => 'Views, visitors, QR scans and the daily chart.',
         'advanced_analytics' => 'Searches, top dishes, comparisons, longer ranges and the order funnel.',
     ],

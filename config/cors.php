@@ -30,7 +30,12 @@ return [
 
     'exposed_headers' => [],
 
-    'max_age' => 0,
+    // How long the browser may reuse a preflight's answer, in seconds. At 0
+    // every dashboard call that sends a CSRF token or JSON was preceded by
+    // its own OPTIONS round trip to the server (about as slow as the call
+    // itself). Two hours is Chrome's ceiling; changing the allow-list above
+    // still takes effect for any new origin at once.
+    'max_age' => 7200,
 
     'supports_credentials' => true,
 

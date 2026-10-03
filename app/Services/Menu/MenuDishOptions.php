@@ -14,8 +14,10 @@ use Illuminate\Support\Collection;
  * what the dish sheet draws and what the cart prices a line with.
  *
  * Only what the restaurant shows is included (Restaurant::showsVariants(),
- * showsAddons()), only dishes with a price (a choice adds to one), and only
- * dishes that end up with something to choose.
+ * showsAddons()), and only dishes that end up with something to choose. A
+ * dish with no price of its own is priced by its variants (a sandwich by
+ * size: Small $7, Large $12), so it needs one; add-ons alone need a price
+ * to add to.
  */
 class MenuDishOptions
 {
@@ -34,7 +36,9 @@ class MenuDishOptions
      *     variants: array<int, array{id: int, name: string, options: array<int, array{id: int, name: string, price: string}>}>,
      *     addons: array<int, array{id: int, name: string, price: string}>,
      *     lowest: string,
-     * }> dish id => its choices
+     *     priced: bool,
+     * }> dish id => its choices; `priced` false means the first variant's
+     *    options are full prices, not extras
      */
     public static function for(Restaurant $restaurant, Collection $dishes, string $locale): array
     {
@@ -43,23 +47,19 @@ class MenuDishOptions
         $choices = [];
 
         foreach ($dishes as $dish) {
-            if ($dish->price === null) {
-                continue;
-            }
-
             // A variant with a single option leaves nothing to pick.
             $variants = $showsVariants
                 ? $dish->variants->filter(fn (DishVariant $variant): bool => $variant->options->count() >= 2)->values()
                 : collect();
             $addons = $showsAddons ? $dish->addons : collect();
 
-            if ($variants->isEmpty() && $addons->isEmpty()) {
+            if ($variants->isEmpty() && ($addons->isEmpty() || $dish->price === null)) {
                 continue;
             }
 
             // The price with the cheapest option of each variant: the least a
             // guest can pay, which the card shows.
-            $lowest = (string) $dish->price;
+            $lowest = $dish->price === null ? '0.00' : (string) $dish->price;
 
             foreach ($variants as $variant) {
                 $prices = $variant->options->map(fn (DishVariantOption $option): string => (string) $option->price);
@@ -84,6 +84,7 @@ class MenuDishOptions
                     'price' => (string) $addon->price,
                 ])->values()->all(),
                 'lowest' => $lowest,
+                'priced' => $dish->price !== null,
             ];
         }
 

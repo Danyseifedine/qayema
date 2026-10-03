@@ -23,8 +23,10 @@ class OrderResourceTest extends TestCase
 
     public function test_the_shape_with_its_lines(): void
     {
-        $order = Order::factory()->status(OrderStatus::Done)->create([
+        $order = Order::factory()->inMenu()->status(OrderStatus::Done)->create([
             'reference' => 'Q-1234',
+            'latitude' => '33.8959',
+            'longitude' => '35.4784',
             'currency' => 'LBP',
             'total' => '21.50',
             'note' => 'Extra garlic',
@@ -46,7 +48,15 @@ class OrderResourceTest extends TestCase
             'currency' => 'LBP',
             'total' => '21.50',
             'note' => 'Extra garlic',
+            'fulfilment' => 'delivery',
+            'name' => 'Rami',
+            'phone' => '+96170123456',
+            'address' => 'Hamra Street, near the bank',
+            'map_url' => 'https://www.google.com/maps?q=33.8959000,35.4784000',
             'placed_at' => '2026-06-01T18:30:00+00:00',
+            'accepted_at' => null,
+            'guest_updated_at' => null,
+            'guest_updates' => 0,
             'items' => [[
                 'id' => $line->id,
                 'name' => 'Shawarma',
@@ -63,7 +73,7 @@ class OrderResourceTest extends TestCase
         OrderItem::factory()->for($order)->create();
 
         $this->assertSame(
-            ['id', 'reference', 'status', 'currency', 'total', 'note', 'placed_at'],
+            ['id', 'reference', 'status', 'currency', 'total', 'note', 'fulfilment', 'name', 'phone', 'address', 'map_url', 'placed_at', 'accepted_at', 'guest_updated_at', 'guest_updates'],
             array_keys($this->resolve($order->fresh())),
         );
     }

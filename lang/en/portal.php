@@ -114,8 +114,8 @@ return [
             [
                 'icon' => 'whatsapp',
                 'feature' => 'ordering',
-                'title' => 'Orders straight to WhatsApp',
-                'desc' => 'Guests fill a cart and send it to your WhatsApp. Every order lands in your dashboard too.',
+                'title' => 'Take orders, your way',
+                'desc' => 'Guests fill a cart and send it to your WhatsApp, or place the order right in the menu with their phone and address.',
             ],
             [
                 'icon' => 'chart',
@@ -206,6 +206,7 @@ return [
             'premium_designs' => 'Premium designs',
             'qr_studio' => 'QR studio',
             'ordering' => 'Orders on WhatsApp',
+            'menu_ordering' => 'Orders in your menu',
             'analytics' => 'Analytics',
             'advanced_analytics' => 'Advanced analytics',
         ],

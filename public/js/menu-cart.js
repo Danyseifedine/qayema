@@ -9,6 +9,13 @@
  * A line is a dish with the guest's choices (its variants' options and its
  * add-ons, picked in the dish sheet, menu-dish.js), so the same burger can
  * be in the cart as a Small and as a Large.
+ *
+ * The restaurant takes orders one way (config.mode):
+ * - `whatsapp`: the order is stored and the guest is sent to WhatsApp with
+ *   it written out, an optional note included;
+ * - `menu`: the guest leaves their name, a phone number and, for a delivery, an address
+ *   (typed, plus their location if they share it), and the order waits on
+ *   the owner's Orders page. A toast says it went.
  */
 (function () {
     'use strict';
@@ -38,6 +45,42 @@
 
     /** The last count rendered, so the counters only pulse on a change. */
     var counted = null;
+
+    var inMenu = config.mode === 'menu';
+
+    /** What the guest typed, shared by the phone sheet and the wide column.
+     *  Kept in the browser until the order goes, so a reload or a locked
+     *  phone loses nothing; sending it starts the form over. */
+    var details = loadDetails();
+
+    /** The id of what this cart sends (a new order, a change to one, dishes
+     *  added to one), made on the first press and kept until it goes, so a
+     *  retry can never send it twice. */
+    var orderToken = null;
+
+    /** True while an order is on its way, so a repaint leaves the button. */
+    var sending = false;
+
+    /** The order being changed ({reference, updateUrl, version}), or null. While it
+     *  is set the cart and the form hold that order, and nothing is written
+     *  over the guest's own cart or details in storage. */
+    var editing = null;
+
+    /** The guest's order still going, as menu-order.js last heard it:
+     *  {token, reference, status, fulfilment}, or null. One order at a time:
+     *  until the restaurant accepts it the cart adds to it; from then on the
+     *  cart waits for it to be done. */
+    var going = null;
+
+    /** The order the cart adds to, while it can still change. */
+    function addingTo() {
+        return !editing && going && going.status === 'placed' ? going : null;
+    }
+
+    /** The order accepted, on its way or ready: no new one until it is done. */
+    function waitingFor() {
+        return !editing && going && (going.status === 'accepted' || going.status === 'ready') ? going : null;
+    }
 
     function readChoices() {
         var source = document.getElementById('dish-options');
@@ -93,10 +136,97 @@
     }
 
     function save() {
+        if (editing) {
+            return;
+        }
         try {
             window.localStorage.setItem(config.storageKey, JSON.stringify(cart));
         } catch (error) {
             // Not being able to remember the cart is survivable.
+        }
+    }
+
+    function loadDetails() {
+        var saved = {};
+        try {
+            saved = JSON.parse(window.localStorage.getItem(config.guestKey) || '{}') || {};
+        } catch (error) {
+            saved = {};
+        }
+
+        var types = config.types || [];
+        var known = (config.countries || []).some(function (country) {
+            return country.code === saved.country;
+        });
+
+        return {
+            fulfilment: types.indexOf(saved.fulfilment) !== -1 ? saved.fulfilment : types[0],
+            name: typeof saved.name === 'string' ? saved.name : '',
+            country: known ? saved.country : config.country,
+            phone: typeof saved.phone === 'string' ? saved.phone : '',
+            address: typeof saved.address === 'string' ? saved.address : '',
+            note: '',
+            website: '',
+            latitude: null,
+            longitude: null,
+            // idle | locating | added | failed
+            location: 'idle',
+            // The address line the location filled in, while it is there.
+            filled: '',
+        };
+    }
+
+    /**
+     * Once an order is sent the form starts over: the next order may be for
+     * someone else, somewhere else.
+     */
+    function resetDetails() {
+        details.name = '';
+        details.phone = '';
+        details.address = '';
+        details.note = '';
+        details.website = '';
+        details.country = config.country;
+        details.fulfilment = (config.types || [])[0];
+        details.latitude = null;
+        details.longitude = null;
+        details.filled = '';
+        details.location = 'idle';
+
+        paintDetails();
+
+        try {
+            window.localStorage.removeItem(config.guestKey);
+        } catch (error) {
+            // Nothing was kept, then.
+        }
+    }
+
+    /** Every box shows what `details` holds now. */
+    function paintDetails() {
+        ['name', 'phone', 'address', 'note', 'website'].forEach(function (key) {
+            mirror(key, null);
+        });
+        ['fulfilment', 'name', 'phone', 'address', 'note'].forEach(clearError);
+        paintFulfilment();
+        paintCountry();
+        paintLocation();
+    }
+
+    function saveDetails() {
+        if (editing) {
+            return;
+        }
+        try {
+            window.localStorage.setItem(config.guestKey, JSON.stringify({
+                fulfilment: details.fulfilment,
+                name: details.name,
+                country: details.country,
+                phone: details.phone,
+                address: details.address,
+            }));
+        } catch (error) {
+            // The guest types it again next time.
         }
     }
 
@@ -233,6 +363,9 @@
                 detail: { type: 'dish_add', dish_id: parseInt(line.dish, 10) },
             }));
         }
+
+        // A different cart is a different order.
+        orderToken = null;
 
         if (quantity > 0) {
             line.qty = Math.min(quantity, 99);
@@ -379,52 +512,737 @@
         return row;
     }
 
-    function renderPanel(panel) {
-        var current = lines();
-        panel.textContent = '';
+    // ---- The guest's details --------------------------------------------
 
-        // The sheet keeps Place order in its own footer bar, the way the design
-        // does; the desktop column has no footer and keeps it inline.
-        var footer = foot && panel.parentNode && panel.parentNode.contains(foot) ? foot : null;
-        if (footer) {
-            footer.textContent = '';
+    /** A labelled field with a place for its error under it. */
+    function field(key, label, optional) {
+        var wrap = element('div', 'cart-field');
+        wrap.setAttribute('data-field', key);
+
+        var caption = element('label', 'cart-label', label);
+        if (optional) {
+            caption.appendChild(element('span', 'cart-optional', strings.optional));
+        }
+        wrap.appendChild(caption);
+
+        return wrap;
+    }
+
+    function errorSlot(wrap, key) {
+        var slot = element('p', 'cart-field-error');
+        slot.hidden = true;
+        slot.setAttribute('data-error-for', key);
+        wrap.appendChild(slot);
+    }
+
+    /** Bind a control to details[key], and keep its twin in the other panel
+     *  showing the same thing. */
+    function bind(control, key) {
+        control.setAttribute('data-detail', key);
+        control.value = details[key];
+        control.addEventListener('input', function () {
+            details[key] = control.value;
+            mirror(key, control);
+            clearError(key);
+            saveDetails();
+        });
+        control.addEventListener('change', function () {
+            details[key] = control.value;
+            mirror(key, control);
+            saveDetails();
+        });
+    }
+
+    function mirror(key, source) {
+        Array.prototype.forEach.call(document.querySelectorAll('[data-detail="' + key + '"]'), function (control) {
+            if (control !== source && control.value !== details[key]) {
+                control.value = details[key];
+            }
+        });
+    }
+
+    function typesField(id) {
+        var wrap = element('fieldset', 'cart-field cart-types');
+        wrap.setAttribute('data-field', 'fulfilment');
+        wrap.appendChild(element('legend', 'cart-label', strings.how));
+
+        var pills = element('div', 'choice-pills');
+        config.types.forEach(function (type) {
+            var pill = element('label', 'choice-pill');
+            var input = document.createElement('input');
+            input.type = 'radio';
+            input.name = 'fulfilment-' + id;
+            input.value = type;
+            input.checked = details.fulfilment === type;
+            input.setAttribute('data-fulfilment', type);
+            input.addEventListener('change', function () {
+                details.fulfilment = type;
+                saveDetails();
+                clearError('fulfilment');
+                paintFulfilment();
+            });
+            pill.appendChild(input);
+            pill.appendChild(element('span', 'choice-name', strings[type]));
+            pills.appendChild(pill);
+        });
+        wrap.appendChild(pills);
+        errorSlot(wrap, 'fulfilment');
+
+        return wrap;
+    }
+
+    function nameField(id) {
+        var wrap = field('name', strings.name);
+        wrap.querySelector('label').htmlFor = 'cart-name-' + id;
+
+        var input = document.createElement('input');
+        input.id = 'cart-name-' + id;
+        input.className = 'cart-input';
+        input.type = 'text';
+        input.autocomplete = 'name';
+        input.maxLength = 60;
+        input.placeholder = strings.nameHint;
+        bind(input, 'name');
+        wrap.appendChild(input);
+        errorSlot(wrap, 'name');
+
+        return wrap;
+    }
+
+    function countryOf(code) {
+        for (var i = 0; i < config.countries.length; i++) {
+            if (config.countries[i].code === code) {
+                return config.countries[i];
+            }
+        }
+        return config.countries[0];
+    }
+
+    /** Lower case, no accents, so "Liban" finds "Líban" and "LEB" finds Lebanon. */
+    function folded(text) {
+        return String(text).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    }
+
+    /** Every country button shows the chosen code, in both panels. */
+    function paintCountry() {
+        var chosen = countryOf(details.country);
+        Array.prototype.forEach.call(document.querySelectorAll('[data-country-button]'), function (button) {
+            button.firstChild.textContent = chosen.flag + ' ' + chosen.dial;
+            button.setAttribute('aria-label', strings.country + ': ' + chosen.name + ' ' + chosen.dial);
+        });
+    }
+
+    /**
+     * The country code: a button with the flag and the code, opening a list
+     * the guest can search by name (in the menu's language or English), by
+     * code ("961") or by its letters ("LB"). The browser's own select has no
+     * search, and 28 countries is a long scroll on a phone.
+     */
+    function countryPicker(id, wrap, phoneInput) {
+        var listId = 'cart-countries-' + id;
+
+        var button = element('button', 'cart-country');
+        button.type = 'button';
+        button.setAttribute('data-country-button', '');
+        button.setAttribute('aria-haspopup', 'listbox');
+        button.setAttribute('aria-expanded', 'false');
+        button.appendChild(element('span', null, ''));
+        var chevron = element('span', 'icon cart-country-chevron');
+        chevron.innerHTML = icons.chevron;
+        button.appendChild(chevron);
+
+        var panel = element('div', 'cart-country-panel');
+        panel.hidden = true;
+
+        var search = document.createElement('input');
+        search.type = 'search';
+        search.className = 'cart-country-search';
+        search.placeholder = strings.countrySearch;
+        search.autocomplete = 'off';
+        search.setAttribute('role', 'combobox');
+        search.setAttribute('aria-label', strings.countrySearch);
+        search.setAttribute('aria-controls', listId);
+        search.setAttribute('aria-expanded', 'true');
+        search.setAttribute('aria-autocomplete', 'list');
+        panel.appendChild(search);
+
+        var list = element('ul', 'cart-country-list');
+        list.id = listId;
+        list.setAttribute('role', 'listbox');
+        list.setAttribute('aria-label', strings.country);
+        panel.appendChild(list);
+
+        var empty = element('p', 'cart-country-empty', strings.countryNone);
+        empty.hidden = true;
+        panel.appendChild(empty);
+
+        var shown = [];
+        var active = 0;
+
+        function paintActive() {
+            Array.prototype.forEach.call(list.children, function (item, index) {
+                item.classList.toggle('active', index === active);
+            });
+            var current = list.children[active];
+            if (current) {
+                search.setAttribute('aria-activedescendant', current.id);
+                current.scrollIntoView({ block: 'nearest' });
+            } else {
+                search.removeAttribute('aria-activedescendant');
+            }
         }
 
-        if (current.length === 0) {
-            panel.appendChild(element('p', 'cart-empty', strings.empty));
+        function filter() {
+            var term = folded(search.value.trim()).replace(/^\+/, '');
+            shown = config.countries.filter(function (country) {
+                return term === ''
+                    || folded(country.name).indexOf(term) !== -1
+                    || folded(country.label).indexOf(term) !== -1
+                    || country.dial.replace('+', '').indexOf(term) === 0
+                    || country.code.toLowerCase() === term;
+            });
+
+            list.textContent = '';
+            shown.forEach(function (country, index) {
+                var item = element('li', 'cart-country-option');
+                item.id = listId + '-' + country.code;
+                item.setAttribute('role', 'option');
+                item.setAttribute('aria-selected', String(country.code === details.country));
+                item.appendChild(element('span', 'cart-country-flag', country.flag));
+                item.appendChild(element('span', 'cart-country-name', country.name));
+                item.appendChild(element('span', 'cart-country-dial', country.dial));
+                // Pressed, not clicked: a click would blur the search first
+                // and close the list before it lands.
+                item.addEventListener('mousedown', function (event) {
+                    event.preventDefault();
+                    choose(country);
+                });
+                item.addEventListener('mouseenter', function () {
+                    active = index;
+                    paintActive();
+                });
+                list.appendChild(item);
+            });
+
+            empty.hidden = shown.length > 0;
+            active = Math.max(0, shown.findIndex(function (country) {
+                return country.code === details.country;
+            }));
+            if (term !== '') {
+                active = 0;
+            }
+            paintActive();
+        }
+
+        function open() {
+            panel.hidden = false;
+            button.setAttribute('aria-expanded', 'true');
+            search.value = '';
+            filter();
+            search.focus({ preventScroll: true });
+            // Near the bottom of the sheet or the column, the list would
+            // open half out of sight.
+            panel.scrollIntoView({ block: 'nearest' });
+            document.addEventListener('mousedown', outside, true);
+        }
+
+        function close(refocus) {
+            if (panel.hidden) {
+                return;
+            }
+            panel.hidden = true;
+            button.setAttribute('aria-expanded', 'false');
+            document.removeEventListener('mousedown', outside, true);
+            if (refocus) {
+                button.focus();
+            }
+        }
+
+        function outside(event) {
+            if (!panel.contains(event.target) && !button.contains(event.target)) {
+                close(false);
+            }
+        }
+
+        function choose(country) {
+            details.country = country.code;
+            saveDetails();
+            clearError('phone');
+            paintCountry();
+            close(false);
+            phoneInput.focus();
+        }
+
+        button.addEventListener('click', function () {
+            if (panel.hidden) {
+                open();
+            } else {
+                close(true);
+            }
+        });
+        search.addEventListener('input', filter);
+        search.addEventListener('keydown', function (event) {
+            if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                event.preventDefault();
+                var step = event.key === 'ArrowDown' ? 1 : -1;
+                active = Math.min(Math.max(active + step, 0), shown.length - 1);
+                paintActive();
+            } else if (event.key === 'Enter') {
+                event.preventDefault();
+                if (shown[active]) {
+                    choose(shown[active]);
+                }
+            } else if (event.key === 'Escape') {
+                // The list, not the cart sheet around it.
+                event.preventDefault();
+                event.stopPropagation();
+                close(true);
+            } else if (event.key === 'Tab') {
+                close(false);
+            }
+        });
+
+        wrap.appendChild(panel);
+
+        return button;
+    }
+
+    function phoneField(id) {
+        var wrap = field('phone', strings.phone);
+        wrap.classList.add('cart-phone-field');
+        wrap.querySelector('label').htmlFor = 'cart-phone-' + id;
+
+        var row = element('div', 'cart-phone');
+        // Digits read left to right, on an Arabic menu too.
+        row.dir = 'ltr';
+
+        var input = document.createElement('input');
+        input.id = 'cart-phone-' + id;
+        input.type = 'tel';
+        input.inputMode = 'tel';
+        input.autocomplete = 'tel-national';
+        input.maxLength = 30;
+        input.placeholder = strings.phoneHint;
+        bind(input, 'phone');
+
+        row.appendChild(countryPicker(id, wrap, input));
+        row.appendChild(input);
+        // Under the label, above the list the code opens.
+        wrap.insertBefore(row, wrap.querySelector('.cart-country-panel'));
+        errorSlot(wrap, 'phone');
+
+        return wrap;
+    }
+
+    function addressField(id) {
+        var wrap = field('address', strings.address);
+        wrap.setAttribute('data-delivery-only', '');
+        wrap.querySelector('label').htmlFor = 'cart-address-' + id;
+
+        // First, so the address it fills in lands in the box right under it.
+        var button = element('button', 'cart-locate-button');
+        button.type = 'button';
+        button.setAttribute('data-locate', '');
+        var glyph = element('span', 'icon');
+        glyph.innerHTML = icons.pin;
+        button.appendChild(glyph);
+        button.appendChild(element('span', null, strings.locate));
+        button.addEventListener('click', locateGuest);
+        wrap.appendChild(button);
+
+        var status = element('div', 'cart-locate-status');
+        status.setAttribute('data-locate-status', '');
+        status.hidden = true;
+        wrap.appendChild(status);
+
+        var input = document.createElement('textarea');
+        input.id = 'cart-address-' + id;
+        input.className = 'cart-input';
+        input.rows = 2;
+        input.maxLength = 500;
+        input.autocomplete = 'street-address';
+        input.placeholder = strings.addressHint;
+        bind(input, 'address');
+        wrap.appendChild(input);
+
+        errorSlot(wrap, 'address');
+
+        return wrap;
+    }
+
+    function noteField(id) {
+        var wrap = field('note', strings.note, true);
+        wrap.querySelector('label').htmlFor = 'cart-note-' + id;
+
+        var input = document.createElement('textarea');
+        input.id = 'cart-note-' + id;
+        input.className = 'cart-input';
+        input.rows = 2;
+        input.maxLength = 500;
+        input.placeholder = strings.noteHint;
+        bind(input, 'note');
+        wrap.appendChild(input);
+        errorSlot(wrap, 'note');
+
+        return wrap;
+    }
+
+    /** Left empty by people; a bot filling every box fills this one too. */
+    function trapField() {
+        var wrap = element('div', 'cart-trap');
+        wrap.setAttribute('aria-hidden', 'true');
+
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.name = 'website';
+        input.tabIndex = -1;
+        input.autocomplete = 'off';
+        bind(input, 'website');
+        wrap.appendChild(input);
+
+        return wrap;
+    }
+
+    function buildDetails(id) {
+        var wrap = element('div', 'cart-details');
+
+        if (inMenu) {
+            if (config.types.length > 1) {
+                wrap.appendChild(typesField(id));
+            }
+            wrap.appendChild(nameField(id));
+            wrap.appendChild(phoneField(id));
+            wrap.appendChild(addressField(id));
+        }
+        wrap.appendChild(noteField(id));
+        if (inMenu) {
+            wrap.appendChild(trapField());
+        }
+
+        return wrap;
+    }
+
+    /** Pickup needs no address, so the address leaves with it. */
+    function paintFulfilment() {
+        Array.prototype.forEach.call(document.querySelectorAll('[data-fulfilment]'), function (input) {
+            input.checked = input.value === details.fulfilment;
+        });
+        Array.prototype.forEach.call(document.querySelectorAll('[data-delivery-only]'), function (node) {
+            node.hidden = details.fulfilment !== 'delivery';
+        });
+    }
+
+    function paintLocation() {
+        var state = details.location;
+
+        Array.prototype.forEach.call(document.querySelectorAll('[data-locate]'), function (button) {
+            button.disabled = state === 'locating';
+            button.hidden = state === 'added';
+            button.lastChild.textContent = state === 'locating' ? strings.locating : strings.locate;
+        });
+        Array.prototype.forEach.call(document.querySelectorAll('[data-locate-status]'), function (status) {
+            status.textContent = '';
+            status.hidden = state !== 'added' && state !== 'failed';
+            status.classList.toggle('added', state === 'added');
+
+            if (state === 'added') {
+                var glyph = element('span', 'icon');
+                glyph.innerHTML = icons.check;
+                status.appendChild(glyph);
+
+                var text = element('span', 'cart-locate-text');
+                text.appendChild(element('strong', null, strings.located));
+                if (details.filled) {
+                    text.appendChild(element('span', null, strings.locatedFilled));
+                }
+                status.appendChild(text);
+
+                var remove = element('button', 'cart-locate-remove', strings.remove);
+                remove.type = 'button';
+                remove.addEventListener('click', forgetLocation);
+                status.appendChild(remove);
+            } else if (state === 'failed') {
+                status.textContent = strings.locateFailed;
+            }
+        });
+    }
+
+    /** Back to no location; an address it filled in and nobody changed goes too. */
+    function forgetLocation() {
+        if (details.filled && details.address === details.filled) {
+            details.address = '';
+            mirror('address', null);
+            saveDetails();
+        }
+        details.latitude = null;
+        details.longitude = null;
+        details.filled = '';
+        details.location = 'idle';
+        paintLocation();
+    }
+
+    /**
+     * The street, area and town for the guest's position (the server asks
+     * OpenStreetMap), into the address box while it is empty or still holds
+     * what an earlier tap put there. The guest then adds the building and
+     * floor. When nothing comes back, the location still rides along.
+     */
+    function fillAddress() {
+        var url = config.addressUrl
+            + '?lat=' + encodeURIComponent(details.latitude)
+            + '&lng=' + encodeURIComponent(details.longitude)
+            + '&locale=' + encodeURIComponent(config.locale);
+
+        return window
+            .fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
+            .then(function (response) {
+                return response.ok ? response.json() : null;
+            })
+            .then(function (body) {
+                var line = body && body.data && body.data.address;
+                var untouched = details.address.trim() === '' || details.address === details.filled;
+
+                if (line && untouched) {
+                    details.address = line;
+                    details.filled = line;
+                    mirror('address', null);
+                    saveDetails();
+                }
+            })
+            .catch(function () {
+                // The typed address is enough.
+            });
+    }
+
+    /**
+     * Ask the phone where the guest is. Help on top of the typed address,
+     * never instead of it: a refusal, no signal or a laptop's guess all
+     * leave the address to do the job.
+     */
+    function locateGuest() {
+        if (!navigator.geolocation) {
+            details.location = 'failed';
+            paintLocation();
+            return;
+        }
+
+        details.location = 'locating';
+        paintLocation();
+
+        navigator.geolocation.getCurrentPosition(
+            function (position) {
+                details.latitude = Number(position.coords.latitude.toFixed(7));
+                details.longitude = Number(position.coords.longitude.toFixed(7));
+                clearError('address');
+                fillAddress().then(function () {
+                    details.location = 'added';
+                    paintLocation();
+                });
+            },
+            function () {
+                details.location = 'failed';
+                paintLocation();
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+        );
+    }
+
+    function clearError(key) {
+        Array.prototype.forEach.call(document.querySelectorAll('[data-error-for="' + key + '"]'), function (slot) {
+            slot.textContent = '';
+            slot.hidden = true;
+        });
+    }
+
+    /** Each problem under its field, in both panels. */
+    function showErrors(errors) {
+        ['fulfilment', 'name', 'phone', 'address', 'note'].forEach(clearError);
+
+        Object.keys(errors).forEach(function (key) {
+            Array.prototype.forEach.call(document.querySelectorAll('[data-error-for="' + key + '"]'), function (slot) {
+                slot.textContent = errors[key];
+                slot.hidden = false;
+            });
+        });
+    }
+
+    /** The checks the server makes too, so most mistakes never leave the page. */
+    function problems() {
+        var found = {};
+
+        if (inMenu) {
+            if (details.name.trim() === '') {
+                found.name = strings.nameMissing;
+            }
+
+            var digits = details.phone.replace(/\D+/g, '');
+            if (digits === '') {
+                found.phone = strings.phoneMissing;
+            } else if (digits.length < 6 || digits.length > 15) {
+                found.phone = strings.phoneInvalid;
+            }
+
+            if (details.fulfilment === 'delivery' && details.address.trim() === '') {
+                found.address = strings.addressMissing;
+            }
+        }
+
+        return found;
+    }
+
+    /** The server's field errors, under the names the page uses. */
+    function fieldErrors(errors) {
+        var names = { phone_country: 'phone', latitude: 'address', longitude: 'address' };
+        var found = {};
+
+        Object.keys(errors || {}).forEach(function (key) {
+            var name = names[key] || key;
+            if (['fulfilment', 'name', 'phone', 'address', 'note'].indexOf(name) !== -1 && !found[name]) {
+                found[name] = [].concat(errors[key])[0];
+            }
+        });
+
+        return found;
+    }
+
+    // ---- The panel ---------------------------------------------------------
+
+    /**
+     * Each panel is built once: the lines are redrawn on every change, the
+     * details form never is, so what the guest typed is never wiped.
+     */
+    function partsOf(panel) {
+        if (panel.qayemaParts) {
+            return panel.qayemaParts;
+        }
+
+        // The sheet keeps Place order in its own footer bar, the way the
+        // design does; the desktop column has no footer and keeps it inline.
+        var footer = foot && panel.parentNode && panel.parentNode.contains(foot) ? foot : null;
+
+        var parts = {
+            empty: element('p', 'cart-empty', strings.empty),
+            filled: element('div', 'cart-filled'),
+            editing: element('div', 'cart-editing'),
+            lines: element('div'),
+            error: element('p', 'cart-error'),
+            place: element('button', 'place split'),
+            footer: footer,
+        };
+
+        parts.error.hidden = true;
+        parts.error.setAttribute('role', 'alert');
+        parts.place.type = 'button';
+        parts.place.addEventListener('click', function () {
+            submit(parts);
+        });
+
+        parts.editing.hidden = true;
+        parts.editing.appendChild(element('span', 'cart-editing-text'));
+        var keep = element('button', 'cart-editing-stop', strings.keepOrder);
+        keep.type = 'button';
+        keep.addEventListener('click', function () {
+            stopEditing();
+            render();
+        });
+        parts.editing.appendChild(keep);
+
+        parts.filled.appendChild(parts.editing);
+        parts.filled.appendChild(parts.lines);
+        if (config.closed) {
+            parts.filled.appendChild(element('p', 'cart-closed', strings.closedNote));
+        } else {
+            parts.details = buildDetails(panel.getAttribute('data-cart-panel'));
+            parts.filled.appendChild(parts.details);
+        }
+        parts.filled.appendChild(parts.error);
+
+        panel.textContent = '';
+        panel.appendChild(parts.empty);
+        panel.appendChild(parts.filled);
+        (footer || parts.filled).appendChild(parts.place);
+
+        panel.qayemaParts = parts;
+
+        return parts;
+    }
+
+    function paintPlace(button, amount) {
+        button.textContent = '';
+
+        if (config.closed || waitingFor()) {
+            button.disabled = true;
+            button.classList.remove('split');
+            button.textContent = config.closed ? strings.closed : strings.oneAtATime;
+            return;
+        }
+
+        button.disabled = false;
+        button.classList.add('split');
+        button.appendChild(element('span', null, editing ? strings.update : addingTo() ? strings.addToOrder : strings.place));
+        button.appendChild(element('span', null, money(amount)));
+    }
+
+    function renderPanel(panel) {
+        var parts = partsOf(panel);
+        var current = lines();
+        var empty = current.length === 0;
+
+        parts.empty.hidden = !empty;
+        // Changing an order, adding to it, or waiting for it: a line above
+        // the cart says which, and only a change can be called off.
+        var adding = addingTo();
+        var waiting = waitingFor();
+        parts.editing.hidden = !editing && !adding && !waiting;
+        parts.editing.classList.toggle('is-waiting', Boolean(waiting));
+        parts.editing.lastChild.hidden = !editing;
+        if (editing) {
+            parts.editing.firstChild.textContent = strings.editing.replace(':reference', editing.reference);
+        } else if (adding) {
+            parts.editing.firstChild.textContent = strings.adding.replace(':reference', adding.reference);
+        } else if (waiting) {
+            var note = waiting.status === 'accepted'
+                ? strings.waitingAccepted
+                : (waiting.fulfilment === 'delivery' ? strings.waitingDelivery : strings.waitingPickup);
+            parts.editing.firstChild.textContent = note.replace(':reference', waiting.reference);
+        }
+        // Adding to an order or waiting for one asks nothing: the order
+        // already says who and where.
+        if (parts.details) {
+            parts.details.hidden = Boolean(adding || waiting);
+        }
+        parts.filled.hidden = empty;
+        parts.place.hidden = empty;
+        if (parts.footer) {
+            parts.footer.hidden = empty;
+        }
+
+        parts.lines.textContent = '';
+        if (empty) {
             return;
         }
 
         var sum = totals();
 
         var noun = sum.count === 1 ? strings.item : strings.items;
-        panel.appendChild(element('div', 'cart-items', sum.count + ' ' + noun));
+        parts.lines.appendChild(element('div', 'cart-items', sum.count + ' ' + noun));
 
         var list = element('div', 'cart-lines');
         current.forEach(function (line) {
             list.appendChild(renderLine(line));
         });
-        panel.appendChild(list);
+        parts.lines.appendChild(list);
 
         var summary = element('div', 'cart-summary');
         var totalRow = element('div', 'cart-total');
         totalRow.appendChild(element('span', null, strings.total));
         totalRow.appendChild(element('span', null, money(sum.amount)));
         summary.appendChild(totalRow);
-        panel.appendChild(summary);
+        parts.lines.appendChild(summary);
 
-        var error = element('p', 'cart-error');
-        error.hidden = true;
-        panel.appendChild(error);
-
-        var place = element('button', 'place split');
-        place.type = 'button';
-        place.appendChild(element('span', null, strings.place));
-        place.appendChild(element('span', null, money(sum.amount)));
-        place.addEventListener('click', function () {
-            submit(place, error);
-        });
-        (footer || panel).appendChild(place);
+        if (!sending) {
+            paintPlace(parts.place, sum.amount);
+        }
     }
 
     function render() {
@@ -466,66 +1284,194 @@
 
     // ---- Placing ---------------------------------------------------------
 
-    function submit(button, error) {
+    /** An id for one order, so sending it twice still places it once. */
+    function newToken() {
+        if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+            return window.crypto.randomUUID();
+        }
+
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+            var r = (Math.random() * 16) | 0;
+            return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+        });
+    }
+
+    function payload(current) {
+        var body = {
+            items: current.map(function (line) {
+                return { dish_id: Number(line.id), quantity: line.quantity, options: line.options, addons: line.addons };
+            }),
+            // The language the guest is reading, so the WhatsApp message
+            // and any error come back in it.
+            locale: config.locale,
+            // What this page was built for; the server answers 409 if the
+            // restaurant has since changed how it takes orders.
+            mode: config.mode,
+            note: details.note,
+        };
+
+        if (inMenu) {
+            var delivery = details.fulfilment === 'delivery';
+            body.fulfilment = details.fulfilment;
+            body.name = details.name;
+            body.phone_country = details.country;
+            body.phone = details.phone;
+            body.address = delivery ? details.address : null;
+            body.latitude = delivery ? details.latitude : null;
+            body.longitude = delivery ? details.longitude : null;
+            body.client_token = orderToken;
+            body.website = details.website;
+        }
+
+        // Which version of the order the change was made from: one made
+        // meanwhile on another phone is not undone.
+        if (editing) {
+            body.version = editing.version;
+        }
+
+        return body;
+    }
+
+    function fail(parts, message) {
+        parts.error.textContent = message;
+        parts.error.hidden = false;
+    }
+
+    function submit(parts) {
         var current = lines();
-        if (current.length === 0) {
+        if (current.length === 0 || sending || config.closed || waitingFor()) {
             return;
         }
 
+        parts.error.hidden = true;
+
+        if (addingTo()) {
+            addToOrder(parts, addingTo(), current);
+            return;
+        }
+
+        var found = problems();
+        if (Object.keys(found).length > 0) {
+            showErrors(found);
+            fail(parts, strings.check);
+            var first = parts.filled.querySelector('[data-field="' + Object.keys(found)[0] + '"] input, [data-field="' + Object.keys(found)[0] + '"] textarea');
+            if (first) {
+                first.focus();
+            }
+            return;
+        }
+
+        orderToken = orderToken || newToken();
+
         var token = document.querySelector('meta[name="csrf-token"]');
 
-        button.disabled = true;
-        button.classList.remove('split');
-        button.textContent = strings.placing;
-        error.hidden = true;
+        sending = true;
+        parts.place.disabled = true;
+        parts.place.classList.remove('split');
+        parts.place.textContent = strings.placing;
 
         window
-            .fetch(config.orderUrl, {
-                method: 'POST',
+            .fetch(editing ? editing.updateUrl : config.orderUrl, {
+                method: editing ? 'PUT' : 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
                     'X-CSRF-TOKEN': token ? token.getAttribute('content') : '',
                 },
                 credentials: 'same-origin',
-                body: JSON.stringify({
-                    items: current.map(function (line) {
-                        return { dish_id: Number(line.id), quantity: line.quantity, options: line.options, addons: line.addons };
-                    }),
-                    // The language the guest is reading, so the WhatsApp
-                    // message and any error come back in it.
-                    locale: config.locale,
-                }),
+                body: JSON.stringify(payload(current)),
             })
             .then(function (response) {
                 return response.json().then(function (body) {
-                    return { ok: response.ok, body: body };
+                    return { ok: response.ok, status: response.status, body: body };
                 });
             })
             .then(function (result) {
                 if (!result.ok) {
+                    var errors = result.status === 422 ? fieldErrors(result.body && result.body.errors) : {};
+                    if (Object.keys(errors).length > 0) {
+                        showErrors(errors);
+                        throw new Error(strings.check);
+                    }
                     throw new Error((result.body && result.body.message) || strings.failed);
                 }
 
-                // The order is stored; WhatsApp is what actually reaches the
-                // owner. Clear first so a back-navigation shows an empty cart.
-                cart = {};
-                save();
-                render();
+                var data = result.body.data || {};
 
-                var url = result.body.data && result.body.data.whatsapp_url;
-                if (url) {
-                    window.location.href = url;
+                if (editing) {
+                    // Changed: back to the guest's own cart and form.
+                    orderToken = null;
+                    stopEditing();
+                    announce(data);
+                    toast(strings.updated, withoutUnavailable(strings.updatedBody, data), data.tracking_url);
+                    return;
+                }
+
+                // The order is stored. Clear first so a back-navigation shows
+                // an empty cart.
+                cart = {};
+                orderToken = null;
+                save();
+
+                if (data.channel === 'menu') {
+                    resetDetails();
+                    announce(data);
+                    toast(strings.sent, strings.sentBody.replace(':reference', data.reference), data.tracking_url);
+                } else if (data.whatsapp_url) {
+                    // WhatsApp is what reaches the owner.
+                    window.location.href = data.whatsapp_url;
                 }
             })
             .catch(function (failure) {
-                error.textContent = failure.message || strings.failed;
-                error.hidden = false;
+                fail(parts, failure.message || strings.failed);
             })
             .finally(function () {
-                button.disabled = false;
+                sending = false;
                 render();
             });
+    }
+
+    /** A note at the top of the screen that the order went. */
+    function toast(title, body, link) {
+        var old = document.querySelector('.menu-toast');
+        if (old) {
+            old.remove();
+        }
+
+        var note = element('div', 'menu-toast');
+        note.setAttribute('role', 'status');
+
+        var mark = element('span', 'menu-toast-mark');
+        var glyph = element('span', 'icon');
+        glyph.innerHTML = icons.check;
+        mark.appendChild(glyph);
+        note.appendChild(mark);
+
+        var text = element('div', 'menu-toast-text');
+        text.appendChild(element('strong', null, title));
+        text.appendChild(element('span', null, body));
+        if (link) {
+            var track = element('a', 'menu-toast-link', strings.track);
+            track.href = link;
+            // Opens the tracking sheet (menu-order.js) rather than leaving.
+            track.setAttribute('data-follow-order', '');
+            text.appendChild(track);
+        }
+        note.appendChild(text);
+
+        var timer;
+        function dismiss() {
+            window.clearTimeout(timer);
+            note.classList.add('leaving');
+            window.setTimeout(function () {
+                note.remove();
+            }, 250);
+        }
+
+        note.appendChild(iconButton('menu-toast-close', icons.close, strings.close, dismiss));
+        document.body.appendChild(note);
+        // Longer with a link in it, to give a thumb time to reach it.
+        timer = window.setTimeout(dismiss, link ? 12000 : 8000);
     }
 
     // ---- Wiring ----------------------------------------------------------
@@ -617,5 +1563,190 @@
         });
     }
 
+    // ---- Changing an order already placed ---------------------------------
+
+    /**
+     * The cart's dishes join the guest's order still going: its lines and
+     * details come back from the server, the cart's are added to them, and
+     * the whole is sent as the order's change. Who and where stay as they
+     * were, so nothing is asked again.
+     */
+    function addToOrder(parts, order, current) {
+        sending = true;
+        parts.place.disabled = true;
+        parts.place.classList.remove('split');
+        parts.place.textContent = strings.placing;
+        // Kept through a retry: dishes that did go in, with the answer lost
+        // on the way back, are not added a second time.
+        orderToken = orderToken || newToken();
+
+        var token = document.querySelector('meta[name="csrf-token"]');
+
+        window
+            .fetch(config.orderUrl + '/' + order.token + '/cart', { headers: { Accept: 'application/json' }, cache: 'no-store' })
+            .then(function (response) {
+                return response.ok ? response.json() : Promise.reject(new Error(strings.failed));
+            })
+            .then(function (body) {
+                var data = body.data;
+                if (!data.editable) {
+                    throw new Error(strings.lockedBody);
+                }
+
+                var merged = {};
+                data.lines.concat(current.map(function (line) {
+                    return { dish: line.id, options: line.options, addons: line.addons, qty: line.quantity };
+                })).forEach(function (line) {
+                    var key = keyOf(line.dish, line.options, line.addons);
+                    merged[key] = merged[key] || { dish_id: Number(line.dish), quantity: 0, options: sorted(line.options), addons: sorted(line.addons) };
+                    merged[key].quantity = Math.min(99, merged[key].quantity + line.qty);
+                });
+
+                var delivery = data.details.fulfilment === 'delivery';
+
+                return window.fetch(data.update_url, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Accept: 'application/json',
+                        'X-CSRF-TOKEN': token ? token.getAttribute('content') : '',
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        items: Object.keys(merged).map(function (key) {
+                            return merged[key];
+                        }),
+                        locale: config.locale,
+                        mode: 'menu',
+                        fulfilment: data.details.fulfilment,
+                        name: data.details.name,
+                        phone_country: data.details.country || config.country,
+                        phone: data.details.phone,
+                        address: delivery ? data.details.address : null,
+                        note: data.details.note,
+                        client_token: orderToken,
+                        version: data.version,
+                    }),
+                });
+            })
+            .then(function (response) {
+                return response.json().then(function (body) {
+                    return { ok: response.ok, body: body };
+                });
+            })
+            .then(function (result) {
+                if (!result.ok) {
+                    throw new Error((result.body && result.body.message) || strings.failed);
+                }
+                cart = {};
+                orderToken = null;
+                save();
+                announce(result.body.data);
+                toast(strings.added, withoutUnavailable(strings.addedBody, result.body.data), result.body.data.tracking_url);
+            })
+            .catch(function (failure) {
+                fail(parts, failure.message || strings.failed);
+            })
+            .finally(function () {
+                sending = false;
+                render();
+            });
+    }
+
+    /** A change's toast, saying which dishes went because the restaurant
+     *  no longer has them. */
+    function withoutUnavailable(body, data) {
+        var gone = data.unavailable || [];
+
+        return gone.length === 0 ? body : strings.unavailable.replace(':dishes', gone.join(', '));
+    }
+
+    /** The tracking sheet (menu-order.js) follows the order just sent. */
+    function announce(data) {
+        document.dispatchEvent(new CustomEvent('qayema:placed', {
+            detail: { reference: data.reference, url: data.tracking_url },
+        }));
+    }
+
+    /**
+     * "Change my order" in the tracking sheet (menu-order.js): the order's
+     * lines and details go into the cart, which then sends the change
+     * instead of a new order. Only until the restaurant accepts it; the
+     * server says so if that has happened.
+     */
+    function startEditing(token) {
+        if (!/^[A-Za-z0-9]{40}$/.test(token)) {
+            return;
+        }
+
+        window
+            .fetch(config.orderUrl + '/' + token + '/cart', { headers: { Accept: 'application/json' }, cache: 'no-store' })
+            .then(function (response) {
+                return response.ok ? response.json() : null;
+            })
+            .then(function (body) {
+                var data = body && body.data;
+                if (!data) {
+                    return;
+                }
+                if (!data.editable) {
+                    toast(strings.locked, strings.lockedBody);
+                    return;
+                }
+
+                editing = { reference: data.reference, updateUrl: data.update_url, version: data.version };
+                orderToken = null;
+
+                cart = {};
+                data.lines.forEach(function (line) {
+                    cart[keyOf(line.dish, line.options, line.addons)] = {
+                        dish: String(line.dish),
+                        options: sorted(line.options),
+                        addons: sorted(line.addons),
+                        qty: line.qty,
+                    };
+                });
+
+                var types = config.types || [];
+                details.fulfilment = types.indexOf(data.details.fulfilment) !== -1 ? data.details.fulfilment : types[0];
+                details.name = data.details.name;
+                details.country = data.details.country || config.country;
+                details.phone = data.details.phone;
+                details.address = data.details.address;
+                details.note = data.details.note;
+                details.latitude = null;
+                details.longitude = null;
+                details.filled = '';
+                details.location = 'idle';
+                paintDetails();
+
+                render();
+                openSheet();
+            })
+            .catch(function () {
+                // The menu works as usual.
+            });
+    }
+
+    /** Back to the guest's own cart and form, as they were before. */
+    function stopEditing() {
+        editing = null;
+        cart = load();
+        details = loadDetails();
+        paintDetails();
+    }
+
     render();
+    paintFulfilment();
+    paintLocation();
+    if (inMenu) {
+        paintCountry();
+        document.addEventListener('qayema:edit', function (event) {
+            startEditing(event.detail.token);
+        });
+        document.addEventListener('qayema:order-state', function (event) {
+            going = event.detail;
+            render();
+        });
+    }
 })();

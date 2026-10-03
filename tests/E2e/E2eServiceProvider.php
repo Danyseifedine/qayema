@@ -2,6 +2,7 @@
 
 namespace Tests\E2e;
 
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -61,5 +62,11 @@ class E2eServiceProvider extends ServiceProvider
         Route::middleware('web')->group(__DIR__.'/routes.php');
 
         $this->commands([E2eResetCommand::class]);
+
+        // "Use my current location" asks OpenStreetMap for the street; the
+        // suite never leaves the machine, so it gets the same street always.
+        Http::fake(['nominatim.openstreetmap.org/*' => Http::response([
+            'address' => ['road' => 'Bliss Street', 'suburb' => 'Ras Beirut', 'city' => 'Beirut', 'country' => 'Lebanon'],
+        ])]);
     }
 }

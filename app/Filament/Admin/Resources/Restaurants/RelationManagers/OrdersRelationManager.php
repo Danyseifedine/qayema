@@ -2,6 +2,8 @@
 
 namespace App\Filament\Admin\Resources\Restaurants\RelationManagers;
 
+use App\Enums\Fulfilment;
+use App\Enums\OrderChannel;
 use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -47,9 +49,16 @@ class OrdersRelationManager extends RelationManager
                     ->formatStateUsing(fn (OrderStatus $state): string => ucfirst($state->value))
                     ->color(fn (OrderStatus $state): string => match ($state) {
                         OrderStatus::Placed => 'warning',
+                        OrderStatus::Accepted => 'info',
+                        OrderStatus::Ready => 'primary',
                         OrderStatus::Done => 'success',
                         OrderStatus::Cancelled => 'gray',
                     }),
+                TextColumn::make('channel')
+                    ->label('Came in')
+                    ->badge()
+                    ->formatStateUsing(fn (OrderChannel $state): string => self::channelLabel($state))
+                    ->color(fn (OrderChannel $state): string => $state === OrderChannel::Menu ? 'info' : 'gray'),
                 TextColumn::make('items')
                     ->label('What was ordered')
                     ->state(fn (Order $record): string => $record->items
@@ -60,12 +69,29 @@ class OrdersRelationManager extends RelationManager
                 TextColumn::make('total')
                     ->state(fn (Order $record): string => $record->total.' '.$record->currency)
                     ->alignEnd(),
+                TextColumn::make('fulfilment')
+                    ->formatStateUsing(fn (Fulfilment $state): string => ucfirst($state->value))
+                    ->placeholder('-'),
+                TextColumn::make('guest_name')
+                    ->label('Guest')
+                    ->placeholder('-'),
+                TextColumn::make('guest_phone')
+                    ->label('Phone')
+                    ->placeholder('-')
+                    ->copyable(),
+                TextColumn::make('address')
+                    ->placeholder('-')
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('note')
                     ->placeholder('-')
                     ->wrap()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                SelectFilter::make('channel')
+                    ->label('Came in')
+                    ->options(collect(OrderChannel::cases())->mapWithKeys(fn (OrderChannel $channel): array => [$channel->value => self::channelLabel($channel)])->all()),
                 SelectFilter::make('status')
                     ->options(collect(OrderStatus::cases())->mapWithKeys(fn (OrderStatus $status): array => [$status->value => ucfirst($status->value)])->all()),
             ])
@@ -77,5 +103,13 @@ class OrdersRelationManager extends RelationManager
                 BulkActionGroup::make([DeleteBulkAction::make()]),
             ])
             ->defaultSort('placed_at', 'desc');
+    }
+
+    private static function channelLabel(OrderChannel $channel): string
+    {
+        return match ($channel) {
+            OrderChannel::WhatsApp => 'Sent to WhatsApp',
+            OrderChannel::Menu => 'In the menu',
+        };
     }
 }
