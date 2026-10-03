@@ -3,9 +3,11 @@
 namespace Tests\Feature\Menu;
 
 use App\Enums\Feature;
+use App\Models\MenuSession;
 use App\Models\Restaurant;
 use App\Models\Template;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\Support\CreatesOwners;
 use Tests\TestCase;
 
@@ -51,7 +53,7 @@ class MenuTrackingTest extends TestCase
             'restaurant_id' => $restaurant->id,
             'via_qr' => true,
         ]);
-        $this->assertSame(1, $restaurant->getQrScanCount());
+        $this->assertSame(1, $restaurant->qrScans()['total']);
     }
 
     public function test_a_plain_visit_is_not_counted_as_a_qr_scan(): void
@@ -61,7 +63,30 @@ class MenuTrackingTest extends TestCase
         $this->get(route('public.menu', $restaurant->slug))->assertOk();
 
         $this->assertSame(1, $restaurant->getTotalViews());
-        $this->assertSame(0, $restaurant->getQrScanCount());
+        $this->assertSame(0, $restaurant->qrScans()['total']);
+    }
+
+    /** Today, this week and this month are the restaurant's own, not UTC's. */
+    public function test_qr_scans_count_the_restaurants_own_days(): void
+    {
+        // Thursday 15 October, 13:00 in Beirut (UTC+3).
+        $this->travelTo(Carbon::parse('2026-10-15 10:00', 'UTC'));
+        $restaurant = $this->published();
+        $restaurant->update(['timezone' => 'Asia/Beirut']);
+
+        foreach ([
+            '2026-10-15 09:00', // today
+            '2026-10-14 22:30', // 01:30 on the 15th in Beirut: today
+            '2026-10-14 20:00', // 23:00 on the 14th: this week
+            '2026-10-12 08:00', // Monday: this week
+            '2026-10-02 08:00', // this month
+            '2026-09-20 08:00', // before
+        ] as $at) {
+            MenuSession::factory()->create(['restaurant_id' => $restaurant->id, 'via_qr' => true, 'viewed_at' => $at]);
+        }
+        MenuSession::factory()->create(['restaurant_id' => $restaurant->id, 'via_qr' => false, 'viewed_at' => '2026-10-15 09:00']);
+
+        $this->assertSame(['today' => 2, 'week' => 4, 'month' => 5, 'total' => 6], $restaurant->qrScans());
     }
 
     public function test_the_qr_studio_stats_endpoint_reflects_real_scans(): void

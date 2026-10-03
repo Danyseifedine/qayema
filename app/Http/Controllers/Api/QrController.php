@@ -71,14 +71,7 @@ class QrController extends Controller
             // What "Reset to simple" goes back to, so the dashboard never
             // keeps its own copy of the defaults.
             'defaults' => $restaurant->qrDefaultDesign(),
-            'stats' => $restaurant->entitlements()->can(Feature::Analytics)
-                ? [
-                    'today' => $restaurant->getQrScanCount('today'),
-                    'week' => $restaurant->getQrScanCount('week'),
-                    'month' => $restaurant->getQrScanCount('month'),
-                    'total' => $restaurant->getQrScanCount(),
-                ]
-                : null,
+            'stats' => $restaurant->entitlements()->can(Feature::Analytics) ? $restaurant->qrScans() : null,
         ];
     }
 }

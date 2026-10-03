@@ -8,6 +8,7 @@ use App\Enums\OrderChannel;
 use App\Enums\PackageStatus;
 use App\Services\Menu\MenuLanguages;
 use App\Services\Packages\Entitlements;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -674,16 +675,44 @@ class Restaurant extends Model implements HasMedia
         return $this->menuSessions()->count();
     }
 
-    public function getQrScanCount(string $period = 'all'): int
+    /**
+     * Visits that came from the QR code: today, this week, this month (the
+     * restaurant's own days, like the analytics) and ever. One pass over
+     * plain ranges, so the (restaurant_id, viewed_at) index does the work.
+     *
+     * @return array{today: int, week: int, month: int, total: int}
+     */
+    public function qrScans(): array
     {
-        $query = $this->menuSessions()->where('via_qr', true);
+        $now = CarbonImmutable::now($this->localTimezone());
+        $since = fn (CarbonImmutable $start): string => $start->utc()->toDateTimeString();
 
-        return match ($period) {
-            'today' => $query->whereDate('viewed_at', today())->count(),
-            'week' => $query->whereBetween('viewed_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
-            'month' => $query->whereMonth('viewed_at', now()->month)->whereYear('viewed_at', now()->year)->count(),
-            default => $query->count(),
-        };
+        $counts = $this->menuSessions()
+            ->where('via_qr', true)
+            ->selectRaw(
+                'count(*) as total,
+                sum(case when viewed_at >= ? then 1 else 0 end) as today,
+                sum(case when viewed_at >= ? then 1 else 0 end) as week,
+                sum(case when viewed_at >= ? then 1 else 0 end) as month',
+                [$since($now->startOfDay()), $since($now->startOfWeek()), $since($now->startOfMonth())],
+            )
+            ->toBase()
+            ->first();
+
+        return [
+            'today' => (int) ($counts->today ?? 0),
+            'week' => (int) ($counts->week ?? 0),
+            'month' => (int) ($counts->month ?? 0),
+            'total' => (int) ($counts->total ?? 0),
+        ];
+    }
+
+    /** The restaurant's timezone, UTC when unset or not a real one. */
+    public function localTimezone(): string
+    {
+        $timezone = $this->timezone ?: config('app.timezone', 'UTC');
+
+        return in_array($timezone, timezone_identifiers_list(), true) ? $timezone : 'UTC';
     }
 
     public function registerMediaCollections(): void

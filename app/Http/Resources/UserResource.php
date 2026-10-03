@@ -44,6 +44,8 @@ class UserResource extends JsonResource
     private function restaurant(Restaurant $restaurant): array
     {
         $entitlements = $restaurant->entitlements();
+        // What the limits have used, in one query: this is every dashboard boot.
+        $restaurant->loadCount(['dishes', 'categories', 'socialLinks']);
         $package = $restaurant->effectivePackage();
         $status = $restaurant->packageStatus();
         $active = $status === PackageStatus::Active;
@@ -89,9 +91,9 @@ class UserResource extends JsonResource
             // A null limit is unlimited on this package, or shown so under
             // fair use (Premium's dishes); the number then holds on save.
             'limits' => [
-                'dishes' => ['used' => $restaurant->dishes()->count(), 'limit' => $entitlements->shownLimit(Feature::DishLimit)],
-                'categories' => ['used' => $restaurant->categories()->count(), 'limit' => $entitlements->shownLimit(Feature::CategoryLimit)],
-                'social_links' => ['used' => $restaurant->socialLinks()->count(), 'limit' => $entitlements->shownLimit(Feature::SocialLinkLimit)],
+                'dishes' => ['used' => (int) $restaurant->dishes_count, 'limit' => $entitlements->shownLimit(Feature::DishLimit)],
+                'categories' => ['used' => (int) $restaurant->categories_count, 'limit' => $entitlements->shownLimit(Feature::CategoryLimit)],
+                'social_links' => ['used' => (int) $restaurant->social_links_count, 'limit' => $entitlements->shownLimit(Feature::SocialLinkLimit)],
             ],
             // Optional features the owner switched off (Features page).
             'switched_off' => $restaurant->switchedOff(),

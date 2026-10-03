@@ -20,14 +20,20 @@ final class OrderPulse
      */
     public static function for(Restaurant $restaurant): array
     {
-        $orders = $restaurant->orders()->inMenu()->reorder();
-        $latest = (clone $orders)->max('id');
-        $changed = (clone $orders)->max('guest_updated_at');
+        // One pass: asked on every new or changed order, and once a minute
+        // by a dashboard that cannot hear Pusher.
+        $pulse = $restaurant->orders()->inMenu()->reorder()
+            ->selectRaw(
+                'max(id) as latest, max(guest_updated_at) as changed, sum(case when status = ? then 1 else 0 end) as open',
+                [OrderStatus::Placed->value],
+            )
+            ->toBase()
+            ->first();
 
         return [
-            'open' => (clone $orders)->where('status', OrderStatus::Placed)->count(),
-            'latest' => $latest === null ? null : (int) $latest,
-            'changed' => $changed === null ? null : Carbon::parse($changed)->toIso8601String(),
+            'open' => (int) ($pulse->open ?? 0),
+            'latest' => $pulse?->latest === null ? null : (int) $pulse->latest,
+            'changed' => $pulse?->changed === null ? null : Carbon::parse($pulse->changed)->toIso8601String(),
         ];
     }
 }

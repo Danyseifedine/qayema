@@ -49,7 +49,7 @@ class MenuStats
 
     public function __construct(private readonly Restaurant $restaurant, private readonly string $range)
     {
-        $this->timezone = self::timezoneOf($restaurant);
+        $this->timezone = $restaurant->localTimezone();
         $this->today = CarbonImmutable::now($this->timezone)->startOfDay();
 
         $days = self::RANGES[$range] ?? null;
@@ -438,12 +438,5 @@ class MenuStats
                 $row->getKey() => MenuLanguages::text($row, 'name', $locale),
             ])
             ->all();
-    }
-
-    private static function timezoneOf(Restaurant $restaurant): string
-    {
-        $timezone = $restaurant->timezone ?: config('app.timezone', 'UTC');
-
-        return in_array($timezone, timezone_identifiers_list(), true) ? $timezone : 'UTC';
     }
 }

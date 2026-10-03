@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Once;
 use Spatie\Translatable\HasTranslations;
 
 /**
@@ -63,6 +64,8 @@ class Package extends Model
         // here has to invalidate all of them rather than guess which.
         $flush = function (): void {
             Cache::forget(self::DEFAULT_CACHE_KEY);
+            // default() keeps its answer for the request (once()).
+            Once::flush();
             Entitlements::flushAll();
         };
 
@@ -95,16 +98,22 @@ class Package extends Model
         });
     }
 
-    /** What a new restaurant starts on, and where an expired package lands. */
+    /**
+     * What a new restaurant starts on, and where an expired package lands.
+     * Read once per request: the admin's restaurant list asks for it on
+     * every row, and the home page on every visit.
+     */
     public static function default(): ?self
     {
-        $id = Cache::remember(
-            self::DEFAULT_CACHE_KEY,
-            (int) config('package.cache_ttl', 300),
-            fn (): ?int => self::query()->where('is_default', true)->value('id'),
-        );
+        return once(function (): ?self {
+            $id = Cache::remember(
+                self::DEFAULT_CACHE_KEY,
+                (int) config('package.cache_ttl', 300),
+                fn (): ?int => self::query()->where('is_default', true)->value('id'),
+            );
 
-        return $id === null ? null : self::query()->find($id);
+            return $id === null ? null : self::query()->find($id);
+        });
     }
 
     public static function findBySlug(string $slug): ?self

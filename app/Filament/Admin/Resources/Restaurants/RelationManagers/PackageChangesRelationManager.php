@@ -9,6 +9,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Every package this restaurant has been on: what it moved from and to, the
@@ -29,6 +30,8 @@ class PackageChangesRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+            // Each row names both packages: read with the page, not per row.
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['fromPackage', 'toPackage']))
             ->columns([
                 TextColumn::make('created_at')
                     ->label('When')

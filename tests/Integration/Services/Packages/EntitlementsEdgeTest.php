@@ -12,6 +12,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Once;
 use Tests\Support\CreatesOwners;
 use Tests\TestCase;
 
@@ -246,7 +247,9 @@ class EntitlementsEdgeTest extends TestCase
         $restaurant = $this->owner();
         DB::table('packages')->update(['is_default' => false]);
         DB::table('restaurants')->where('id', $restaurant->id)->update(['package_id' => null]);
+        // As a later request would find it: nothing cached, nothing kept.
         Cache::flush();
+        Once::flush();
         FeatureGrant::factory()->for($restaurant)->forFeature(Feature::CategoryLimit, 2)->create();
 
         $restaurant = $restaurant->fresh();
