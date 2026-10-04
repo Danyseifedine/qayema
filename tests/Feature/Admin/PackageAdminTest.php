@@ -6,6 +6,7 @@ use App\Enums\Feature;
 use App\Filament\Admin\Resources\Packages\PackageResource;
 use App\Filament\Admin\Resources\Packages\Pages\EditPackage;
 use App\Filament\Admin\Resources\Packages\Pages\ListPackages;
+use App\Filament\Admin\Resources\Restaurants\Schemas\PackageFields;
 use App\Models\Package;
 use App\Models\Restaurant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -128,5 +129,48 @@ class PackageAdminTest extends TestCase
 
         $this->assertTrue($pro->fresh()->is_featured);
         $this->assertSame(['pro'], Package::query()->where('is_featured', true)->pluck('slug')->all());
+    }
+
+    public function test_an_admin_takes_a_package_off_offer_from_the_list(): void
+    {
+        $pro = Package::query()->where('slug', 'pro')->firstOrFail();
+        $this->actingAs($this->admin());
+
+        Livewire::test(ListPackages::class)
+            ->call('updateTableColumnState', 'is_active', (string) $pro->getKey(), false);
+
+        $this->assertFalse($pro->fresh()->is_active);
+    }
+
+    /** Every restaurant falls back on it, so it is always on offer. */
+    public function test_the_default_package_stays_on_offer(): void
+    {
+        $default = Package::default();
+
+        $default->update(['is_active' => false]);
+
+        $this->assertTrue($default->fresh()->is_active);
+    }
+
+    public function test_a_package_taken_off_offer_is_no_longer_most_popular(): void
+    {
+        $premium = Package::query()->where('slug', 'premium')->firstOrFail();
+        $this->assertTrue($premium->is_featured);
+
+        $premium->update(['is_active' => false]);
+
+        $this->assertFalse($premium->fresh()->is_featured);
+    }
+
+    /** Still assignable by hand (a deal agreed one to one), and named as such. */
+    public function test_the_package_picker_names_a_package_no_longer_offered(): void
+    {
+        $pro = Package::query()->where('slug', 'pro')->firstOrFail();
+        $pro->update(['is_active' => false]);
+
+        $options = PackageFields::packageOptions();
+
+        $this->assertSame('Pro (not offered)', $options[$pro->id]);
+        $this->assertSame('Premium', $options[Package::query()->where('slug', 'premium')->value('id')]);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Portal;
 
+use App\Models\Package;
 use App\View\Components\Seo;
 use Dom\HTMLDocument;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -122,6 +123,17 @@ class SeoTest extends TestCase
         $this->assertSame(count(__('portal.faq.items')), count($faq['mainEntity']));
         $this->assertSame(__('portal.faq.items')[0]['q'], $faq['mainEntity'][0]['name']);
         $this->assertArrayNotHasKey('potentialAction', $website);
+    }
+
+    /** A package taken off offer is not offered to search engines either. */
+    public function test_a_package_no_longer_offered_leaves_the_search_offers(): void
+    {
+        Package::query()->where('slug', 'pro')->firstOrFail()->update(['is_active' => false]);
+
+        $app = $this->schemas($this->page('/'))[0]['@graph'][2];
+
+        $this->assertSame(['Free', 'Premium'], array_column($app['offers'], 'name'));
+        $this->assertStringNotContainsString('$12', $this->get('/')->getContent());
     }
 
     public function test_the_arabic_home_page_describes_itself_in_arabic(): void

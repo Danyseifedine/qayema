@@ -79,4 +79,28 @@ class PackagesTest extends TestCase
             ->assertJsonCount(Package::query()->count(), 'data')
             ->assertJsonPath('meta.current', null);
     }
+
+    public function test_a_package_no_longer_offered_is_not_listed(): void
+    {
+        Package::query()->where('slug', 'pro')->firstOrFail()->update(['is_active' => false]);
+        $owner = $this->owner();
+
+        $response = $this->actingAs($owner->user)->getJson(route('api.packages.index'))->assertOk();
+
+        $this->assertSame(['free', 'premium', 'custom'], array_column($response->json('data'), 'slug'));
+    }
+
+    /** Their own package stays in view, beside what they could ask for. */
+    public function test_an_owner_still_sees_their_own_package_once_it_is_no_longer_offered(): void
+    {
+        $owner = $this->ownerOn('pro');
+        Package::query()->where('slug', 'pro')->firstOrFail()->update(['is_active' => false]);
+
+        $this->actingAs($owner->user)->getJson(route('api.packages.index'))
+            ->assertOk()
+            ->assertJsonPath('meta.current', 'pro')
+            ->assertJsonPath('data.1.slug', 'pro');
+        // They keep what it gives until it ends.
+        $this->assertSame(150, $owner->fresh()->dish_limit);
+    }
 }

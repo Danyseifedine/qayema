@@ -178,6 +178,6 @@ class PricingCards
      */
     private function packages(): Collection
     {
-        return $this->packages ??= Package::query()->orderBy('sort_order')->orderBy('id')->get();
+        return $this->packages ??= Package::query()->offered()->get();
     }
 }

@@ -134,4 +134,16 @@ class PricingCardsTest extends TestCase
         // A price reads the same in both languages.
         $this->assertSame('$12', $cards[1]['price']);
     }
+
+    /** Not on offer: gone from the cards, and the next one builds on what is left. */
+    public function test_a_package_taken_off_offer_leaves_the_landing_page(): void
+    {
+        Package::query()->where('slug', 'pro')->firstOrFail()->update(['is_active' => false]);
+
+        $cards = $this->cards();
+
+        $this->assertSame(['Free', 'Premium', 'Custom'], array_keys($cards));
+        $this->assertSame('Free', $cards['Premium']['base']);
+        $this->assertContains('Second menu language', $cards['Premium']['lines'], 'What Pro gave is now Premium\'s to say.');
+    }
 }

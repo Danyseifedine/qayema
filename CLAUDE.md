@@ -534,6 +534,16 @@ invented reviews (`tests/Feature/Portal/LandingContentTest`).
   hooks, so no path skips it: from → to, dates, `changed_by` (the signed-in
   admin), and the note (`$restaurant->packageChangeNote`, set before the save).
   Read-only "Package history" relation manager on the restaurant.
+- **Offered or not** (`packages.is_active`, the "Offered" switch on the
+  Packages list and form): a package switched off leaves the landing page
+  and `/pricing` (`PricingCards`, `Package::offered()`), the search offers
+  (`StructuredData`), the dashboard's Package page (`/api/packages` lists
+  what is offered plus the owner's own package) and package requests (422).
+  Restaurants already on it keep it until it ends; the admin can still
+  assign it, labelled "(not offered)". The default package is always
+  offered, and switching one off takes its "Most popular" mark (model
+  `saving` hook). Written copy that names a package (`lang/*/portal.php`,
+  `pages.php`) is not touched: edit it by hand.
 - The admin home is the `PackagesEndingSoon` widget: ending in 14 days or
   ended in the last 30, with Extend / Change package.
 - A package request shares the public contact form's durable per-IP quota of

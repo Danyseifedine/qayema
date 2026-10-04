@@ -20,7 +20,13 @@ class PackageController extends Controller
         // default rather than as something the owner no longer has.
         $current = $request->user()->restaurant?->effectivePackage();
 
-        $packages = Package::query()->orderBy('sort_order')->orderBy('id')->get();
+        // What is on offer, and the owner's own package even once it is not,
+        // so they still see what they have beside what they could ask for.
+        $packages = Package::query()
+            ->where(fn ($query) => $query->where('is_active', true)->when($current, fn ($query) => $query->orWhere('id', $current->id)))
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
 
         return PackageResource::collection($packages)->additional([
             'meta' => [

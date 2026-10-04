@@ -10,6 +10,7 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
 
 class PackagesTable
@@ -33,6 +34,10 @@ class PackagesTable
                     // A null price is never formatted: Filament shows the placeholder instead.
                     ->placeholder('Contact us')
                     ->sortable(),
+                ToggleColumn::make('is_active')
+                    ->label('Offered')
+                    ->disabled(fn (Package $record): bool => $record->is_default)
+                    ->tooltip(fn (Package $record): ?string => $record->is_default ? 'The default package is always offered.' : null),
                 TextColumn::make('restaurants_count')
                     ->label('Restaurants')
                     ->counts('restaurants')

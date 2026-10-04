@@ -190,4 +190,17 @@ class PackageRequestTest extends TestCase
 
         $this->assertSame($user->id, ContactMessage::firstOrFail()->user_id);
     }
+
+    public function test_a_package_no_longer_offered_cannot_be_asked_for(): void
+    {
+        Package::query()->where('slug', 'pro')->firstOrFail()->update(['is_active' => false]);
+        $owner = $this->owner();
+
+        $this->actingAs($owner->user)
+            ->postJson(route('api.packages.request'), ['package' => 'pro'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['package' => 'That package cannot be requested.']);
+
+        $this->assertSame(0, ContactMessage::query()->count());
+    }
 }

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\Feature;
 use App\Services\Packages\Entitlements;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -40,6 +41,7 @@ class Package extends Model
         'is_default',
         'sort_order',
         'is_featured',
+        'is_active',
         'features',
         'fair_use',
     ];
@@ -52,6 +54,7 @@ class Package extends Model
             'is_default' => 'boolean',
             'sort_order' => 'integer',
             'is_featured' => 'boolean',
+            'is_active' => 'boolean',
             'features' => 'array',
             'fair_use' => 'array',
         ];
@@ -90,6 +93,18 @@ class Package extends Model
             return true;
         });
 
+        // Every restaurant falls back on the default, so it is always on
+        // offer; a package taken off offer is no one's "Most popular".
+        static::saving(function (self $package): void {
+            if ($package->is_default) {
+                $package->is_active = true;
+            }
+
+            if (! $package->is_active) {
+                $package->is_featured = false;
+            }
+        });
+
         // "Most popular" is one package: marking one takes it off the others.
         static::saved(function (self $package): void {
             if ($package->is_featured && ($package->wasRecentlyCreated || $package->wasChanged('is_featured'))) {
@@ -114,6 +129,17 @@ class Package extends Model
 
             return $id === null ? null : self::query()->find($id);
         });
+    }
+
+    /**
+     * Packages on offer, in their order: what the landing page, the
+     * dashboard's Package page and package requests know about.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeOffered(Builder $query): void
+    {
+        $query->where('is_active', true)->orderBy('sort_order')->orderBy('id');
     }
 
     public static function findBySlug(string $slug): ?self

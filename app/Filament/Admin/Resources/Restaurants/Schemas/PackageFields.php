@@ -121,8 +121,12 @@ class PackageFields
     /** @return array<int, string> */
     public static function packageOptions(): array
     {
+        // One no longer on offer can still be given to a restaurant (a deal
+        // agreed by hand), so it stays here, named as such.
         return Package::query()->orderBy('sort_order')->orderBy('id')->get()
-            ->mapWithKeys(fn (Package $package): array => [$package->id => (string) $package->name])
+            ->mapWithKeys(fn (Package $package): array => [
+                $package->id => $package->is_active ? (string) $package->name : $package->name.' (not offered)',
+            ])
             ->all();
     }
 }

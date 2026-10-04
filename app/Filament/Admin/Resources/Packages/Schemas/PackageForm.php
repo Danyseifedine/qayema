@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\Packages\Schemas;
 
 use App\Enums\Feature;
+use App\Models\Package;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -57,6 +58,13 @@ class PackageForm
                                 ->numeric()
                                 ->default(0)
                                 ->helperText('Order in the dashboard. The lowest package that includes a feature is the one a locked feature points owners to.'),
+                            Toggle::make('is_active')
+                                ->label('Offered')
+                                ->default(true)
+                                ->disabled(fn (?Package $record): bool => (bool) $record?->is_default)
+                                ->helperText(fn (?Package $record): string => $record?->is_default
+                                    ? 'The default package is always offered: every restaurant falls back on it.'
+                                    : 'Off: gone from the landing page, the dashboard\'s Package page and package requests. Restaurants already on it keep it until it ends.'),
                             Toggle::make('is_featured')
                                 ->label('Mark as "Most popular"')
                                 ->helperText('Highlighted on the dashboard\'s Package page and the landing page. One package at a time: marking this one unmarks the others.'),

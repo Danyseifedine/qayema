@@ -18,8 +18,9 @@ class RequestPackageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // The default package needs no request: every owner already has it.
-            'package' => ['required', 'string', Rule::exists('packages', 'slug')->where('is_default', 0)],
+            // The default package needs no request: every owner already has
+            // it. One no longer on offer cannot be asked for either.
+            'package' => ['required', 'string', Rule::exists('packages', 'slug')->where('is_default', 0)->where('is_active', 1)],
             'message' => ['nullable', 'string', 'max:2000'],
         ];
     }
