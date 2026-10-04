@@ -5,8 +5,6 @@
     "Open now": "Aperto ora",
     "Closed now": "Chiuso ora",
     "Closed today": "Chiuso oggi",
-    "Phone": "Telefono",
-    "Location": "Posizione",
     "Categories": "Categorie",
     "Search the menu": "Cerca nel menù",
     "Nothing on the menu matches that.": "Nessun piatto corrisponde alla ricerca.",
@@ -131,5 +129,9 @@
     "Your order #:reference is being prepared. You can order again once it is done.": "Il tuo ordine n. :reference è in preparazione. Potrai ordinare di nuovo quando sarà completato.",
     "Your order was changed from another page meanwhile. Open it to see it as it is now, then try again.": "Il tuo ordine è stato modificato da un'altra pagina nel frattempo. Aprilo per vederlo com'è ora, poi riprova.",
     "Sent. :dishes is no longer available, so it was taken off your order.": "Inviato. :dishes non è più disponibile, quindi è stato tolto dal tuo ordine.",
-    "QR code for the menu": "Codice QR del menu"
+    "QR code for the menu": "Codice QR del menu",
+    "Too many requests. Please slow down.": "Troppe richieste. Rallenta un attimo.",
+    "The given data was invalid.": "I dati inviati non sono validi.",
+    "(and :count more error)": "(e :count altro errore)",
+    "(and :count more errors)": "(e altri :count errori)"
 }

@@ -30,7 +30,6 @@ return [
     'mimes' => 'يجب أن يكون حقل :attribute ملفاً من نوع: :values.',
     'min' => [
         'array' => 'يجب أن يحتوي حقل :attribute على :min عناصر على الأقل.',
-        'file' => 'يجب أن يكون حجم :attribute :min كيلوبايت على الأقل.',
         'numeric' => 'يجب أن يكون حقل :attribute :min على الأقل.',
         'string' => 'يجب أن يكون حقل :attribute :min أحرف على الأقل.',
     ],
@@ -39,9 +38,6 @@ return [
     'required' => 'حقل :attribute مطلوب.',
     'required_with' => 'حقل :attribute مطلوب عند وجود :values.',
     'size' => [
-        'array' => 'يجب أن يحتوي حقل :attribute على :size عناصر.',
-        'file' => 'يجب أن يكون حجم :attribute :size كيلوبايت.',
-        'numeric' => 'يجب أن يكون حقل :attribute :size.',
         'string' => 'يجب أن يكون حقل :attribute :size أحرف.',
     ],
     'string' => 'يجب أن يكون حقل :attribute نصاً.',

@@ -5,8 +5,6 @@
     "Open now": "अभी खुला है",
     "Closed now": "अभी बंद है",
     "Closed today": "आज बंद है",
-    "Phone": "फ़ोन",
-    "Location": "स्थान",
     "Categories": "श्रेणियाँ",
     "Search the menu": "मेन्यू में खोजें",
     "Nothing on the menu matches that.": "इस खोज से मेल खाता कुछ नहीं मिला।",
@@ -131,5 +129,9 @@
     "Your order #:reference is being prepared. You can order again once it is done.": "आपका ऑर्डर #:reference तैयार हो रहा है। पूरा होने के बाद आप फिर से ऑर्डर कर सकते हैं।",
     "Your order was changed from another page meanwhile. Open it to see it as it is now, then try again.": "इस बीच आपका ऑर्डर किसी दूसरे पेज से बदला गया। अभी जैसा है वैसा देखने के लिए उसे खोलें, फिर दोबारा कोशिश करें।",
     "Sent. :dishes is no longer available, so it was taken off your order.": "भेज दिया गया। :dishes अब उपलब्ध नहीं है, इसलिए उसे आपके ऑर्डर से हटा दिया गया।",
-    "QR code for the menu": "मेन्यू का QR कोड"
+    "QR code for the menu": "मेन्यू का QR कोड",
+    "Too many requests. Please slow down.": "बहुत ज़्यादा अनुरोध। कृपया थोड़ा धीरे करें।",
+    "The given data was invalid.": "भेजी गई जानकारी मान्य नहीं है।",
+    "(and :count more error)": "(और :count त्रुटि)",
+    "(and :count more errors)": "(और :count त्रुटियाँ)"
 }

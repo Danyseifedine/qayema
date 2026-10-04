@@ -1264,9 +1264,6 @@
                 pulse(node);
             }
         });
-        Array.prototype.forEach.call(document.querySelectorAll('[data-cart-total]'), function (node) {
-            node.textContent = money(sum.amount);
-        });
 
         panels.forEach(renderPanel);
 

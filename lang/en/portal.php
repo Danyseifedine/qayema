@@ -32,7 +32,6 @@ return [
             ],
             'onboarding' => [
                 'title' => 'Set up your menu',
-                'description' => 'Set up your restaurant on Qayema.',
             ],
         ],
     ],

@@ -5,8 +5,6 @@
     "Open now": "مفتوح الآن",
     "Closed now": "مغلق الآن",
     "Closed today": "مغلق اليوم",
-    "Phone": "الهاتف",
-    "Location": "الموقع",
     "Categories": "الأقسام",
     "Search the menu": "ابحث في القائمة",
     "Nothing on the menu matches that.": "لا يوجد ما يطابق هذا البحث.",
@@ -182,5 +180,10 @@
     "Sent. :dishes is no longer available, so it was taken off your order.": "تم الإرسال. :dishes لم يعد متوفرًا، لذا أُزيل من طلبك.",
     "QR code for the menu": "رمز QR للقائمة",
     "This order has already moved on. The list now shows where it stands.": "تقدّم هذا الطلب بالفعل. القائمة تعرض الآن حالته الحالية.",
-    "The guest just changed this order. Look at it again before taking it on.": "عدّل الضيف هذا الطلب للتو. ألقِ نظرة عليه مجددًا قبل قبوله."
+    "The guest just changed this order. Look at it again before taking it on.": "عدّل الضيف هذا الطلب للتو. ألقِ نظرة عليه مجددًا قبل قبوله.",
+    "Too many requests. Please slow down.": "طلبات كثيرة جدًا. يرجى التمهّل.",
+    "Analytics are not on your package.": "التحليلات غير متوفرة في باقتك.",
+    "Appearance is not on your package.": "تخصيص المظهر غير متوفر في باقتك.",
+    "A second menu language is not on your package.": "اللغة الثانية للقائمة غير متوفرة في باقتك.",
+    "This design is not on your package.": "هذا التصميم غير متوفر في باقتك."
 }

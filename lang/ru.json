@@ -5,8 +5,6 @@
     "Open now": "Сейчас открыто",
     "Closed now": "Сейчас закрыто",
     "Closed today": "Сегодня закрыто",
-    "Phone": "Телефон",
-    "Location": "Адрес",
     "Categories": "Категории",
     "Search the menu": "Поиск по меню",
     "Nothing on the menu matches that.": "По вашему запросу ничего не найдено.",
@@ -131,5 +129,9 @@
     "Your order #:reference is being prepared. You can order again once it is done.": "Ваш заказ №:reference готовится. Сделать новый заказ можно после его завершения.",
     "Your order was changed from another page meanwhile. Open it to see it as it is now, then try again.": "Тем временем ваш заказ изменили на другой странице. Откройте его, чтобы увидеть, какой он сейчас, и попробуйте снова.",
     "Sent. :dishes is no longer available, so it was taken off your order.": "Отправлено. :dishes больше нет в наличии, поэтому это убрали из вашего заказа.",
-    "QR code for the menu": "QR-код меню"
+    "QR code for the menu": "QR-код меню",
+    "Too many requests. Please slow down.": "Слишком много запросов. Пожалуйста, помедленнее.",
+    "The given data was invalid.": "Отправленные данные недействительны.",
+    "(and :count more error)": "(и ещё :count ошибка)",
+    "(and :count more errors)": "(и ещё :count ошибки)"
 }

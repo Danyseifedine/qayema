@@ -5,8 +5,6 @@
     "Open now": "Şu an açık",
     "Closed now": "Şu an kapalı",
     "Closed today": "Bugün kapalı",
-    "Phone": "Telefon",
-    "Location": "Konum",
     "Categories": "Kategoriler",
     "Search the menu": "Menüde ara",
     "Nothing on the menu matches that.": "Aramanızla eşleşen bir şey yok.",
@@ -131,5 +129,9 @@
     "Your order #:reference is being prepared. You can order again once it is done.": "Siparişiniz #:reference hazırlanıyor. Bittiğinde yeniden sipariş verebilirsiniz.",
     "Your order was changed from another page meanwhile. Open it to see it as it is now, then try again.": "Siparişiniz bu arada başka bir sayfadan değiştirildi. Şu anki hâlini görmek için açın, sonra tekrar deneyin.",
     "Sent. :dishes is no longer available, so it was taken off your order.": "Gönderildi. :dishes artık mevcut değil, bu yüzden siparişinizden çıkarıldı.",
-    "QR code for the menu": "Menünün QR kodu"
+    "QR code for the menu": "Menünün QR kodu",
+    "Too many requests. Please slow down.": "Çok fazla istek. Lütfen biraz yavaşlayın.",
+    "The given data was invalid.": "Gönderilen bilgiler geçersiz.",
+    "(and :count more error)": "(ve :count hata daha)",
+    "(and :count more errors)": "(ve :count hata daha)"
 }

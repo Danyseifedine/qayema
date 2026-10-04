@@ -62,7 +62,6 @@
             'href' => null,
             'tone' => $open ? 'open' : 'shut',
             'ltr' => true,
-            'in_card' => true,
             'track' => null,
         ];
     }
@@ -70,12 +69,10 @@
     if ($restaurant->google_maps_url) {
         $facts[] = [
             'icon' => 'pin',
-            'label' => __('Location'),
             'value' => __('Find us'),
             'href' => $restaurant->google_maps_url,
             'tone' => null,
             'ltr' => false,
-            'in_card' => false,
             'track' => 'map',
         ];
     }
@@ -83,17 +80,16 @@
     if ($restaurant->phone) {
         $facts[] = [
             'icon' => 'phone',
-            'label' => __('Phone'),
             'value' => $restaurant->phone,
             'href' => 'tel:'.$restaurant->phone,
             'tone' => null,
             'ltr' => true,
-            'in_card' => false,
             'track' => 'call',
         ];
     }
 
-    $cardFacts = array_filter($facts, fn (array $fact): bool => $fact['in_card']);
+    // The info card under the name shows the hours (the header row has the rest).
+    $hoursFact = collect($facts)->firstWhere('icon', 'clock');
 
     $platforms = ['instagram' => 'Instagram', 'x' => 'X', 'facebook' => 'Facebook', 'tiktok' => 'TikTok'];
     $hasContact = $whatsapp_url || $restaurant->socialLinks->isNotEmpty();
@@ -238,21 +234,15 @@
             </div>
         </div>
 
-        @if ($cardFacts)
+        @if ($hoursFact)
             <div class="info">
-                @foreach ($cardFacts as $fact)
-                    @if ($fact['href'])
-                        <a class="info-row" href="{{ $fact['href'] }}" @if ($fact['track']) data-track="{{ $fact['track'] }}" @endif @if ($fact['icon'] === 'pin') target="_blank" rel="noopener" @endif>
-                    @else
-                        <div class="info-row">
-                    @endif
-                        <span class="info-icon"><span class="icon">{!! $icons[$fact['icon']] !!}</span></span>
-                        <span class="info-text">
-                            <span class="info-label {{ $fact['tone'] ? 'fact-'.$fact['tone'] : '' }}">{{ $fact['label'] }}</span>
-                            <span class="info-value" @if ($fact['ltr']) dir="ltr" @endif>{{ $fact['value'] }}</span>
-                        </span>
-                    {!! $fact['href'] ? '</a>' : '</div>' !!}
-                @endforeach
+                <div class="info-row">
+                    <span class="info-icon"><span class="icon">{!! $icons['clock'] !!}</span></span>
+                    <span class="info-text">
+                        <span class="info-label fact-{{ $hoursFact['tone'] }}">{{ $hoursFact['label'] }}</span>
+                        <span class="info-value" dir="ltr">{{ $hoursFact['value'] }}</span>
+                    </span>
+                </div>
             </div>
         @endif
 
@@ -703,7 +693,6 @@
                 remove: @js(__('Remove')),
                 quantity: @js(__('Quantity')),
                 free: @js(__('Free')),
-                close: @js(__('Close')),
             },
         };
     </script>

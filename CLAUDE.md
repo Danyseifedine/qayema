@@ -1035,7 +1035,16 @@ cheese; the guest picks any). Every option and add-on has a `price` that is
   times per call and a menu asks hundreds of times.
 - Something a page needs from several places is read once:
   `PricingCards` keeps its packages per instance (a page shares one),
-  `Entitlements` is memoized per request.
+  `Entitlements` is memoized per request, `Package::default()` is `once()`
+  per request (a package save flushes it), and `/api/user` counts dishes,
+  categories and links with one `loadCount`.
+- Counts over time are plain ranges, never `date()`/`month()` on a column,
+  so the index does the work: `Restaurant::qrScans()` (today, week, month,
+  total in one pass, in the restaurant's timezone, `localTimezone()`) and
+  `OrderPulse` (three numbers, one query). `menu_sessions` is indexed
+  `(restaurant_id, viewed_at, via_qr, session_id)` so QR and visitor counts
+  come from the index, and `viewed_at` / `menu_events.occurred_at` alone for
+  the nightly prune.
 
 ## Menu speed
 

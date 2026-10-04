@@ -5,8 +5,6 @@
     "Open now": "Ouvert",
     "Closed now": "Fermé",
     "Closed today": "Fermé aujourd'hui",
-    "Phone": "Téléphone",
-    "Location": "Adresse",
     "Categories": "Catégories",
     "Search the menu": "Rechercher dans le menu",
     "Nothing on the menu matches that.": "Aucun plat ne correspond à votre recherche.",
@@ -131,5 +129,9 @@
     "Your order #:reference is being prepared. You can order again once it is done.": "Votre commande n° :reference est en préparation. Vous pourrez recommander une fois terminée.",
     "Your order was changed from another page meanwhile. Open it to see it as it is now, then try again.": "Votre commande a été modifiée depuis une autre page entre-temps. Ouvrez-la pour la voir telle qu'elle est maintenant, puis réessayez.",
     "Sent. :dishes is no longer available, so it was taken off your order.": "Envoyé. :dishes n'est plus disponible, il a donc été retiré de votre commande.",
-    "QR code for the menu": "QR code du menu"
+    "QR code for the menu": "QR code du menu",
+    "Too many requests. Please slow down.": "Trop de demandes. Merci de ralentir.",
+    "The given data was invalid.": "Les données envoyées ne sont pas valides.",
+    "(and :count more error)": "(et :count autre erreur)",
+    "(and :count more errors)": "(et :count autres erreurs)"
 }

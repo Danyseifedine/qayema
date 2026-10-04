@@ -32,7 +32,6 @@ return [
             ],
             'onboarding' => [
                 'title' => 'جهّز قائمتك',
-                'description' => 'جهّز مطعمك على Qayema.',
             ],
         ],
     ],

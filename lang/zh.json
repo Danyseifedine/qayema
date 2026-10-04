@@ -5,8 +5,6 @@
     "Open now": "营业中",
     "Closed now": "已打烊",
     "Closed today": "今日休息",
-    "Phone": "电话",
-    "Location": "位置",
     "Categories": "分类",
     "Search the menu": "搜索菜单",
     "Nothing on the menu matches that.": "没有找到相关菜品。",
@@ -131,5 +129,9 @@
     "Your order #:reference is being prepared. You can order again once it is done.": "您的订单 #:reference 正在制作中。完成后可以再次下单。",
     "Your order was changed from another page meanwhile. Open it to see it as it is now, then try again.": "您的订单刚刚在另一个页面上被修改。请打开查看当前内容，然后重试。",
     "Sent. :dishes is no longer available, so it was taken off your order.": "已发送。:dishes 已无法供应，因此已从您的订单中移除。",
-    "QR code for the menu": "菜单二维码"
+    "QR code for the menu": "菜单二维码",
+    "Too many requests. Please slow down.": "请求过多，请稍后再试。",
+    "The given data was invalid.": "提交的信息无效。",
+    "(and :count more error)": "（还有 :count 个错误）",
+    "(and :count more errors)": "（还有 :count 个错误）"
 }

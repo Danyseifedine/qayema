@@ -10,7 +10,6 @@
 return [
 
     'nav' => [
-        'solutions' => 'Solutions',
         'lebanon' => 'QR menu in Lebanon',
         'cafes' => 'Digital menu for cafés',
         'pricing' => 'Pricing',

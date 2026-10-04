@@ -294,7 +294,6 @@
 
         if (item) {
             item.classList.add('is-on');
-            pop.opener = item;
         }
 
         if (pop.id === 'pop-qr' && qrCode) {
