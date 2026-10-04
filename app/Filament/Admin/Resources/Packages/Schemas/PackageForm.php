@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources\Packages\Schemas;
 use App\Enums\Feature;
 use App\Models\Package;
 use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -76,6 +77,20 @@ class PackageForm
                                 ->label('Description (Arabic)')
                                 ->rows(2)
                                 ->columnSpanFull(),
+                        ]),
+                    Section::make('Card lines')
+                        ->description('What the package card lists, on the landing page and the dashboard. Leave empty to list what the package adds to the one before it, worked out from its features.')
+                        ->columns(2)
+                        ->schema([
+                            TagsInput::make('highlights.en')
+                                ->label('Lines (English)')
+                                ->placeholder('Add a line and press Enter')
+                                ->reorderable(),
+                            TagsInput::make('highlights.ar')
+                                ->label('Lines (Arabic)')
+                                ->placeholder('أضف سطراً واضغط Enter')
+                                ->reorderable()
+                                ->helperText('Empty: Arabic readers see the English lines.'),
                         ]),
                     Section::make('Included features')
                         ->description('Switch on what this package includes.')

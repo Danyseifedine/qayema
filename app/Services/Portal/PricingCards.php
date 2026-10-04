@@ -55,7 +55,10 @@ class PricingCards
                 'per' => $package->price_cents > 0 ? __('portal.pricing.per_month') : null,
                 'description' => (string) $package->description,
                 'base' => $covers ? $previous->name : null,
-                'lines' => array_map(fn (Feature $feature): string => $this->line($package, $feature), $features),
+                // The admin's own lines when written (Custom: a design of their
+                // own...), what it adds from its features otherwise.
+                'lines' => $package->highlightsIn(app()->getLocale())
+                    ?: array_map(fn (Feature $feature): string => $this->line($package, $feature), $features),
                 'featured' => $package->is_featured,
                 'free' => $package->price_cents === 0,
                 'contact' => $package->is_contact_only,

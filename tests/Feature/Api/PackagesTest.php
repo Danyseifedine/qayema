@@ -103,4 +103,15 @@ class PackagesTest extends TestCase
         // They keep what it gives until it ends.
         $this->assertSame(150, $owner->fresh()->dish_limit);
     }
+
+    public function test_a_cards_own_lines_come_with_each_package(): void
+    {
+        $owner = $this->owner();
+
+        $packages = collect($this->actingAs($owner->user)->getJson(route('api.packages.index'))->json('data'))->keyBy('slug');
+
+        $this->assertSame(['A menu design made for your brand', 'Limits set for your group of restaurants', 'Direct help from our team'], $packages['custom']['highlights']['en']);
+        $this->assertSame('تصميم قائمة خاص بعلامتك', $packages['custom']['highlights']['ar'][0]);
+        $this->assertSame(['en' => [], 'ar' => []], $packages['pro']['highlights'], 'None written: the card works them out.');
+    }
 }

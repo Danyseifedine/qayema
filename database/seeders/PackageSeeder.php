@@ -18,6 +18,7 @@ class PackageSeeder extends Seeder
             Package::firstOrCreate(['slug' => $package['slug']], [
                 'name' => $package['name'],
                 'description' => $package['description'] ?? null,
+                'highlights' => $package['highlights'] ?? null,
                 'price_cents' => $package['price_cents'] ?? null,
                 'currency' => $package['currency'] ?? 'USD',
                 'is_contact_only' => $package['is_contact_only'] ?? false,

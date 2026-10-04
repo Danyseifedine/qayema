@@ -33,6 +33,8 @@ class PackageResourceTest extends TestCase
                 'en' => 'Everything you need to take one menu live.',
                 'ar' => 'كل ما تحتاجه لإطلاق قائمة واحدة.',
             ],
+            // None written: the card lists what the package adds.
+            'highlights' => ['en' => [], 'ar' => []],
             'price_cents' => 0,
             'currency' => 'USD',
             'is_contact_only' => false,

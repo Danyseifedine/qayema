@@ -544,6 +544,14 @@ invented reviews (`tests/Feature/Portal/LandingContentTest`).
   offered, and switching one off takes its "Most popular" mark (model
   `saving` hook). Written copy that names a package (`lang/*/portal.php`,
   `pages.php`) is not touched: edit it by hand.
+- **Card lines** (`packages.highlights`, `{en: [...], ar: [...]}`, the
+  admin's "Card lines" section): written, they replace the lines a package
+  card works out from its features, on the landing page (`PricingCards`,
+  `Package::highlightsIn()`, English when Arabic is empty) and the dashboard
+  (`/api/packages` sends `highlights`, `writtenHighlights()` per language).
+  Custom ships with its own (`config/package.php`; the migration fills them
+  only where none are written): a design for the brand, limits for the
+  group, direct help. Empty, the card lists what the package adds.
 - The admin home is the `PackagesEndingSoon` widget: ending in 14 days or
   ended in the last 30, with Extend / Change package.
 - A package request shares the public contact form's durable per-IP quota of

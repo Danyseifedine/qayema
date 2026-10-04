@@ -32,6 +32,12 @@ class PackageResource extends JsonResource
                 'en' => $this->getTranslation('description', 'en', false) ?: null,
                 'ar' => $this->getTranslation('description', 'ar', false) ?: null,
             ],
+            // The card's own lines, written by the admin; empty lists mean the
+            // card lists what the package adds from its features.
+            'highlights' => [
+                'en' => $this->resource->writtenHighlights('en'),
+                'ar' => $this->resource->writtenHighlights('ar'),
+            ],
             // Null means the price is not published; the owner has to ask.
             'price_cents' => $this->price_cents,
             'currency' => $this->currency,

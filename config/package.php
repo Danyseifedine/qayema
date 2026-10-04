@@ -124,6 +124,12 @@ return [
                 'en' => 'Built around what your group needs. Talk to us.',
                 'ar' => 'مصمّم حسب احتياجات مجموعتك. تواصل معنا.',
             ],
+            // What the card says instead of the features it adds (only more
+            // social links): what a group actually comes to us for.
+            'highlights' => [
+                'en' => ['A menu design made for your brand', 'Limits set for your group of restaurants', 'Direct help from our team'],
+                'ar' => ['تصميم قائمة خاص بعلامتك', 'حدود تناسب مجموعة مطاعمك', 'مساعدة مباشرة من فريقنا'],
+            ],
             'price_cents' => null,
             'is_contact_only' => true,
             'is_default' => false,

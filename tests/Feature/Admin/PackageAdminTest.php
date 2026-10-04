@@ -137,6 +137,9 @@ class PackageAdminTest extends TestCase
         $this->actingAs($this->admin());
 
         Livewire::test(ListPackages::class)
+            ->assertTableColumnExists('is_active')
+            ->assertTableColumnVisible('is_active')
+            ->assertSee('Offered')
             ->call('updateTableColumnState', 'is_active', (string) $pro->getKey(), false);
 
         $this->assertFalse($pro->fresh()->is_active);
@@ -172,5 +175,19 @@ class PackageAdminTest extends TestCase
 
         $this->assertSame('Pro (not offered)', $options[$pro->id]);
         $this->assertSame('Premium', $options[Package::query()->where('slug', 'premium')->value('id')]);
+    }
+
+    public function test_an_admin_writes_a_cards_own_lines(): void
+    {
+        $pro = Package::query()->where('slug', 'pro')->firstOrFail();
+        $this->actingAs($this->admin());
+
+        Livewire::test(EditPackage::class, ['record' => $pro->id])
+            ->fillForm(['highlights.en' => ['Room to grow', 'Your own colours'], 'highlights.ar' => ['مساحة للنمو']])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(['Room to grow', 'Your own colours'], $pro->fresh()->highlightsIn('en'));
+        $this->assertSame(['مساحة للنمو'], $pro->fresh()->highlightsIn('ar'));
     }
 }

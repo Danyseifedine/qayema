@@ -42,6 +42,7 @@ class Package extends Model
         'sort_order',
         'is_featured',
         'is_active',
+        'highlights',
         'features',
         'fair_use',
     ];
@@ -55,6 +56,7 @@ class Package extends Model
             'sort_order' => 'integer',
             'is_featured' => 'boolean',
             'is_active' => 'boolean',
+            'highlights' => 'array',
             'features' => 'array',
             'fair_use' => 'array',
         ];
@@ -140,6 +142,30 @@ class Package extends Model
     public function scopeOffered(Builder $query): void
     {
         $query->where('is_active', true)->orderBy('sort_order')->orderBy('id');
+    }
+
+    /**
+     * The card's own lines in a language (English when that one has none),
+     * or empty: the card then lists what the package adds, from its features.
+     *
+     * @return list<string>
+     */
+    public function highlightsIn(string $locale): array
+    {
+        return $this->writtenHighlights($locale) ?: $this->writtenHighlights('en');
+    }
+
+    /**
+     * The lines the admin wrote in exactly this language.
+     *
+     * @return list<string>
+     */
+    public function writtenHighlights(string $language): array
+    {
+        return array_values(array_filter(
+            array_map('trim', (array) ($this->highlights[$language] ?? [])),
+            fn (string $line): bool => $line !== '',
+        ));
     }
 
     public static function findBySlug(string $slug): ?self

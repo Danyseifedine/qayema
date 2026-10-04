@@ -61,7 +61,8 @@ class PricingCardsTest extends TestCase
         $this->assertSame('Premium', $custom['base']);
         // Premium already reads unlimited dishes and categories, so Custom adds
         // only what is new.
-        $this->assertSame(['Unlimited social links'], $custom['lines']);
+        // Custom's card says what a group comes to us for, not its one extra limit.
+        $this->assertSame(['A menu design made for your brand', 'Limits set for your group of restaurants', 'Direct help from our team'], $custom['lines']);
         $this->assertSame('* Fair use on Premium: up to 1,000 dishes and 1,000 categories.', app(PricingCards::class)->fairUseNote());
     }
 
@@ -145,5 +146,25 @@ class PricingCardsTest extends TestCase
         $this->assertSame(['Free', 'Premium', 'Custom'], array_keys($cards));
         $this->assertSame('Free', $cards['Premium']['base']);
         $this->assertContains('Second menu language', $cards['Premium']['lines'], 'What Pro gave is now Premium\'s to say.');
+    }
+
+    public function test_a_cards_own_lines_come_in_the_readers_language_or_english(): void
+    {
+        $pro = Package::query()->where('slug', 'pro')->firstOrFail();
+        $pro->update(['highlights' => ['en' => ['Room to grow', '  '], 'ar' => []]]);
+
+        $this->assertSame(['Room to grow'], $this->cards()['Pro']['lines'], 'A blank line is not shown.');
+
+        $pro->update(['highlights' => ['en' => ['Room to grow'], 'ar' => ['مساحة للنمو']]]);
+        app()->setLocale('ar');
+        $this->assertSame(['مساحة للنمو'], collect(app(PricingCards::class)->all())->firstWhere('price', '$12')['lines']);
+    }
+
+    /** Lines cleared: the card lists what the package adds again. */
+    public function test_without_its_own_lines_a_card_lists_what_the_package_adds(): void
+    {
+        Package::query()->where('slug', 'custom')->firstOrFail()->update(['highlights' => null]);
+
+        $this->assertSame(['Unlimited social links'], $this->cards()['Custom']['lines']);
     }
 }
