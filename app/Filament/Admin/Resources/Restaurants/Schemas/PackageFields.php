@@ -123,10 +123,11 @@ class PackageFields
     {
         // One no longer on offer can still be given to a restaurant (a deal
         // agreed by hand), so it stays here, named as such.
-        return Package::query()->orderBy('sort_order')->orderBy('id')->get()
+        // Once per request: the form and its actions both ask.
+        return once(fn (): array => Package::query()->orderBy('sort_order')->orderBy('id')->get()
             ->mapWithKeys(fn (Package $package): array => [
                 $package->id => $package->is_active ? (string) $package->name : $package->name.' (not offered)',
             ])
-            ->all();
+            ->all());
     }
 }

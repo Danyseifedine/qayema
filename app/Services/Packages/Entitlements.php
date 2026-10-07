@@ -20,6 +20,15 @@ class Entitlements
     /** @var array<string, int|null>|null */
     private ?array $resolved = null;
 
+    /**
+     * The grants in force, read once on a cache miss: resolve() adds them up
+     * and cacheSeconds() takes the next one to end from them (the cache asks
+     * for the value before the time it may keep it).
+     *
+     * @var \Illuminate\Support\Collection<int, \App\Models\FeatureGrant>|null
+     */
+    private ?\Illuminate\Support\Collection $grants = null;
+
     public function __construct(private readonly Restaurant $restaurant) {}
 
     public static function for(Restaurant $restaurant): self
@@ -93,7 +102,7 @@ class Entitlements
         $ttl = (int) config('package.cache_ttl', 300);
 
         $boundaries = collect([$this->restaurant->package_started_at, $this->restaurant->package_ends_at])
-            ->merge($this->restaurant->featureGrants()->whereNotNull('ends_at')->where('ends_at', '>', now())->pluck('ends_at'))
+            ->merge($this->activeGrants()->pluck('ends_at'))
             ->filter(fn ($moment): bool => $moment !== null && $moment->isFuture())
             ->map(fn ($moment): int => (int) ceil(now()->diffInSeconds($moment)));
 
@@ -119,6 +128,12 @@ class Entitlements
         });
     }
 
+    /** @return \Illuminate\Support\Collection<int, \App\Models\FeatureGrant> */
+    private function activeGrants(): \Illuminate\Support\Collection
+    {
+        return $this->grants ??= $this->restaurant->featureGrants()->active()->get();
+    }
+
     private static function cacheKey(int $restaurantId): string
     {
         return 'entitlements:'.$restaurantId;
@@ -138,9 +153,7 @@ class Entitlements
                 : $package->featureValue($feature);
         }
 
-        $grants = $this->restaurant->featureGrants()->active()->get();
-
-        foreach ($grants as $grant) {
+        foreach ($this->activeGrants() as $grant) {
             $feature = $grant->feature;
             $current = $values[$feature->value];
 

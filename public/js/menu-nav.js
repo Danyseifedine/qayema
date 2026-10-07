@@ -107,13 +107,15 @@
         revealTab();
 
         // Only pull the page back when it is already scrolled past the first
-        // section; picking a tab while the cover is still in view should not
-        // make the page jump.
+        // section, which then sits under the sticky tabs; picking a tab while
+        // the cover is still in view should not make the page jump.
         var first = sections.filter(function (section) {
             return !section.hidden;
         })[0];
+        var nav = document.querySelector('.tabs');
+        var under = nav ? nav.getBoundingClientRect().bottom - 1 : 0;
 
-        if (first && first.getBoundingClientRect().top < 0) {
+        if (first && first.getBoundingClientRect().top < under) {
             first.scrollIntoView({ block: 'start' });
         }
     }

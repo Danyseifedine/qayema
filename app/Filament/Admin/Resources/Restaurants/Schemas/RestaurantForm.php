@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources\Restaurants\Schemas;
 use App\Enums\Feature;
 use App\Enums\PackageStatus;
 use App\Models\Restaurant;
+use App\Rules\AvailableSlug;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\Textarea;
@@ -57,12 +58,14 @@ class RestaurantForm
                             TextInput::make('slug')
                                 ->placeholder('the-golden-spoon')
                                 ->required()
-                                ->unique(ignoreRecord: true)
+                                // Not another restaurant's, nor its former link
+                                // (that one forwards printed QR codes).
+                                ->rules(fn (?Restaurant $record): array => [new AvailableSlug($record?->id)])
                                 ->maxLength(255)
                                 ->live(onBlur: true)
                                 ->afterStateUpdated(fn ($state, callable $set) => $set('slug', \Illuminate\Support\Str::slug((string) ($state ?? ''))))
                                 ->dehydrateStateUsing(fn ($state) => \Illuminate\Support\Str::slug((string) ($state ?? '')))
-                                ->helperText('Used in the public URL. Lowercase letters, numbers and hyphens only. Invalid characters are removed automatically.')
+                                ->helperText('Used in the public URL. Lowercase letters, numbers and hyphens only. Invalid characters are removed automatically. A changed link keeps the old one forwarding here.')
                                 ->columnSpanFull(),
                             Textarea::make('description.en')
                                 ->label('Description (English)')

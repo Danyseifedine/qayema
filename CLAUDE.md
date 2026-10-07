@@ -852,6 +852,19 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
   `callAction(TestAction::make('create')->table())`, not `callAction('create')`.
 - `Restaurant::RESERVED_SLUGS` is the single list behind both the public menu
   route constraint and onboarding's slug validation. Add new top-level pages there.
+- **The menu link can change** (`PUT /api/restaurant/slug`,
+  `RestaurantSlugController`, the dashboard's "Menu link" section; the admin
+  form too). Printed QR codes keep working: the restaurant's `updated` hook
+  keeps each former link (`previous_slugs`, model `PreviousSlug`), and a GET
+  to one is a 301 to the same page under today's link with its query kept
+  (`?qr=1` still counts the scan; `App\Support\FormerMenuLink`, wired in
+  `bootstrap/app.php` only when no restaurant has that slug, so a normal
+  visit pays nothing). A POST to an old link is a 404. `App\Rules\AvailableSlug`
+  is the one check (onboarding, its live check, the admin, the API): not
+  reserved, not another restaurant's link, not another restaurant's former
+  link; a restaurant may take back its own. Guests' carts and order bars are
+  kept per link in their browser, so a guest mid-order when the link changes
+  starts again.
 - Every `api/*` error is `{message, code}` JSON (see `bootstrap/app.php`); a
   rate limiter's custom response arrives as `HttpResponseException` and must pass through.
 - CORS (`config/cors.php`) answers a preflight with `max_age` 7200: at 0 the
@@ -1056,6 +1069,17 @@ cheese; the guest picks any). Every option and add-on has a `price` that is
   `Entitlements` is memoized per request, `Package::default()` is `once()`
   per request (a package save flushes it), and `/api/user` counts dishes,
   categories and links with one `loadCount`.
+- More read once: `Package::onOffer()` (`once()`, the landing page's cards
+  and its search data share it), `Entitlements` reads the grants in force
+  once on a miss (the value, then its time to live from the same grants),
+  `PackageFields::packageOptions()` is `once()`. An order placed or changed
+  is handed its restaurant rather than reading it again, and a change's one
+  dish query also names the dishes no longer sold (`OrderChange`). Lists
+  eager-load what their resource reads (`/api/templates` with `media`).
+- Counts in one pass with conditional sums: `MenuStats::summary()` (views,
+  visitors, scans and today's views; orders and those done),
+  `Restaurant::trafficTotals()` (the admin's user page), `qrScans()`,
+  `OrderPulse`.
 - Counts over time are plain ranges, never `date()`/`month()` on a column,
   so the index does the work: `Restaurant::qrScans()` (today, week, month,
   total in one pass, in the restaurant's timezone, `localTimezone()`) and

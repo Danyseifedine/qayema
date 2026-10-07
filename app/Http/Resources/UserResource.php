@@ -32,9 +32,32 @@ class UserResource extends JsonResource
             // Google-only accounts have no password; the SPA shows "set a
             // password" instead of "change password".
             'has_password' => $this->password !== null,
+            // An admin looking at this account from /admin: the dashboard
+            // shows a banner with the way back. Null for the owner themself.
+            'impersonation' => $this->impersonation(),
             'restaurant' => $this->whenLoaded('restaurant', fn () => $this->restaurant
                 ? $this->restaurant($this->restaurant)
                 : null),
+        ];
+    }
+
+    /**
+     * Who is really signed in, and the link that hands the session back to
+     * them (lab404's leave route, which lands on the admin's Users list).
+     *
+     * @return array{admin: string|null, leave_url: string}|null
+     */
+    private function impersonation(): ?array
+    {
+        $manager = app('impersonate');
+
+        if (! $manager->isImpersonating()) {
+            return null;
+        }
+
+        return [
+            'admin' => $manager->getImpersonator()?->name,
+            'leave_url' => route('impersonate.leave'),
         ];
     }
 

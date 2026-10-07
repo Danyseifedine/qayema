@@ -38,7 +38,13 @@
     var state = null;
 
     function money(amount) {
-        return config.currency + amount.toFixed(2);
+        // As App\Support\Price: no decimals on a whole amount, two otherwise.
+        var rounded = Math.round(amount * 100) / 100;
+        var whole = rounded === Math.floor(rounded);
+        return config.currency + rounded.toLocaleString('en-US', {
+            minimumFractionDigits: whole ? 0 : 2,
+            maximumFractionDigits: whole ? 0 : 2,
+        });
     }
 
     function extra(amount) {

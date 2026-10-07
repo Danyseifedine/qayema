@@ -57,7 +57,7 @@ class FeatureTest extends TestCase
     {
         $this->assertSame([
             'dish_limit', 'category_limit', 'social_link_limit', 'multiple_languages', 'variants', 'addons',
-            'appearance', 'premium_designs', 'qr_studio', 'ordering', 'menu_ordering', 'analytics', 'advanced_analytics',
+            'appearance', 'premium_designs', 'qr_studio', 'ordering', 'menu_ordering', 'dine_in', 'analytics', 'advanced_analytics',
         ], array_map(fn (Feature $feature): string => $feature->value, Feature::cases()));
     }
 
@@ -66,7 +66,7 @@ class FeatureTest extends TestCase
         $this->assertSame([Feature::DishLimit, Feature::CategoryLimit, Feature::SocialLinkLimit], Feature::limits());
         $this->assertSame([
             Feature::MultipleLanguages, Feature::Variants, Feature::Addons, Feature::Appearance, Feature::PremiumDesigns, Feature::QrStudio,
-            Feature::Ordering, Feature::MenuOrdering, Feature::Analytics, Feature::AdvancedAnalytics,
+            Feature::Ordering, Feature::MenuOrdering, Feature::DineIn, Feature::Analytics, Feature::AdvancedAnalytics,
         ], Feature::flags());
     }
 
@@ -135,6 +135,7 @@ class FeatureTest extends TestCase
             'qr_studio' => 'QR Studio',
             'ordering' => 'Ordering',
             'menu_ordering' => 'Ordering in the menu',
+            'dine_in' => 'Ordering at the table',
             'analytics' => 'Analytics',
             'advanced_analytics' => 'Advanced analytics',
         ], Feature::options());

@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\Restaurant;
 use App\Services\Menu\MenuLanguages;
 use App\Support\PhoneNumber;
+use App\Support\Price;
 
 /**
  * The hand-off that actually reaches an owner.
@@ -45,11 +46,17 @@ class WhatsAppLink
         $lines = [
             __('New order :reference', ['reference' => $order->reference]),
             $name,
-            '',
         ];
 
+        // Scanned at a table: the first thing staff need to know.
+        if ($order->table_name !== null) {
+            $lines[] = __('Table').': '.$order->table_name;
+        }
+
+        $lines[] = '';
+
         foreach ($order->items as $item) {
-            $lines[] = $item->quantity.' × '.$item->name.'  '.$symbol.number_format((float) $item->line_total, 2);
+            $lines[] = $item->quantity.' × '.$item->name.'  '.$symbol.Price::format($item->line_total);
 
             if ($item->choices() !== []) {
                 $lines[] = '    '.implode(', ', $item->choices());
@@ -57,7 +64,7 @@ class WhatsAppLink
         }
 
         $lines[] = '';
-        $lines[] = __('Total').': '.$symbol.number_format((float) $order->total, 2);
+        $lines[] = __('Total').': '.$symbol.Price::format($order->total);
 
         if ($order->note !== null) {
             $lines[] = '';

@@ -75,6 +75,7 @@ class OrderingSettingsTest extends TestCase
         $this->actingAs($owner->user)
             ->putJson(route('api.features.ordering'), ['mode' => 'menu', 'types' => []])
             ->assertJsonValidationErrors(['types' => 'Keep delivery or pickup on.']);
+        // Ordering at the table is its own feature, not one of these.
         $this->actingAs($owner->user)
             ->putJson(route('api.features.ordering'), ['mode' => 'menu', 'types' => ['dine_in']])
             ->assertJsonValidationErrors(['types.0']);

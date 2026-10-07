@@ -3,6 +3,7 @@
 namespace Tests\Integration\Services\Analytics;
 
 use App\Enums\Feature;
+use App\Enums\Fulfilment;
 use App\Enums\MenuEventType;
 use App\Enums\OrderStatus;
 use App\Models\Category;
@@ -10,6 +11,7 @@ use App\Models\Dish;
 use App\Models\MenuEvent;
 use App\Models\MenuSession;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Restaurant;
 use App\Services\Analytics\MenuStats;
 use Carbon\CarbonImmutable;
@@ -117,6 +119,7 @@ class MenuStatsTest extends TestCase
         $this->assertSame([], $advanced['searches']);
         $this->assertSame([], $advanced['missed_searches']);
         $this->assertNull($advanced['funnel']);
+        $this->assertNull($advanced['menu_orders']);
     }
 
     public function test_an_empty_teaser_is_zero(): void
@@ -530,5 +533,112 @@ class MenuStatsTest extends TestCase
         $this->assertSame([['term' => 'sushi', 'count' => 2]], $advanced['missed_searches']);
         $this->assertSame(10, $advanced['actions']['search']);
         $this->assertSame(2, $advanced['actions']['search_miss']);
+    }
+
+    public function test_menu_orders_are_left_out_unless_the_menu_takes_orders(): void
+    {
+        $this->defaultPackageIncludes(Feature::Ordering);
+
+        $this->assertNull(
+            (new MenuStats($this->restaurant(), '7d'))->advanced()['menu_orders'],
+            'Orders on WhatsApp are taps, with no totals or statuses to read.',
+        );
+        $this->assertNull(
+            (new MenuStats($this->restaurant(['order_mode' => 'menu']), '7d'))->advanced()['menu_orders'],
+            'In-menu ordering chosen without the package for it falls back to WhatsApp.',
+        );
+    }
+
+    /**
+     * Beirut is UTC+3 here, so 17:00 UTC is 20:00 local. The range starts on
+     * Tuesday 2026-09-22; the period before it on 2026-09-15.
+     */
+    public function test_menu_orders_add_up_sales_statuses_guests_and_times(): void
+    {
+        $this->defaultPackageIncludes(Feature::Ordering, Feature::MenuOrdering);
+        $restaurant = $this->restaurant(['order_mode' => 'menu', 'timezone' => 'Asia/Beirut', 'currency' => 'USD']);
+        [$shawarma, $fattoush] = Dish::factory()->for($restaurant)->count(2)->sequence(
+            ['name' => ['en' => 'Shawarma']],
+            ['name' => ['en' => 'Fattoush']],
+        )->create();
+
+        $order = function (string $utc, OrderStatus $status, array $attributes = [], Fulfilment $fulfilment = Fulfilment::Delivery) use ($restaurant): Order {
+            return Order::factory()->for($restaurant)->inMenu($fulfilment)->status($status)->create([
+                'placed_at' => CarbonImmutable::parse($utc, 'UTC'),
+                'currency' => 'USD',
+                ...$attributes,
+            ]);
+        };
+        $line = fn (Order $order, Dish $dish, int $quantity, string $total) => OrderItem::factory()->for($order)->create([
+            'dish_id' => $dish->id, 'quantity' => $quantity, 'line_total' => $total,
+        ]);
+
+        // Sunday 20:00, accepted after 4 minutes.
+        $a = $order('2026-09-27 17:00:00', OrderStatus::Done, [
+            'total' => '20.00', 'guest_phone' => '+1', 'accepted_at' => '2026-09-27 17:04:00', 'closed_at' => '2026-09-27 18:00:00',
+        ]);
+        $line($a, $shawarma, 2, '16.00');
+        $line($a, $fattoush, 1, '4.00');
+        // Saturday 20:30, the same guest, accepted after 10 minutes.
+        $b = $order('2026-09-26 17:30:00', OrderStatus::Accepted, [
+            'total' => '10.50', 'guest_phone' => '+1', 'accepted_at' => '2026-09-26 17:40:00',
+        ], Fulfilment::Pickup);
+        $line($b, $shawarma, 1, '8.00');
+        // Sunday 12:00, not answered yet.
+        $c = $order('2026-09-27 09:00:00', OrderStatus::Placed, ['total' => '7.25', 'guest_phone' => '+2']);
+        $line($c, $fattoush, 3, '7.25');
+        // Called off: counted as cancelled and nowhere else.
+        $d = $order('2026-09-27 10:00:00', OrderStatus::Cancelled, ['total' => '99.00', 'guest_phone' => '+3']);
+        $line($d, $fattoush, 10, '99.00');
+        // From before a switch of currency: counted, but not as money. Done
+        // straight away after 20 minutes, never accepted.
+        $e = $order('2026-09-27 17:10:00', OrderStatus::Done, [
+            'total' => '50.00', 'currency' => 'LBP', 'guest_phone' => '+4', 'closed_at' => '2026-09-27 17:30:00',
+        ]);
+        $line($e, $shawarma, 2, '50.00');
+        // The period before, and before that.
+        $order('2026-09-18 12:00:00', OrderStatus::Done, ['total' => '30.00']);
+        $order('2026-09-10 12:00:00', OrderStatus::Done, ['total' => '45.00']);
+        // A WhatsApp tap is not an order placed in the menu.
+        $this->order($restaurant, '2026-09-27 08:00:00');
+
+        $orders = (new MenuStats($restaurant, '7d'))->advanced()['menu_orders'];
+
+        $this->assertSame('USD', $orders['currency']);
+        $this->assertSame(37.75, $orders['sales']);
+        $this->assertSame(12.58, $orders['average']);
+        $this->assertSame(30.0, $orders['previous_sales']);
+        $this->assertSame(['placed' => 1, 'accepted' => 1, 'ready' => 0, 'done' => 2, 'cancelled' => 1], $orders['statuses']);
+        $this->assertSame([['key' => 'delivery', 'count' => 3], ['key' => 'pickup', 'count' => 1]], $orders['fulfilment']);
+        $this->assertSame(3, $orders['guests']);
+        $this->assertSame(1, $orders['returning_guests']);
+        $this->assertSame(10, $orders['minutes_to_accept']);
+        $this->assertSame(3, $orders['hours'][20]);
+        $this->assertSame(1, $orders['hours'][12]);
+        $this->assertSame(4, array_sum($orders['hours']));
+        $this->assertSame([0, 0, 0, 0, 0, 1, 3], $orders['weekdays']);
+        $this->assertSame(
+            [
+                ['name' => 'Shawarma', 'quantity' => 5, 'sales' => 24.0],
+                ['name' => 'Fattoush', 'quantity' => 4, 'sales' => 11.25],
+            ],
+            $orders['top_ordered'],
+        );
+    }
+
+    public function test_menu_orders_with_nothing_placed_are_zeros_and_all_time_has_no_before(): void
+    {
+        $this->defaultPackageIncludes(Feature::Ordering, Feature::MenuOrdering);
+        $restaurant = $this->restaurant(['order_mode' => 'menu']);
+
+        $orders = (new MenuStats($restaurant, 'all'))->advanced()['menu_orders'];
+
+        $this->assertSame(0.0, $orders['sales']);
+        $this->assertNull($orders['average']);
+        $this->assertNull($orders['previous_sales']);
+        $this->assertNull($orders['minutes_to_accept']);
+        $this->assertSame([], $orders['fulfilment']);
+        $this->assertSame([], $orders['top_ordered']);
+        $this->assertSame(0, $orders['guests']);
     }
 }

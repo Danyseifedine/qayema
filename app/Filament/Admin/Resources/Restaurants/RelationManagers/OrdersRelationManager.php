@@ -70,7 +70,10 @@ class OrdersRelationManager extends RelationManager
                     ->state(fn (Order $record): string => $record->total.' '.$record->currency)
                     ->alignEnd(),
                 TextColumn::make('fulfilment')
-                    ->formatStateUsing(fn (Fulfilment $state): string => ucfirst($state->value))
+                    ->formatStateUsing(fn (Fulfilment $state): string => ucfirst(str_replace('_', '-', $state->value)))
+                    ->placeholder('-'),
+                TextColumn::make('table_name')
+                    ->label('Table')
                     ->placeholder('-'),
                 TextColumn::make('guest_name')
                     ->label('Guest')

@@ -93,7 +93,9 @@ class TrackOrderTest extends TestCase
         // What the guest picked, as their cart showed it.
         $this->assertStringContainsString('Large, + Extra garlic', $html);
         $this->assertStringNotContainsString('Size: Large', $html);
-        $this->assertStringContainsString('$24.00', $html);
+        // A whole amount, so no decimals.
+        $this->assertStringContainsString('$24<', $html);
+        $this->assertStringNotContainsString('$24.00', $html);
         $this->assertStringContainsString('Hamra Street, near the bank', $html);
         $this->assertStringContainsString('href="tel:+96170123456"', $html);
         $this->assertStringContainsString('data-edit-order="'.$order->tracking_token.'"', $html);

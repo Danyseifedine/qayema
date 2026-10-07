@@ -5,10 +5,14 @@ namespace App\Http\Controllers\Api;
 use App\Enums\OrderStatus;
 use App\Http\Controllers\Concerns\ResolvesRestaurant;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\EditOrderItemsRequest;
 use App\Http\Requests\IndexOrdersRequest;
 use App\Http\Requests\UpdateOrderRequest;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
+use App\Services\Orders\OrderChanged;
+use App\Services\Orders\OrderClosed;
+use App\Services\Orders\OrderEditor;
 use App\Services\Orders\OrderNews;
 use App\Services\Orders\OrderPulse;
 use Illuminate\Http\JsonResponse;
@@ -17,8 +21,9 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * The owner's own orders. Read and a status change; an order's contents are
- * written once, by the guest who placed it, and never edited afterwards.
+ * The owner's own orders: read, moved on, changed (what they hold, by the
+ * restaurant: OrderEditor) and deleted. Every line keeps what it was sold
+ * as; the owner changes quantities, removes lines and adds dishes.
  */
 class OrderController extends Controller
 {
@@ -30,11 +35,17 @@ class OrderController extends Controller
     {
         $restaurant = $this->restaurant($request);
         $status = $request->validated('status');
+        $kind = $request->validated('kind');
 
         // Only orders placed in the menu: a WhatsApp order is a guest who
         // opened WhatsApp, and whether they sent it is not ours to know.
-        $orders = $restaurant->orders()
+        // Orders to a table and the rest each have a page of their own.
+        $ofKind = fn () => $restaurant->orders()
             ->inMenu()
+            ->when($kind === 'table', fn ($query) => $query->atTable())
+            ->when($kind === 'away', fn ($query) => $query->away());
+
+        $orders = $ofKind()
             ->with('items')
             ->when($status, fn ($query, $status) => $query->where('status', $status))
             ->paginate(self::PER_PAGE);
@@ -46,7 +57,7 @@ class OrderController extends Controller
                 // Filtered to those already, the page's own total is it.
                 'open' => $status === OrderStatus::Placed->value
                     ? $orders->total()
-                    : $restaurant->orders()->inMenu()->where('status', OrderStatus::Placed)->count(),
+                    : $ofKind()->where('status', OrderStatus::Placed)->count(),
             ],
         ]);
     }
@@ -100,5 +111,46 @@ class OrderController extends Controller
         }
 
         return new OrderResource($order->refresh()->load('items'));
+    }
+
+    /**
+     * The restaurant changes what the order holds. 409 when it was cancelled,
+     * or when the guest changed it after the owner's screen showed it.
+     */
+    public function items(EditOrderItemsRequest $request, Order $order, OrderEditor $editor): JsonResponse|OrderResource
+    {
+        $restaurant = $this->restaurant($request);
+        abort_unless($order->restaurant_id === $restaurant->id, 403);
+        $order->setRelation('restaurant', $restaurant);
+
+        try {
+            $edited = $editor->edit($order, $request->kept(), $request->validated('add'), $request->validated('guest_updates'));
+        } catch (OrderClosed) {
+            return response()->json(['message' => __('This order was cancelled, so it can no longer be changed.'), 'code' => 'order_closed'], 409);
+        } catch (OrderChanged) {
+            return response()->json(['message' => __('The guest just changed this order. Look at it again before taking it on.'), 'code' => 'order_changed'], 409);
+        }
+
+        // The guest following it sees the new version, other tabs too.
+        OrderNews::fromOwner($edited);
+
+        return new OrderResource($edited);
+    }
+
+    /**
+     * Deletes the order and everything it holds, for good: its lines go with
+     * it, and so does it from the analytics. The guest following it is told
+     * (their page lets go of an order that is gone).
+     */
+    public function destroy(Request $request, Order $order): JsonResponse
+    {
+        $restaurant = $this->restaurant($request);
+        abort_unless($order->restaurant_id === $restaurant->id, 403);
+        $order->setRelation('restaurant', $restaurant);
+
+        $order->delete();
+        OrderNews::fromOwner($order);
+
+        return response()->json(null, 204);
     }
 }

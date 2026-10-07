@@ -112,9 +112,9 @@ class WhatsAppLinkTest extends TestCase
 
         $this->assertStringContainsString('ABC234', $text);
         $this->assertStringContainsString('Olive', $text);
-        $this->assertStringContainsString('2 × House Bowl  $28.00', $text);
-        $this->assertStringContainsString('1 × Daily Tart  $11.00', $text);
-        $this->assertStringContainsString('Total: $39.00', $text);
+        $this->assertStringContainsString("2 × House Bowl  \$28\n", $text);
+        $this->assertStringContainsString("1 × Daily Tart  \$11\n", $text);
+        $this->assertStringContainsString('Total: $39', $text);
     }
 
     public function test_a_note_is_passed_along(): void
@@ -135,6 +135,6 @@ class WhatsAppLinkTest extends TestCase
         $url = (string) WhatsAppLink::forOrder($shop, $this->order($shop));
         $text = rawurldecode($url);
 
-        $this->assertStringContainsString('€39.00', $text);
+        $this->assertStringContainsString('€39', $text);
     }
 }

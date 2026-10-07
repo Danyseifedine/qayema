@@ -206,6 +206,7 @@ return [
             'qr_studio' => 'استوديو QR',
             'ordering' => 'الطلبات عبر واتساب',
             'menu_ordering' => 'الطلبات من داخل قائمتك',
+            'dine_in' => 'الطلبات من الطاولة',
             'analytics' => 'الإحصائيات',
             'advanced_analytics' => 'تحليلات متقدّمة',
         ],

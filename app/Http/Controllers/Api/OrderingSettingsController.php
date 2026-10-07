@@ -10,7 +10,8 @@ use Illuminate\Http\JsonResponse;
 
 /**
  * How guests send their orders, chosen on the Features page: on WhatsApp, or
- * in the menu with delivery and/or pickup. One way at a time; whether
+ * in the menu with delivery and/or pickup. Ordering at the table is its own
+ * feature (the `dine_in` switch) and is not set here. One way at a time; whether
  * ordering is on at all stays the `orders` switch (FeaturesController).
  */
 class OrderingSettingsController extends Controller
@@ -21,7 +22,7 @@ class OrderingSettingsController extends Controller
     {
         $restaurant = $this->restaurant($request);
         // Stored in a fixed order, whatever order they were ticked in.
-        $types = array_values(array_intersect(Fulfilment::values(), $request->validated('types')));
+        $types = array_values(array_intersect(Fulfilment::away(), $request->validated('types')));
 
         $restaurant->update([
             'order_mode' => $request->validated('mode'),

@@ -7,18 +7,21 @@ use App\Enums\OrderChannel;
 use App\Enums\OrderStatus;
 use App\Models\Category;
 use App\Models\Dish;
+use App\Models\OrderItem;
 use App\Models\Restaurant;
 use App\Services\Menu\MenuLanguages;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Arr;
 
 /**
  * The owner's analytics for one range, from `menu_sessions`, `menu_events`
  * and `orders`.
  *
  * `summary()` is what every package sees; `advanced()` is the rest, behind the
- * `advanced_analytics` flag. A view is a row, a visitor is a distinct session,
- * a scan is a view with `via_qr`.
+ * `advanced_analytics` flag, with `menu_orders` on top of it for a restaurant
+ * taking orders in the menu. A view is a row, a visitor is a distinct
+ * session, a scan is a view with `via_qr`.
  *
  * Days and hours are the restaurant's own: rows are stored in UTC, grouped
  * by UTC hour in SQL (portable between MySQL and SQLite, and at most 24 rows a
@@ -66,14 +69,21 @@ class MenuStats
      */
     public function summary(): array
     {
+        // Every range ends now, so today's views are a part of it: counted
+        // in the same pass. The orders and those done, likewise, in one.
+        $visits = $this->visitTotals($this->inRange($this->restaurant->menuSessions(), 'viewed_at'), $this->today);
+        $orders = $this->takesOrders() ? $this->orderTotals($this->from) : null;
+
         return [
             'totals' => [
-                ...$this->visitTotals($this->inRange($this->restaurant->menuSessions(), 'viewed_at')),
-                'views_today' => $this->restaurant->menuSessions()->where('viewed_at', '>=', $this->today->utc())->count(),
-                'orders' => $this->takesOrders() ? $this->orderCount($this->from, null) : null,
+                'views' => $visits['views'],
+                'unique_visitors' => $visits['unique_visitors'],
+                'qr_scans' => $visits['qr_scans'],
+                'views_today' => $visits['since'],
+                'orders' => $orders['kept'] ?? null,
                 // Only an order placed in the menu can be marked done; a
                 // WhatsApp one is never known to be.
-                'orders_done' => $this->channel() === OrderChannel::Menu ? $this->orderCount($this->from, null, OrderStatus::Done) : null,
+                'orders_done' => $this->channel() === OrderChannel::Menu ? $orders['done'] ?? 0 : null,
             ],
             // Which orders "orders" counts: taps that opened WhatsApp, or
             // orders placed in the menu. Null when the restaurant takes none.
@@ -112,6 +122,8 @@ class MenuStats
             'searches' => $this->searches([MenuEventType::Search, MenuEventType::SearchMiss]),
             'missed_searches' => $this->searches([MenuEventType::SearchMiss]),
             'funnel' => $this->takesOrders() ? $this->funnel($visits) : null,
+            // Orders at the table are placed in the menu whatever the channel.
+            'menu_orders' => $this->channel() === OrderChannel::Menu || $this->restaurant->takesDineIn() ? $this->menuOrders() : null,
         ];
     }
 
@@ -177,7 +189,8 @@ class MenuStats
             ->where('viewed_at', '<', $this->from->utc());
 
         return [
-            ...$this->visitTotals($visits),
+            // Today is not in the period before.
+            ...Arr::except($this->visitTotals($visits), 'since'),
             'orders' => $this->takesOrders() ? $this->orderCount($start, $this->from) : null,
         ];
     }
@@ -323,6 +336,149 @@ class MenuStats
         ];
     }
 
+    /**
+     * The orders placed in the menu, which are real orders with a total, a
+     * status and lines, unlike a WhatsApp tap: what they came to, how they
+     * ended, how fast the restaurant took them on, when guests order and
+     * what they order most.
+     *
+     * Money counts only the orders in the restaurant's current currency, so
+     * a switch of currency never adds dollars to pounds; every other number
+     * counts them all. Cancelled orders are left out of the money, the
+     * guests and the times, and counted on their own in `statuses`.
+     *
+     * @return array<string, mixed>
+     */
+    private function menuOrders(): array
+    {
+        $currency = (string) $this->restaurant->currency;
+        $statuses = array_fill_keys(array_column(OrderStatus::cases(), 'value'), 0);
+        $fulfilment = [];
+        $hours = array_fill(0, 24, 0);
+        $weekdays = array_fill(0, 7, 0);
+        $phones = [];
+        $waits = [];
+        $cents = 0;
+        $paid = 0;
+
+        $orders = $this->menuOrdersInRange($this->from, null)
+            ->get(['status', 'fulfilment', 'currency', 'total', 'guest_phone', 'placed_at', 'accepted_at', 'ready_at', 'closed_at']);
+
+        foreach ($orders as $order) {
+            $statuses[$order->status->value]++;
+
+            if ($order->status === OrderStatus::Cancelled) {
+                continue;
+            }
+
+            if ($order->fulfilment !== null) {
+                $fulfilment[$order->fulfilment->value] = ($fulfilment[$order->fulfilment->value] ?? 0) + 1;
+            }
+
+            $placed = CarbonImmutable::instance($order->placed_at)->setTimezone($this->timezone);
+            $hours[$placed->hour]++;
+            $weekdays[$placed->dayOfWeekIso - 1]++;
+
+            if ($order->guest_phone) {
+                $phones[$order->guest_phone] = ($phones[$order->guest_phone] ?? 0) + 1;
+            }
+
+            // Taken on: accepted, or moved straight to ready or done. A
+            // restaurant that skips "accepted" still answered the order.
+            $answered = $order->accepted_at ?? $order->ready_at ?? ($order->status === OrderStatus::Done ? $order->closed_at : null);
+
+            if ($answered !== null) {
+                $waits[] = max(0, (int) round($order->placed_at->diffInSeconds($answered, true) / 60));
+            }
+
+            if ($order->currency === $currency) {
+                $cents += $this->cents($order->total);
+                $paid++;
+            }
+        }
+
+        arsort($fulfilment);
+
+        return [
+            'currency' => $currency,
+            'sales' => $this->money($cents),
+            'average' => $paid > 0 ? $this->money(intdiv($cents + intdiv($paid, 2), $paid)) : null,
+            // Null for "All time", which has no period before it.
+            'previous_sales' => $this->from === null ? null : $this->previousSales($currency),
+            'statuses' => $statuses,
+            'fulfilment' => array_map(
+                fn (string $key, int $count): array => ['key' => $key, 'count' => $count],
+                array_keys($fulfilment),
+                $fulfilment,
+            ),
+            'guests' => count($phones),
+            'returning_guests' => count(array_filter($phones, fn (int $count): bool => $count > 1)),
+            'minutes_to_accept' => $this->median($waits),
+            'hours' => $hours,
+            'weekdays' => $weekdays,
+            'top_ordered' => $this->topDishesOrdered($currency),
+        ];
+    }
+
+    /** What the menu's orders came to in the period just before this one. */
+    private function previousSales(string $currency): float
+    {
+        $days = (int) self::RANGES[$this->range];
+
+        $total = $this->menuOrdersInRange($this->from->subDays($days), $this->from)
+            ->where('status', '!=', OrderStatus::Cancelled->value)
+            ->where('currency', $currency)
+            ->pluck('total')
+            ->sum(fn ($total): int => $this->cents($total));
+
+        return $this->money($total);
+    }
+
+    /**
+     * The dishes guests ordered most, by how many they ordered, with what
+     * they came to. Lines name the dish as it was ordered, in the guest's
+     * language; the list names it as the owner reads it today, and leaves
+     * out a dish deleted since, like the dishes most added.
+     *
+     * @return array<int, array{name: string, quantity: int, sales: float}>
+     */
+    private function topDishesOrdered(string $currency): array
+    {
+        $orders = fn () => $this->menuOrdersInRange($this->from, null)
+            ->where('status', '!=', OrderStatus::Cancelled->value)
+            ->select('id')
+            ->getQuery();
+
+        $rows = OrderItem::query()
+            ->whereIn('order_id', $orders())
+            ->whereNotNull('dish_id')
+            ->selectRaw('dish_id, SUM(quantity) as quantity')
+            ->groupBy('dish_id')
+            ->orderByDesc('quantity')
+            ->orderBy('dish_id')
+            ->limit(self::TOP)
+            ->get();
+
+        $names = $this->names(Dish::class, $rows->pluck('dish_id'));
+
+        $sales = OrderItem::query()
+            ->whereIn('order_id', $orders()->where('currency', $currency))
+            ->whereIn('dish_id', array_keys($names))
+            ->get(['dish_id', 'line_total'])
+            ->groupBy('dish_id')
+            ->map(fn ($lines): int => $lines->sum(fn (OrderItem $line): int => $this->cents($line->line_total)));
+
+        return $rows
+            ->filter(fn ($row) => isset($names[$row->dish_id]))
+            ->map(fn ($row) => [
+                'name' => $names[$row->dish_id],
+                'quantity' => (int) $row->quantity,
+                'sales' => $this->money($sales[$row->dish_id] ?? 0),
+            ])
+            ->values()
+            ->all();
+    }
+
     // ---- Building blocks -------------------------------------------------
 
     private function takesOrders(): bool
@@ -363,21 +519,46 @@ class MenuStats
 
     /**
      * Views, distinct visitors and QR scans of some visits, in one pass over
-     * them rather than three counts.
+     * them rather than three counts; with `$since`, the views from then on
+     * too (today's).
      *
-     * @return array{views: int, unique_visitors: int, qr_scans: int}
+     * @return array{views: int, unique_visitors: int, qr_scans: int, since: int}
      */
-    private function visitTotals(HasMany $visits): array
+    private function visitTotals(HasMany $visits, ?CarbonImmutable $since = null): array
     {
         $totals = $visits->toBase()
-            ->selectRaw('count(*) as views, count(distinct session_id) as visitors, sum(case when via_qr then 1 else 0 end) as scans')
+            ->selectRaw(
+                'count(*) as views, count(distinct session_id) as visitors, sum(case when via_qr then 1 else 0 end) as scans, sum(case when viewed_at >= ? then 1 else 0 end) as since',
+                [($since ?? $this->today)->utc()->toDateTimeString()],
+            )
             ->first();
 
         return [
             'views' => (int) $totals->views,
             'unique_visitors' => (int) $totals->visitors,
             'qr_scans' => (int) $totals->scans,
+            'since' => (int) $totals->since,
         ];
+    }
+
+    /**
+     * The current channel's orders from `$from`: those not cancelled, and
+     * those done, in one pass.
+     *
+     * @return array{kept: int, done: int}
+     */
+    private function orderTotals(?CarbonImmutable $from): array
+    {
+        $totals = $this->ordersInRange($from, null)
+            ->where('channel', $this->channel())
+            ->toBase()
+            ->selectRaw(
+                'sum(case when status != ? then 1 else 0 end) as kept, sum(case when status = ? then 1 else 0 end) as done',
+                [OrderStatus::Cancelled->value, OrderStatus::Done->value],
+            )
+            ->first();
+
+        return ['kept' => (int) ($totals->kept ?? 0), 'done' => (int) ($totals->done ?? 0)];
     }
 
     private function inRange(HasMany $query, string $column): HasMany
@@ -398,6 +579,42 @@ class MenuStats
             ->reorder()
             ->when($from, fn ($query) => $query->where('placed_at', '>=', $from->utc()))
             ->when($until, fn ($query) => $query->where('placed_at', '<', $until->utc()));
+    }
+
+    private function menuOrdersInRange(?CarbonImmutable $from, ?CarbonImmutable $until): HasMany
+    {
+        return $this->ordersInRange($from, $until)->where('channel', OrderChannel::Menu);
+    }
+
+    /** A decimal amount as whole cents, so sums never drift on floats. */
+    private function cents(mixed $amount): int
+    {
+        return (int) round((float) $amount * 100);
+    }
+
+    private function money(int $cents): float
+    {
+        return round($cents / 100, 2);
+    }
+
+    /**
+     * The middle value, which one forgotten order left open for a day
+     * cannot drag the way it drags an average; null with none.
+     *
+     * @param  array<int, int>  $values
+     */
+    private function median(array $values): ?int
+    {
+        if ($values === []) {
+            return null;
+        }
+
+        sort($values);
+        $middle = intdiv(count($values), 2);
+
+        return count($values) % 2 === 1
+            ? $values[$middle]
+            : (int) round(($values[$middle - 1] + $values[$middle]) / 2);
     }
 
     /** Orders of the current channel, cancelled ones left out, or only those of one status. */

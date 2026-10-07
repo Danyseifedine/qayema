@@ -194,11 +194,9 @@ class StructuredData
      */
     private function offers(): array
     {
-        return Package::query()
-            ->offered()
-            ->where('is_contact_only', false)
-            ->whereNotNull('price_cents')
-            ->get()
+        return Package::onOffer()
+            ->filter(fn (Package $package): bool => ! $package->is_contact_only && $package->price_cents !== null)
+            ->values()
             ->map(fn (Package $package): array => array_filter([
                 '@type' => 'Offer',
                 'name' => $package->name,

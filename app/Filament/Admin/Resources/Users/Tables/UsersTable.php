@@ -128,6 +128,19 @@ class UsersTable
                     ->query(fn (Builder $query) => $query->where('created_at', '>=', now()->startOfWeek())),
             ])
             ->recordActions([
+                // The owner's public menu, in a new tab, as guests see it.
+                Action::make('menu')
+                    ->label('Menu')
+                    ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
+                    ->color('gray')
+                    ->url(fn (User $record): ?string => $record->restaurant?->slug
+                        ? route('public.menu', $record->restaurant->slug)
+                        : null)
+                    ->openUrlInNewTab()
+                    ->visible(fn (User $record): bool => filled($record->restaurant?->slug))
+                    ->tooltip(fn (User $record): ?string => $record->restaurant?->is_active === false
+                        ? 'The menu is switched off, so guests see nothing there.'
+                        : null),
                 Action::make('impersonate')
                     ->label('Impersonate')
                     ->icon(Heroicon::OutlinedUserCircle)

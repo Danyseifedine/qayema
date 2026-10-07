@@ -19,7 +19,25 @@ return [
         'options' => 10,
         'addons' => 20,
         'name_max' => 60,
-        'price_max' => 99999.99,
+        // As a dish's own price: a menu in Lebanese pounds runs to millions.
+        'price_max' => 99999999.99,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tables
+    |--------------------------------------------------------------------------
+    |
+    | The most tables one restaurant can have, each with its own QR code for
+    | ordering from the seat, and the most added in one go. Ordering at the
+    | table is a package feature of its own (the `dine_in` flag).
+    |
+    */
+
+    'tables' => [
+        'max' => 300,
+        'batch' => 100,
+        'name_max' => 40,
     ],
 
 ];

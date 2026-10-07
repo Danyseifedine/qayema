@@ -107,6 +107,7 @@ class ChangeOrderTest extends TestCase
                 ]],
                 'details' => [
                     'fulfilment' => 'pickup',
+                    'table' => null,
                     'name' => 'Rami',
                     // Back into the form as it was typed: the country and the rest.
                     'country' => 'AE',

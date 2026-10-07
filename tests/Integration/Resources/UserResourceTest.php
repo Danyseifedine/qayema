@@ -18,7 +18,7 @@ class UserResourceTest extends TestCase
 {
     use CreatesOwners, RefreshDatabase;
 
-    private const USER_KEYS = ['name', 'email', 'has_completed_onboarding', 'has_password'];
+    private const USER_KEYS = ['name', 'email', 'has_completed_onboarding', 'has_password', 'impersonation'];
 
     private const RESTAURANT_KEYS = [
         'id', 'languages', 'second_locale', 'default_locale', 'template_id', 'public_url',
@@ -59,6 +59,7 @@ class UserResourceTest extends TestCase
             'email' => 'rana@example.test',
             'has_completed_onboarding' => false,
             'has_password' => true,
+            'impersonation' => null,
             'restaurant' => null,
         ], $this->resolve($user->load('restaurant')));
     }

@@ -8,7 +8,14 @@
    dish that does not match stays on screen. */
 [hidden] { display: none !important; }
 
-html { scroll-behavior: smooth; }
+html {
+    scroll-behavior: smooth;
+    /* In the menu's own colours rather than the browser's grey on white;
+       inherited, so the cart column and the sheets match. Where a browser
+       ignores this, color-scheme (set with the colours) still picks its
+       light or dark scrollbar. */
+    scrollbar-color: color-mix(in srgb, var(--text) 28%, var(--bg)) var(--page);
+}
 
 body {
     margin: 0;
@@ -291,7 +298,8 @@ a.fact:hover { color: var(--text); }
 .cart-field { margin: 0; padding: 0; border: 0; min-width: 0; }
 .cart-label { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px; padding: 0; font-size: 12.5px; font-weight: 600; }
 .cart-optional { font-size: 11px; font-weight: 500; color: var(--muted); }
-.cart-types .choice-pills { grid-template-columns: repeat(2, 1fr); }
+/* One row of as many kinds as are open (two or three). */
+.cart-types .choice-pills { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
 .cart-types .choice-pill { min-height: 40px; padding: 6px 10px; font-size: 13.5px; border-radius: 10px; }
 /* 14px like the rest of the cart. An iPhone would zoom the page in on a
    box under 16px; the menu's head stops that on iPhones only. */
@@ -360,22 +368,34 @@ textarea.cart-input { min-height: 62px; }
 [dir="rtl"] .menu-toast-link.is-loading::after { right: auto; left: 0; }
 
 /* ---- Back to the order just placed, at the top of the menu ---- */
-.order-bar { position: relative; display: flex; align-items: center; margin: 12px 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--bg); box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 6px 18px rgba(0,0,0,.05); }
-.order-bar-link { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 12px 8px 12px 12px; color: var(--text); text-decoration: none; }
-[dir="rtl"] .order-bar-link { padding: 12px 12px 12px 8px; }
-.order-bar-mark { flex-shrink: 0; width: 40px; height: 40px; border-radius: 12px; background: color-mix(in srgb, var(--accent) 18%, var(--bg)); color: color-mix(in srgb, var(--accent) 55%, var(--text)); display: flex; align-items: center; justify-content: center; }
-.order-bar-mark .icon { width: 20px; height: 20px; }
+/* A strip across the page under the top bar, edge to edge like the bar
+   itself, in a light tint of the menu's colour: part of the page, not a
+   card floating on it. */
+.order-bar { position: relative; display: flex; align-items: center; margin: 0; border-bottom: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line)); background: color-mix(in srgb, var(--accent) 12%, var(--bg)); }
+.order-bar-link { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding-block: 10px; padding-inline: 16px 8px; color: var(--text); text-decoration: none; }
+.order-bar-mark { flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: color-mix(in srgb, var(--accent) 28%, var(--bg)); color: color-mix(in srgb, var(--accent) 45%, var(--text)); display: flex; align-items: center; justify-content: center; }
+.order-bar-mark .icon { width: 17px; height: 17px; }
 .order-bar-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.order-bar-text strong { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.order-bar-status { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.order-bar-dot { flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+/* The order number on one line; the status may take two rather than be cut
+   off mid-word on a narrow phone. */
+.order-bar-text strong { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.order-bar-status { display: flex; align-items: flex-start; gap: 6px; font-size: 12.5px; line-height: 1.35; color: var(--muted); }
+.order-bar-status > span:last-child { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.order-bar-dot { flex-shrink: 0; width: 8px; height: 8px; margin-top: 5px; border-radius: 50%; background: var(--accent); }
 .order-bar-status[data-tone="waiting"] .order-bar-dot { animation: track-pulse 1.2s ease-in-out infinite alternate; }
 .order-bar-status[data-tone="done"] .order-bar-dot { background: #17803d; }
 .order-bar-status[data-tone="cancelled"] .order-bar-dot { background: #b3261e; }
-.order-bar-cta { flex-shrink: 0; padding: 8px 14px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-size: 13px; font-weight: 700; }
-.order-bar-close { flex-shrink: 0; width: 36px; height: 36px; margin-inline-end: 6px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.order-bar-cta { flex-shrink: 0; padding: 7px 14px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-size: 13px; font-weight: 700; }
+.order-bar-close { flex-shrink: 0; width: 34px; height: 34px; margin-inline-end: 8px; border: 0; border-radius: 50%; background: transparent; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .order-bar-close:hover { background: var(--soft); }
 .order-bar-close .icon { width: 15px; height: 15px; }
+/* A small phone: the cart mark goes, so the words get the room. */
+@media (max-width: 380px) {
+    .order-bar-mark { display: none; }
+    .order-bar-link { gap: 10px; padding-inline-start: 14px; }
+    .order-bar-cta { padding: 7px 12px; }
+    .order-bar-close { width: 32px; height: 32px; margin-inline-end: 4px; }
+}
 .menu-toast-close { flex-shrink: 0; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .menu-toast-close .icon { width: 16px; height: 16px; }
 
@@ -687,12 +707,17 @@ dialog.pop[open]::backdrop { animation: fade-in .2s ease; }
 .menu-credit a:hover { color: var(--text); }
 .no-results { display: none; padding: 40px 16px; text-align: center; color: var(--muted); font-size: 13.5px; }
 
-/* ---- Wide: the header carries the facts, the cart is its own column ---- */
-@media (min-width: 1024px) {
-    html, body { height: 100%; }
-    body { display: flex; flex-direction: column; overflow: hidden; }
+/* ---- Wide: the header carries the facts, the cart is its own column ----
 
-    .topbar { flex: none; position: static; }
+   The page itself scrolls here too, as on a phone, rather than the menu
+   column scrolling inside a page locked to the window: a browser scrolls the
+   page on its own thread, and an inner box it often does not, which is what
+   made a laptop's scroll lag. The header, the tabs and the cart stay put by
+   being sticky instead. */
+@media (min-width: 1024px) {
+    /* The wide top bar: 14px above and below a 44px logo, and its border. */
+    :root { --bar: 73px; }
+
     .topbar-inner { padding: 14px 32px; gap: 24px; }
     img.brand-mark { height: 44px; max-width: 160px; }
     span.brand-mark { width: 38px; height: 38px; font-size: 16px; }
@@ -705,25 +730,31 @@ dialog.pop[open]::backdrop { animation: fade-in .2s ease; }
        full-screen sheet it opens are phone-only. */
     .info, .search, .dock, .topbar-cart, dialog.sheet { display: none !important; }
 
-    .wrap { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); overflow: hidden; }
+    /* At least the window's height under the bar, so a short menu still
+       runs the cart column to the bottom. */
+    .wrap { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; min-height: calc(100dvh - var(--bar)); }
     .wrap.with-cart { grid-template-columns: minmax(0, 1fr) 360px; }
-    .col-main { overflow-y: auto; scroll-behavior: smooth; }
 
     .cover { margin: 24px 32px 0; height: 200px; border-radius: 14px; }
-    .order-bar { margin: 24px 32px -8px; }
+    /* Across the menu column, its words lined up with the content's. */
+    .order-bar-link { padding-inline-start: 32px; }
+    .order-bar-close { margin-inline-end: 24px; }
     .cover-body { padding: 28px 32px; }
     .cover-body h1 { font-size: 36px; }
     .cover-body p { margin-top: 8px; font-size: 15px; }
 
-    .tabs { top: 0; margin-top: 18px; padding: 14px 32px; }
+    .tabs { margin-top: 18px; padding: 14px 32px; }
     .tabs-inner { padding: 0; }
 
     .sections { padding-bottom: 60px; }
-    .category { scroll-margin-top: 72px; }
+    /* Clear of the bar and the tabs stuck under it. */
+    .category { scroll-margin-top: calc(var(--bar) + 72px); }
     .category-head { padding: 22px 32px 10px; }
     .dishes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 32px; }
 
-    .col-aside { background: var(--bg); border-inline-start: 1px solid var(--line); padding: 24px; overflow-y: auto; }
+    /* Stuck under the bar, the window's height, and scrolling on its own
+       only when the cart is longer than that. */
+    .col-aside { position: sticky; top: var(--bar); height: calc(100dvh - var(--bar)); box-sizing: border-box; background: var(--bg); border-inline-start: 1px solid var(--line); padding: 24px; overflow-y: auto; }
     .col-aside > h2 { margin: 0 0 18px; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
     .col-aside .cart-lines { border: 0; border-radius: 0; }
     .col-aside .cart-line { padding: 14px 0; border-top: 0; border-bottom: 1px solid var(--line); }

@@ -103,12 +103,18 @@
         return window
             .fetch(url, { headers: { Accept: 'application/json' }, cache: 'no-store' })
             .then(function (response) {
+                // Deleted by the restaurant: nothing left to follow.
+                if (response.status === 404) {
+                    return { data: { gone: true } };
+                }
                 return response.ok ? response.json() : null;
             })
             .then(function (body) {
                 var data = body && body.data ? body.data : null;
-                if (data) {
+                if (data && !data.gone) {
                     known[url] = data;
+                } else if (data) {
+                    delete known[url];
                 }
                 return data;
             })
@@ -122,13 +128,14 @@
     /** What the bar says about the order, in the guest's language. */
     function statusText(data) {
         var delivery = data.fulfilment === 'delivery';
+        var dineIn = data.fulfilment === 'dine_in';
         switch (data.status) {
             case 'accepted':
                 return [strings.statusAccepted, 'moving'];
             case 'ready':
-                return [delivery ? strings.statusOnItsWay : strings.statusReady, 'moving'];
+                return [delivery ? strings.statusOnItsWay : dineIn ? strings.statusComing : strings.statusReady, 'moving'];
             case 'done':
-                return [delivery ? strings.statusDelivered : strings.statusPickedUp, 'done'];
+                return [delivery ? strings.statusDelivered : dineIn ? strings.statusServed : strings.statusPickedUp, 'done'];
             case 'cancelled':
                 return [strings.statusCancelled, 'cancelled'];
             default:
@@ -300,6 +307,10 @@
             if (!data || !followed || followed.url !== url) {
                 return;
             }
+            if (data.gone) {
+                letGo(mine);
+                return;
+            }
             if (sheet && sheet.open) {
                 sheetBody.innerHTML = data.html;
             }
@@ -322,6 +333,17 @@
                 stopFallback();
             }
         });
+    }
+
+    /** The restaurant deleted the order: the bar, the sheet and the cart let go of it. */
+    function letGo(mine) {
+        if (mine) {
+            forget();
+        }
+        stopFollowing();
+        if (sheet && sheet.open) {
+            closeSheet();
+        }
     }
 
     // ---- The sheet ---------------------------------------------------------
@@ -360,7 +382,9 @@
                 trigger.classList.remove('is-loading');
                 trigger.removeAttribute('aria-busy');
             }
-            if (data) {
+            if (data && data.gone) {
+                letGo(isMine(tokenOf(url)));
+            } else if (data) {
                 show(url, data);
             }
         });

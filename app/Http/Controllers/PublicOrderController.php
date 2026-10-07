@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Fulfilment;
 use App\Enums\OrderChannel;
 use App\Http\Requests\PlaceOrderRequest;
 use App\Models\Restaurant;
@@ -22,6 +23,9 @@ use Illuminate\Http\JsonResponse;
  *   owner, and we never learn whether it was sent;
  * - in the menu, the order is stored with the guest's phone and address and
  *   waits on the dashboard's Orders page.
+ *
+ * An order to the table (dine-in, from a table's QR code) is its own feature
+ * and always placed in the menu; it waits on the Table orders page.
  */
 class PublicOrderController extends Controller
 {
@@ -31,7 +35,11 @@ class PublicOrderController extends Controller
         // than a 403: a restaurant that does not take orders should not even
         // admit the endpoint exists.
         abort_unless($restaurant->is_active, 404);
-        $channel = $restaurant->orderChannel();
+        // An order to the table is always placed in the menu, whichever way
+        // delivery and pickup come in (if they come in at all).
+        $channel = $request->isDineIn()
+            ? ($restaurant->takesDineIn() ? OrderChannel::Menu : null)
+            : $restaurant->orderChannel();
         abort_if($channel === null, 404);
 
         // Already the app's language (PlaceOrderRequest), for the lines too.
@@ -73,17 +81,23 @@ class PublicOrderController extends Controller
         abort_unless($restaurant->is_active, 404);
         $order = $restaurant->orders()->where('tracking_token', $token)->firstOrFail();
 
-        if ($restaurant->orderChannel() !== OrderChannel::Menu || $request->mode() !== OrderChannel::Menu) {
+        // Changed where it was placed: in the menu, while it still takes
+        // that kind of order.
+        $stillTaken = $order->fulfilment === Fulfilment::DineIn
+            ? $restaurant->takesDineIn()
+            : $restaurant->orderChannel() === OrderChannel::Menu;
+
+        if (! $stillTaken || $request->mode() !== OrderChannel::Menu) {
             return response()->json(['message' => __('This menu was just updated. Please refresh the page to order.')], 409);
         }
 
         $locale = $request->guestLocale();
-        $lines = $request->validated('items');
-        // Asked before the change: what it leaves out is said, not hidden.
-        $unavailable = $placer->unavailable($restaurant, $lines, $locale);
+        // The restaurant is already in hand; the order need not read it again.
+        $order->setRelation('restaurant', $restaurant);
 
         try {
-            $order = $placer->change($order, $lines, $locale, $request->details(), $request->version());
+            $change = $placer->change($order, $request->validated('items'), $locale, $request->details(), $request->version());
+            $order = $change->order;
             OrderNews::fromGuest($order);
         } catch (OrderLocked) {
             return response()->json(['message' => __('The restaurant has already accepted your order, so it can no longer be changed. Call them if you need to.')], 409);
@@ -98,7 +112,8 @@ class PublicOrderController extends Controller
                 'channel' => OrderChannel::Menu->value,
                 'whatsapp_url' => null,
                 'tracking_url' => $order->trackingUrl($locale),
-                'unavailable' => $unavailable,
+                // What the change went without, so the guest is told.
+                'unavailable' => $change->unavailable,
             ],
         ]);
     }

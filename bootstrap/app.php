@@ -66,6 +66,20 @@ $app = Application::configure(basePath: dirname(__DIR__))
             fn (Request $request): bool => $request->is('api/*') || $request->expectsJson()
         );
 
+        // A menu link that changed: the old one (a printed QR code, a shared
+        // link, a search result) forwards to where the menu is now, the rest
+        // of the address and its query (?qr=1) kept. Only looked up once the
+        // restaurant was not found, so a normal visit pays nothing.
+        $exceptions->render(function (Throwable $e, Request $request): ?Response {
+            $missing = $e instanceof ModelNotFoundException ? $e : $e->getPrevious();
+
+            if (! $missing instanceof ModelNotFoundException || $missing->getModel() !== \App\Models\Restaurant::class) {
+                return null;
+            }
+
+            return \App\Support\FormerMenuLink::redirect($request);
+        });
+
         $exceptions->render(function (Throwable $e, Request $request): ?Response {
             if (! $request->is('api/*')) {
                 return null;

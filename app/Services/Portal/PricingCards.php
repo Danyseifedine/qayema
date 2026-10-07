@@ -181,6 +181,6 @@ class PricingCards
      */
     private function packages(): Collection
     {
-        return $this->packages ??= Package::query()->offered()->get();
+        return $this->packages ??= Package::onOffer();
     }
 }

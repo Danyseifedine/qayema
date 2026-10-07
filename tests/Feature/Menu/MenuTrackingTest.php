@@ -40,7 +40,7 @@ class MenuTrackingTest extends TestCase
         $this->get(route('public.menu', $restaurant->slug))->assertOk();
 
         $this->assertDatabaseCount('menu_sessions', 1);
-        $this->assertSame(1, $restaurant->getTotalViews());
+        $this->assertSame(1, $restaurant->trafficTotals()['views']);
     }
 
     public function test_a_qr_scan_is_flagged_as_one(): void
@@ -62,7 +62,7 @@ class MenuTrackingTest extends TestCase
 
         $this->get(route('public.menu', $restaurant->slug))->assertOk();
 
-        $this->assertSame(1, $restaurant->getTotalViews());
+        $this->assertSame(1, $restaurant->trafficTotals()['views']);
         $this->assertSame(0, $restaurant->qrScans()['total']);
     }
 
@@ -87,6 +87,22 @@ class MenuTrackingTest extends TestCase
         MenuSession::factory()->create(['restaurant_id' => $restaurant->id, 'via_qr' => false, 'viewed_at' => '2026-10-15 09:00']);
 
         $this->assertSame(['today' => 2, 'week' => 4, 'month' => 5, 'total' => 6], $restaurant->qrScans());
+    }
+
+    /** The admin's user page reads all of it in one pass, today being the restaurant's. */
+    public function test_traffic_totals_in_one_pass(): void
+    {
+        $this->travelTo(Carbon::parse('2026-10-15 10:00', 'UTC'));
+        $restaurant = $this->published();
+        $restaurant->update(['timezone' => 'Asia/Beirut']);
+        MenuSession::factory()->create(['restaurant_id' => $restaurant->id, 'session_id' => 'a', 'via_qr' => true, 'viewed_at' => '2026-10-14 22:30']);
+        MenuSession::factory()->create(['restaurant_id' => $restaurant->id, 'session_id' => 'a', 'via_qr' => false, 'viewed_at' => '2026-10-15 09:00']);
+        MenuSession::factory()->create(['restaurant_id' => $restaurant->id, 'session_id' => 'b', 'via_qr' => false, 'viewed_at' => '2026-10-10 09:00']);
+
+        $this->assertEquals(
+            ['views' => 3, 'visitors' => 2, 'scans' => 1, 'today' => 2, 'last' => '2026-10-15 09:00:00'],
+            $restaurant->trafficTotals(),
+        );
     }
 
     public function test_the_qr_studio_stats_endpoint_reflects_real_scans(): void

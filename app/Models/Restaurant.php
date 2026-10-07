@@ -48,6 +48,9 @@ class Restaurant extends Model implements HasMedia
      * stored in `switched_off`:
      * - `orders`: guests cannot order (no cart, the endpoint 404s), and the
      *   Orders page leaves the sidebar;
+     * - `dine_in`: tables' QR codes only open the menu, guests cannot order
+     *   to their table, and the Tables and Table orders pages leave the
+     *   sidebar;
      * - `qr`: the QR studio's styling and printable card go; the plain code
      *   and its downloads stay;
      * - `analytics`: the Analytics page leaves the sidebar;
@@ -59,11 +62,12 @@ class Restaurant extends Model implements HasMedia
      *
      * @var array<int, string>
      */
-    public const OPTIONAL_FEATURES = ['orders', 'qr', 'analytics', 'languages', 'variants', 'addons'];
+    public const OPTIONAL_FEATURES = ['orders', 'dine_in', 'qr', 'analytics', 'languages', 'variants', 'addons'];
 
     /** The package flag each optional feature needs before it can be on. */
     private const FLAG_OF = [
         'orders' => Feature::Ordering,
+        'dine_in' => Feature::DineIn,
         'qr' => Feature::QrStudio,
         'analytics' => Feature::Analytics,
         'languages' => Feature::MultipleLanguages,
@@ -190,6 +194,20 @@ class Restaurant extends Model implements HasMedia
             }
         });
 
+        // A new menu link: the old one keeps forwarding (printed QR codes,
+        // shared links), and taking back a former link frees it.
+        static::updated(function (self $restaurant): void {
+            if (! $restaurant->wasChanged('slug')) {
+                return;
+            }
+
+            $old = (string) $restaurant->getOriginal('slug');
+            if ($old !== '') {
+                PreviousSlug::query()->updateOrCreate(['slug' => $old], ['restaurant_id' => $restaurant->id]);
+            }
+            PreviousSlug::query()->where('slug', $restaurant->slug)->delete();
+        });
+
         static::saved(function (self $restaurant): void {
             // Only an update carries changes; the insert is recorded above.
             if (! $restaurant->wasChanged(self::PACKAGE_FIELDS)) {
@@ -229,6 +247,12 @@ class Restaurant extends Model implements HasMedia
         return $this->hasMany(Dish::class)->orderBy('display_order');
     }
 
+    /** Links this menu had before, each still forwarding here. */
+    public function previousSlugs(): HasMany
+    {
+        return $this->hasMany(PreviousSlug::class);
+    }
+
     public function socialLinks(): HasMany
     {
         return $this->hasMany(RestaurantSocialLink::class);
@@ -247,6 +271,12 @@ class Restaurant extends Model implements HasMedia
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class)->latest('placed_at');
+    }
+
+    /** The tables, each with its own QR code, in the owner's order. */
+    public function diningTables(): HasMany
+    {
+        return $this->hasMany(DiningTable::class)->orderBy('sort_order')->orderBy('id');
     }
 
     public function featureGrants(): HasMany
@@ -449,16 +479,45 @@ class Restaurant extends Model implements HasMedia
     }
 
     /**
-     * The kinds of order this restaurant accepts in the menu, in a fixed
-     * order. Nothing chosen yet means all of them.
+     * The kinds of order that leave the restaurant (delivery, pickup) it
+     * accepts in the menu, in a fixed order. Nothing chosen yet means both.
+     * Ordering at the table is not one of them: it is takesDineIn().
      *
      * @return array<int, string>
      */
     public function orderTypes(): array
     {
-        $types = array_values(array_intersect(Fulfilment::values(), (array) $this->order_types));
+        $types = array_values(array_intersect(Fulfilment::away(), (array) $this->order_types));
 
-        return $types === [] ? Fulfilment::values() : $types;
+        return $types === [] ? Fulfilment::away() : $types;
+    }
+
+    /**
+     * Every kind of order this restaurant takes: the delivery and pickup it
+     * chose, and dine-in while that is on. Whether delivery and pickup are
+     * taken in the menu right now is the channel's question, answered by the
+     * order controller (a page built for the other way is told to refresh).
+     * Dine-in still needs a table's code to order to.
+     *
+     * @return array<int, string>
+     */
+    public function menuFulfilments(): array
+    {
+        return [
+            ...$this->orderTypes(),
+            ...$this->takesDineIn() ? [Fulfilment::DineIn->value] : [],
+        ];
+    }
+
+    /**
+     * Guests at a table can order to it: in the package and not switched
+     * off. A feature of its own, apart from ordering: an order at the table
+     * is always placed in the menu, even while delivery and pickup go to
+     * WhatsApp, or are off.
+     */
+    public function takesDineIn(): bool
+    {
+        return $this->entitlements()->can(Feature::DineIn) && ! $this->isSwitchedOff('dine_in');
     }
 
     /** The QR studio's styling is on: in the package and not switched off. */
@@ -670,9 +729,32 @@ class Restaurant extends Model implements HasMedia
         return $this->social_link_limit !== null && $this->socialLinks()->count() >= $this->social_link_limit;
     }
 
-    public function getTotalViews(): int
+    /**
+     * The menu's visits at a glance (the admin's user page), in one pass:
+     * views, distinct visitors, QR scans, today's views (the restaurant's own
+     * day) and the last visit.
+     *
+     * @return array{views: int, visitors: int, scans: int, today: int, last: string|null}
+     */
+    public function trafficTotals(): array
     {
-        return $this->menuSessions()->count();
+        $today = CarbonImmutable::now($this->localTimezone())->startOfDay()->utc()->toDateTimeString();
+
+        $totals = $this->menuSessions()
+            ->toBase()
+            ->selectRaw(
+                'count(*) as views, count(distinct session_id) as visitors, sum(case when via_qr then 1 else 0 end) as scans, sum(case when viewed_at >= ? then 1 else 0 end) as today, max(viewed_at) as last',
+                [$today],
+            )
+            ->first();
+
+        return [
+            'views' => (int) ($totals->views ?? 0),
+            'visitors' => (int) ($totals->visitors ?? 0),
+            'scans' => (int) ($totals->scans ?? 0),
+            'today' => (int) ($totals->today ?? 0),
+            'last' => $totals->last ?? null,
+        ];
     }
 
     /**

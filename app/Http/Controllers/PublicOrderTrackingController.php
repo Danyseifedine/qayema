@@ -44,6 +44,7 @@ class PublicOrderTrackingController extends Controller
             'reference' => $order->reference,
             'status' => $order->status->value,
             'fulfilment' => $order->fulfilment?->value,
+            'table' => $order->table_name,
             'closed' => $order->status->isClosed(),
             // The menu's bar back to the order lets go of a cancelled one an
             // hour after this, and of a delivered one at once.
@@ -83,6 +84,8 @@ class PublicOrderTrackingController extends Controller
                 ])->values()->all(),
             'details' => [
                 'fulfilment' => $order->fulfilment?->value,
+                // Kept on a change (OrderPlacer::change()); shown, never sent back.
+                'table' => $order->table_name,
                 'name' => (string) $order->guest_name,
                 'country' => $phone['country'],
                 'phone' => $phone['national'],

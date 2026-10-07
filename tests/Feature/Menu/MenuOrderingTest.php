@@ -427,6 +427,29 @@ class MenuOrderingTest extends TestCase
             ->assertSee('00:00 - 23:59');
     }
 
+    /**
+     * In Arabic the hours line sits on the right like the rest of the card;
+     * only the times read left to right, so they never come out reversed.
+     */
+    public function test_on_an_arabic_menu_the_hours_line_follows_the_page(): void
+    {
+        $shop = $this->shop(false, [
+            'second_locale' => 'ar',
+            'default_locale' => 'ar',
+            'timezone' => 'Asia/Beirut',
+            'opening_hours' => array_fill_keys(
+                ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
+                ['open' => '09:00', 'close' => '22:00'],
+            ),
+        ]);
+
+        $this->get(route('public.menu', $shop->slug))
+            ->assertOk()
+            ->assertSee('dir="rtl"', false)
+            ->assertSee('<span class="info-value"><bdi dir="ltr">09:00 - 22:00</bdi></span>', false)
+            ->assertDontSee('<span class="info-value" dir="ltr">', false);
+    }
+
     public function test_no_hours_row_when_none_are_set(): void
     {
         $shop = $this->shop(false, ['opening_hours' => null]);

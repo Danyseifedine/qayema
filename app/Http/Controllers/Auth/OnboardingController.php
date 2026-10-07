@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\Restaurant;
 use App\Models\User;
+use App\Rules\AvailableSlug;
 use App\Services\Portal\OnboardingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -46,11 +46,7 @@ class OnboardingController extends Controller
 
             $ownId = $request->user()?->restaurant?->id;
 
-            $taken = Restaurant::where('slug', $slug)
-                ->when($ownId, fn ($q) => $q->where('id', '!=', $ownId))
-                ->exists();
-
-            return response()->json(['available' => ! $taken]);
+            return response()->json(['available' => AvailableSlug::isFree($slug, $ownId)]);
         } catch (\Throwable) {
             return response()->json(['available' => false]);
         }
@@ -87,8 +83,7 @@ class OnboardingController extends Controller
                     'slug' => [
                         'required', 'string', 'min:2', 'max:100',
                         'regex:/^[a-z0-9][a-z0-9-]*[a-z0-9]$/',
-                        Rule::notIn(Restaurant::RESERVED_SLUGS),
-                        Rule::unique('restaurants', 'slug')->ignore($user->restaurant?->id),
+                        new AvailableSlug($user->restaurant?->id),
                     ],
                     'default_locale' => ['nullable', 'string', 'in:ar,en'],
                 ]);

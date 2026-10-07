@@ -206,6 +206,7 @@ return [
             'qr_studio' => 'QR studio',
             'ordering' => 'Orders on WhatsApp',
             'menu_ordering' => 'Orders in your menu',
+            'dine_in' => 'Orders at the table',
             'analytics' => 'Analytics',
             'advanced_analytics' => 'Advanced analytics',
         ],

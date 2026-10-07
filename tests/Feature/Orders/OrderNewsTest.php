@@ -70,7 +70,7 @@ class OrderNewsTest extends TestCase
         $event = new OrdersChanged($this->shop);
         $this->assertSame('private-orders.'.$this->shop->id, $event->broadcastOn()->name);
         $this->assertSame('orders.changed', $event->broadcastAs());
-        $this->assertSame(['open' => 1, 'latest' => $order->id, 'changed' => null], $event->broadcastWith());
+        $this->assertSame(['open' => 1, 'table_open' => 0, 'latest' => $order->id, 'changed' => null], $event->broadcastWith());
     }
 
     public function test_the_owner_moving_it_reaches_the_guest(): void

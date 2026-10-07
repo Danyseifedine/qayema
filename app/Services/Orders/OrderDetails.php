@@ -4,10 +4,12 @@ namespace App\Services\Orders;
 
 use App\Enums\Fulfilment;
 use App\Enums\OrderChannel;
+use App\Models\DiningTable;
 
 /**
  * Everything about an order besides its lines: how it came in, and for one
- * placed in the menu, how to reach the guest and where the food goes.
+ * placed in the menu, how to reach the guest and where the food goes: an
+ * address, the counter, or the table it was ordered from.
  */
 final readonly class OrderDetails
 {
@@ -21,6 +23,7 @@ final readonly class OrderDetails
         public ?string $latitude = null,
         public ?string $longitude = null,
         public ?string $clientToken = null,
+        public ?DiningTable $table = null,
     ) {}
 
     /** @return array<string, mixed> the order columns these fill */
@@ -37,6 +40,10 @@ final readonly class OrderDetails
             'latitude' => $this->fulfilment === Fulfilment::Delivery ? $this->latitude : null,
             'longitude' => $this->fulfilment === Fulfilment::Delivery ? $this->longitude : null,
             'client_token' => $this->clientToken,
+            // Its name as it is now, so renaming the table later leaves the
+            // order saying where it went.
+            'table_id' => $this->table?->id,
+            'table_name' => $this->table?->name,
         ];
     }
 

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api;
 
+use App\Enums\Fulfilment;
 use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -78,7 +79,7 @@ class OrdersTest extends TestCase
 
         $this->actingAs($shop->user)->getJson(route('api.orders.pulse'))
             ->assertOk()
-            ->assertExactJson(['data' => ['open' => 0, 'latest' => null, 'changed' => null]]);
+            ->assertExactJson(['data' => ['open' => 0, 'table_open' => 0, 'latest' => null, 'changed' => null]]);
 
         $this->orderFor($shop, OrderStatus::Done);
         $newest = $this->orderFor($shop);
@@ -87,7 +88,34 @@ class OrdersTest extends TestCase
 
         $this->actingAs($shop->user)->getJson(route('api.orders.pulse'))
             ->assertOk()
-            ->assertExactJson(['data' => ['open' => 1, 'latest' => $newest->id, 'changed' => null]]);
+            ->assertExactJson(['data' => ['open' => 1, 'table_open' => 0, 'latest' => $newest->id, 'changed' => null]]);
+    }
+
+    public function test_orders_to_a_table_are_counted_and_listed_apart(): void
+    {
+        $shop = $this->owner();
+        $away = Order::factory()->for($shop)->inMenu(Fulfilment::Pickup)->create();
+        $atTable = Order::factory()->for($shop)->inMenu(Fulfilment::DineIn)->create(['table_name' => 'Table 4']);
+        Order::factory()->for($shop)->inMenu(Fulfilment::DineIn)->status(OrderStatus::Done)->create();
+
+        $this->actingAs($shop->user)->getJson(route('api.orders.pulse'))
+            ->assertJsonPath('data.open', 1)
+            ->assertJsonPath('data.table_open', 1)
+            ->assertJsonPath('data.latest', Order::query()->max('id'));
+
+        $this->actingAs($shop->user)->getJson(route('api.orders.index', ['kind' => 'away']))
+            ->assertJsonPath('data.*.id', [$away->id])
+            ->assertJsonPath('meta.open', 1);
+
+        $this->actingAs($shop->user)->getJson(route('api.orders.index', ['kind' => 'table']))
+            ->assertJsonCount(2, 'data')
+            ->assertJsonPath('data.1.id', $atTable->id)
+            ->assertJsonPath('data.1.table', 'Table 4')
+            ->assertJsonPath('meta.open', 1);
+
+        // Left out, both, as before.
+        $this->actingAs($shop->user)->getJson(route('api.orders.index'))->assertJsonCount(3, 'data');
+        $this->actingAs($shop->user)->getJson(route('api.orders.index', ['kind' => 'bar']))->assertJsonValidationErrors(['kind']);
     }
 
     /** Accepting tells the guest following the order that a person saw it. */

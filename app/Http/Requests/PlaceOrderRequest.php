@@ -4,6 +4,8 @@ namespace App\Http\Requests;
 
 use App\Enums\Fulfilment;
 use App\Enums\OrderChannel;
+use App\Models\DiningTable;
+use App\Models\Order;
 use App\Models\Restaurant;
 use App\Services\Menu\MenuLanguages;
 use App\Services\Orders\OrderDetails;
@@ -14,6 +16,10 @@ use Illuminate\Validation\Validator;
 
 class PlaceOrderRequest extends FormRequest
 {
+    private ?DiningTable $table = null;
+
+    private bool $tableLookedUp = false;
+
     /** The public menu is open to guests; abuse is handled by the limiter. */
     public function authorize(): bool
     {
@@ -68,18 +74,25 @@ class PlaceOrderRequest extends FormRequest
             'locale' => ['nullable', 'string', 'size:2'],
             // Pages from before ordering in the menu existed send no mode.
             'mode' => ['nullable', Rule::enum(OrderChannel::class)],
+            // The code of the table the guest scanned (DiningTable), if any.
+            'table' => ['nullable', 'string', 'max:16'],
         ];
 
         if (! $this->inMenu()) {
             return $rules;
         }
 
+        // At the table the restaurant can see who ordered, so a name and a
+        // number are only asked for when the food leaves the room.
+        $dineIn = $this->input('fulfilment') === Fulfilment::DineIn->value;
+        $asked = $dineIn ? 'nullable' : 'required';
+
         return [
             ...$rules,
-            'fulfilment' => ['required', Rule::in($this->restaurant()->orderTypes())],
-            'name' => ['required', 'string', 'max:60'],
-            'phone_country' => ['required', 'string', Rule::in(array_keys((array) config('countries')))],
-            'phone' => ['required', 'string', 'max:30', 'regex:/^[0-9+() .\-]+$/'],
+            'fulfilment' => ['required', Rule::in($this->restaurant()->menuFulfilments())],
+            'name' => [$asked, 'string', 'max:60'],
+            'phone_country' => [$dineIn ? 'required_with:phone' : 'required', 'nullable', 'string', Rule::in(array_keys((array) config('countries')))],
+            'phone' => [$asked, 'string', 'max:30', 'regex:/^[0-9+() .\-]+$/'],
             'address' => ['nullable', 'required_if:fulfilment,'.Fulfilment::Delivery->value, 'string', 'max:500'],
             'latitude' => ['nullable', 'required_with:longitude', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'required_with:latitude', 'numeric', 'between:-180,180'],
@@ -105,7 +118,9 @@ class PlaceOrderRequest extends FormRequest
         }
 
         return [function (Validator $validator): void {
-            if ($validator->errors()->hasAny(['phone', 'phone_country'])) {
+            $this->checkTable($validator);
+
+            if ($validator->errors()->hasAny(['phone', 'phone_country']) || ! $this->filled('phone')) {
                 return;
             }
 
@@ -126,8 +141,9 @@ class PlaceOrderRequest extends FormRequest
             'items.required' => __('Your order is empty.'),
             'items.max' => __('That is too many different dishes for one order.'),
             'items.*.quantity.max' => __('99 of one dish is the most we can take.'),
-            'fulfilment.required' => __('Choose delivery or pickup.'),
-            'fulfilment.in' => __('Choose delivery or pickup.'),
+            'fulfilment.required' => __('Choose how you would like your order.'),
+            'fulfilment.in' => __('Choose how you would like your order.'),
+            'table.*' => __('Scan the code on your table again.'),
             'name.required' => __('Add your name so the restaurant knows who to ask for.'),
             'name.max' => __('Keep your name under 60 characters.'),
             'phone.required' => __('Add your phone number so the restaurant can call you.'),
@@ -145,6 +161,12 @@ class PlaceOrderRequest extends FormRequest
         ];
     }
 
+    /** An order to the table the guest scanned, which is always placed in the menu. */
+    public function isDineIn(): bool
+    {
+        return $this->inMenu() && $this->input('fulfilment') === Fulfilment::DineIn->value;
+    }
+
     /** The channel the guest's page was built for. */
     public function mode(): OrderChannel
     {
@@ -155,22 +177,69 @@ class PlaceOrderRequest extends FormRequest
     public function details(): OrderDetails
     {
         if (! $this->inMenu()) {
-            return new OrderDetails(note: $this->validated('note'));
+            // On WhatsApp the table only labels the message.
+            return new OrderDetails(note: $this->validated('note'), table: $this->table());
         }
 
         $located = $this->validated('latitude') !== null;
+        $fulfilment = Fulfilment::from($this->validated('fulfilment'));
+        $phone = $this->internationalPhone();
 
         return new OrderDetails(
             channel: OrderChannel::Menu,
             note: $this->validated('note'),
-            fulfilment: Fulfilment::from($this->validated('fulfilment')),
+            fulfilment: $fulfilment,
             name: $this->validated('name'),
-            phone: '+'.$this->internationalPhone(),
+            phone: $phone === null ? null : '+'.$phone,
             address: $this->validated('address'),
             latitude: $located ? (string) $this->validated('latitude') : null,
             longitude: $located ? (string) $this->validated('longitude') : null,
             clientToken: $this->validated('client_token'),
+            table: $fulfilment === Fulfilment::DineIn ? $this->table() : null,
         );
+    }
+
+    /** The table the guest scanned, when its code is one of this restaurant's. */
+    public function table(): ?DiningTable
+    {
+        $code = $this->input('table');
+
+        if (! is_string($code) || $code === '') {
+            return null;
+        }
+
+        // Looked up once: the rules and the details both ask.
+        if ($this->tableLookedUp === false) {
+            $this->tableLookedUp = true;
+            $this->table = $this->restaurant()->diningTables()->where('code', $code)->first();
+        }
+
+        return $this->table;
+    }
+
+    /**
+     * Dine-in needs the table the food goes to: the one scanned, or for a
+     * change, the one the order already has. A code from a card the owner
+     * has since replaced is not a table.
+     */
+    private function checkTable(Validator $validator): void
+    {
+        if ($this->input('fulfilment') !== Fulfilment::DineIn->value || $validator->errors()->has('fulfilment')) {
+            return;
+        }
+
+        if ($this->table() !== null || ($this->isChange() && $this->orderBeingChanged()?->table_name !== null)) {
+            return;
+        }
+
+        $validator->errors()->add('table', $this->filled('table')
+            ? __('This table\'s code has changed. Scan the code on your table again.')
+            : __('Scan the code on your table to order to it.'));
+    }
+
+    private function orderBeingChanged(): ?Order
+    {
+        return $this->restaurant()->orders()->where('tracking_token', (string) $this->route('token'))->first();
     }
 
     /** Which version of the order a change was made from (OrderPlacer::change()). */

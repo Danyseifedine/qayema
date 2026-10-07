@@ -291,6 +291,23 @@ class UserAdminTest extends TestCase
             ->assertCanNotSeeTableRecords([$gone]);
     }
 
+    public function test_the_list_opens_each_owners_menu_in_a_new_tab(): void
+    {
+        $owner = $this->published(['slug' => 'olive-tree']);
+        $off = $this->owner(['slug' => 'switched-off', 'is_active' => false]);
+        $pending = $this->userWithoutRestaurant();
+        $this->actingAs($this->admin());
+
+        Livewire::test(ListUsers::class)
+            ->assertActionVisible(TestAction::make('menu')->table($owner->user))
+            ->assertActionHasUrl(TestAction::make('menu')->table($owner->user), route('public.menu', 'olive-tree'))
+            ->assertActionShouldOpenUrlInNewTab(TestAction::make('menu')->table($owner->user))
+            // A switched-off menu still opens (its tooltip says guests see nothing).
+            ->assertActionVisible(TestAction::make('menu')->table($off->user))
+            // No restaurant yet, no menu.
+            ->assertActionHidden(TestAction::make('menu')->table($pending));
+    }
+
     public function test_the_list_searches_by_name_and_email(): void
     {
         $sami = User::factory()->create(['name' => 'Sami Haddad', 'email' => 'sami@example.com']);

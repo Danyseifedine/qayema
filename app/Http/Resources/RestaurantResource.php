@@ -17,7 +17,7 @@ class RestaurantResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            // Editable everywhere except the slug, which is immutable once set.
+            // The slug changes through its own call, which keeps the old link forwarding.
             // Text comes as one entry per menu language: English, then the
             // second language when there is one.
             'languages' => $this->menuLanguages(),

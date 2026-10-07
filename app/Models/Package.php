@@ -168,6 +168,18 @@ class Package extends Model
         ));
     }
 
+    /**
+     * The packages on offer, read once per request: the landing page's
+     * cards and its search data both list them. A package save flushes it
+     * (once()).
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, self>
+     */
+    public static function onOffer(): \Illuminate\Database\Eloquent\Collection
+    {
+        return once(fn () => self::query()->offered()->get());
+    }
+
     public static function findBySlug(string $slug): ?self
     {
         return self::query()->firstWhere('slug', $slug);

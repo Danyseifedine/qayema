@@ -177,4 +177,16 @@ class ColorTest extends TestCase
             $this->assertContains(Color::inkOn($hex), [self::DARK_INK, self::WHITE_INK]);
         }
     }
+
+    public function test_a_background_is_dark_below_half_luminance(): void
+    {
+        $this->assertTrue(Color::isDark('#000000'));
+        $this->assertTrue(Color::isDark('#121212'));
+        $this->assertTrue(Color::isDark('#1F2A44'));
+        $this->assertFalse(Color::isDark('#FFFFFF'));
+        $this->assertFalse(Color::isDark('#FAF7F0'));
+        // Grey 127 is 0.498, 128 is 0.502.
+        $this->assertTrue(Color::isDark('#7F7F7F'));
+        $this->assertFalse(Color::isDark('#808080'));
+    }
 }

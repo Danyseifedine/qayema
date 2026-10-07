@@ -23,8 +23,8 @@ class UpdateRestaurantRequest extends FormRequest
         $languages = MenuLanguages::forOwner($this->user());
 
         $rules = [
-            // One entry per menu language, English required. The slug is
-            // immutable, so it is intentionally not accepted here.
+            // One entry per menu language, English required. The slug has
+            // its own call (PUT /api/restaurant/slug), so it is not taken here.
             'name' => ['required', 'array'],
             'description' => ['nullable', 'array'],
             // Where the restaurant is. A link rather than a written address:

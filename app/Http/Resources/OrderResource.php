@@ -29,6 +29,8 @@ class OrderResource extends JsonResource
             // How the guest gets it and how to reach them; null on a
             // WhatsApp order, which carries none of this.
             'fulfilment' => $this->fulfilment?->value,
+            // The table it goes to, as it was named when ordered.
+            'table' => $this->table_name,
             'name' => $this->guest_name,
             'phone' => $this->guest_phone,
             'address' => $this->address,
@@ -38,11 +40,14 @@ class OrderResource extends JsonResource
             // The guest changed it after placing it, and when last.
             'guest_updated_at' => $this->guest_updated_at?->toIso8601String(),
             'guest_updates' => (int) $this->guest_updates,
+            // When the restaurant last changed what it holds.
+            'owner_updated_at' => $this->owner_updated_at?->toIso8601String(),
             'items' => $this->whenLoaded('items', fn () => $this->items->map(fn ($item): array => [
                 'id' => $item->id,
                 'name' => $item->name,
                 // The guest's choices as they were: {variants, addons}, or null.
                 'options' => $item->options,
+                'unit_price' => (string) $item->unit_price,
                 'quantity' => $item->quantity,
                 'line_total' => (string) $item->line_total,
             ])->all()),

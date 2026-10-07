@@ -69,7 +69,7 @@ class MenuDishChoicesTest extends TestCase
             // The card names no choices; the sheet holds them.
             ->assertDontSee('Size · Spice level')
             // The least a guest can pay, with no "from" in front of it.
-            ->assertSee('<span class="price">$8.00</span>', false)
+            ->assertSee('<span class="price">$8</span>', false)
             ->assertDontSee('>from<', false)
             ->assertSee('id="dish-sheet"', false)
             ->assertSee('menu-dish.js', false)
@@ -94,7 +94,7 @@ class MenuDishChoicesTest extends TestCase
             ['name' => ['en' => 'Large'], 'price' => 2],
         ]);
 
-        $this->menu()->assertSee('$6.00')->assertDontSee('$5.00');
+        $this->menu()->assertSee('<span class="price">$6</span>', false)->assertDontSee('<span class="price">$5</span>', false);
     }
 
     public function test_the_guests_language_names_the_choices(): void
@@ -158,7 +158,7 @@ class MenuDishChoicesTest extends TestCase
             ->create(['restaurant_id' => $this->shop->id, 'category_id' => $this->plates->id, 'name' => ['en' => 'Sandwich'], 'price' => null]);
 
         $response = $this->menu()
-            ->assertSee('<span class="price">$7.00</span>', false)
+            ->assertSee('<span class="price">$7</span>', false)
             ->assertSee('data-dish="'.$sandwich->id.'"', false);
         $this->assertMatchesRegularExpression('/data-dish="'.$sandwich->id.'"[^>]*data-price="0.00"/', (string) $response->getContent());
 

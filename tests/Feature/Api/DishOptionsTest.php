@@ -139,6 +139,23 @@ class DishOptionsTest extends TestCase
         $this->assertDatabaseCount('dish_addons', 0);
     }
 
+    /** A menu in Lebanese pounds: a choice or an extra can cost a million. */
+    public function test_a_choice_can_cost_millions_like_the_dish_itself(): void
+    {
+        $this->store($this->form([
+            'price' => 1500000,
+            'variants' => [[
+                'name' => ['en' => 'Spice'],
+                'options' => [['name' => ['en' => 'Mild'], 'price' => 0], ['name' => ['en' => 'Hot'], 'price' => 1000000]],
+            ]],
+            'addons' => [['name' => ['en' => 'Extra cheese'], 'price' => 99999999.99]],
+        ]))->assertCreated();
+
+        $dish = Dish::query()->latest('id')->firstOrFail();
+        $this->assertSame('1000000.00', (string) $dish->variants()->first()->options->firstWhere(fn ($option) => $option->getTranslation('name', 'en') === 'Hot')->price);
+        $this->assertSame('99999999.99', (string) $dish->addons()->first()->price);
+    }
+
     public function test_what_is_wrong_is_said_plainly(): void
     {
         $this->store($this->form([
@@ -146,7 +163,7 @@ class DishOptionsTest extends TestCase
                 ['name' => ['en' => ''], 'options' => [['name' => ['en' => 'Only one'], 'price' => 0]]],
                 ['name' => ['en' => 'Spice'], 'options' => [['name' => ['en' => ''], 'price' => -1], ['name' => ['en' => 'Hot'], 'price' => 0]]],
             ],
-            'addons' => [['name' => ['en' => ''], 'price' => 100000]],
+            'addons' => [['name' => ['en' => ''], 'price' => 100000000]],
         ]))->assertUnprocessable()
             ->assertJsonPath('errors', fn (array $errors): bool => $errors['variants.0.name.en'] === ['Give every variant a name in English.']
                 && $errors['variants.0.options'] === ['A variant needs at least 2 options.']

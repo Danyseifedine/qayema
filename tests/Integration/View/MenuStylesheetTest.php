@@ -21,4 +21,18 @@ class MenuStylesheetTest extends TestCase
         $this->assertMatchesRegularExpression('/\.dish\s*\{[^}]*display:\s*flex/', $css);
         $this->assertMatchesRegularExpression('/(^|\n)\[hidden\]\s*\{\s*display:\s*none\s*!important;\s*\}/', $css);
     }
+
+    /**
+     * The bar back to the guest's order, on a narrow phone: the number stays
+     * on one line, the status wraps rather than being cut mid-word, and the
+     * cart mark gives up its room on the smallest screens.
+     */
+    public function test_the_order_bar_fits_a_small_phone(): void
+    {
+        $css = (string) file_get_contents(public_path('css/menu-classic.css'));
+
+        $this->assertMatchesRegularExpression('/\.order-bar-text strong\s*\{[^}]*white-space:\s*nowrap/', $css);
+        $this->assertDoesNotMatchRegularExpression('/\.order-bar-status\s*\{[^}]*white-space:\s*nowrap/', $css);
+        $this->assertMatchesRegularExpression('/@media \(max-width: 380px\)\s*\{\s*\.order-bar-mark\s*\{\s*display:\s*none;/', $css);
+    }
 }

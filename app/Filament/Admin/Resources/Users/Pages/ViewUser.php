@@ -24,6 +24,15 @@ class ViewUser extends ViewRecord
         /** @var User $user */
         $user = $this->record;
         $restaurant = $user->restaurant;
+        // Read once each when the page draws, not a query per figure: the
+        // visits in one pass, the content in one count.
+        $traffic = $restaurant?->trafficTotals();
+        $restaurant?->loadCount([
+            'dishes',
+            'categories',
+            'socialLinks',
+            'dishes as available_dishes_count' => fn ($query) => $query->where('is_available', true),
+        ]);
 
         return $schema->components([
 
@@ -113,31 +122,31 @@ class ViewUser extends ViewRecord
                 ->schema([
                     TextEntry::make('stat_total_views')
                         ->label('Total Views')
-                        ->getStateUsing(fn () => number_format($restaurant?->getTotalViews() ?? 0))
+                        ->getStateUsing(fn () => number_format($traffic['views'] ?? 0))
                         ->badge()
                         ->color('info'),
 
                     TextEntry::make('stat_unique_visitors')
                         ->label('Unique Visitors')
-                        ->getStateUsing(fn () => number_format($restaurant?->menuSessions()->distinct('session_id')->count('session_id') ?? 0))
+                        ->getStateUsing(fn () => number_format($traffic['visitors'] ?? 0))
                         ->badge()
                         ->color('success'),
 
                     TextEntry::make('stat_qr_scans')
                         ->label('QR Scans')
-                        ->getStateUsing(fn () => number_format($restaurant?->menuSessions()->where('via_qr', true)->count() ?? 0))
+                        ->getStateUsing(fn () => number_format($traffic['scans'] ?? 0))
                         ->badge()
                         ->color('warning'),
 
                     TextEntry::make('stat_views_today')
                         ->label('Views Today')
-                        ->getStateUsing(fn () => number_format($restaurant?->menuSessions()->whereDate('viewed_at', today())->count() ?? 0))
+                        ->getStateUsing(fn () => number_format($traffic['today'] ?? 0))
                         ->badge()
                         ->color('info'),
 
                     TextEntry::make('stat_last_visit')
                         ->label('Last Visit')
-                        ->getStateUsing(fn () => $restaurant?->menuSessions()->latest('viewed_at')->value('viewed_at'))
+                        ->getStateUsing(fn () => $traffic['last'] ?? null)
                         ->dateTime()
                         ->placeholder('No visits yet'),
 
@@ -167,25 +176,25 @@ class ViewUser extends ViewRecord
                 ->schema([
                     TextEntry::make('content_dishes')
                         ->label('Dishes')
-                        ->getStateUsing(fn () => ($restaurant?->dishes()->count() ?? 0).' / '.($restaurant?->dish_limit ?? '-'))
+                        ->getStateUsing(fn () => ($restaurant?->dishes_count ?? 0).' / '.($restaurant?->dish_limit ?? '-'))
                         ->badge()
                         ->color('primary'),
 
                     TextEntry::make('content_categories')
                         ->label('Categories')
-                        ->getStateUsing(fn () => ($restaurant?->categories()->count() ?? 0).' / '.($restaurant?->category_limit ?? '-'))
+                        ->getStateUsing(fn () => ($restaurant?->categories_count ?? 0).' / '.($restaurant?->category_limit ?? '-'))
                         ->badge()
                         ->color('warning'),
 
                     TextEntry::make('content_available_dishes')
                         ->label('Available Dishes')
-                        ->getStateUsing(fn () => number_format($restaurant?->dishes()->where('is_available', true)->count() ?? 0))
+                        ->getStateUsing(fn () => number_format($restaurant?->available_dishes_count ?? 0))
                         ->badge()
                         ->color('success'),
 
                     TextEntry::make('content_social_links')
                         ->label('Social Links')
-                        ->getStateUsing(fn () => ($restaurant?->socialLinks()->count() ?? 0).' / '.($restaurant?->social_link_limit ?? '-'))
+                        ->getStateUsing(fn () => ($restaurant?->social_links_count ?? 0).' / '.($restaurant?->social_link_limit ?? '-'))
                         ->badge()
                         ->color('info'),
                 ]),

@@ -15,6 +15,7 @@
 @use('App\Services\Menu\MenuLanguages')
 @use('App\Support\Color')
 @use('App\Support\MenuIcons')
+@use('App\Support\Price')
 @php
     $isRtl = MenuLanguages::isRtl($locale);
     // Every piece of text is this language, else English (the language every
@@ -36,6 +37,7 @@
     $todayRange = $hours->todayRange();
 
     $accent = $settings['primary_color'] ?? Template::DEFAULT_PRIMARY_COLOR;
+    $background = $settings['background_color'] ?? '#FFFFFF';
     // What to print *on* the accent: measured, since the owner picks the colour.
     $accentInk = Color::inkOn($accent);
 
@@ -52,6 +54,20 @@
     // and as the card under the cover on a phone. The card only keeps what the
     // dock does not already carry; on a phone that is just the hours.
     $facts = [];
+    $table ??= null;
+
+    // Opened from a table's QR code: the guest sees which table the menu
+    // thinks they are at, the one their order will go to.
+    if ($table) {
+        $facts[] = [
+            'icon' => 'table',
+            'value' => $table->name,
+            'href' => null,
+            'tone' => null,
+            'ltr' => false,
+            'track' => null,
+        ];
+    }
 
     if (! $hours->isEmpty()) {
         $open = $hours->isOpenNow();
@@ -122,7 +138,7 @@
     <style>
         :root {
             --accent: {{ $accent }};
-            --bg: {{ $settings['background_color'] ?? '#FFFFFF' }};
+            --bg: {{ $background }};
             --text: {{ $settings['text_color'] ?? '#111418' }};
             --accent-ink: {{ $accentInk }};
             /* The page is not the card. Everything below the header sits on
@@ -137,6 +153,9 @@
                button can never make the tabs slide beneath the bar. */
             --bar: 61px;
             --dock: 0px;
+            /* The browser's own scrollbars and controls follow the owner's
+               background, light or dark, not the guest's system setting. */
+            color-scheme: {{ Color::isDark($background) ? 'dark' : 'light' }};
         }
     </style>
     <link rel="stylesheet" href="{{ asset('css/menu-classic.css') }}?v={{ filemtime(public_path('css/menu-classic.css')) }}">
@@ -234,15 +253,28 @@
             </div>
         </div>
 
-        @if ($hoursFact)
+        @if ($hoursFact || $table)
             <div class="info">
+                @if ($table)
+                    <div class="info-row">
+                        <span class="info-icon"><span class="icon">{!! $icons['table'] !!}</span></span>
+                        <span class="info-text">
+                            <span class="info-label">{{ __('Your table') }}</span>
+                            <span class="info-value">{{ $table->name }}</span>
+                        </span>
+                    </div>
+                @endif
+                @if ($hoursFact)
                 <div class="info-row">
                     <span class="info-icon"><span class="icon">{!! $icons['clock'] !!}</span></span>
                     <span class="info-text">
                         <span class="info-label fact-{{ $hoursFact['tone'] }}">{{ $hoursFact['label'] }}</span>
-                        <span class="info-value" dir="ltr">{{ $hoursFact['value'] }}</span>
+                        {{-- The line follows the page (right in Arabic); only the
+                             times inside it read left to right. --}}
+                        <span class="info-value"><bdi dir="ltr">{{ $hoursFact['value'] }}</bdi></span>
                     </span>
                 </div>
+                @endif
             </div>
         @endif
 
@@ -308,7 +340,7 @@
                                     @endif
                                     <div class="dish-foot">
                                         @if ($basePrice !== null)
-                                            <span class="price">{{ $currency }}{{ number_format((float) ($choices['lowest'] ?? $dish->price), 2) }}</span>
+                                            <span class="price">{{ $currency }}{{ Price::format($choices['lowest'] ?? $dish->price) }}</span>
                                         @else
                                             <span></span>
                                         @endif
@@ -539,10 +571,17 @@
             currency: @js($currency),
             storageKey: @js('qayema-cart-'.$restaurant->slug),
             mode: @js($order_channel->value),
+            // The table whose QR code opened the menu, and where the page
+            // remembers it, so a reload or a language switch stays at it.
+            table: @js($table ? ['code' => $table->code, 'name' => $table->name] : null),
+            tableKey: @js('qayema-table-'.$restaurant->slug),
             @if ($inMenu)
             guestKey: @js('qayema-guest-'.$restaurant->slug),
             addressUrl: @js(route('public.address', $restaurant->slug)),
-            types: @js($restaurant->orderTypes()),
+            // Delivery and pickup taken in the menu; dine-in is its own
+            // feature, offered only at a table (menu-cart.js types()).
+            types: @js($order_types ?? []),
+            dineIn: @js($dine_in ?? false),
             country: @js(isset(config('countries')[$restaurant->country_code]) ? $restaurant->country_code : array_key_first(config('countries'))),
             countries: @js($guestCountries),
             // An order placed in the menu waits for someone to read it, so
@@ -571,6 +610,9 @@
                 how: @js(__('How would you like it?')),
                 delivery: @js(__('Delivery')),
                 pickup: @js(__('Pickup')),
+                dine_in: @js(__('At my table')),
+                needsTable: @js(__('Scan the QR code on your table to order.')),
+                needsTableShort: @js(__('Scan your table to order')),
                 name: @js(__('Your name')),
                 nameHint: @js(__('First and last name')),
                 nameMissing: @js(__('Add your name so the restaurant knows who to ask for.')),
@@ -601,6 +643,7 @@
                 waitingAccepted: @js(__('Your order #:reference is being prepared. You can order again once it is done.')),
                 waitingDelivery: @js(__('Your order #:reference is on its way. You can order again once it arrives.')),
                 waitingPickup: @js(__('Your order #:reference is ready for pickup. You can order again once you have it.')),
+                waitingDineIn: @js(__('Your order #:reference is coming to your table. You can order again once it is served.')),
                 oneAtATime: @js(__('One order at a time')),
                 keepOrder: @js(__('Keep it as it was')),
                 update: @js(__('Update order')),
@@ -610,6 +653,7 @@
                 locked: @js(__('This order can no longer be changed')),
                 lockedBody: @js(__('The restaurant has already accepted it. Call them if you need to change something.')),
                 sentBody: @js(__('The restaurant will call you to confirm. Your order number is :reference.')),
+                sentBodyDineIn: @js(__('The restaurant has your order for :table. Your order number is :reference.')),
                 @endif
             },
         };
@@ -649,6 +693,8 @@
                     statusReady: @js(__('Ready for pickup')),
                     statusDelivered: @js(__('Delivered')),
                     statusPickedUp: @js(__('Picked up')),
+                    statusComing: @js(__('Coming to your table')),
+                    statusServed: @js(__('Served')),
                     statusCancelled: @js(__('Cancelled')),
                 },
             };

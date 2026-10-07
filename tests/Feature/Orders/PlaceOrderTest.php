@@ -45,6 +45,27 @@ class PlaceOrderTest extends TestCase
         ]);
     }
 
+    /**
+     * Lebanese pounds: an order past 100 million (the old columns' ceiling)
+     * still saves, adds up to the pound and prints without decimals.
+     */
+    public function test_an_order_in_lebanese_pounds_can_run_to_hundreds_of_millions(): void
+    {
+        $shop = $this->shop(['currency' => 'LBP', 'country_code' => 'LB', 'phone' => '70123456']);
+        $dish = $this->dish($shop, 'Mezze platter', '2500000.00');
+
+        $response = $this->postJson(route('public.order', $shop->slug), [
+            'items' => [['dish_id' => $dish->id, 'quantity' => 60]],
+        ])->assertCreated()->assertJsonPath('data.total', '150000000.00');
+
+        $order = $shop->orders()->sole();
+        $this->assertSame('150000000.00', (string) $order->total);
+        $this->assertSame('150000000.00', (string) $order->items()->sole()->line_total);
+        $message = rawurldecode((string) parse_url($response->json('data.whatsapp_url'), PHP_URL_QUERY));
+        $this->assertStringContainsString('150,000,000', $message);
+        $this->assertStringNotContainsString('150,000,000.00', $message);
+    }
+
     public function test_the_whatsapp_message_comes_in_the_guests_language(): void
     {
         $shop = $this->shop(['second_locale' => 'fr', 'country_code' => 'LB', 'phone' => '70123456']);

@@ -13,7 +13,7 @@ use Illuminate\Http\Request;
 
 /**
  * The owner's restaurant profile: display name, description, contact details,
- * location and branding. The slug stays read-only. Always scoped to the
+ * location and branding (the slug changes through RestaurantSlugController). Always scoped to the
  * authenticated user's own restaurant, so there's no cross-restaurant surface.
  */
 class RestaurantController extends Controller

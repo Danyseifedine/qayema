@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\AppearanceController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\DiningTableController;
 use App\Http\Controllers\Api\DishController;
 use App\Http\Controllers\Api\FeaturesController;
 use App\Http\Controllers\Api\MenuLanguagesController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\PackageRequestController;
 use App\Http\Controllers\Api\QrController;
 use App\Http\Controllers\Api\RestaurantController;
+use App\Http\Controllers\Api\RestaurantSlugController;
 use App\Http\Controllers\Api\SocialLinkController;
 use App\Http\Controllers\Api\TemplateController;
 use App\Http\Controllers\TempUploadController;
@@ -89,9 +91,11 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::delete('/dishes/{dish}', [DishController::class, 'destroy'])->name('api.dishes.destroy');
 
     // The restaurant itself: name, contact, hours, branding (the dashboard's
-    // Restaurant page). The slug is read-only. A singleton, so no {id}.
+    // Restaurant page). A singleton, so no {id}. Its link has its own call:
+    // the old one keeps forwarding.
     Route::get('/restaurant', [RestaurantController::class, 'show'])->name('api.restaurant.show');
     Route::patch('/restaurant', [RestaurantController::class, 'update'])->name('api.restaurant.update');
+    Route::put('/restaurant/slug', [RestaurantSlugController::class, 'update'])->name('api.restaurant.slug');
 
     // Menu designs (Template rows). A new restaurant has none and must choose
     // before the dashboard unlocks. A design marked premium needs a package
@@ -114,14 +118,40 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         ->middleware('throttle:mutations')
         ->name('api.packages.request');
 
-    // Orders placed from the public menu. Read-only apart from the status:
-    // what was ordered is written once, by the guest, and never edited.
+    // Orders placed from the public menu: read, moved on, changed by the
+    // restaurant (lines keep what they were sold as) and deleted.
     Route::get('/orders', [OrderController::class, 'index'])->name('api.orders.index');
     // Polled by the dashboard for new orders placed in the menu.
     Route::get('/orders/pulse', [OrderController::class, 'pulse'])->name('api.orders.pulse');
     Route::patch('/orders/{order}', [OrderController::class, 'update'])
         ->middleware('throttle:mutations')
         ->name('api.orders.update');
+    // The restaurant changing what an order holds, or deleting it for good.
+    Route::put('/orders/{order}/items', [OrderController::class, 'items'])
+        ->middleware('throttle:mutations')
+        ->name('api.orders.items');
+    Route::delete('/orders/{order}', [OrderController::class, 'destroy'])
+        ->middleware('throttle:mutations')
+        ->name('api.orders.destroy');
+
+    // Tables, each with its own QR code for ordering from the seat. Comes
+    // with ordering in the menu (DiningTableController).
+    Route::get('/tables', [DiningTableController::class, 'index'])->name('api.tables.index');
+    Route::post('/tables', [DiningTableController::class, 'store'])
+        ->middleware('throttle:mutations')
+        ->name('api.tables.store');
+    Route::patch('/tables/{table}', [DiningTableController::class, 'update'])
+        ->whereNumber('table')
+        ->middleware('throttle:mutations')
+        ->name('api.tables.update');
+    Route::post('/tables/{table}/new-code', [DiningTableController::class, 'newCode'])
+        ->whereNumber('table')
+        ->middleware('throttle:mutations')
+        ->name('api.tables.new-code');
+    Route::delete('/tables/{table}', [DiningTableController::class, 'destroy'])
+        ->whereNumber('table')
+        ->middleware('throttle:mutations')
+        ->name('api.tables.destroy');
 
     // QR studio: the menu link's QR design (persisted look) + scan analytics.
     Route::get('/qr', [QrController::class, 'show'])->name('api.qr.show');

@@ -28,6 +28,14 @@ short human-facing map.
 - **Menu**: categories (name, an optional one-line description, order)
   containing dishes (name, price, ingredients, one image, availability, order).
   Deliberately minimal: no category images, no tags.
+- **Tables** (`DiningTable`): each has a name and a random code its own QR
+  code carries (`/{slug}?table=<code>&qr=1`). A guest who scanned one can
+  order "at my table" (dine-in): no address, name and phone optional, and
+  the order keeps the table's name. Ordering at the table is a feature of
+  its own (the `dine_in` flag and switch), apart from ordering: its orders
+  are always placed in the menu, even while delivery and pickup go to
+  WhatsApp. Managed on the dashboard's Tables page, its orders on Table
+  orders; a new code retires a printed card.
 - **Designs** (`Template` rows): how the menu looks. A new restaurant has none
   until the owner picks one, and the dashboard stays locked until they do. A
   design marked premium needs a package with premium designs.

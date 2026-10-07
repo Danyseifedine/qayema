@@ -49,6 +49,7 @@ class OrderResourceTest extends TestCase
             'total' => '21.50',
             'note' => 'Extra garlic',
             'fulfilment' => 'delivery',
+            'table' => null,
             'name' => 'Rami',
             'phone' => '+96170123456',
             'address' => 'Hamra Street, near the bank',
@@ -57,10 +58,12 @@ class OrderResourceTest extends TestCase
             'accepted_at' => null,
             'guest_updated_at' => null,
             'guest_updates' => 0,
+            'owner_updated_at' => null,
             'items' => [[
                 'id' => $line->id,
                 'name' => 'Shawarma',
                 'options' => $options,
+                'unit_price' => (string) $line->unit_price,
                 'quantity' => 2,
                 'line_total' => '14.50',
             ]],
@@ -73,7 +76,7 @@ class OrderResourceTest extends TestCase
         OrderItem::factory()->for($order)->create();
 
         $this->assertSame(
-            ['id', 'reference', 'status', 'currency', 'total', 'note', 'fulfilment', 'name', 'phone', 'address', 'map_url', 'placed_at', 'accepted_at', 'guest_updated_at', 'guest_updates'],
+            ['id', 'reference', 'status', 'currency', 'total', 'note', 'fulfilment', 'table', 'name', 'phone', 'address', 'map_url', 'placed_at', 'accepted_at', 'guest_updated_at', 'guest_updates', 'owner_updated_at'],
             array_keys($this->resolve($order->fresh())),
         );
     }

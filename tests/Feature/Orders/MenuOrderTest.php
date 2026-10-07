@@ -154,7 +154,7 @@ class MenuOrderTest extends TestCase
         $shop = $this->shop(['order_types' => ['pickup']]);
 
         $this->postJson(route('public.order', $shop->slug), $this->order($shop))
-            ->assertJsonValidationErrors(['fulfilment' => 'Choose delivery or pickup.']);
+            ->assertJsonValidationErrors(['fulfilment' => 'Choose how you would like your order.']);
     }
 
     public function test_a_location_comes_as_a_pair_and_on_the_map(): void

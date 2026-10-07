@@ -35,7 +35,7 @@ class UpdateOrderingRequest extends FormRequest
             'mode' => ['required', Rule::enum(OrderChannel::class)],
             // At least one kind of order, or a guest could not order at all.
             'types' => ['required', 'array', 'min:1'],
-            'types.*' => ['string', 'distinct', Rule::in(Fulfilment::values())],
+            'types.*' => ['string', 'distinct', Rule::in(Fulfilment::away())],
         ];
     }
 

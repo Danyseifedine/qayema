@@ -11,14 +11,14 @@ class ImpersonateTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_admin_can_impersonate_menu_owner_and_redirects_home(): void
+    public function test_admin_can_impersonate_menu_owner_and_lands_in_their_dashboard(): void
     {
         $admin = User::factory()->admin()->create();
         $menuOwner = User::factory()->create();
 
         $response = $this->actingAs($admin)->get(route('impersonate', $menuOwner->id));
 
-        $response->assertRedirect('/');
+        $response->assertRedirect(config('app.dashboard_url'));
         $this->assertAuthenticatedAs($menuOwner);
     }
 
@@ -62,7 +62,8 @@ class ImpersonateTest extends TestCase
 
         $response = $this->actingAs($menuOwner)->get(route('impersonate.leave'));
 
-        $response->assertRedirect('/');
+        // Straight back to the Users list, where it started.
+        $response->assertRedirect(route('filament.admin.resources.users.index'));
         $this->assertAuthenticatedAs($admin);
     }
 
@@ -77,7 +78,7 @@ class ImpersonateTest extends TestCase
         $this->actingAs($admin)
             ->withSession(['password_hash_web' => Auth::guard('web')->hashPasswordForCookie($admin->getAuthPassword())])
             ->get(route('impersonate', $menuOwner->id))
-            ->assertRedirect('/');
+            ->assertRedirect(config('app.dashboard_url'));
 
         $this->assertSame(
             Auth::guard('web')->hashPasswordForCookie($menuOwner->getAuthPassword()),
@@ -91,11 +92,34 @@ class ImpersonateTest extends TestCase
         $menuOwner = User::factory()->create(['password' => 'another-password']);
 
         $this->actingAs($admin)->get(route('impersonate', $menuOwner->id));
-        $this->get(route('impersonate.leave'))->assertRedirect('/');
+        $this->get(route('impersonate.leave'))->assertRedirect(route('filament.admin.resources.users.index'));
 
         $this->assertSame(
             Auth::guard('web')->hashPasswordForCookie($admin->getAuthPassword()),
             session('password_hash_web'),
         );
+    }
+
+    public function test_the_dashboard_is_told_who_is_looking_and_the_way_back(): void
+    {
+        $admin = User::factory()->admin()->create(['name' => 'Dani Admin']);
+        $menuOwner = User::factory()->create();
+
+        $this->actingAs($admin)->get(route('impersonate', $menuOwner->id));
+
+        $this->getJson(route('api.user'))
+            ->assertOk()
+            ->assertJsonPath('data.email', $menuOwner->email)
+            ->assertJsonPath('data.impersonation', [
+                'admin' => 'Dani Admin',
+                'leave_url' => route('impersonate.leave'),
+            ]);
+    }
+
+    public function test_an_owner_signed_in_themself_sees_no_way_back(): void
+    {
+        $menuOwner = User::factory()->create();
+
+        $this->actingAs($menuOwner)->getJson(route('api.user'))->assertJsonPath('data.impersonation', null);
     }
 }

@@ -49,4 +49,15 @@ final class Color
 
         return (0.2126 * $r + 0.7152 * $g + 0.0722 * $b) / 255 > 0.62 ? '#111418' : '#FFFFFF';
     }
+
+    /**
+     * Whether a background reads as dark, so the browser's own parts drawn
+     * on it (scrollbars, form controls) come in their dark variant.
+     */
+    public static function isDark(string $hex): bool
+    {
+        [$r, $g, $b] = self::rgb($hex);
+
+        return (0.2126 * $r + 0.7152 * $g + 0.0722 * $b) / 255 < 0.5;
+    }
 }

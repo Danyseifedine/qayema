@@ -46,7 +46,7 @@ class PublicMenuEdgeTest extends TestCase
         $category = Category::factory()->create(['restaurant_id' => $restaurant->id, 'name' => ['en' => 'A']]);
         Dish::factory()->create(['restaurant_id' => $restaurant->id, 'category_id' => $category->id, 'name' => ['en' => 'B'], 'price' => 5]);
 
-        $this->get(route('public.menu', $restaurant->slug))->assertOk()->assertSee('XXX5.00');
+        $this->get(route('public.menu', $restaurant->slug))->assertOk()->assertSee('XXX5');
     }
 
     public function test_a_category_with_only_unavailable_dishes_is_hidden_entirely(): void

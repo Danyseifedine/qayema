@@ -47,6 +47,22 @@ class MenuThemeTest extends TestCase
         $this->assertStringContainsString('--text-color-ink: #FFFFFF;', $html);
     }
 
+    /**
+     * The page scrollbar and form controls are the browser's own: told the
+     * background is dark, it draws them dark instead of grey on white.
+     */
+    public function test_a_dark_background_asks_the_browser_for_its_dark_parts(): void
+    {
+        $classic = $this->classic();
+        $restaurant = $this->published(['template_id' => $classic->id]);
+
+        $this->assertStringContainsString('color-scheme: light;', $this->menu($restaurant));
+
+        $restaurant->saveDesignSettings($classic, ['background_color' => '#121212']);
+
+        $this->assertStringContainsString('color-scheme: dark;', $this->menu($restaurant->fresh()));
+    }
+
     public function test_the_owner_can_hide_the_name_beside_the_logo(): void
     {
         $classic = $this->classic();

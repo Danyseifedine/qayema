@@ -12,6 +12,7 @@ return [
     'qr_studio' => 'QR Studio',
     'ordering' => 'Ordering',
     'menu_ordering' => 'Ordering in the menu',
+    'dine_in' => 'Ordering at the table',
     'analytics' => 'Analytics',
     'advanced_analytics' => 'Advanced analytics',
 
@@ -27,6 +28,7 @@ return [
         'qr_studio' => 'Styled QR code, centre logo and the printable card.',
         'ordering' => 'Guests fill a cart on the menu and send it on WhatsApp.',
         'menu_ordering' => 'Guests place the order in the menu with their phone and address; it arrives on the Orders page.',
+        'dine_in' => 'Each table has its own QR code; guests order to their table from it, and the order arrives on the Table orders page.',
         'analytics' => 'Views, visitors, QR scans and the daily chart.',
         'advanced_analytics' => 'Searches, top dishes, comparisons, longer ranges and the order funnel.',
     ],

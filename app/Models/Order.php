@@ -30,6 +30,8 @@ class Order extends Model
         'status',
         'channel',
         'fulfilment',
+        'table_id',
+        'table_name',
         'currency',
         'total',
         'note',
@@ -46,6 +48,7 @@ class Order extends Model
         'closed_at',
         'guest_updated_at',
         'guest_updates',
+        'owner_updated_at',
         'change_token',
     ];
 
@@ -53,6 +56,7 @@ class Order extends Model
     {
         return [
             'restaurant_id' => 'integer',
+            'table_id' => 'integer',
             'status' => OrderStatus::class,
             'channel' => OrderChannel::class,
             'fulfilment' => Fulfilment::class,
@@ -65,12 +69,19 @@ class Order extends Model
             'closed_at' => 'datetime',
             'guest_updated_at' => 'datetime',
             'guest_updates' => 'integer',
+            'owner_updated_at' => 'datetime',
         ];
     }
 
     public function restaurant(): BelongsTo
     {
         return $this->belongsTo(Restaurant::class);
+    }
+
+    /** The table it was ordered to; null once that table is removed (`table_name` stays). */
+    public function table(): BelongsTo
+    {
+        return $this->belongsTo(DiningTable::class, 'table_id');
     }
 
     public function items(): HasMany
@@ -88,6 +99,32 @@ class Order extends Model
     public function scopeInMenu(Builder $query): Builder
     {
         return $query->where('channel', OrderChannel::Menu);
+    }
+
+    /**
+     * Orders to a table (dine-in), which the dashboard keeps on a page of
+     * their own.
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeAtTable(Builder $query): Builder
+    {
+        return $query->where('fulfilment', Fulfilment::DineIn);
+    }
+
+    /**
+     * Every other order: delivered, picked up, or from before orders had a
+     * kind at all.
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeAway(Builder $query): Builder
+    {
+        return $query->where(fn (Builder $query) => $query
+            ->whereNull('fulfilment')
+            ->orWhere('fulfilment', '!=', Fulfilment::DineIn));
     }
 
     /**

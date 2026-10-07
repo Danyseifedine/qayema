@@ -20,6 +20,9 @@ class IndexOrdersRequest extends FormRequest
     {
         return [
             'status' => ['nullable', Rule::enum(OrderStatus::class)],
+            // `table`: orders to a table (the Table orders page); `away`:
+            // the rest (the Orders page). Left out, both.
+            'kind' => ['nullable', Rule::in(['away', 'table'])],
         ];
     }
 }

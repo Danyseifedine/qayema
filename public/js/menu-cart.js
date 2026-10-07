@@ -15,7 +15,11 @@
  *   it written out, an optional note included;
  * - `menu`: the guest leaves their name, a phone number and, for a delivery, an address
  *   (typed, plus their location if they share it), and the order waits on
- *   the owner's Orders page. A toast says it went.
+ *   the owner's Orders page. A toast says it went. A guest who scanned a
+ *   table's QR code can order to that table instead ("dine-in", a feature of
+ *   its own, config.dineIn): no address, and their name and number become
+ *   optional. At a table the page is built for the menu even while delivery
+ *   and pickup go to WhatsApp; it then offers dine-in alone.
  */
 (function () {
     'use strict';
@@ -48,6 +52,16 @@
 
     var inMenu = config.mode === 'menu';
 
+    /** How long a table's code is remembered after scanning it: a meal,
+     *  not until tomorrow. */
+    var TABLE_HOURS = 4;
+
+    /** The table the guest sits at ({code, name}): the one whose QR code
+     *  opened the menu, or the one this browser scanned a little earlier
+     *  (a reload, the link back from the tracking sheet). The server checks
+     *  the code with every order. */
+    var table = rememberTable();
+
     /** What the guest typed, shared by the phone sheet and the wide column.
      *  Kept in the browser until the order goes, so a reload or a locked
      *  phone loses nothing; sending it starts the form over. */
@@ -61,7 +75,7 @@
     /** True while an order is on its way, so a repaint leaves the button. */
     var sending = false;
 
-    /** The order being changed ({reference, updateUrl, version}), or null. While it
+    /** The order being changed ({reference, updateUrl, version, fulfilment, table}), or null. While it
      *  is set the cart and the form hold that order, and nothing is written
      *  over the guest's own cart or details in storage. */
     var editing = null;
@@ -80,6 +94,74 @@
     /** The order accepted, on its way or ready: no new one until it is done. */
     function waitingFor() {
         return !editing && going && (going.status === 'accepted' || going.status === 'ready') ? going : null;
+    }
+
+    function rememberTable() {
+        var now = Date.now();
+
+        try {
+            // A table scanned earlier only counts where orders at the table
+            // are taken; elsewhere it would offer what cannot be ordered.
+            if (config.table || !config.dineIn) {
+                if (config.table) {
+                    window.localStorage.setItem(config.tableKey, JSON.stringify({ code: config.table.code, name: config.table.name, at: now }));
+                }
+                return config.table || null;
+            }
+
+            var saved = JSON.parse(window.localStorage.getItem(config.tableKey) || 'null');
+            if (saved && typeof saved.code === 'string' && typeof saved.name === 'string' && now - saved.at < TABLE_HOURS * 3600000) {
+                return { code: saved.code, name: saved.name };
+            }
+        } catch (error) {
+            // No storage: only the scan that opened this page counts.
+        }
+
+        return config.table || null;
+    }
+
+    /** The table's code no longer opens it (the owner printed a new one). */
+    function forgetTable() {
+        table = null;
+        try {
+            window.localStorage.removeItem(config.tableKey);
+        } catch (error) {
+            // Nothing was kept, then.
+        }
+    }
+
+    /** The table an order at it goes to: the one being changed keeps its own. */
+    function tableName() {
+        if (editing && editing.fulfilment === 'dine_in') {
+            return editing.table || '';
+        }
+        return table ? table.name : '';
+    }
+
+    /** Delivery and pickup as the restaurant takes them, and dine-in while it is on. */
+    function allTypes() {
+        return (config.types || []).concat(config.dineIn ? ['dine_in'] : []);
+    }
+
+    /**
+     * The kinds of order the guest can pick now. Dine-in needs a table: the
+     * one scanned, or the one the order being changed already has.
+     */
+    function types() {
+        return allTypes().filter(function (type) {
+            return type !== 'dine_in' || Boolean(table) || Boolean(editing && editing.fulfilment === 'dine_in');
+        });
+    }
+
+    /** At a table, ordering to it comes first. */
+    function firstType() {
+        var open = types();
+        return open.indexOf('dine_in') !== -1 && table ? 'dine_in' : open[0];
+    }
+
+    /** Only dine-in is on, and this guest has no table to order to. */
+    function needsTable() {
+        return inMenu && types().length === 0;
     }
 
     function readChoices() {
@@ -154,13 +236,16 @@
             saved = {};
         }
 
-        var types = config.types || [];
+        var open = types();
         var known = (config.countries || []).some(function (country) {
             return country.code === saved.country;
         });
 
         return {
-            fulfilment: types.indexOf(saved.fulfilment) !== -1 ? saved.fulfilment : types[0],
+            // At a table, the order goes to it unless the guest says otherwise.
+            fulfilment: table && open.indexOf('dine_in') !== -1
+                ? 'dine_in'
+                : (open.indexOf(saved.fulfilment) !== -1 ? saved.fulfilment : open[0]),
             name: typeof saved.name === 'string' ? saved.name : '',
             country: known ? saved.country : config.country,
             phone: typeof saved.phone === 'string' ? saved.phone : '',
@@ -187,7 +272,7 @@
         details.note = '';
         details.website = '';
         details.country = config.country;
-        details.fulfilment = (config.types || [])[0];
+        details.fulfilment = firstType();
         details.latitude = null;
         details.longitude = null;
         details.filled = '';
@@ -235,7 +320,13 @@
     }
 
     function money(amount) {
-        return config.currency + amount.toFixed(2);
+        // As App\Support\Price: no decimals on a whole amount, two otherwise.
+        var rounded = Math.round(amount * 100) / 100;
+        var whole = rounded === Math.floor(rounded);
+        return config.currency + rounded.toLocaleString('en-US', {
+            minimumFractionDigits: whole ? 0 : 2,
+            maximumFractionDigits: whole ? 0 : 2,
+        });
     }
 
     function priceOf(element) {
@@ -567,8 +658,10 @@
         wrap.appendChild(element('legend', 'cart-label', strings.how));
 
         var pills = element('div', 'choice-pills');
-        config.types.forEach(function (type) {
+        // Every kind is drawn; paintFulfilment() hides the ones not open now.
+        allTypes().forEach(function (type) {
             var pill = element('label', 'choice-pill');
+            pill.setAttribute('data-type-pill', type);
             var input = document.createElement('input');
             input.type = 'radio';
             input.name = 'fulfilment-' + id;
@@ -583,6 +676,12 @@
             });
             pill.appendChild(input);
             pill.appendChild(element('span', 'choice-name', strings[type]));
+            if (type === 'dine_in') {
+                // Which table: the guest sees where it goes before sending.
+                var where = element('span', 'choice-price', tableName());
+                where.setAttribute('data-table-name', '');
+                pill.appendChild(where);
+            }
             pills.appendChild(pill);
         });
         wrap.appendChild(pills);
@@ -591,9 +690,18 @@
         return wrap;
     }
 
+    /** "Optional" beside a label, shown only for an order at the table. */
+    function optionalAtTable(wrap) {
+        var tag = element('span', 'cart-optional', strings.optional);
+        tag.setAttribute('data-dine-optional', '');
+        tag.hidden = true;
+        wrap.querySelector('label').appendChild(tag);
+    }
+
     function nameField(id) {
         var wrap = field('name', strings.name);
         wrap.querySelector('label').htmlFor = 'cart-name-' + id;
+        optionalAtTable(wrap);
 
         var input = document.createElement('input');
         input.id = 'cart-name-' + id;
@@ -811,6 +919,7 @@
         var wrap = field('phone', strings.phone);
         wrap.classList.add('cart-phone-field');
         wrap.querySelector('label').htmlFor = 'cart-phone-' + id;
+        optionalAtTable(wrap);
 
         var row = element('div', 'cart-phone');
         // Digits read left to right, on an Arabic menu too.
@@ -907,7 +1016,7 @@
         var wrap = element('div', 'cart-details');
 
         if (inMenu) {
-            if (config.types.length > 1) {
+            if (allTypes().length > 1) {
                 wrap.appendChild(typesField(id));
             }
             wrap.appendChild(nameField(id));
@@ -922,13 +1031,30 @@
         return wrap;
     }
 
-    /** Pickup needs no address, so the address leaves with it. */
+    /**
+     * Pickup and dine-in need no address, so the address leaves with them;
+     * at the table the name and number turn optional. Dine-in only shows
+     * with a table to order to, and the choice only with two to choose from.
+     */
     function paintFulfilment() {
+        var open = types();
         Array.prototype.forEach.call(document.querySelectorAll('[data-fulfilment]'), function (input) {
             input.checked = input.value === details.fulfilment;
         });
+        Array.prototype.forEach.call(document.querySelectorAll('[data-type-pill]'), function (pill) {
+            pill.hidden = open.indexOf(pill.getAttribute('data-type-pill')) === -1;
+        });
+        Array.prototype.forEach.call(document.querySelectorAll('.cart-types'), function (fieldset) {
+            fieldset.hidden = open.length < 2;
+        });
+        Array.prototype.forEach.call(document.querySelectorAll('[data-table-name]'), function (node) {
+            node.textContent = tableName();
+        });
         Array.prototype.forEach.call(document.querySelectorAll('[data-delivery-only]'), function (node) {
             node.hidden = details.fulfilment !== 'delivery';
+        });
+        Array.prototype.forEach.call(document.querySelectorAll('[data-dine-optional]'), function (node) {
+            node.hidden = details.fulfilment !== 'dine_in';
         });
     }
 
@@ -1071,13 +1197,19 @@
         var found = {};
 
         if (inMenu) {
-            if (details.name.trim() === '') {
+            // At the table, who ordered is the table: a name and a number
+            // help, but are not needed.
+            var dineIn = details.fulfilment === 'dine_in';
+
+            if (!dineIn && details.name.trim() === '') {
                 found.name = strings.nameMissing;
             }
 
             var digits = details.phone.replace(/\D+/g, '');
             if (digits === '') {
-                found.phone = strings.phoneMissing;
+                if (!dineIn) {
+                    found.phone = strings.phoneMissing;
+                }
             } else if (digits.length < 6 || digits.length > 15) {
                 found.phone = strings.phoneInvalid;
             }
@@ -1151,6 +1283,9 @@
         parts.filled.appendChild(parts.lines);
         if (config.closed) {
             parts.filled.appendChild(element('p', 'cart-closed', strings.closedNote));
+        } else if (needsTable()) {
+            // Only orders at the table are taken, and this guest has none.
+            parts.filled.appendChild(element('p', 'cart-closed', strings.needsTable));
         } else {
             parts.details = buildDetails(panel.getAttribute('data-cart-panel'));
             parts.filled.appendChild(parts.details);
@@ -1170,10 +1305,10 @@
     function paintPlace(button, amount) {
         button.textContent = '';
 
-        if (config.closed || waitingFor()) {
+        if (config.closed || waitingFor() || (needsTable() && !editing)) {
             button.disabled = true;
             button.classList.remove('split');
-            button.textContent = config.closed ? strings.closed : strings.oneAtATime;
+            button.textContent = config.closed ? strings.closed : waitingFor() ? strings.oneAtATime : strings.needsTableShort;
             return;
         }
 
@@ -1203,7 +1338,7 @@
         } else if (waiting) {
             var note = waiting.status === 'accepted'
                 ? strings.waitingAccepted
-                : (waiting.fulfilment === 'delivery' ? strings.waitingDelivery : strings.waitingPickup);
+                : { delivery: strings.waitingDelivery, dine_in: strings.waitingDineIn }[waiting.fulfilment] || strings.waitingPickup;
             parts.editing.firstChild.textContent = note.replace(':reference', waiting.reference);
         }
         // Adding to an order or waiting for one asks nothing: the order
@@ -1305,6 +1440,8 @@
             // restaurant has since changed how it takes orders.
             mode: config.mode,
             note: details.note,
+            // The table scanned: an order to it, or on WhatsApp, a label.
+            table: table ? table.code : null,
         };
 
         if (inMenu) {
@@ -1336,7 +1473,7 @@
 
     function submit(parts) {
         var current = lines();
-        if (current.length === 0 || sending || config.closed || waitingFor()) {
+        if (current.length === 0 || sending || config.closed || waitingFor() || (needsTable() && !editing)) {
             return;
         }
 
@@ -1385,6 +1522,15 @@
             })
             .then(function (result) {
                 if (!result.ok) {
+                    var tableError = result.status === 422 && result.body && result.body.errors && result.body.errors.table;
+                    if (tableError) {
+                        // The card on the table was replaced: the code this
+                        // page has is no table any more.
+                        forgetTable();
+                        details.fulfilment = firstType();
+                        paintFulfilment();
+                        throw new Error([].concat(tableError)[0]);
+                    }
                     var errors = result.status === 422 ? fieldErrors(result.body && result.body.errors) : {};
                     if (Object.keys(errors).length > 0) {
                         showErrors(errors);
@@ -1411,9 +1557,13 @@
                 save();
 
                 if (data.channel === 'menu') {
+                    var atTable = details.fulfilment === 'dine_in';
+                    var body = atTable
+                        ? strings.sentBodyDineIn.replace(':table', tableName()).replace(':reference', data.reference)
+                        : strings.sentBody.replace(':reference', data.reference);
                     resetDetails();
                     announce(data);
-                    toast(strings.sent, strings.sentBody.replace(':reference', data.reference), data.tracking_url);
+                    toast(strings.sent, body, data.tracking_url);
                 } else if (data.whatsapp_url) {
                     // WhatsApp is what reaches the owner.
                     window.location.href = data.whatsapp_url;
@@ -1691,7 +1841,13 @@
                     return;
                 }
 
-                editing = { reference: data.reference, updateUrl: data.update_url, version: data.version };
+                editing = {
+                    reference: data.reference,
+                    updateUrl: data.update_url,
+                    version: data.version,
+                    fulfilment: data.details.fulfilment,
+                    table: data.details.table,
+                };
                 orderToken = null;
 
                 cart = {};
@@ -1704,8 +1860,8 @@
                     };
                 });
 
-                var types = config.types || [];
-                details.fulfilment = types.indexOf(data.details.fulfilment) !== -1 ? data.details.fulfilment : types[0];
+                var open = types();
+                details.fulfilment = open.indexOf(data.details.fulfilment) !== -1 ? data.details.fulfilment : firstType();
                 details.name = data.details.name;
                 details.country = data.details.country || config.country;
                 details.phone = data.details.phone;

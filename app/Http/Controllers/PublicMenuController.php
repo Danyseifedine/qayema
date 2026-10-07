@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\OrderChannel;
+use App\Models\DiningTable;
 use App\Models\Restaurant;
 use App\Models\Template;
 use App\Services\Analytics\MenuVisitRecorder;
@@ -86,6 +87,15 @@ class PublicMenuController extends Controller
 
         // A preview is a dress rehearsal and never takes a real order.
         $channel = $preview === null ? $restaurant->orderChannel() : null;
+        $dineIn = $preview === null && $restaurant->takesDineIn();
+
+        // Opened from a table's QR code: the cart can order to it, and on
+        // WhatsApp the message says which table.
+        $table = $channel === null && ! $dineIn ? null : $this->table($request, $restaurant);
+
+        // At a table that takes orders the cart orders in the menu, even
+        // while delivery and pickup go to WhatsApp.
+        $cartChannel = $table !== null && $dineIn ? OrderChannel::Menu : $channel;
 
         return view($view, [
             'restaurant' => $restaurant,
@@ -94,7 +104,7 @@ class PublicMenuController extends Controller
             'locale' => $locale,
             'is_preview' => $preview !== null,
             'hours' => OpeningHours::for($restaurant),
-            'locales' => $this->localeLinks($restaurant, $preview),
+            'locales' => $this->localeLinks($restaurant, $preview, $table),
             'menu_url' => route('public.menu', $restaurant->slug),
             'map_embed_url' => MapPoint::embedFor($restaurant),
             // Chatting to the restaurant needs the same E.164 number an order
@@ -104,12 +114,16 @@ class PublicMenuController extends Controller
                 : null,
             // Ordering is a package feature; on WhatsApp it also needs a
             // number to send to.
-            'can_order' => match ($channel) {
+            'can_order' => match ($cartChannel) {
                 OrderChannel::Menu => true,
                 OrderChannel::WhatsApp => $number !== null,
                 null => false,
             },
-            'order_channel' => $channel,
+            'order_channel' => $cartChannel,
+            // Delivery and pickup, while those are taken in the menu.
+            'order_types' => $channel === OrderChannel::Menu ? $restaurant->orderTypes() : [],
+            'dine_in' => $dineIn,
+            'table' => $table,
             // Each dish's variants and add-ons, for its sheet and the cart.
             'dish_options' => MenuDishOptions::for($restaurant, $restaurant->categories->flatMap->dishes, $locale),
             'seo' => $this->seo->for($restaurant, $locale, $preview !== null),
@@ -137,7 +151,7 @@ class PublicMenuController extends Controller
      *
      * @return array<string, array{name: string, flag: string, url: string}>
      */
-    private function localeLinks(Restaurant $restaurant, ?Template $preview): array
+    private function localeLinks(Restaurant $restaurant, ?Template $preview, ?DiningTable $table): array
     {
         $base = route('public.menu', $restaurant->slug);
         $links = [];
@@ -153,6 +167,11 @@ class PublicMenuController extends Controller
                 $query['preview'] = $preview->id;
             }
 
+            // Nor may it lose the table the guest is sitting at.
+            if ($table !== null) {
+                $query['table'] = $table->code;
+            }
+
             $links[$code] = [
                 'name' => $meta['name'],
                 'flag' => $meta['flag'],
@@ -161,6 +180,16 @@ class PublicMenuController extends Controller
         }
 
         return $links;
+    }
+
+    /** The table whose QR code opened the menu, when its code is still one of this restaurant's. */
+    private function table(Request $request, Restaurant $restaurant): ?DiningTable
+    {
+        $code = $request->query('table');
+
+        return is_string($code) && $code !== '' && strlen($code) <= 16
+            ? $restaurant->diningTables()->where('code', $code)->first()
+            : null;
     }
 
     /** Whether this request is a navigation from this same menu page. */

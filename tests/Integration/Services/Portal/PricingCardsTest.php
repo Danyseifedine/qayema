@@ -51,7 +51,7 @@ class PricingCardsTest extends TestCase
         $this->assertTrue($premium['featured']);
         $this->assertSame('Pro', $premium['base']);
         $this->assertSame(
-            ['Unlimited dishes*', 'Unlimited categories*', '10 social links', 'Premium designs', 'QR studio', 'Orders on WhatsApp', 'Orders in your menu', 'Advanced analytics'],
+            ['Unlimited dishes*', 'Unlimited categories*', '10 social links', 'Premium designs', 'QR studio', 'Orders on WhatsApp', 'Orders in your menu', 'Orders at the table', 'Advanced analytics'],
             $premium['lines'],
         );
 
@@ -77,6 +77,7 @@ class PricingCardsTest extends TestCase
             'qr_studio' => 'Premium',
             'ordering' => 'Premium',
             'menu_ordering' => 'Premium',
+            'dine_in' => 'Premium',
             'analytics' => 'Pro',
             'advanced_analytics' => 'Premium',
         ], app(PricingCards::class)->unlockedBy());

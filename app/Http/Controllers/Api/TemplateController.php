@@ -46,7 +46,7 @@ class TemplateController extends Controller
 
     private function collection(Restaurant $restaurant): AnonymousResourceCollection
     {
-        return TemplateResource::collection(Template::query()->active()->get())->additional([
+        return TemplateResource::collection(Template::query()->active()->with('media')->get())->additional([
             'meta' => [
                 'current' => $restaurant->template_id,
                 // What the menu is drawn in: the choice, or the fallback when

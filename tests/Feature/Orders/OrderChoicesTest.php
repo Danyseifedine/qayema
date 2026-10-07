@@ -227,7 +227,7 @@ class OrderChoicesTest extends TestCase
         ]])->assertCreated();
 
         $message = rawurldecode((string) parse_url($response->json('data.whatsapp_url'), PHP_URL_QUERY));
-        $this->assertStringContainsString("1 × Burger  \$12.00\n    Size: Large, Spice level: Hot, + Extra cheese\n", $message);
+        $this->assertStringContainsString("1 × Burger  \$12\n    Size: Large, Spice level: Hot, + Extra cheese\n", $message);
     }
 
     public function test_the_shape_of_the_choices_is_checked(): void
