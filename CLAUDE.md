@@ -611,8 +611,11 @@ invented reviews (`tests/Feature/Portal/LandingContentTest`).
   Custom ships with its own (`config/package.php`; the migration fills them
   only where none are written): a design for the brand, limits for the
   group, direct help. Empty, the card lists what the package adds.
-- The admin home is the `PackagesEndingSoon` widget: ending in 14 days or
-  ended in the last 30, with Extend / Change package.
+- The admin home (`App\Filament\Admin\Pages\Dashboard`) is the
+  `PackagesEndingSoon` widget: ending in 14 days or ended in the last 30,
+  with Extend / Change package; its header has "Send test notification"
+  (`SendTestNotificationAction`, `AdminAlerts::test()`: my phones or every
+  admin's, sent at once, and it says why nothing went).
 - A package request shares the public contact form's durable per-IP quota of
   3/day, and comes back as a **429** carrying `retry_after` when it is hit.
 - **Premium designs:** a template with `is_premium` needs the

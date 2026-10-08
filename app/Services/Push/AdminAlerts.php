@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\ContactMessage;
 use App\Models\DeviceToken;
 use App\Models\Restaurant;
+use App\Models\User;
 use App\Services\Menu\MenuLanguages;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -32,6 +33,9 @@ class AdminAlerts
 
     public const MENU_EDITING = 'menu_editing';
 
+    /** A test from /admin: opens nothing when tapped. */
+    public const TEST = 'test';
+
     /** An owner editing for an afternoon is one notification an hour, not one per dish. */
     public const MENU_EDITING_QUIET_MINUTES = 60;
 
@@ -52,6 +56,24 @@ class AdminAlerts
     private function later(PushMessage $message): void
     {
         defer(fn () => $this->sender->send($this->adminPhones(), $message));
+    }
+
+    /**
+     * A test an admin sends from /admin to see that notifications reach the
+     * phones: theirs, or every admin's. Sent now (not after the response)
+     * so the admin sees how many it reached.
+     *
+     * @return array{phones: int, reached: int}
+     */
+    public function test(User $admin, bool $everyAdmin, string $title, string $body): array
+    {
+        $phones = $everyAdmin ? $this->adminPhones() : $admin->deviceTokens()->getQuery();
+        $count = (clone $phones)->count();
+
+        return [
+            'phones' => $count,
+            'reached' => $count === 0 ? 0 : $this->sender->send($phones, new PushMessage($title, $body, ['type' => self::TEST])),
+        ];
     }
 
     /** An owner has just named their restaurant in onboarding. */
