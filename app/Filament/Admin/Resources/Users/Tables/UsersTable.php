@@ -32,6 +32,12 @@ class UsersTable
                     ->sortable()
                     ->weight('bold'),
 
+                TextColumn::make('username')
+                    ->placeholder('-')
+                    ->searchable()
+                    ->sortable()
+                    ->copyable(),
+
                 TextColumn::make('email')
                     ->label('Email')
                     ->placeholder('N/A')

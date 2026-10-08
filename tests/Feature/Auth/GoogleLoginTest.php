@@ -84,6 +84,23 @@ class GoogleLoginTest extends TestCase
         ]);
     }
 
+    public function test_google_never_opens_an_account_made_with_a_username_by_its_email(): void
+    {
+        // The email typed at the username sign-up was never proven, so Google
+        // must not link to it: either side could be a stranger.
+        $user = User::factory()->withUsername('beit.rami')->create(['email' => 'rami@example.com']);
+
+        $this->mockSocialite($this->fakeGoogleUser('google-999', 'rami@example.com'));
+
+        $this->get(route('auth.google.callback'))
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('error', __('auth.google_username_account'));
+
+        $this->assertGuest();
+        $this->assertSame(0, $user->socialAccounts()->count());
+        $this->assertSame(1, User::query()->count());
+    }
+
     public function test_new_google_user_lands_on_onboarding(): void
     {
         $this->mockSocialite($this->fakeGoogleUser('google-000', 'brand-new@example.test'));

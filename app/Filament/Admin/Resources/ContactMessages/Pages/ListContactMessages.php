@@ -27,6 +27,7 @@ class ListContactMessages extends ListRecords
                     ->weight('bold'),
 
                 TextColumn::make('email')
+                    ->placeholder('-')
                     ->searchable()
                     ->sortable()
                     ->copyable(),

@@ -25,8 +25,11 @@ class ContactMessageReceived extends Mailable implements ShouldQueue
             ? 'New contact message from '.$this->contactMessage->name
             : 'Package request: '.$package->getTranslation('name', 'en').' from '.$this->contactMessage->name;
 
+        // An owner who signed up with a username has no address to answer.
         return new Envelope(
-            replyTo: [new Address($this->contactMessage->email, $this->contactMessage->name)],
+            replyTo: filled($this->contactMessage->email)
+                ? [new Address($this->contactMessage->email, $this->contactMessage->name)]
+                : [],
             subject: $subject,
         );
     }

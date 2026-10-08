@@ -18,7 +18,7 @@ class LoginThrottleTest extends TestCase
     private function attempt(string $email, string $password = 'wrong-password')
     {
         return $this->from(route('login'))->post(route('login'), [
-            'email' => $email,
+            'login' => $email,
             'password' => $password,
         ]);
     }
@@ -28,14 +28,14 @@ class LoginThrottleTest extends TestCase
         $user = User::factory()->create();
 
         for ($i = 0; $i < 5; $i++) {
-            $this->attempt($user->email)->assertSessionHasErrors('email');
+            $this->attempt($user->email)->assertSessionHasErrors('login');
         }
 
         // The sixth is the lockout message, not a raw 429.
         $response = $this->attempt($user->email);
 
-        $response->assertStatus(302)->assertSessionHasErrors('email');
-        $this->assertStringContainsString('seconds', session('errors')->first('email'));
+        $response->assertStatus(302)->assertSessionHasErrors('login');
+        $this->assertStringContainsString('seconds', session('errors')->first('login'));
     }
 
     public function test_the_lockout_is_per_account_not_site_wide(): void
@@ -67,7 +67,7 @@ class LoginThrottleTest extends TestCase
             $this->attempt($user->email);
         }
 
-        $this->assertStringNotContainsString('seconds', session('errors')->first('email'));
+        $this->assertStringNotContainsString('seconds', session('errors')->first('login'));
     }
 
     public function test_a_flood_from_one_ip_still_hits_the_ceiling(): void

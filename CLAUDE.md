@@ -466,13 +466,72 @@ Forms\Components\Select::make('user_id')
 Bilingual (ar/en) restaurant-menu SaaS. Two codebases in this folder:
 
 - **Laravel app (this repo)**: the public portal (landing, legal, contact), auth
-  (Google OAuth + email via `/get-started`), a 3-step onboarding wizard, the
+  (Google OAuth, or a username + password made at `/create-account`; both
+  sign in at `/get-started`, where the box takes an email or a username. The
+  email is optional at sign-up; without one, an admin resets the password in
+  /admin → Users. Google never links to a username account by its email,
+  which was never proven), a 3-step onboarding wizard, the
   **public menu at `/{slug}`**, the JSON API for the dashboard SPA
   (`routes/api.php`), and the Filament v4 admin panel (`/admin`).
 - **`qayema-dashboard/` (separate repo)**: the owner dashboard SPA. React 19 +
   Vite + TS, Sanctum **session-cookie** auth (no tokens), CSRF primed from
   `GET /api/csrf-token` (the body, because a cross-subdomain SPA can't read the
   cookie). It also holds the Playwright end-to-end suite for both apps (`e2e/`).
+- **`qayema-admin-app/` (Flutter, Android and iOS)**: the admin's phone app.
+  It signs in at `POST /api/admin/login` (email or username + password,
+  `AdminLoginRequest`, the website's lockout after five wrong tries, no
+  captcha) and gets a **Sanctum bearer token** (60 days, one per phone,
+  `personal_access_tokens`). Tokens open `api/admin/*` only
+  (`AppServiceProvider::keepTokensToTheAdminApp()`): sent to the dashboard's
+  API they count as no sign-in. Every admin route also checks the account is
+  still an admin (`EnsureUserIsAdmin`). An owner's account, a wrong password
+  and a Google-only admin get the same "not correct" answer.
+  What it does (`Api\Admin\*` controllers, `AdminRestaurantResource`,
+  requests in `app/Http/Requests/Admin/`): list restaurants
+  (`GET /api/admin/restaurants`, search by name, link or owner, filter
+  `all|active|inactive|ending|ended`; ending = package in force with an end,
+  soonest first), one restaurant, open one with its owner
+  (`POST /api/admin/restaurants`: the owner's account and the restaurant
+  together, through `OnboardingService::openForOwner()`, which /admin →
+  Users → Create also uses), switch a menu on or off
+  (`PATCH …/{id}/active`), change its package from today
+  (`PUT …/{id}/package`) or add time (`POST …/{id}/package/extend`, 422 on a
+  package with no end), both through `PackageAssigner`, and
+  `GET /api/admin/packages`. Months are `PackageAssigner::DURATIONS`; no
+  months means no end date. Also: the home screen's numbers
+  (`GET /api/admin/summary`, `SummaryController`: restaurants, new in 7
+  days (list filter `new`), menus off, ending in 7 days, ended, menu visits
+  today since midnight in Beirut; two queries), a restaurant's basics
+  (`PATCH /api/admin/restaurants/{id}`: English name with its other
+  languages kept, menu link through `AvailableSlug` (the former one keeps
+  forwarding), phone), and the owner's password
+  (`PUT …/{id}/owner/password`, never an admin's; it clears the
+  remember-me token, and the owner's open sessions end on their next
+  request). One restaurant (`AdminRestaurantResource::detail()`, every
+  answer about one restaurant) also carries its phone with its dial code and
+  its visits (`trafficTotals()`, `qrScans()`).
+- **Admin phone notifications** (Firebase Cloud Messaging, `kreait/laravel-firebase`,
+  Firebase project `qayema`). The app registers its phone after signing in
+  (`PUT /api/admin/devices`, table `device_tokens`, one row per phone; a
+  phone signed in by another admin moves to them) and removes it on sign-out
+  (`DELETE`). `App\Services\Push\PushSender` is the only sender: nothing
+  without `FIREBASE_CREDENTIALS` (the service-account JSON, kept in
+  git-ignored `storage/app/firebase-credentials.json`; empty in tests and
+  e2e), never throws, and deletes a phone Firebase no longer knows.
+  `App\Services\Push\AdminAlerts` says what goes out, always naming the
+  restaurant, never its owner's name or email: a package request
+  (opens the restaurant) or a contact message, from `ContactService` after
+  the response (`defer`); a restaurant an owner opens in onboarding
+  (`OnboardingService::saveIdentity()`, never one an admin opens); an owner
+  editing their menu (`TellAdminsAboutMenuEdits` on the owner API: a
+  successful write to `MENU_ROUTES`, not orders, the account or features,
+  not an admin signed in as the owner), once an hour at most per
+  restaurant (`Cache::add`, `MENU_EDITING_QUIET_MINUTES`); and
+  `packages:remind-ending` at 09:00 Beirut, the
+  packages ending in the next 3 days (opens Renewals; needs the scheduler's
+  cron). Android channel `admin_alerts` and status icon `ic_stat_qayema`
+  live in the app. iOS needs an APNs key and `GoogleService-Info.plist`
+  before it gets any.
 
 ## Packages
 
@@ -1250,9 +1309,10 @@ close is at or before its open, which runs past midnight.
 
 ## Not yet built
 
-- **Push notifications** to a phone (web push, SMS). Orders placed in the menu
-  are live through Pusher while a page is open; on WhatsApp, WhatsApp is the
-  notification.
+- **Push notifications to owners** (web push, SMS, the owner app). Orders
+  placed in the menu are live through Pusher while a page is open; on
+  WhatsApp, WhatsApp is the notification. Admins' phones get them (see the
+  admin app above).
 - More template designs. Only the `classic` view exists.
 - **Taking payment.** Pro/Premium/Custom are requested, not bought: there is no
   checkout, no subscription and no billing provider. An admin assigns a package

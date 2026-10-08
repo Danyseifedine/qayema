@@ -5,6 +5,7 @@ namespace App\Services\Contact;
 use App\Exceptions\TooManyContactMessages;
 use App\Mail\ContactMessageReceived;
 use App\Models\ContactMessage;
+use App\Services\Push\AdminAlerts;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -13,6 +14,8 @@ use Illuminate\Support\Facades\Mail;
 class ContactService
 {
     private const MAX_PER_DAY = 3;
+
+    public function __construct(private readonly AdminAlerts $alerts) {}
 
     /**
      * Trusted IPs (config/security.php) are never throttled, as AbuseGuard
@@ -48,9 +51,10 @@ class ContactService
      * restart, or `cache:clear`/`optimize:clear`.
      *
      * A package request from a signed-in owner comes through here too, with
-     * `user_id` and `package_id` set: same inbox, same quota.
+     * `user_id` and `package_id` set: same inbox, same quota. Its email is
+     * null when the owner signed up with a username.
      *
-     * @param  array{name: string, email: string, message: string, user_id?: int|null, package_id?: int|null}  $data
+     * @param  array{name: string, email: string|null, message: string, user_id?: int|null, package_id?: int|null}  $data
      *
      * @throws TooManyContactMessages when the per-IP daily limit is reached
      */
@@ -76,7 +80,7 @@ class ContactService
     }
 
     /**
-     * @param  array{name: string, email: string, message: string, user_id?: int|null, package_id?: int|null}  $data
+     * @param  array{name: string, email: string|null, message: string, user_id?: int|null, package_id?: int|null}  $data
      */
     private function createAndNotify(array $data, string $ip): ContactMessage
     {
@@ -106,6 +110,9 @@ class ContactService
                 'error' => $e->getMessage(),
             ]);
         }
+
+        // And on the admins' phones, after the response.
+        rescue(fn () => $this->alerts->contactReceived($contact));
 
         return $contact;
     }

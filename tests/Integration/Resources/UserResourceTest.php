@@ -18,7 +18,7 @@ class UserResourceTest extends TestCase
 {
     use CreatesOwners, RefreshDatabase;
 
-    private const USER_KEYS = ['name', 'email', 'has_completed_onboarding', 'has_password', 'impersonation'];
+    private const USER_KEYS = ['name', 'username', 'email', 'has_completed_onboarding', 'has_password', 'impersonation'];
 
     private const RESTAURANT_KEYS = [
         'id', 'languages', 'second_locale', 'default_locale', 'template_id', 'public_url',
@@ -56,12 +56,24 @@ class UserResourceTest extends TestCase
 
         $this->assertSame([
             'name' => 'Rana',
+            'username' => null,
             'email' => 'rana@example.test',
             'has_completed_onboarding' => false,
             'has_password' => true,
             'impersonation' => null,
             'restaurant' => null,
         ], $this->resolve($user->load('restaurant')));
+    }
+
+    public function test_an_account_made_with_a_username_has_no_email(): void
+    {
+        $user = User::factory()->withUsername('beit.rami')->create();
+
+        $data = $this->resolve($user);
+
+        $this->assertSame('beit.rami', $data['username']);
+        $this->assertNull($data['email']);
+        $this->assertTrue($data['has_password']);
     }
 
     public function test_a_google_only_admin(): void

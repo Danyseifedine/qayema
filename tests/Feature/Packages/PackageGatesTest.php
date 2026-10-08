@@ -179,6 +179,7 @@ class PackageGatesTest extends TestCase
                 'qr_studio' => true,
                 'ordering' => true,
                 'menu_ordering' => true,
+                'dine_in' => true,
                 'analytics' => true,
                 'advanced_analytics' => true,
             ]);

@@ -42,6 +42,8 @@ class PackagesEndingSoon extends TableWidget
                     ->url(fn (Restaurant $record): string => RestaurantResource::getUrl('edit', ['record' => $record])),
                 TextColumn::make('user.email')
                     ->label('Owner')
+                    // An owner who signed up with a username has no email.
+                    ->state(fn (Restaurant $record): ?string => $record->user?->email ?? $record->user?->username)
                     ->copyable(),
                 TextColumn::make('package.name')
                     ->label('Package')

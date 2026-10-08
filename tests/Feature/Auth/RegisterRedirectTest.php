@@ -10,7 +10,10 @@ class RegisterRedirectTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** There is no separate sign-up form: /register is the one get-started page. */
+    /**
+     * /register is where every "Get started" button points: the one
+     * get-started page, with Google and, a link away, the username sign-up.
+     */
     public function test_a_guest_is_sent_to_get_started(): void
     {
         $this->get('/register')->assertRedirect(route('login'));

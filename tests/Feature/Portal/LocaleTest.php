@@ -81,7 +81,7 @@ class LocaleTest extends TestCase
         $user = User::factory()->create();
 
         $this->get(route('locale.switch', 'ar'));
-        $this->post(route('login'), ['email' => $user->email, 'password' => 'password']);
+        $this->post(route('login'), ['login' => $user->email, 'password' => 'password']);
 
         $this->assertSame('ar', session('owner_locale'));
     }

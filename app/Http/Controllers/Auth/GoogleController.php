@@ -56,6 +56,15 @@ class GoogleController extends Controller
 
         $user = User::where('email', $googleUser->getEmail())->first();
 
+        // An email typed at the username sign-up was never proven, so it
+        // must not hand that account to whoever owns the address on Google
+        // (or hand them an account someone else set up under their email).
+        // The address's owner can still get in through "Forgot password?".
+        if ($user?->username !== null) {
+            return redirect()->route('login')
+                ->with('error', __('auth.google_username_account'));
+        }
+
         if ($user) {
             $this->attachSocialAccount($user, $googleUser);
             Auth::login($user, remember: true);

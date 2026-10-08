@@ -185,6 +185,8 @@
     "A second menu language is not on your package.": "اللغة الثانية للقائمة غير متوفرة في باقتك.",
     "This design is not on your package.": "هذا التصميم غير متوفر في باقتك.",
     "That link is already taken. Try another one.": "هذا الرابط مستخدم بالفعل. جرّب رابطاً آخر.",
+    "A username is 3 to 30 letters, numbers, dots, dashes or underscores, starting and ending with a letter or number.": "اسم المستخدم من 3 إلى 30 حرفاً لاتينياً أو رقماً أو نقطة أو شرطة أو شرطة سفلية، يبدأ وينتهي بحرف أو رقم.",
+    "That username is taken. Try another one.": "اسم المستخدم هذا مستخدم. جرّب اسماً آخر.",
     "Choose a link for your menu.": "اختر رابطاً لقائمتك.",
     "Use at least 2 letters or numbers.": "استخدم حرفين أو رقمين على الأقل.",
     "Keep the link under 100 characters.": "اجعل الرابط أقل من 100 حرف.",

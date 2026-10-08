@@ -80,7 +80,7 @@ class RateLimitTest extends TestCase
 
         for ($i = 0; $i < 10; $i++) {
             $response = $this->from(route('login'))->post(route('login'), [
-                'email' => $user->email,
+                'login' => $user->email,
                 'password' => 'definitely-wrong-password',
             ]);
 
@@ -90,7 +90,7 @@ class RateLimitTest extends TestCase
             }
 
             $errors = session('errors');
-            if ($errors && str_contains(strtolower((string) $errors->first('email')), 'too many')) {
+            if ($errors && str_contains(strtolower((string) $errors->first('login')), 'too many')) {
                 $sawThrottle = true;
                 break;
             }

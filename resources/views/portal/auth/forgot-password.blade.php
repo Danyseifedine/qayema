@@ -35,5 +35,11 @@
         <p class="ui-help" style="text-align:center;margin-top:16px">
             <a href="{{ route('login') }}">{{ __('auth.passwords.back_to_login') }}</a>
         </p>
+
+        {{-- A username account has no email; an admin sets its new password. --}}
+        <p class="ui-help" style="text-align:center">
+            {{ __('auth.passwords.username_note') }}
+            <a href="{{ \App\Support\PortalUrl::to('contact') }}">{{ __('auth.passwords.contact_us') }}</a>
+        </p>
     </form>
 @endsection

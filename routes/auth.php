@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\OnboardingController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\RegisteredUserController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['guest', 'portal.locale'])->group(function () {
@@ -12,6 +13,10 @@ Route::middleware(['guest', 'portal.locale'])->group(function () {
 
     Route::get('get-started', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('get-started', [AuthenticatedSessionController::class, 'store'])->middleware('throttle:login');
+
+    // The other way in next to Google: a username and a password, no email.
+    Route::get('create-account', [RegisteredUserController::class, 'create'])->name('signup');
+    Route::post('create-account', [RegisteredUserController::class, 'store'])->middleware('throttle:login')->name('signup.store');
 
     Route::get('auth/google', [GoogleController::class, 'redirect'])->middleware('throttle:auth')->name('auth.google');
     Route::get('auth/google/callback', [GoogleController::class, 'callback'])->middleware('throttle:auth')->name('auth.google.callback');

@@ -33,7 +33,7 @@ class Restaurant extends Model implements HasMedia
     public const RESERVED_SLUGS = [
         'admin', 'api', 'livewire', 'storage', 'up', 'sanctum', 'telescope',
         'contact', 'privacy-policy', 'terms-of-service', 'cookie-policy', 'refund-policy',
-        'get-started', 'register', 'login', 'logout', 'onboarding', 'auth', 'locale',
+        'get-started', 'create-account', 'register', 'login', 'logout', 'onboarding', 'auth', 'locale',
         'password', 'forgot-password', 'reset-password', 'temp-upload', 'impersonate',
         // The public pages (App\Support\PortalUrl): Arabic under /ar, and the
         // topic, pricing and guide pages.

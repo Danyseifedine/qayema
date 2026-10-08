@@ -24,7 +24,7 @@ class AuthenticationTest extends TestCase
         $user = User::factory()->create(['onboarding_completed_at' => null]);
 
         $response = $this->post('/get-started', [
-            'email' => $user->email,
+            'login' => $user->email,
             'password' => 'password',
         ]);
 
@@ -38,7 +38,7 @@ class AuthenticationTest extends TestCase
         $user = User::factory()->create(['onboarding_completed_at' => now()]);
 
         $response = $this->post('/get-started', [
-            'email' => $user->email,
+            'login' => $user->email,
             'password' => 'password',
         ]);
 
@@ -51,7 +51,7 @@ class AuthenticationTest extends TestCase
         $user = User::factory()->create();
 
         $this->post('/get-started', [
-            'email' => $user->email,
+            'login' => $user->email,
             'password' => 'wrong-password',
         ]);
 

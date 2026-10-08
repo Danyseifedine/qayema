@@ -7,6 +7,8 @@ use App\Models\Restaurant;
 use App\Models\User;
 use App\Services\Media\MediaService;
 use App\Services\Menu\MenuLanguages;
+use App\Services\Push\AdminAlerts;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Mail;
 
 /**
@@ -16,7 +18,10 @@ use Illuminate\Support\Facades\Mail;
  */
 class OnboardingService
 {
-    public function __construct(private readonly MediaService $media) {}
+    public function __construct(
+        private readonly MediaService $media,
+        private readonly AdminAlerts $alerts,
+    ) {}
 
     /**
      * Step 1: restaurant name, slug and the language the menu opens in.
@@ -41,13 +46,58 @@ class OnboardingService
             return;
         }
 
-        Restaurant::create([
+        $restaurant = $this->newRestaurant($user, $name, $slug, $locale);
+        $restaurant->save();
+
+        // A new owner: the admins' phones hear of it (never one an admin
+        // opened, see openForOwner()).
+        rescue(fn () => $this->alerts->newRestaurant($restaurant));
+    }
+
+    /**
+     * A new restaurant as onboarding makes one, not yet saved: the admin's
+     * Create User fills its package before saving, so the package history
+     * starts on the package given.
+     */
+    public function newRestaurant(User $user, string $name, string $slug, ?string $locale = null): Restaurant
+    {
+        return new Restaurant([
             'user_id' => $user->id,
             'name' => [MenuLanguages::MAIN => $name],
             'slug' => $slug,
             'second_locale' => 'ar',
             'default_locale' => $this->openingLanguage($locale, [MenuLanguages::MAIN, 'ar']),
         ]);
+    }
+
+    /**
+     * An owner's restaurant opened by an admin (/admin → Users → Create, or
+     * the admin phone app), on the package agreed: one save, so its package
+     * history starts on that package with the note. Onboarding's first step
+     * (name and link) is then done; the owner finishes the rest when they
+     * first sign in.
+     */
+    public function openForOwner(
+        User $owner,
+        string $name,
+        string $slug,
+        int $packageId,
+        CarbonInterface $startsAt,
+        ?CarbonInterface $endsAt,
+        ?string $note = null,
+    ): Restaurant {
+        $restaurant = $this->newRestaurant($owner, $name, $slug);
+        $restaurant->forceFill([
+            'package_id' => $packageId,
+            'package_started_at' => $startsAt,
+            'package_ends_at' => $endsAt,
+        ]);
+        $restaurant->packageChangeNote = $note;
+        $restaurant->save();
+
+        $owner->update(['onboarding_step' => 1]);
+
+        return $restaurant;
     }
 
     /**
@@ -88,7 +138,8 @@ class OnboardingService
 
     /**
      * Final step: mark onboarding complete and send the welcome email when it
-     * is switched on (`mail.welcome`). The restaurant is intentionally left
+     * is switched on (`mail.welcome`) and the account has an address (one made
+     * with a username has none). The restaurant is intentionally left
      * WITHOUT a template: the owner chooses one from the dashboard (which
      * stays locked until they do).
      */
@@ -103,7 +154,7 @@ class OnboardingService
 
         // Re-submitting the last step (a refresh, a retry) must not welcome
         // the owner twice.
-        if (! $alreadyDone && config('mail.welcome')) {
+        if (! $alreadyDone && config('mail.welcome') && filled($user->email)) {
             Mail::to($user->email)->send(new WelcomeRestaurantOwner($user, $restaurant));
         }
     }

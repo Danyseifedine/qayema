@@ -246,7 +246,7 @@ class OwnerJourneyTest extends TestCase
         $user = User::factory()->create(['password' => null]);
 
         // Can't log in with a password yet.
-        $this->post(route('login'), ['email' => $user->email, 'password' => 'anything'])->assertSessionHasErrors('email');
+        $this->post(route('login'), ['login' => $user->email, 'password' => 'anything'])->assertSessionHasErrors('login');
 
         $this->post(route('password.email'), ['email' => $user->email]);
         $token = null;
@@ -257,7 +257,7 @@ class OwnerJourneyTest extends TestCase
         });
         $this->post(route('password.store'), ['token' => $token, 'email' => $user->email, 'password' => 'a-real-password-1', 'password_confirmation' => 'a-real-password-1'])->assertRedirect(route('login'));
 
-        $this->post(route('login'), ['email' => $user->email, 'password' => 'a-real-password-1'])->assertRedirect();
+        $this->post(route('login'), ['login' => $user->email, 'password' => 'a-real-password-1'])->assertRedirect();
         $this->assertAuthenticatedAs($user);
         $this->actingAs($user->fresh())->getJson(route('api.user'))->assertJsonPath('data.has_password', true);
     }

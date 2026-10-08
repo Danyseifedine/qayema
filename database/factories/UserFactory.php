@@ -33,6 +33,15 @@ class UserFactory extends Factory
         ];
     }
 
+    /** An account made with a username and a password, and no email. */
+    public function withUsername(string $username = 'rami'): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'username' => $username,
+            'email' => null,
+        ]);
+    }
+
     public function admin(): static
     {
         return $this->state(fn (array $attributes) => [

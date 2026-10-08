@@ -93,12 +93,12 @@ class AdminResourcesTest extends TestCase
         $this->actingAs($this->admin());
 
         Livewire::test(CreateUser::class)
-            ->fillForm(['name' => 'New Owner', 'email' => 'owner@example.com', 'password' => 'a-long-password', 'role' => UserRole::MenuOwner->value])
+            ->fillForm(['name' => 'New Owner', 'email' => 'owner@example.com', 'password' => 'a-long-password', 'role' => UserRole::MenuOwner->value, 'restaurant' => ['create' => false]])
             ->call('create')
             ->assertHasNoFormErrors();
 
         $this->post(route('logout'));
-        $this->post(route('login'), ['email' => 'owner@example.com', 'password' => 'a-long-password'])->assertRedirect();
+        $this->post(route('login'), ['login' => 'owner@example.com', 'password' => 'a-long-password'])->assertRedirect();
         $this->assertAuthenticatedAs(User::firstWhere('email', 'owner@example.com'));
     }
 

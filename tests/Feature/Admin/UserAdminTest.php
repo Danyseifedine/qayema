@@ -3,6 +3,7 @@
 namespace Tests\Feature\Admin;
 
 use App\Enums\UserRole;
+use App\Filament\Admin\Resources\Restaurants\Schemas\PackageFields;
 use App\Filament\Admin\Resources\Users\Pages\CreateUser;
 use App\Filament\Admin\Resources\Users\Pages\EditUser;
 use App\Filament\Admin\Resources\Users\Pages\ListUsers;
@@ -11,6 +12,7 @@ use App\Filament\Admin\Resources\Users\UserResource;
 use App\Models\Category;
 use App\Models\Dish;
 use App\Models\MenuSession;
+use App\Models\Package;
 use App\Models\Restaurant;
 use App\Models\RestaurantSocialLink;
 use App\Models\User;
@@ -245,6 +247,215 @@ class UserAdminTest extends TestCase
             ->fillForm(['name' => '', 'email' => 'not-an-email', 'password' => 'long-enough-pw', 'role' => null])
             ->call('create')
             ->assertHasFormErrors(['name' => 'required', 'email' => 'email', 'role' => 'required']);
+    }
+
+    public function test_creating_an_owner_creates_their_restaurant_on_the_package_chosen(): void
+    {
+        $this->travelTo(now()->startOfMinute());
+        $premium = Package::findBySlug('premium');
+        $this->actingAs($this->admin());
+
+        Livewire::test(CreateUser::class)
+            ->assertSchemaStateSet(['restaurant.create' => true, 'restaurant.package_id' => Package::default()->id])
+            ->fillForm([
+                'name' => 'Rami',
+                'username' => 'beit.rami',
+                'password' => 'long-enough-pw',
+                'restaurant' => [
+                    'create' => true,
+                    'name' => 'Beit Rami',
+                    'slug' => 'Beit Rami',
+                    'package_id' => $premium->id,
+                    'package_started_at' => now(),
+                    'duration' => PackageFields::MONTHS,
+                    'months' => 3,
+                    'note' => 'Paid 3 months',
+                ],
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $user = User::firstWhere('username', 'beit.rami');
+        $restaurant = $user->restaurant;
+        $this->assertNotNull($restaurant);
+        $this->assertSame('beit-rami', $restaurant->slug);
+        $this->assertSame('Beit Rami', $restaurant->getTranslation('name', 'en'));
+        $this->assertSame('ar', $restaurant->second_locale);
+        $this->assertSame('premium', $restaurant->effectivePackage()->slug);
+        $this->assertTrue($restaurant->package_ends_at->equalTo(now()->addMonthsNoOverflow(3)));
+
+        // One history row: it starts on Premium, with the note.
+        $history = $restaurant->packageChanges()->get();
+        $this->assertCount(1, $history);
+        $this->assertSame($premium->id, $history->first()->to_package_id);
+        $this->assertSame('Paid 3 months', $history->first()->note);
+
+        // Name and link are done; the owner picks up the wizard at contact.
+        $this->assertSame(2, $user->currentOnboardingStep());
+        $this->assertFalse($user->hasCompletedOnboarding());
+    }
+
+    public function test_creating_an_owner_without_the_restaurant_leaves_it_to_onboarding(): void
+    {
+        $this->actingAs($this->admin());
+
+        Livewire::test(CreateUser::class)
+            ->fillForm([
+                'name' => 'Later',
+                'email' => 'later@example.com',
+                'password' => 'long-enough-pw',
+                'restaurant' => ['create' => false],
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $user = User::firstWhere('email', 'later@example.com');
+        $this->assertNull($user->restaurant);
+        $this->assertSame(1, $user->currentOnboardingStep());
+    }
+
+    public function test_an_admin_gets_no_restaurant(): void
+    {
+        $this->actingAs($this->admin());
+
+        Livewire::test(CreateUser::class)
+            ->fillForm([
+                'name' => 'Ops',
+                'email' => 'ops2@example.com',
+                'password' => 'long-enough-pw',
+                'role' => UserRole::Admin->value,
+                'restaurant' => ['create' => true, 'name' => 'Not For Admins', 'slug' => 'not-for-admins'],
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertNull(User::firstWhere('email', 'ops2@example.com')->restaurant);
+        $this->assertSame(0, Restaurant::query()->where('slug', 'not-for-admins')->count());
+    }
+
+    public function test_the_restaurant_needs_a_name_and_a_free_link_or_nothing_is_created(): void
+    {
+        $this->owner(['slug' => 'taken-link']);
+        $this->actingAs($this->admin());
+
+        Livewire::test(CreateUser::class)
+            ->fillForm([
+                'name' => 'Rami',
+                'email' => 'rami@example.com',
+                'password' => 'long-enough-pw',
+                'restaurant' => ['create' => true, 'name' => '', 'slug' => 'taken-link'],
+            ])
+            ->call('create')
+            ->assertHasFormErrors(['restaurant.name' => 'required', 'restaurant.slug']);
+
+        Livewire::test(CreateUser::class)
+            ->fillForm([
+                'name' => 'Rami',
+                'email' => 'rami@example.com',
+                'password' => 'long-enough-pw',
+                'restaurant' => ['create' => true, 'name' => 'Admin', 'slug' => 'admin'],
+            ])
+            ->call('create')
+            ->assertHasFormErrors(['restaurant.slug']);
+
+        $this->assertDatabaseMissing('users', ['email' => 'rami@example.com']);
+    }
+
+    public function test_the_edit_page_has_no_restaurant_section(): void
+    {
+        $owner = User::factory()->create();
+        $this->actingAs($this->admin());
+
+        Livewire::test(EditUser::class, ['record' => $owner->getRouteKey()])
+            ->assertDontSee('Create the restaurant with the account');
+    }
+
+    public function test_creating_an_owner_with_a_username_and_no_email(): void
+    {
+        $this->actingAs($this->admin());
+
+        Livewire::test(CreateUser::class)
+            ->fillForm(['name' => 'Rami', 'username' => 'Beit.Rami', 'email' => null, 'password' => 'long-enough-pw', 'restaurant' => ['create' => false]])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $created = User::firstWhere('username', 'beit.rami');
+        $this->assertNull($created->email);
+        $this->assertSame(UserRole::MenuOwner, $created->role);
+    }
+
+    public function test_creating_needs_an_email_or_a_username_and_an_admin_always_an_email(): void
+    {
+        $this->actingAs($this->admin());
+
+        Livewire::test(CreateUser::class)
+            ->fillForm(['name' => 'Nobody', 'username' => null, 'email' => null, 'password' => 'long-enough-pw'])
+            ->call('create')
+            ->assertHasFormErrors(['email' => 'required']);
+
+        // /admin signs in with an email, so an admin cannot be username-only.
+        Livewire::test(CreateUser::class)
+            ->fillForm(['name' => 'Ops', 'username' => 'ops', 'email' => null, 'password' => 'long-enough-pw', 'role' => UserRole::Admin->value])
+            ->call('create')
+            ->assertHasFormErrors(['email' => 'required']);
+
+        $this->assertDatabaseMissing('users', ['name' => 'Nobody']);
+        $this->assertDatabaseMissing('users', ['name' => 'Ops']);
+    }
+
+    public function test_creating_refuses_a_taken_or_malformed_username(): void
+    {
+        User::factory()->withUsername('rami')->create();
+        $this->actingAs($this->admin());
+
+        Livewire::test(CreateUser::class)
+            ->fillForm(['name' => 'Copy', 'username' => 'RAMI', 'password' => 'long-enough-pw'])
+            ->call('create')
+            ->assertHasFormErrors(['username']);
+
+        Livewire::test(CreateUser::class)
+            ->fillForm(['name' => 'Bad', 'username' => 'has space', 'password' => 'long-enough-pw'])
+            ->call('create')
+            ->assertHasFormErrors(['username']);
+    }
+
+    public function test_an_owner_who_lost_their_password_gets_a_new_one_from_the_admin(): void
+    {
+        $owner = User::factory()->withUsername('rami')->create();
+        $this->actingAs($this->admin());
+
+        Livewire::test(EditUser::class, ['record' => $owner->getRouteKey()])
+            ->assertSchemaStateSet(['username' => 'rami', 'email' => null])
+            ->fillForm(['password' => 'set-by-the-admin'])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertTrue(Hash::check('set-by-the-admin', $owner->fresh()->password));
+        $this->assertSame('rami', $owner->fresh()->username);
+    }
+
+    public function test_the_list_finds_an_owner_by_username(): void
+    {
+        $rami = User::factory()->withUsername('beit.rami')->create();
+        $other = User::factory()->create();
+        $this->actingAs($this->admin());
+
+        Livewire::test(ListUsers::class)
+            ->assertCanRenderTableColumn('username')
+            ->searchTable('beit.rami')
+            ->assertCanSeeTableRecords([$rami])
+            ->assertCanNotSeeTableRecords([$other]);
+    }
+
+    public function test_the_view_page_of_an_owner_without_an_email(): void
+    {
+        $owner = User::factory()->withUsername('beit.rami')->create();
+        $this->actingAs($this->admin());
+
+        Livewire::test(ViewUser::class, ['record' => $owner->getRouteKey()])
+            ->assertOk()
+            ->assertSee('beit.rami')
+            ->assertSee('None, signs in with a username');
     }
 
     public function test_the_list_renders_every_column_for_owners_and_admins(): void

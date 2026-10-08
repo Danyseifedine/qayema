@@ -217,7 +217,7 @@ class RestaurantAdminEdgeTest extends TestCase
         $restaurant = $this->owner();
         $this->actingAs($this->admin());
 
-        $this->get(route('impersonate', $restaurant->user_id))->assertRedirect('/');
+        $this->get(route('impersonate', $restaurant->user_id))->assertRedirect(config('app.dashboard_url'));
 
         $this->assertAuthenticatedAs($restaurant->user);
     }

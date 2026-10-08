@@ -1,6 +1,13 @@
 <?php
 
 use App\Http\Controllers\Api\AccountController;
+use App\Http\Controllers\Api\Admin\AuthController as AdminAuthController;
+use App\Http\Controllers\Api\Admin\DeviceController as AdminDeviceController;
+use App\Http\Controllers\Api\Admin\PackageController as AdminPackageController;
+use App\Http\Controllers\Api\Admin\RestaurantController as AdminRestaurantController;
+use App\Http\Controllers\Api\Admin\RestaurantDetailsController as AdminRestaurantDetailsController;
+use App\Http\Controllers\Api\Admin\RestaurantPackageController as AdminRestaurantPackageController;
+use App\Http\Controllers\Api\Admin\SummaryController as AdminSummaryController;
 use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\AppearanceController;
 use App\Http\Controllers\Api\AuthController;
@@ -19,12 +26,15 @@ use App\Http\Controllers\Api\RestaurantSlugController;
 use App\Http\Controllers\Api\SocialLinkController;
 use App\Http\Controllers\Api\TemplateController;
 use App\Http\Controllers\TempUploadController;
+use App\Http\Middleware\EnsureUserIsAdmin;
+use App\Http\Middleware\TellAdminsAboutMenuEdits;
 use Illuminate\Support\Facades\Route;
 
 /*
 | First-party dashboard SPA endpoints. Authentication is the Sanctum stateful
 | session cookie (see `statefulApi()` in bootstrap/app.php); there are no
-| bearer tokens.
+| bearer tokens. The one exception is `api/admin/*` at the end: the admin
+| phone app, signed in with a Sanctum token.
 */
 // The CSRF token in the body: the SPA primes it here because, on another
 // subdomain, it can't read the cookie. Public (the token is session-scoped and
@@ -33,7 +43,9 @@ Route::get('/csrf-token', [AuthController::class, 'csrfToken'])
     ->middleware('throttle:api')
     ->name('api.csrf-token');
 
-Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
+// TellAdminsAboutMenuEdits: an owner changing their menu tells the admins'
+// phones, once an hour at most.
+Route::middleware(['auth:sanctum', 'throttle:api', TellAdminsAboutMenuEdits::class])->group(function () {
     Route::get('/user', [AuthController::class, 'user'])->name('api.user');
     Route::post('/logout', [AuthController::class, 'logout'])->name('api.logout');
 
@@ -164,4 +176,44 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::post('/social-links', [SocialLinkController::class, 'store'])->name('api.social-links.store');
     Route::patch('/social-links/{socialLink}', [SocialLinkController::class, 'update'])->name('api.social-links.update');
     Route::delete('/social-links/{socialLink}', [SocialLinkController::class, 'destroy'])->name('api.social-links.destroy');
+});
+
+/*
+| The admin phone app. Signing in hands out a token (the lockout after five
+| wrong passwords is AdminLoginRequest's); every other call needs that token
+| and an account that is still an admin.
+*/
+Route::prefix('admin')->name('api.admin.')->group(function () {
+    Route::post('/login', [AdminAuthController::class, 'login'])
+        ->middleware('throttle:login')
+        ->name('login');
+
+    Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class, 'throttle:api'])->group(function () {
+        Route::get('/me', [AdminAuthController::class, 'me'])->name('me');
+        Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');
+
+        Route::get('/summary', AdminSummaryController::class)->name('summary');
+        Route::get('/packages', [AdminPackageController::class, 'index'])->name('packages.index');
+
+        Route::get('/restaurants', [AdminRestaurantController::class, 'index'])->name('restaurants.index');
+        Route::get('/restaurants/{restaurant:id}', [AdminRestaurantController::class, 'show'])->name('restaurants.show');
+
+        Route::middleware('throttle:mutations')->group(function () {
+            // The phone notifications go to (Firebase Cloud Messaging).
+            Route::put('/devices', [AdminDeviceController::class, 'store'])->name('devices.store');
+            Route::delete('/devices', [AdminDeviceController::class, 'destroy'])->name('devices.destroy');
+
+            Route::post('/restaurants', [AdminRestaurantController::class, 'store'])->name('restaurants.store');
+            Route::patch('/restaurants/{restaurant:id}', [AdminRestaurantDetailsController::class, 'update'])
+                ->name('restaurants.update');
+            Route::put('/restaurants/{restaurant:id}/owner/password', [AdminRestaurantDetailsController::class, 'resetOwnerPassword'])
+                ->name('restaurants.owner.password');
+            Route::patch('/restaurants/{restaurant:id}/active', [AdminRestaurantController::class, 'updateActive'])
+                ->name('restaurants.active');
+            Route::put('/restaurants/{restaurant:id}/package', [AdminRestaurantPackageController::class, 'update'])
+                ->name('restaurants.package');
+            Route::post('/restaurants/{restaurant:id}/package/extend', [AdminRestaurantPackageController::class, 'extend'])
+                ->name('restaurants.package.extend');
+        });
+    });
 });

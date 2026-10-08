@@ -3,6 +3,7 @@
 namespace Tests\Integration\Services\Portal;
 
 use App\Mail\WelcomeRestaurantOwner;
+use App\Models\DeviceToken;
 use App\Models\Package;
 use App\Models\Restaurant;
 use App\Models\User;
@@ -12,6 +13,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Tests\Support\CreatesOwners;
+use Tests\Support\FakesFirebase;
 use Tests\TestCase;
 
 /**
@@ -19,7 +21,7 @@ use Tests\TestCase;
  */
 class OnboardingServiceTest extends TestCase
 {
-    use CreatesOwners, RefreshDatabase;
+    use CreatesOwners, FakesFirebase, RefreshDatabase;
 
     protected function tearDown(): void
     {
@@ -60,6 +62,42 @@ class OnboardingServiceTest extends TestCase
         $this->assertSame('ar', $restaurant->second_locale);
         $this->assertSame('ar', $restaurant->default_locale);
         $this->assertSame(Package::default()->id, $restaurant->package_id);
+    }
+
+    public function test_a_new_restaurant_tells_the_admins_once(): void
+    {
+        $this->fakeFirebase();
+        $this->withoutDefer();
+        DeviceToken::factory()->for($this->admin())->create();
+        $user = User::factory()->create(['name' => 'Moudi', 'email' => 'moudi@example.test']);
+
+        $this->service()->saveIdentity($user, 'Beit Rami', 'beit-rami', 'en');
+        // Going back to step one renames it; that is not a new restaurant.
+        $this->service()->saveIdentity($user->fresh(), 'Beit Rami Bar', 'beit-rami', 'en');
+
+        $this->assertCount(1, $this->pushes);
+        $notification = $this->pushes[0]['message']['notification'];
+        $this->assertSame('New restaurant', $notification['title']);
+        $this->assertSame('Beit Rami just signed up.', $notification['body']);
+        $this->assertStringNotContainsString('Moudi', $notification['title'].$notification['body']);
+        $this->assertStringNotContainsString('moudi@example.test', $notification['title'].$notification['body']);
+        $this->assertSame(
+            ['type' => 'new_restaurant', 'restaurant_id' => (string) $user->fresh()->restaurant->id],
+            $this->pushes[0]['message']['data'],
+        );
+    }
+
+    public function test_a_restaurant_an_admin_opens_tells_nobody(): void
+    {
+        $this->fakeFirebase();
+        $this->withoutDefer();
+        DeviceToken::factory()->for($this->admin())->create();
+
+        $this->service()->openForOwner(
+            User::factory()->create(), 'Beit Rami', 'beit-rami', Package::default()->id, now(), null,
+        );
+
+        $this->assertSame([], $this->pushes);
     }
 
     public function test_step_one_opens_in_english_for_anything_else(): void
@@ -206,6 +244,20 @@ class OnboardingServiceTest extends TestCase
         $restaurant = $this->owner();
         $user = $restaurant->user;
         $user->forceFill(['onboarding_step' => 2, 'onboarding_completed_at' => null])->save();
+
+        $this->service()->complete($user, $restaurant);
+
+        $this->assertNotNull($user->fresh()->onboarding_completed_at);
+        Mail::assertNothingOutgoing();
+    }
+
+    public function test_an_account_without_an_email_finishes_with_no_welcome(): void
+    {
+        Mail::fake();
+        config(['mail.welcome' => true]);
+        $restaurant = $this->owner();
+        $user = $restaurant->user;
+        $user->forceFill(['email' => null, 'username' => 'beit.rami', 'onboarding_step' => 2, 'onboarding_completed_at' => null])->save();
 
         $this->service()->complete($user, $restaurant);
 

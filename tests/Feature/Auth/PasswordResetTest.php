@@ -37,6 +37,14 @@ class PasswordResetTest extends TestCase
         $this->get(route('login'))->assertOk()->assertSee(route('password.request'));
     }
 
+    public function test_the_forgot_form_tells_a_username_account_to_ask_us(): void
+    {
+        $this->get(route('password.request'))
+            ->assertOk()
+            ->assertSee(__('auth.passwords.username_note'))
+            ->assertSee(\App\Support\PortalUrl::to('contact'));
+    }
+
     public function test_a_known_email_is_sent_a_reset_link(): void
     {
         Notification::fake();
@@ -119,7 +127,7 @@ class PasswordResetTest extends TestCase
             'password_confirmation' => 'brand-new-password',
         ]);
 
-        $this->post(route('login'), ['email' => $user->email, 'password' => 'brand-new-password'])->assertRedirect();
+        $this->post(route('login'), ['login' => $user->email, 'password' => 'brand-new-password'])->assertRedirect();
         $this->assertAuthenticatedAs($user);
     }
 

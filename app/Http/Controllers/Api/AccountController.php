@@ -11,8 +11,9 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
- * The signed-in owner's own account. Email is read-only: accounts are created
- * through Google, so the address is the identity, not a setting.
+ * The signed-in owner's own account. The email and the username are
+ * read-only: each is how the account signs in (Google, or the username made
+ * at sign-up), the identity, not a setting.
  */
 class AccountController extends Controller
 {

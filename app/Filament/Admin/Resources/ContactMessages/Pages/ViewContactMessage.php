@@ -34,8 +34,9 @@ class ViewContactMessage extends ViewRecord
 
                     TextEntry::make('email')
                         ->label('Email address')
+                        ->placeholder('None, signed up with a username')
                         ->copyable()
-                        ->url(fn ($record) => 'mailto:'.$record->email),
+                        ->url(fn ($record): ?string => filled($record->email) ? 'mailto:'.$record->email : null),
 
                     TextEntry::make('ip_address')
                         ->label('IP Address'),

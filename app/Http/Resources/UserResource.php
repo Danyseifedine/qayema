@@ -27,6 +27,9 @@ class UserResource extends JsonResource
     {
         return [
             'name' => $this->name,
+            // One of the two at least: an account made with a username has
+            // no email, a Google one no username.
+            'username' => $this->username,
             'email' => $this->email,
             'has_completed_onboarding' => $this->hasCompletedOnboarding(),
             // Google-only accounts have no password; the SPA shows "set a

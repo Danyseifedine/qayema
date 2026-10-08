@@ -11,7 +11,11 @@
 <x-mail::message>
 # {{ $package ? 'Package request from ' . $contactMessage->name : 'New message from ' . $contactMessage->name }}
 
+@if (filled($contactMessage->email))
 **From:** {{ $contactMessage->name }} &lt;{{ $contactMessage->email }}&gt;
+@else
+**From:** {{ $contactMessage->name }} (username {{ $contactMessage->user?->username }}, no email)
+@endif
 @if ($package)
 
 **Requested package:** {{ $package->getTranslation('name', 'en') }}
@@ -29,9 +33,11 @@ Open {{ $restaurant->getTranslation('name', 'en', false) ?: $restaurant->slug }}
 </x-mail::button>
 @endif
 
+@if (filled($contactMessage->email))
 <x-mail::button :url="'mailto:' . $contactMessage->email" color="{{ $restaurant ? 'success' : 'primary' }}">
 Reply to {{ $contactMessage->name }}
 </x-mail::button>
+@endif
 
 *Sent from Qayema.*
 </x-mail::message>

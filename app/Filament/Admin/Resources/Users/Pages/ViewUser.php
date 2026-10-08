@@ -43,8 +43,13 @@ class ViewUser extends ViewRecord
                     TextEntry::make('name')
                         ->label('Full name'),
 
+                    TextEntry::make('username')
+                        ->placeholder('-')
+                        ->copyable(),
+
                     TextEntry::make('email')
                         ->label('Email')
+                        ->placeholder('None, signs in with a username')
                         ->copyable(),
 
                     TextEntry::make('role')

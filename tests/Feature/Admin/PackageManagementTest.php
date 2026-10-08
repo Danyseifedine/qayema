@@ -246,6 +246,17 @@ class PackageManagementTest extends TestCase
         $this->assertNull($soon->fresh()->package_ends_at);
     }
 
+    public function test_the_ending_soon_widget_names_an_owner_without_an_email_by_username(): void
+    {
+        $soon = $this->ownerOn('pro', ['package_ends_at' => now()->addDays(10)]);
+        $soon->user->forceFill(['email' => null, 'username' => 'beit.rami'])->save();
+        $this->actingAs($this->admin());
+
+        Livewire::test(PackagesEndingSoon::class)
+            ->assertCanSeeTableRecords([$soon])
+            ->assertTableColumnStateSet('user.email', 'beit.rami', $soon);
+    }
+
     public function test_a_package_request_is_applied_in_one_step(): void
     {
         $restaurant = $this->owner();

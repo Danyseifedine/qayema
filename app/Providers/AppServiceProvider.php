@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Lab404\Impersonate\Events\LeaveImpersonation;
 use Lab404\Impersonate\Events\TakeImpersonation;
+use Laravel\Sanctum\PersonalAccessToken;
+use Laravel\Sanctum\Sanctum;
 use Symfony\Component\HttpFoundation\Response;
 
 class AppServiceProvider extends ServiceProvider
@@ -50,6 +52,19 @@ class AppServiceProvider extends ServiceProvider
         $this->configureRateLimiters();
         $this->keepImpersonationSignedIn();
         $this->pinTheSiteAddress();
+        $this->keepTokensToTheAdminApp();
+    }
+
+    /**
+     * Bearer tokens belong to the admin phone app and open `api/admin/*`
+     * only. The dashboard's API stays on its session cookie: a token sent
+     * anywhere else is treated as no sign-in at all.
+     */
+    private function keepTokensToTheAdminApp(): void
+    {
+        Sanctum::authenticateAccessTokensUsing(
+            fn (PersonalAccessToken $token, bool $isValid): bool => $isValid && request()->is('api/admin/*'),
+        );
     }
 
     /**

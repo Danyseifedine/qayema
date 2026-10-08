@@ -5,12 +5,14 @@ namespace Tests\Feature\Packages;
 use App\Filament\Admin\Resources\Restaurants\RestaurantResource;
 use App\Mail\ContactMessageReceived;
 use App\Models\ContactMessage;
+use App\Models\DeviceToken;
 use App\Models\Package;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Tests\Support\CreatesOwners;
+use Tests\Support\FakesFirebase;
 use Tests\TestCase;
 
 /**
@@ -19,7 +21,7 @@ use Tests\TestCase;
  */
 class PackageRequestTest extends TestCase
 {
-    use CreatesOwners, RefreshDatabase;
+    use CreatesOwners, FakesFirebase, RefreshDatabase;
 
     protected function setUp(): void
     {
@@ -72,6 +74,19 @@ class PackageRequestTest extends TestCase
                 && $mail->contactMessage->package_id === $pro->id
                 && str_contains($mail->envelope()->subject, 'Package request: Pro');
         });
+    }
+
+    public function test_the_admins_phones_are_told(): void
+    {
+        $this->fakeFirebase();
+        $phone = DeviceToken::factory()->for($this->admin())->create();
+        $owner = $this->owner(['name' => ['en' => 'Beit Rami']]);
+
+        $this->actingAs($owner->user)->postJson(route('api.packages.request'), ['package' => 'pro'])->assertCreated();
+
+        $this->assertSame([$phone->token], $this->pushes[0]['tokens']);
+        $this->assertSame('Package request: Pro', $this->pushes[0]['message']['notification']['title']);
+        $this->assertSame((string) $owner->id, $this->pushes[0]['message']['data']['restaurant_id']);
     }
 
     public function test_an_empty_message_gets_a_default_body(): void
@@ -180,6 +195,23 @@ class PackageRequestTest extends TestCase
         // style the email or smuggle a link into it.
         $this->assertStringNotContainsString('<strong>Arabic</strong>', $rendered);
         $this->assertStringNotContainsString('<code>code</code>', $rendered);
+    }
+
+    public function test_an_owner_without_an_email_may_ask_and_the_admin_sees_their_username(): void
+    {
+        $owner = $this->owner();
+        $owner->user->forceFill(['email' => null, 'username' => 'beit.rami'])->save();
+
+        $this->actingAs($owner->user)->postJson(route('api.packages.request'), ['package' => 'pro'])->assertCreated();
+
+        $contact = ContactMessage::firstOrFail();
+        $this->assertNull($contact->email);
+
+        $mail = new ContactMessageReceived($contact);
+        $this->assertSame([], $mail->envelope()->replyTo);
+        $rendered = $mail->render();
+        $this->assertStringContainsString('username beit.rami, no email', $rendered);
+        $this->assertStringNotContainsString('mailto:', $rendered);
     }
 
     public function test_a_user_without_a_restaurant_may_still_ask(): void
