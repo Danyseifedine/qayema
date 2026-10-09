@@ -38,6 +38,7 @@ class CreateUser extends CreateRecord
                     CarbonImmutable::parse($restaurant['package_started_at']),
                     PackageFields::endsAt($restaurant),
                     $restaurant['note'] ?? null,
+                    $restaurant['main_locale'] ?? null,
                 );
             }
 

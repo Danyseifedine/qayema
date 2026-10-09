@@ -15,7 +15,7 @@
 @use('App\Support\MenuIcons')
 @use('App\Support\Price')
 @php
-    $name = MenuLanguages::text($restaurant, 'name', $locale);
+    $name = MenuLanguages::text($restaurant, 'name', $locale, MenuLanguages::main($restaurant));
     $icons = MenuIcons::all();
     $currency = config("currencies.{$order->currency}.symbol", $order->currency);
     $timezone = OpeningHours::for($restaurant)->timezone();

@@ -156,6 +156,50 @@ class MenuLocaleTest extends TestCase
             ->assertDontSee('id="pop-lang"', false);
     }
 
+    public function test_an_arabic_only_menu_is_in_arabic_with_no_switcher(): void
+    {
+        $restaurant = $this->shop('ar');
+        $restaurant->update(['main_locale' => 'ar', 'second_locale' => 'en', 'switched_off' => ['languages']]);
+
+        $this->get(route('public.menu', $restaurant->slug).'?lang=en')
+            ->assertOk()
+            ->assertSee('<html lang="ar"', false)
+            ->assertSee('dir="rtl"', false)
+            ->assertSee('صحن البيت')
+            ->assertDontSee('House Bowl')
+            ->assertDontSee('id="pop-lang"', false)
+            ->assertDontSee('hreflang="en"', false);
+    }
+
+    public function test_a_dish_not_yet_written_in_a_new_main_language_shows_its_old_name(): void
+    {
+        $restaurant = $this->shop('fr');
+        $restaurant->update(['main_locale' => 'fr', 'second_locale' => null, 'default_locale' => 'fr']);
+
+        $this->get(route('public.menu', $restaurant->slug))
+            ->assertOk()
+            ->assertSee('<html lang="fr"', false)
+            ->assertSee('House Bowl');
+    }
+
+    public function test_text_missing_in_the_second_language_shows_in_the_main_one(): void
+    {
+        $restaurant = $this->shop('en');
+        $restaurant->update(['main_locale' => 'ar', 'second_locale' => 'en']);
+        Dish::factory()->create([
+            'restaurant_id' => $restaurant->id,
+            'category_id' => Category::query()->first()->id,
+            'name' => ['ar' => 'ليموناضة', 'fr' => 'Limonade'],
+            'price' => '3.00',
+        ]);
+
+        $this->get(route('public.menu', $restaurant->slug).'?lang=en')
+            ->assertOk()
+            ->assertSee('House Bowl')
+            ->assertSee('ليموناضة')
+            ->assertDontSee('Limonade');
+    }
+
     public function test_text_missing_in_the_second_language_shows_in_english(): void
     {
         $restaurant = $this->shop('ar');

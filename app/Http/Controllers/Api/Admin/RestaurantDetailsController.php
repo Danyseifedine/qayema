@@ -21,7 +21,7 @@ class RestaurantDetailsController extends Controller
      */
     public function update(UpdateRestaurantRequest $request, Restaurant $restaurant): AdminRestaurantResource
     {
-        $restaurant->setTranslation('name', MenuLanguages::MAIN, $request->string('name')->trim()->value());
+        $restaurant->setTranslation('name', MenuLanguages::main($restaurant), $request->string('name')->trim()->value());
         $restaurant->slug = $request->string('slug')->value();
         $restaurant->phone = $request->input('phone');
         $restaurant->save();

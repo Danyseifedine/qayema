@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources\Restaurants\Pages;
 use App\Filament\Admin\Concerns\KeepsTranslations;
 use App\Filament\Admin\Resources\Restaurants\RestaurantResource;
 use App\Filament\Admin\Resources\Restaurants\Schemas\PackageFields;
+use App\Services\Menu\MenuLanguages;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
@@ -45,6 +46,12 @@ class EditRestaurant extends EditRecord
     {
         $data['package_ends_at'] = PackageFields::endsAt($data);
         $this->record->packageChangeNote = $data['note'] ?? null;
+
+        // A new main language: the second one becomes the old main when they
+        // swap, and the menu keeps opening in the main one if it did.
+        if (($data['main_locale'] ?? null) !== null && $data['main_locale'] !== MenuLanguages::main($this->record)) {
+            $data = [...$data, ...MenuLanguages::withMain($this->record, $data['main_locale'])];
+        }
 
         return $this->mergeTranslations(collect($data)->except(PackageFields::EXTRA)->all());
     }

@@ -16,6 +16,8 @@ return [
         'name_required' => 'Restaurant name is required.',
         'name_min' => 'Restaurant name must be at least 2 characters.',
         'name_hint' => 'This is the name your guests will see on your menu page.',
+        'language_label' => 'Your menu is written in',
+        'language_hint' => 'Every dish is written in this language. You can add a second one later, or change it.',
         'slug_label' => 'Menu link',
         'slug_hint' => 'Share this link with guests so they can view your menu.',
         'slug_required' => 'A menu link is required.',

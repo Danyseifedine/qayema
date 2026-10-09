@@ -27,6 +27,7 @@ class RestaurantFactory extends Factory
             'phone' => fake()->numerify('70######'),
             'is_active' => true,
             'currency' => 'USD',
+            'main_locale' => 'en',
             'default_locale' => 'en',
             // What onboarding gives a new restaurant.
             'second_locale' => 'ar',

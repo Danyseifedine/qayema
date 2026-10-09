@@ -5,6 +5,7 @@ namespace App\Http\Requests\Admin;
 use App\Models\User;
 use App\Rules\AvailableSlug;
 use App\Rules\Username;
+use App\Services\Menu\MenuLanguages;
 use App\Services\Packages\PackageAssigner;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
@@ -52,6 +53,8 @@ class StoreRestaurantRequest extends FormRequest
             // Null runs forever.
             'months' => ['nullable', 'integer', Rule::in(PackageAssigner::DURATIONS)],
             'note' => ['nullable', 'string', 'max:255'],
+            // The language the menu is written in; English when left out.
+            'main_locale' => ['nullable', 'string', Rule::in(MenuLanguages::choices())],
         ];
     }
 

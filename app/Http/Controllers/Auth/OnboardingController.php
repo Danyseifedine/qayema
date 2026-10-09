@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Rules\AvailableSlug;
+use App\Services\Menu\MenuLanguages;
 use App\Services\Portal\OnboardingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -71,7 +72,7 @@ class OnboardingController extends Controller
         $next = $current + 1;
 
         switch ($current) {
-            case 0: // Step 1: restaurant name + slug + preferred language
+            case 0: // Step 1: restaurant name + slug + the language the menu is written in
                 // Normalize the slug server-side so spaces/uppercase/special chars
                 // can never reach validation or the database as an invalid value.
                 $request->merge(['slug' => Str::slug((string) $request->input('slug', ''))]);
@@ -85,10 +86,10 @@ class OnboardingController extends Controller
                         'regex:/^[a-z0-9][a-z0-9-]*[a-z0-9]$/',
                         new AvailableSlug($user->restaurant?->id),
                     ],
-                    'default_locale' => ['nullable', 'string', 'in:ar,en'],
+                    'main_locale' => ['nullable', 'string', Rule::in(MenuLanguages::choices())],
                 ]);
 
-                $onboarding->saveIdentity($user, $validated['name'], $validated['slug'], $validated['default_locale'] ?? null);
+                $onboarding->saveIdentity($user, $validated['name'], $validated['slug'], $validated['main_locale'] ?? null);
                 break;
 
             case 1: // Step 2: country code + phone + currency

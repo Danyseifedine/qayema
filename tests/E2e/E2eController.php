@@ -33,7 +33,7 @@ class E2eController extends Controller
      * Body (all optional): package (free|pro|premium|custom), package_starts_at,
      * package_ends_at, template (classic|midnight|null), onboarded, restaurant
      * (false for a user mid-onboarding), has_password, name, description,
-     * slug, second_locale, is_active, switched_off, phone, google_maps_url,
+     * slug, main_locale, second_locale, is_active, switched_off, phone, google_maps_url,
      * opening_hours, categories [{name, description, dishes: [{name, price,
      * ingredients, is_available, variants: [{name, options: [{name, price}]}],
      * addons: [{name, price}]}]}], social_links [{platform, url}], order_mode
@@ -80,7 +80,8 @@ class E2eController extends Controller
             'timezone' => 'Asia/Beirut',
             'google_maps_url' => $input['google_maps_url'] ?? null,
             'opening_hours' => $input['opening_hours'] ?? null,
-            'default_locale' => 'en',
+            'main_locale' => $input['main_locale'] ?? 'en',
+            'default_locale' => $input['main_locale'] ?? 'en',
             'second_locale' => $input['second_locale'] ?? null,
             'qr_settings' => $input['qr_settings'] ?? null,
             'order_mode' => $input['order_mode'] ?? 'whatsapp',

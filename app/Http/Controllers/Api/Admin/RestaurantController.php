@@ -86,6 +86,7 @@ class RestaurantController extends Controller
                 now(),
                 $months === null ? null : PackageAssigner::endAfter(null, $months),
                 $request->input('note'),
+                $request->input('main_locale'),
             );
         });
 

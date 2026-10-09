@@ -165,11 +165,11 @@ class DishOptionsTest extends TestCase
             ],
             'addons' => [['name' => ['en' => ''], 'price' => 100000000]],
         ]))->assertUnprocessable()
-            ->assertJsonPath('errors', fn (array $errors): bool => $errors['variants.0.name.en'] === ['Give every variant a name in English.']
+            ->assertJsonPath('errors', fn (array $errors): bool => $errors['variants.0.name.en'] === ["Give every variant a name in your menu's main language (English)."]
                 && $errors['variants.0.options'] === ['A variant needs at least 2 options.']
-                && $errors['variants.1.options.0.name.en'] === ['Give every option a name in English.']
+                && $errors['variants.1.options.0.name.en'] === ["Give every option a name in your menu's main language (English)."]
                 && isset($errors['variants.1.options.0.price'])
-                && $errors['addons.0.name.en'] === ['Give every add-on a name in English.']
+                && $errors['addons.0.name.en'] === ["Give every add-on a name in your menu's main language (English)."]
                 && isset($errors['addons.0.price']));
     }
 
@@ -181,7 +181,7 @@ class DishOptionsTest extends TestCase
             ->assertUnprocessable()
             ->json('errors');
 
-        $this->assertSame(['اكتب اسم كل إضافة بالإنجليزية.'], $errors['addons.0.name.en']);
+        $this->assertSame(['اكتب اسم كل إضافة بلغة قائمتك الرئيسية (English).'], $errors['addons.0.name.en']);
         $this->assertSame(['أضف سعرًا للطبق قبل إضافة الإضافات.'], $errors['price']);
     }
 

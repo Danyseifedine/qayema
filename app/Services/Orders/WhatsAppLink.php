@@ -40,7 +40,7 @@ class WhatsAppLink
     {
         // The labels below come through __(), in the app locale the order
         // request set from the guest's menu language; the name follows it.
-        $name = MenuLanguages::text($restaurant, 'name', app()->getLocale());
+        $name = MenuLanguages::text($restaurant, 'name', app()->getLocale(), MenuLanguages::main($restaurant));
         $symbol = (string) config("currencies.{$restaurant->currency}.symbol", $restaurant->currency);
 
         $lines = [

@@ -4,6 +4,7 @@ namespace Tests\Integration\Services\Menu;
 
 use App\Enums\Feature;
 use App\Models\Category;
+use App\Models\Dish;
 use App\Services\Menu\MenuLanguages;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
@@ -37,7 +38,7 @@ class MenuLanguagesTest extends TestCase
     public function test_the_catalogue_is_the_menu_list_in_config(): void
     {
         $this->assertSame(config('locales.menu'), MenuLanguages::catalogue());
-        $this->assertArrayHasKey(MenuLanguages::MAIN, MenuLanguages::catalogue());
+        $this->assertArrayHasKey(MenuLanguages::DEFAULT_MAIN, MenuLanguages::catalogue());
     }
 
     public function test_the_catalogue_is_empty_when_config_has_none(): void
@@ -45,12 +46,80 @@ class MenuLanguagesTest extends TestCase
         config()->set('locales', array_diff_key(config('locales'), ['menu' => true]));
 
         $this->assertSame([], MenuLanguages::catalogue());
-        $this->assertSame([], MenuLanguages::secondChoices());
+        $this->assertSame([], MenuLanguages::choices());
     }
 
-    public function test_every_language_but_english_can_be_the_second_one(): void
+    public function test_every_language_on_the_list_can_be_the_main_one(): void
     {
-        $this->assertSame(['ar', 'fr', 'es', 'tr', 'de', 'it', 'ru', 'zh', 'hi', 'pt'], MenuLanguages::secondChoices());
+        $this->assertSame(['en', 'ar', 'fr', 'es', 'tr', 'de', 'it', 'ru', 'zh', 'hi', 'pt'], MenuLanguages::choices());
+    }
+
+    public function test_the_main_language_is_the_restaurants_and_english_for_one_off_the_list(): void
+    {
+        $this->assertSame('ar', MenuLanguages::main($this->owner(['main_locale' => 'ar'])));
+        $this->assertSame('en', MenuLanguages::main($this->owner(['main_locale' => 'xx'])));
+    }
+
+    public function test_a_single_language_menu_can_be_in_any_language(): void
+    {
+        // No multiple_languages on the default package: one language, the main one.
+        $restaurant = $this->owner(['main_locale' => 'ar', 'second_locale' => 'en', 'default_locale' => 'en']);
+
+        $this->assertSame(['ar'], MenuLanguages::for($restaurant));
+        $this->assertSame(['ar', 'en'], MenuLanguages::written($restaurant));
+        $this->assertSame('ar', MenuLanguages::default($restaurant));
+    }
+
+    public function test_a_second_language_equal_to_the_main_one_is_ignored(): void
+    {
+        $this->assertSame(['fr'], MenuLanguages::written($this->owner(['main_locale' => 'fr', 'second_locale' => 'fr'])));
+    }
+
+    public function test_the_main_language_carries_the_required_rule_wherever_it_sits_in_the_alphabet(): void
+    {
+        $this->assertSame(
+            ['name.fr' => ['required', 'string', 'max:255'], 'name.en' => ['nullable', 'string', 'max:255']],
+            MenuLanguages::rules('name', ['fr', 'en'], 255, 'required'),
+        );
+    }
+
+    public function test_choosing_the_second_language_as_main_swaps_the_two(): void
+    {
+        $restaurant = $this->owner(['main_locale' => 'en', 'second_locale' => 'ar', 'default_locale' => 'en']);
+
+        $this->assertSame(
+            ['main_locale' => 'ar', 'second_locale' => 'en', 'default_locale' => 'ar'],
+            MenuLanguages::withMain($restaurant, 'ar'),
+        );
+    }
+
+    public function test_choosing_a_new_main_language_keeps_the_second_and_its_opening(): void
+    {
+        $restaurant = $this->owner(['main_locale' => 'en', 'second_locale' => 'ar', 'default_locale' => 'ar']);
+
+        $this->assertSame(
+            ['main_locale' => 'fr', 'second_locale' => 'ar', 'default_locale' => 'ar'],
+            MenuLanguages::withMain($restaurant, 'fr'),
+        );
+    }
+
+    public function test_text_falls_back_to_the_main_language_then_to_whatever_was_written(): void
+    {
+        $category = $this->category(['en' => 'Soup', 'ar' => 'شوربة']);
+
+        $this->assertSame('شوربة', MenuLanguages::text($category, 'name', 'fr', 'ar'));
+        // A new main language not written yet: the old name rather than nothing.
+        $this->assertSame('Soup', MenuLanguages::text($this->category(['en' => 'Soup']), 'name', 'fr', 'fr'));
+    }
+
+    public function test_it_counts_what_has_no_name_in_the_main_language(): void
+    {
+        $restaurant = $this->owner(['main_locale' => 'fr']);
+        Category::factory()->for($restaurant)->create(['name' => ['en' => 'Soup']]);
+        Category::factory()->for($restaurant)->create(['name' => ['fr' => 'Soupe']]);
+        Dish::factory()->for($restaurant)->create(['name' => ['en' => 'Kafta']]);
+
+        $this->assertSame(['categories' => 1, 'dishes' => 1], MenuLanguages::missingInMain($restaurant));
     }
 
     public function test_a_package_without_multiple_languages_shows_english_only(): void
@@ -207,7 +276,7 @@ class MenuLanguagesTest extends TestCase
     public function test_text_with_nothing_written_is_blank(): void
     {
         $this->assertSame('', MenuLanguages::text($this->category([]), 'name', 'ar'));
-        $this->assertSame('', MenuLanguages::text($this->category(['fr' => 'Soupe']), 'name', 'ar'));
+        $this->assertSame('', MenuLanguages::text($this->category(['fr' => '']), 'name', 'ar', 'fr'));
     }
 
     public function test_map_gives_every_language_asked_for_and_null_when_missing(): void

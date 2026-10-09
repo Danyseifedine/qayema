@@ -27,7 +27,7 @@ class MenuFonts
     }
 
     /**
-     * The scripts the menu shows right now, Latin (English's) first, each with
+     * The scripts the menu shows right now, the main language's first, each with
      * the languages that use it. A language switched off on the Features page
      * takes its script with it; the pick stays stored for when it returns.
      *

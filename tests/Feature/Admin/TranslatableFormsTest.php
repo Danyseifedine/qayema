@@ -7,6 +7,7 @@ use App\Filament\Admin\Resources\Categories\Pages\EditCategory;
 use App\Filament\Admin\Resources\Dishes\Pages\CreateDish;
 use App\Filament\Admin\Resources\Dishes\Pages\EditDish;
 use App\Filament\Admin\Resources\Packages\Pages\EditPackage;
+use App\Filament\Admin\Resources\Restaurants\Pages\EditRestaurant;
 use App\Filament\Admin\Resources\Templates\Pages\CreateTemplate;
 use App\Filament\Admin\Resources\Templates\Pages\EditTemplate;
 use App\Models\Category;
@@ -100,6 +101,58 @@ class TranslatableFormsTest extends TestCase
             ->assertHasNoFormErrors();
 
         $this->assertSame(['en' => 'Fattoush'], Dish::query()->where('restaurant_id', $restaurant->id)->sole()->getTranslations('name'));
+    }
+
+    public function test_a_category_of_a_french_menu_is_edited_in_french_and_keeps_the_english(): void
+    {
+        $restaurant = $this->owner(['main_locale' => 'fr']);
+        $category = Category::factory()->create(['restaurant_id' => $restaurant->id, 'name' => ['en' => 'Mains', 'fr' => 'Plats']]);
+        $this->actingAs($this->admin());
+
+        Livewire::test(EditCategory::class, ['record' => $category->getRouteKey()])
+            ->assertSee('Name (Français)')
+            ->assertDontSee('Name (English)')
+            ->fillForm(['name.fr' => 'Plats principaux'])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(['en' => 'Mains', 'fr' => 'Plats principaux'], $category->fresh()->getTranslations('name'));
+    }
+
+    public function test_a_dish_of_an_arabic_menu_needs_its_arabic_name(): void
+    {
+        $restaurant = $this->owner(['main_locale' => 'ar']);
+        $this->actingAs($this->admin());
+
+        Livewire::test(CreateDish::class)
+            ->fillForm(['restaurant_id' => $restaurant->id, 'name.ar' => '', 'price' => 5, 'display_order' => 0])
+            ->call('create')
+            ->assertHasFormErrors(['name.ar' => 'required']);
+
+        Livewire::test(CreateDish::class)
+            ->fillForm(['restaurant_id' => $restaurant->id, 'name.ar' => 'فتوش', 'price' => 5, 'display_order' => 0])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(['ar' => 'فتوش'], Dish::query()->latest('id')->first()->getTranslations('name'));
+    }
+
+    public function test_a_restaurant_made_arabic_from_the_admin_swaps_its_languages(): void
+    {
+        $restaurant = $this->owner(['main_locale' => 'en', 'second_locale' => 'ar', 'default_locale' => 'en', 'name' => ['en' => 'Olive', 'ar' => 'زيتون']]);
+        $this->actingAs($this->admin());
+
+        Livewire::test(EditRestaurant::class, ['record' => $restaurant->getRouteKey()])
+            ->fillForm(['main_locale' => 'ar'])
+            ->assertSee('Name (العربية)')
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $restaurant = $restaurant->fresh();
+        $this->assertSame('ar', $restaurant->main_locale);
+        $this->assertSame('en', $restaurant->second_locale);
+        $this->assertSame('ar', $restaurant->default_locale);
+        $this->assertSame(['en' => 'Olive', 'ar' => 'زيتون'], $restaurant->getTranslations('name'));
     }
 
     public function test_a_package_edits_both_interface_languages(): void

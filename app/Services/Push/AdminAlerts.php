@@ -155,7 +155,7 @@ class AdminAlerts
 
     private function nameOf(Restaurant $restaurant): string
     {
-        return MenuLanguages::text($restaurant, 'name', MenuLanguages::MAIN);
+        return MenuLanguages::text($restaurant, 'name', MenuLanguages::main($restaurant));
     }
 
     /** "today", "tomorrow", "in 3 days", by the admins' calendar. */

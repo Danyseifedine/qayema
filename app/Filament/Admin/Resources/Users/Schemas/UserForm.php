@@ -7,6 +7,7 @@ use App\Filament\Admin\Resources\Restaurants\Schemas\PackageFields;
 use App\Models\User;
 use App\Rules\AvailableSlug;
 use App\Rules\Username;
+use App\Services\Menu\MenuLanguages;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -99,7 +100,13 @@ class UserForm
                             ->maxLength(255)
                             ->live(onBlur: true)
                             ->afterStateUpdated(fn ($state, callable $set) => $set('slug', Str::slug((string) ($state ?? ''))))
-                            ->helperText('In English; other languages are added in the dashboard.'),
+                            ->helperText('In the menu\'s main language, chosen beside it.'),
+                        Select::make('main_locale')
+                            ->label('Menu language')
+                            ->options(collect(MenuLanguages::choices())->mapWithKeys(fn (string $code): array => [$code => MenuLanguages::nameOf($code)])->all())
+                            ->default(MenuLanguages::DEFAULT_MAIN)
+                            ->required()
+                            ->helperText('Every dish is written in it. The owner can add a second one, or change it, in the dashboard.'),
                         TextInput::make('slug')
                             ->label('Menu link')
                             ->placeholder('the-golden-spoon')

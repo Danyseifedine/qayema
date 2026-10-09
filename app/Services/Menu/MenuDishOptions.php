@@ -66,7 +66,8 @@ class MenuDishOptions
                 $lowest = bcadd($lowest, (string) $prices->sort(fn (string $a, string $b): int => bccomp($a, $b, 2))->first(), 2);
             }
 
-            $name = fn ($model): string => MenuLanguages::text($model, 'name', $locale);
+            $main = MenuLanguages::main($restaurant);
+            $name = fn ($model): string => MenuLanguages::text($model, 'name', $locale, $main);
 
             $choices[$dish->id] = [
                 'variants' => $variants->map(fn (DishVariant $variant): array => [

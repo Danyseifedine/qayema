@@ -17,6 +17,14 @@
 
     $currencySymbols = collect(config('currencies', []))->map(fn ($c) => $c['symbol'] ?? '$')->all();
 
+    // The language the menu is written in, suggested from this page's
+    // language until the owner has chosen one.
+    $languageOptions = collect(config('locales.menu', []))
+        ->map(fn ($l, $code) => ['value' => $code, 'label' => $l['name'], 'flag' => $l['flag'] ?? ''])
+        ->values()->all();
+    $mainLocale = $restaurant?->main_locale
+        ?? (array_key_exists($locale, config('locales.menu', [])) ? $locale : \App\Services\Menu\MenuLanguages::DEFAULT_MAIN);
+
     $stepData = [
         ['key' => __('owner.onboarding.step1_title'), 'short' => __('owner.onboarding.step1_desc'), 'stage' => __('owner.onboarding.step1_stage'), 'tag' => __('owner.onboarding.step1_tag')],
         ['key' => __('owner.onboarding.step2_title'), 'short' => __('owner.onboarding.step2_desc'), 'stage' => __('owner.onboarding.step2_stage'), 'tag' => __('owner.onboarding.step2_tag')],
@@ -116,6 +124,20 @@
                         <div class="ui-helps">
                             <p class="ui-help">{{ __('owner.onboarding.name_hint') }}</p>
                             <p class="ui-help error" x-show="errors.name" x-text="errors.name" x-cloak></p>
+                        </div>
+                    </x-ui.field>
+
+                    {{-- The language every dish is written in --}}
+                    <x-ui.field name="main_locale" :label="__('owner.onboarding.language_label')" required>
+                        <div @combo-change="s1.main_locale = $event.detail.value">
+                            <x-ui.combo name="main_locale"
+                                :options="$languageOptions"
+                                :value="$mainLocale"
+                                :placeholder="__('owner.onboarding.language_label')" />
+                        </div>
+                        <div class="ui-helps">
+                            <p class="ui-help">{{ __('owner.onboarding.language_hint') }}</p>
+                            <p class="ui-help error" x-show="errors.main_locale" x-text="errors.main_locale" x-cloak></p>
                         </div>
                     </x-ui.field>
 
@@ -307,7 +329,7 @@
                         </div>
                         <div class="ps-header">
                             <div class="ps-rest" x-text="s1.name || '{{ $appName }}'"></div>
-                            <div class="ps-sub" x-text="selectedCurrency + ' · ' + (s1.default_locale || '{{ $locale }}').toUpperCase()"></div>
+                            <div class="ps-sub" x-text="selectedCurrency + ' · ' + (s1.main_locale || '{{ $locale }}').toUpperCase()"></div>
                         </div>
                         <div class="ps-list">
                             <div class="ps-item">
@@ -369,7 +391,7 @@ window._onb = {
         existing: {
             name:               @json($restaurant?->name ?? ''),
             slug:               @json($restaurant?->slug ?? ''),
-            default_locale: @json($restaurant?->default_locale ?? (in_array($locale, ['ar','en']) ? $locale : 'ar')),
+            main_locale:        @json($mainLocale),
             country_code:       @json($restaurant?->country_code ?? ''),
             phone:              @json($restaurant?->phone ?? ''),
             currency:           @json($restaurant?->currency ?? 'USD'),
@@ -408,7 +430,7 @@ document.addEventListener('alpine:init', () => {
         get progress() { return Math.round(((this.step - 1) / (this.totalSteps - 1)) * 100); },
 
         /* Step 1 */
-        s1: { name: _o.existing.name, default_locale: _o.existing.default_locale, slug: _o.existing.slug },
+        s1: { name: _o.existing.name, main_locale: _o.existing.main_locale, slug: _o.existing.slug },
         slugEdited:  !!_o.existing.slug, // true when user has manually touched the slug field
         slugStatus:  'idle',             // idle | checking | available | taken
         _slugTimer:  null,
@@ -492,7 +514,7 @@ document.addEventListener('alpine:init', () => {
         _captureSnap(step) {
             switch (step) {
                 case 1:
-                    this._snap[1] = JSON.stringify({ name: this.s1.name.trim(), lang: this.s1.default_locale, slug: this.s1.slug });
+                    this._snap[1] = JSON.stringify({ name: this.s1.name.trim(), lang: this.s1.main_locale, slug: this.s1.slug });
                     break;
                 case 2:
                     this._snap[2] = JSON.stringify({ cc: dom('country_code'), phone: dom('phone'), currency: dom('currency') });
@@ -505,7 +527,7 @@ document.addEventListener('alpine:init', () => {
 
         _isUnchanged() {
             switch (this.step) {
-                case 1: return this._snap[1] === JSON.stringify({ name: this.s1.name.trim(), lang: this.s1.default_locale, slug: this.s1.slug });
+                case 1: return this._snap[1] === JSON.stringify({ name: this.s1.name.trim(), lang: this.s1.main_locale, slug: this.s1.slug });
                 case 2: return this._snap[2] === JSON.stringify({ cc: dom('country_code'), phone: dom('phone'), currency: dom('currency') });
                 case 3: return this._snap[3] === `${dom('logo_key')}|${dom('cover_image_key')}`;
                 default: return false;

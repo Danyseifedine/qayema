@@ -22,7 +22,8 @@ return [
         'cover_image' => ['fit' => 'cover', 'width' => 1920, 'height' => 600, 'quality' => 80],
         // Dishes are the hero content: a larger box + higher ceiling keeps food
         // photography sharp when a QR menu is viewed full-width on a phone.
-        'dish' => ['fit' => 'cover', 'width' => 1200, 'height' => 900, 'max_kb' => 150],
+        // Never cropped: a long sub sandwich keeps both ends, only shrunk.
+        'dish' => ['fit' => 'contain', 'width' => 1200, 'height' => 1200, 'max_kb' => 150],
         'generic' => ['fit' => 'contain', 'width' => 1200, 'height' => 1200, 'max_kb' => 200],
     ],
 

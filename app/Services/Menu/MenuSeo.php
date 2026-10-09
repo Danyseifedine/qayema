@@ -45,7 +45,8 @@ class MenuSeo
      */
     public function for(Restaurant $restaurant, string $locale, bool $preview): array
     {
-        $name = MenuLanguages::text($restaurant, 'name', $locale);
+        $main = MenuLanguages::main($restaurant);
+        $name = MenuLanguages::text($restaurant, 'name', $locale, $main);
         // Only a description written in this language: an Arabic page with an
         // English description reads as the wrong language to a search engine.
         $description = trim((string) $restaurant->getTranslation('description', $locale, false));
@@ -96,6 +97,7 @@ class MenuSeo
      */
     private function schema(Restaurant $restaurant, string $locale, string $name, string $description, $categories): string
     {
+        $main = MenuLanguages::main($restaurant);
         $url = $this->url($restaurant, $locale);
         $currency = (string) $restaurant->currency;
         $point = MapPoint::fromUrl($restaurant->google_maps_url);
@@ -125,12 +127,12 @@ class MenuSeo
                 'inLanguage' => $locale,
                 'hasMenuSection' => $categories->map(fn ($category): array => array_filter([
                     '@type' => 'MenuSection',
-                    'name' => MenuLanguages::text($category, 'name', $locale),
-                    'description' => trim(MenuLanguages::text($category, 'description', $locale)) ?: null,
+                    'name' => MenuLanguages::text($category, 'name', $locale, $main),
+                    'description' => trim(MenuLanguages::text($category, 'description', $locale, $main)) ?: null,
                     'hasMenuItem' => $category->dishes->map(fn ($dish): array => array_filter([
                         '@type' => 'MenuItem',
-                        'name' => MenuLanguages::text($dish, 'name', $locale),
-                        'description' => trim(MenuLanguages::text($dish, 'ingredients', $locale)) ?: null,
+                        'name' => MenuLanguages::text($dish, 'name', $locale, $main),
+                        'description' => trim(MenuLanguages::text($dish, 'ingredients', $locale, $main)) ?: null,
                         'image' => $dish->getFirstMediaUrl('image') ?: null,
                         'offers' => $dish->price !== null && $currency !== ''
                             ? ['@type' => 'Offer', 'price' => number_format((float) $dish->price, 2, '.', ''), 'priceCurrency' => $currency]

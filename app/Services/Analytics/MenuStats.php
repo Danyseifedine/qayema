@@ -646,13 +646,14 @@ class MenuStats
         }
 
         $locale = MenuLanguages::default($this->restaurant);
+        $main = MenuLanguages::main($this->restaurant);
 
         return $model::query()
             ->where('restaurant_id', $this->restaurant->id)
             ->whereKey($ids->all())
             ->get()
             ->mapWithKeys(fn (Dish|Category $row) => [
-                $row->getKey() => MenuLanguages::text($row, 'name', $locale),
+                $row->getKey() => MenuLanguages::text($row, 'name', $locale, $main),
             ])
             ->all();
     }

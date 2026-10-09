@@ -80,9 +80,11 @@ class UserResource extends JsonResource
         return [
             // The live orders channel is named after it (routes/channels.php).
             'id' => $restaurant->id,
-            // What the menu is written in: English, then the second language
-            // when there is one. The dashboard's text fields have a tab each.
+            // What the menu is written in: the main language, then the
+            // second one when there is one. The dashboard's text fields have
+            // a tab each, and the first is the one a name needs.
             'languages' => $restaurant->menuLanguages(),
+            'main_locale' => MenuLanguages::main($restaurant),
             // The second language chosen, even while "Multiple languages" is
             // switched off, so switching it back on shows what it was.
             'second_locale' => MenuLanguages::written($restaurant)[1] ?? null,

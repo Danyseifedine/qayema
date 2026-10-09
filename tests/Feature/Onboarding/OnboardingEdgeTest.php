@@ -21,35 +21,55 @@ class OnboardingEdgeTest extends TestCase
     {
         $user = $this->fresh();
 
-        $this->actingAs($user)->postJson(route('onboarding.advance'), ['_step' => 1, 'name' => 'First Name', 'slug' => 'first', 'default_locale' => 'en'])->assertOk();
-        $this->actingAs($user)->postJson(route('onboarding.advance'), ['_step' => 1, 'name' => 'Second Name', 'slug' => 'second', 'default_locale' => 'en'])->assertOk();
+        $this->actingAs($user)->postJson(route('onboarding.advance'), ['_step' => 1, 'name' => 'First Name', 'slug' => 'first', 'main_locale' => 'en'])->assertOk();
+        $this->actingAs($user)->postJson(route('onboarding.advance'), ['_step' => 1, 'name' => 'Second Name', 'slug' => 'second', 'main_locale' => 'en'])->assertOk();
 
         $this->assertSame(1, Restaurant::count());
         $this->assertSame('second', $user->fresh()->restaurant->slug);
         $this->assertSame('Second Name', $user->fresh()->restaurant->getTranslation('name', 'en'));
     }
 
-    public function test_the_name_is_saved_in_english_and_arabic_is_the_second_language(): void
+    public function test_a_menu_written_in_arabic_has_its_name_in_arabic_and_english_second(): void
     {
-        // English is every menu's main language, so the one name typed at
-        // onboarding goes there; the menu still opens in the language chosen.
         $user = $this->fresh();
 
-        $this->actingAs($user)->postJson(route('onboarding.advance'), ['_step' => 1, 'name' => 'مطعمي', 'slug' => 'mine', 'default_locale' => 'ar'])->assertOk();
+        $this->actingAs($user)->postJson(route('onboarding.advance'), ['_step' => 1, 'name' => 'مطعمي', 'slug' => 'mine', 'main_locale' => 'ar'])->assertOk();
 
         $restaurant = $user->fresh()->restaurant;
+        $this->assertSame('ar', $restaurant->main_locale);
         $this->assertSame('ar', $restaurant->default_locale);
-        $this->assertSame('ar', $restaurant->second_locale);
-        $this->assertSame('مطعمي', $restaurant->getTranslation('name', 'en', false));
+        $this->assertSame('en', $restaurant->second_locale);
+        $this->assertSame(['ar' => 'مطعمي'], $restaurant->getTranslations('name'));
+    }
+
+    public function test_step_one_refuses_a_language_not_on_the_list(): void
+    {
+        $this->actingAs($this->fresh())
+            ->postJson(route('onboarding.advance'), ['_step' => 1, 'name' => 'Place', 'slug' => 'place', 'main_locale' => 'xx'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('main_locale');
+    }
+
+    public function test_step_one_offers_every_menu_language_and_suggests_the_page_language(): void
+    {
+        $this->withSession(['owner_locale' => 'ar'])
+            ->actingAs($this->fresh())
+            ->get(route('onboarding'))
+            ->assertOk()
+            ->assertSee(__('owner.onboarding.language_label'))
+            // The options go to Alpine as JSON (Js::from escapes quotes).
+            ->assertSee('\u0022value\u0022:\u0022fr\u0022', false)
+            ->assertSee('\u0022value\u0022:\u0022hi\u0022', false)
+            ->assertSee('main_locale:        "ar"', false);
     }
 
     public function test_running_step_one_again_keeps_the_other_languages_of_the_name(): void
     {
         $user = $this->fresh();
-        $this->actingAs($user)->postJson(route('onboarding.advance'), ['_step' => 1, 'name' => 'Olive', 'slug' => 'mine', 'default_locale' => 'en'])->assertOk();
+        $this->actingAs($user)->postJson(route('onboarding.advance'), ['_step' => 1, 'name' => 'Olive', 'slug' => 'mine', 'main_locale' => 'en'])->assertOk();
         $user->fresh()->restaurant->setTranslation('name', 'ar', 'زيتون')->save();
 
-        $this->actingAs($user)->postJson(route('onboarding.advance'), ['_step' => 1, 'name' => 'Olive Bar', 'slug' => 'mine', 'default_locale' => 'en'])->assertOk();
+        $this->actingAs($user)->postJson(route('onboarding.advance'), ['_step' => 1, 'name' => 'Olive Bar', 'slug' => 'mine', 'main_locale' => 'en'])->assertOk();
 
         $restaurant = $user->fresh()->restaurant;
         $this->assertSame('Olive Bar', $restaurant->getTranslation('name', 'en', false));

@@ -133,6 +133,28 @@ class OrderPlacerTest extends TestCase
         $this->assertSame('Falafel', $order->items[0]->name);
     }
 
+    public function test_a_single_language_menu_names_its_lines_in_its_main_language(): void
+    {
+        $restaurant = $this->owner(['main_locale' => 'ar', 'second_locale' => 'en', 'default_locale' => 'ar']);
+        $falafel = $this->dish($restaurant, ['en' => 'Falafel', 'ar' => 'فلافل'], '3.00');
+
+        $order = $this->placer()->place($restaurant, [['dish_id' => $falafel->id, 'quantity' => 1]], locale: 'en');
+
+        $this->assertSame('فلافل', $order->items[0]->name);
+    }
+
+    public function test_a_line_missing_in_the_guests_language_takes_the_main_one(): void
+    {
+        $this->defaultPackageIncludes(Feature::MultipleLanguages);
+        $restaurant = $this->owner(['main_locale' => 'ar', 'second_locale' => 'en', 'default_locale' => 'ar']);
+        // A French name left from an old second language must not win.
+        $fries = $this->dish($restaurant, ['fr' => 'Frites', 'ar' => 'بطاطا'], '2.00');
+
+        $order = $this->placer()->place($restaurant, [['dish_id' => $fries->id, 'quantity' => 1]], locale: 'en');
+
+        $this->assertSame('بطاطا', $order->items[0]->name);
+    }
+
     public function test_a_line_keeps_its_name_and_price_when_the_dish_changes(): void
     {
         $restaurant = $this->owner();

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\Categories\Schemas;
 
+use App\Filament\Admin\Schemas\Components\MenuTextInputs;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -24,22 +25,24 @@ class CategoryForm
                             ->getOptionLabelFromRecordUsing(fn ($record): string => (string) $record->name)
                             ->preload()
                             ->required()
+                            // The name is written in this restaurant's main language.
+                            ->live()
                             ->helperText('The restaurant this category belongs to.'),
-                        // Menu text: the English, which every menu has. The
+                        // Menu text in the restaurant's main language. The
                         // other languages are kept on save (KeepsTranslations).
-                        TextInput::make('name.en')
-                            ->label('Name (English)')
+                        ...MenuTextInputs::make(fn (string $code, string $language): TextInput => TextInput::make("name.{$code}")
+                            ->label("Name ({$language})")
                             ->placeholder('e.g. Starters, Mains, Desserts')
                             ->required()
                             ->maxLength(255)
-                            ->helperText('Displayed as a section heading on the public menu.'),
-                        Textarea::make('description.en')
-                            ->label('Description (English)')
+                            ->helperText('Displayed as a section heading on the public menu.'), MenuTextInputs::ofChosenRestaurant()),
+                        ...MenuTextInputs::make(fn (string $code, string $language): Textarea => Textarea::make("description.{$code}")
+                            ->label("Description ({$language})")
                             ->placeholder('e.g. Served from noon until close')
                             ->rows(2)
                             ->maxLength(300)
                             ->helperText('Optional. One line under the heading on the public menu.')
-                            ->columnSpanFull(),
+                            ->columnSpanFull(), MenuTextInputs::ofChosenRestaurant()),
                         TextInput::make('display_order')
                             ->label('Display Order')
                             ->numeric()

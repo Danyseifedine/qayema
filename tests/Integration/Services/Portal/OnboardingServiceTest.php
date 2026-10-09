@@ -53,14 +53,15 @@ class OnboardingServiceTest extends TestCase
     {
         $user = $this->userWithoutRestaurant();
 
-        $this->service()->saveIdentity($user, 'Olive Tree', 'olive-tree', 'ar');
+        $this->service()->saveIdentity($user, 'Olive Tree', 'olive-tree', 'en');
 
         $restaurant = $user->fresh()->restaurant;
         $this->assertNotNull($restaurant);
         $this->assertSame(['en' => 'Olive Tree'], $restaurant->getTranslations('name'));
         $this->assertSame('olive-tree', $restaurant->slug);
+        $this->assertSame('en', $restaurant->main_locale);
         $this->assertSame('ar', $restaurant->second_locale);
-        $this->assertSame('ar', $restaurant->default_locale);
+        $this->assertSame('en', $restaurant->default_locale);
         $this->assertSame(Package::default()->id, $restaurant->package_id);
     }
 
@@ -100,15 +101,42 @@ class OnboardingServiceTest extends TestCase
         $this->assertSame([], $this->pushes);
     }
 
-    public function test_step_one_opens_in_english_for_anything_else(): void
+    public function test_step_one_writes_the_menu_in_the_language_chosen(): void
     {
-        foreach (['fr', null, ''] as $index => $locale) {
+        $user = $this->userWithoutRestaurant();
+
+        $this->service()->saveIdentity($user, 'Le Bistrot', 'le-bistrot', 'fr');
+
+        $restaurant = $user->fresh()->restaurant;
+        $this->assertSame('fr', $restaurant->main_locale);
+        $this->assertSame('fr', $restaurant->default_locale);
+        $this->assertSame('ar', $restaurant->second_locale);
+        $this->assertSame(['fr' => 'Le Bistrot'], $restaurant->getTranslations('name'));
+    }
+
+    public function test_step_one_writes_in_english_without_a_language_from_the_list(): void
+    {
+        foreach (['xx', null, ''] as $index => $locale) {
             $user = $this->userWithoutRestaurant();
 
             $this->service()->saveIdentity($user, 'Place '.$index, 'place-'.$index, $locale);
 
-            $this->assertSame('en', $user->fresh()->restaurant->default_locale, var_export($locale, true));
+            $this->assertSame('en', $user->fresh()->restaurant->main_locale, var_export($locale, true));
         }
+    }
+
+    public function test_step_one_again_with_the_second_language_swaps_them_and_keeps_both_names(): void
+    {
+        $user = $this->userWithoutRestaurant();
+        $this->service()->saveIdentity($user, 'Olive', 'olive', 'en');
+
+        $this->service()->saveIdentity($user->fresh(), 'زيتون', 'olive', 'ar');
+
+        $restaurant = $user->fresh()->restaurant;
+        $this->assertSame('ar', $restaurant->main_locale);
+        $this->assertSame('en', $restaurant->second_locale);
+        $this->assertSame('ar', $restaurant->default_locale);
+        $this->assertSame(['en' => 'Olive', 'ar' => 'زيتون'], $restaurant->getTranslations('name'));
     }
 
     public function test_step_one_again_updates_the_same_restaurant_and_keeps_other_languages(): void
@@ -138,15 +166,14 @@ class OnboardingServiceTest extends TestCase
         $this->assertSame('ar', $user->fresh()->restaurant->default_locale);
     }
 
-    public function test_step_one_again_refuses_a_language_the_restaurant_does_not_have(): void
+    public function test_a_restaurant_an_admin_opens_is_written_in_the_language_given(): void
     {
-        $user = $this->userWithoutRestaurant();
-        $this->service()->saveIdentity($user, 'Olive', 'olive', 'ar');
-        $user->fresh()->restaurant->update(['second_locale' => null]);
+        $restaurant = $this->service()->openForOwner(
+            User::factory()->create(), 'مطعم', 'mataam', Package::default()->id, now(), null, null, 'ar',
+        );
 
-        $this->service()->saveIdentity($user->fresh(), 'Olive', 'olive', 'ar');
-
-        $this->assertSame('en', $user->fresh()->restaurant->default_locale);
+        $this->assertSame('ar', $restaurant->main_locale);
+        $this->assertSame(['ar' => 'مطعم'], $restaurant->getTranslations('name'));
     }
 
     public function test_step_two_saves_the_contact_details(): void

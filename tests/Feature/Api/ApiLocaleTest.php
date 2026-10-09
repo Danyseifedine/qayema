@@ -20,7 +20,7 @@ class ApiLocaleTest extends TestCase
         $this->actingAs($owner->user)
             ->postJson(route('api.categories.store'), ['name' => ['en' => '']], ['Accept-Language' => 'ar'])
             ->assertStatus(422)
-            ->assertJsonFragment(['name.en' => ['اسم القسم مطلوب بالإنجليزية.']]);
+            ->assertJsonFragment(['name.en' => ['اسم القسم مطلوب بلغة قائمتك الرئيسية (English).']]);
     }
 
     public function test_laravels_own_rules_are_in_arabic_too(): void
@@ -40,7 +40,7 @@ class ApiLocaleTest extends TestCase
         $this->actingAs($owner->user)
             ->postJson(route('api.categories.store'), ['name' => ['en' => '']])
             ->assertStatus(422)
-            ->assertJsonFragment(['name.en' => ['A category name is required in English.']]);
+            ->assertJsonFragment(['name.en' => ["A category name is required in your menu's main language (English)."]]);
     }
 
     public function test_a_language_the_server_has_no_text_for_falls_back_to_english(): void
@@ -50,7 +50,23 @@ class ApiLocaleTest extends TestCase
         $this->actingAs($owner->user)
             ->postJson(route('api.categories.store'), ['name' => ['en' => '']], ['Accept-Language' => 'fr-FR,fr;q=0.9'])
             ->assertStatus(422)
-            ->assertJsonFragment(['name.en' => ['A category name is required in English.']]);
+            ->assertJsonFragment(['name.en' => ["A category name is required in your menu's main language (English)."]]);
+    }
+
+    public function test_the_required_name_follows_the_main_language(): void
+    {
+        $owner = $this->owner(['main_locale' => 'fr', 'default_locale' => 'fr']);
+
+        $this->actingAs($owner->user)
+            ->postJson(route('api.categories.store'), ['name' => ['fr' => '']])
+            ->assertStatus(422)
+            ->assertJsonFragment(['name.fr' => ["A category name is required in your menu's main language (Français)."]]);
+
+        // English is just another language now: none is asked for.
+        $this->actingAs($owner->user)
+            ->postJson(route('api.categories.store'), ['name' => ['fr' => 'Entrées']])
+            ->assertCreated()
+            ->assertJsonPath('data.name', ['fr' => 'Entrées']);
     }
 
     public function test_a_guest_error_is_in_arabic_as_well(): void

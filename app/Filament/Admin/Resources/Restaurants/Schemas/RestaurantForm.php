@@ -4,8 +4,10 @@ namespace App\Filament\Admin\Resources\Restaurants\Schemas;
 
 use App\Enums\Feature;
 use App\Enums\PackageStatus;
+use App\Filament\Admin\Schemas\Components\MenuTextInputs;
 use App\Models\Restaurant;
 use App\Rules\AvailableSlug;
+use App\Services\Menu\MenuLanguages;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\Textarea;
@@ -14,6 +16,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 use Ysfkaya\FilamentPhoneInput\PhoneInputNumberType;
@@ -40,11 +43,20 @@ class RestaurantForm
                                 ->unique(ignoreRecord: true)
                                 ->validationMessages(['unique' => 'This owner already has a restaurant.'])
                                 ->helperText('The user account that owns this restaurant.'),
+                            // The language every name on the menu is written in.
+                            // Picking the second one swaps the two (EditRestaurant).
+                            Select::make('main_locale')
+                                ->label('Main language')
+                                ->options(collect(MenuLanguages::choices())->mapWithKeys(fn (string $code): array => [$code => MenuLanguages::nameOf($code)])->all())
+                                ->default(MenuLanguages::DEFAULT_MAIN)
+                                ->required()
+                                ->live()
+                                ->helperText('Names are required in it, and it is the only language shown while the second one is off.'),
                             // Menu text is kept per language; the admin edits the
-                            // English, which every menu has, and the other
-                            // languages are kept (EditRestaurant merges them).
-                            TextInput::make('name.en')
-                                ->label('Name (English)')
+                            // main one, and the other languages are kept
+                            // (EditRestaurant merges them).
+                            ...MenuTextInputs::make(fn (string $code, string $language): TextInput => TextInput::make("name.{$code}")
+                                ->label("Name ({$language})")
                                 ->placeholder('e.g. The Golden Spoon')
                                 ->required()
                                 ->maxLength(255)
@@ -54,7 +66,7 @@ class RestaurantForm
                                 ->afterStateUpdated(fn ($state, callable $set, string $operation) => $operation === 'create'
                                     ? $set('slug', \Illuminate\Support\Str::slug((string) ($state ?? '')))
                                     : null)
-                                ->helperText('Shown on the public menu page.'),
+                                ->helperText('Shown on the public menu page.'), fn (Get $get): ?string => $get('main_locale')),
                             TextInput::make('slug')
                                 ->placeholder('the-golden-spoon')
                                 ->required()
@@ -67,12 +79,12 @@ class RestaurantForm
                                 ->dehydrateStateUsing(fn ($state) => \Illuminate\Support\Str::slug((string) ($state ?? '')))
                                 ->helperText('Used in the public URL. Lowercase letters, numbers and hyphens only. Invalid characters are removed automatically. A changed link keeps the old one forwarding here.')
                                 ->columnSpanFull(),
-                            Textarea::make('description.en')
-                                ->label('Description (English)')
+                            ...MenuTextInputs::make(fn (string $code, string $language): Textarea => Textarea::make("description.{$code}")
+                                ->label("Description ({$language})")
                                 ->placeholder('A short description of your restaurant…')
                                 ->rows(3)
                                 ->helperText('Optional. Shown on the public menu page.')
-                                ->columnSpanFull(),
+                                ->columnSpanFull(), fn (Get $get): ?string => $get('main_locale')),
                         ]),
                     Section::make('Package')
                         ->description('The package this restaurant\'s limits and features come from, and for how long. Extra slots & add-ons below stack on top of it; every change is kept in the package history.')

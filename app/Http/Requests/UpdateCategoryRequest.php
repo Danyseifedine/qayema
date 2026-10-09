@@ -21,7 +21,7 @@ class UpdateCategoryRequest extends FormRequest
      */
     public function rules(): array
     {
-        // One entry per menu language; English is the one a name needs.
+        // One entry per menu language; the main one (first) is the one a name needs.
         $languages = MenuLanguages::forOwner($this->user());
 
         return [
@@ -38,7 +38,7 @@ class UpdateCategoryRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.en.required' => __('A category name is required in English.'),
+            ...MenuLanguages::requiredMessages('name', MenuLanguages::forOwner($this->user()), 'A category name is required in your menu\'s main language (:language).'),
         ];
     }
 }

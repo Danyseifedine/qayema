@@ -176,6 +176,7 @@ class AdminRestaurantsTest extends TestCase
         $response = $this->postJson('/api/admin/restaurants', $this->newRestaurant())
             ->assertCreated()
             ->assertJsonPath('data.name', 'Beit Rami')
+            ->assertJsonPath('data.main_locale', 'en')
             ->assertJsonPath('data.slug', 'beit-rami')
             ->assertJsonPath('data.owner.username', 'rami')
             ->assertJsonPath('data.owner.email', null)
@@ -192,6 +193,28 @@ class AdminRestaurantsTest extends TestCase
         $history = $restaurant->packageChanges()->sole();
         $this->assertSame('Paid 3 months in cash', $history->note);
         $this->assertSame($this->admin->id, $history->changed_by);
+    }
+
+    public function test_a_restaurant_is_opened_in_the_menu_language_chosen(): void
+    {
+        $response = $this->postJson('/api/admin/restaurants', $this->newRestaurant(['name' => 'بيت رامي', 'slug' => 'beit-rami', 'main_locale' => 'ar']))
+            ->assertCreated()
+            ->assertJsonPath('data.name', 'بيت رامي')
+            ->assertJsonPath('data.main_locale', 'ar');
+
+        $restaurant = Restaurant::findOrFail($response->json('data.id'));
+        $this->assertSame(['ar' => 'بيت رامي'], $restaurant->getTranslations('name'));
+        $this->assertSame('ar', $restaurant->default_locale);
+        $this->assertSame('en', $restaurant->second_locale);
+    }
+
+    public function test_a_menu_language_not_on_the_list_is_refused(): void
+    {
+        $this->postJson('/api/admin/restaurants', $this->newRestaurant(['main_locale' => 'xx']))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('main_locale');
+
+        $this->assertSame(0, Restaurant::query()->count());
     }
 
     public function test_a_restaurant_opened_without_months_runs_forever(): void

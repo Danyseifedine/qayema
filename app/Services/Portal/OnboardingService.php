@@ -24,29 +24,27 @@ class OnboardingService
     ) {}
 
     /**
-     * Step 1: restaurant name, slug and the language the menu opens in.
+     * Step 1: restaurant name, slug and the language the menu is written in.
      *
-     * The name goes in English, the language every name is required in. A new
-     * restaurant starts with Arabic as its second language, which the owner
-     * can change or drop in the dashboard.
+     * The name goes in that main language, the one every name is required
+     * in. Coming back to this step with another language makes it the main
+     * one (a swap when it was the second), keeping what was written.
      */
-    public function saveIdentity(User $user, string $name, string $slug, ?string $locale): void
+    public function saveIdentity(User $user, string $name, string $slug, ?string $mainLocale): void
     {
         if ($user->restaurant) {
             $restaurant = $user->restaurant;
-            $restaurant->setTranslation('name', MenuLanguages::MAIN, $name);
             $restaurant->fill([
                 'slug' => $slug,
-                // written(), like the create below: the package does not
-                // decide which language the owner opens in, only whether the
-                // menu shows it yet.
-                'default_locale' => $this->openingLanguage($locale, MenuLanguages::written($restaurant)),
-            ])->save();
+                ...MenuLanguages::withMain($restaurant, $this->mainLanguage($mainLocale)),
+            ]);
+            $restaurant->setTranslation('name', MenuLanguages::main($restaurant), $name);
+            $restaurant->save();
 
             return;
         }
 
-        $restaurant = $this->newRestaurant($user, $name, $slug, $locale);
+        $restaurant = $this->newRestaurant($user, $name, $slug, $mainLocale);
         $restaurant->save();
 
         // A new owner: the admins' phones hear of it (never one an admin
@@ -58,15 +56,23 @@ class OnboardingService
      * A new restaurant as onboarding makes one, not yet saved: the admin's
      * Create User fills its package before saving, so the package history
      * starts on the package given.
+     *
+     * Written in `$mainLocale` (English when none is given) and opening in
+     * it. The second language starts as Arabic, or English for a menu
+     * written in Arabic; it shows once the package has more than one
+     * language, and the owner can change or drop it in the dashboard.
      */
-    public function newRestaurant(User $user, string $name, string $slug, ?string $locale = null): Restaurant
+    public function newRestaurant(User $user, string $name, string $slug, ?string $mainLocale = null): Restaurant
     {
+        $main = $this->mainLanguage($mainLocale);
+
         return new Restaurant([
             'user_id' => $user->id,
-            'name' => [MenuLanguages::MAIN => $name],
+            'name' => [$main => $name],
             'slug' => $slug,
-            'second_locale' => 'ar',
-            'default_locale' => $this->openingLanguage($locale, [MenuLanguages::MAIN, 'ar']),
+            'main_locale' => $main,
+            'second_locale' => $main === 'ar' ? 'en' : 'ar',
+            'default_locale' => $main,
         ]);
     }
 
@@ -85,8 +91,9 @@ class OnboardingService
         CarbonInterface $startsAt,
         ?CarbonInterface $endsAt,
         ?string $note = null,
+        ?string $mainLocale = null,
     ): Restaurant {
-        $restaurant = $this->newRestaurant($owner, $name, $slug);
+        $restaurant = $this->newRestaurant($owner, $name, $slug, $mainLocale);
         $restaurant->forceFill([
             'package_id' => $packageId,
             'package_started_at' => $startsAt,
@@ -100,12 +107,10 @@ class OnboardingService
         return $restaurant;
     }
 
-    /**
-     * @param  array<int, string>  $languages
-     */
-    private function openingLanguage(?string $locale, array $languages): string
+    /** A language from the menu list, English otherwise. */
+    private function mainLanguage(?string $locale): string
     {
-        return in_array($locale, $languages, true) ? (string) $locale : MenuLanguages::MAIN;
+        return in_array($locale, MenuLanguages::choices(), true) ? (string) $locale : MenuLanguages::DEFAULT_MAIN;
     }
 
     /** Step 2: country code, phone and currency. */

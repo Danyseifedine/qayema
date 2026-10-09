@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\Dishes\Schemas;
 
+use App\Filament\Admin\Schemas\Components\MenuTextInputs;
 use App\Models\Restaurant;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -27,14 +28,14 @@ class DishForm
                         ->description('Name, price and ingredients.')
                         ->columns(2)
                         ->schema([
-                            // Menu text: the English, which every menu has. The
+                            // Menu text in the restaurant's main language. The
                             // other languages are kept on save (KeepsTranslations).
-                            TextInput::make('name.en')
-                                ->label('Name (English)')
+                            ...MenuTextInputs::make(fn (string $code, string $language): TextInput => TextInput::make("name.{$code}")
+                                ->label("Name ({$language})")
                                 ->placeholder('e.g. Grilled Salmon')
                                 ->required()
                                 ->maxLength(255)
-                                ->helperText('Displayed on the public menu.'),
+                                ->helperText('Displayed on the public menu.'), MenuTextInputs::ofChosenRestaurant()),
                             TextInput::make('price')
                                 ->numeric()
                                 // The restaurant's own currency.
@@ -43,19 +44,19 @@ class DishForm
                                 ->step(0.01)
                                 ->minValue(0)
                                 ->helperText('Leave empty to hide the price.'),
-                            Textarea::make('ingredients.en')
-                                ->label('Ingredients (English)')
+                            ...MenuTextInputs::make(fn (string $code, string $language): Textarea => Textarea::make("ingredients.{$code}")
+                                ->label("Ingredients ({$language})")
                                 ->placeholder('e.g. Salmon, lemon, garlic, olive oil…')
                                 ->rows(3)
                                 ->helperText('Optional. Shown under the dish name on the menu.')
-                                ->columnSpanFull(),
+                                ->columnSpanFull(), MenuTextInputs::ofChosenRestaurant()),
                         ]),
                     Section::make('Variants and add-ons')
                         ->description('Choices guests make on this dish. Each price is added to the dish price.')
                         ->collapsible()
                         ->schema([
-                            // English names, like the rest of this form; a
-                            // repeater row keeps the languages it does not show.
+                            // Names in the main language, like the rest of this
+                            // form; a repeater row keeps the languages it does not show.
                             Repeater::make('variants')
                                 ->label('Variants')
                                 ->helperText('For example Size or Spice level. Guests pick one option of each.')
@@ -63,15 +64,11 @@ class DishForm
                                 ->orderColumn('display_order')
                                 ->maxItems(config('menu.dish_options.variants'))
                                 ->collapsible()
-                                ->itemLabel(fn (array $state): ?string => $state['name']['en'] ?? null)
+                                ->itemLabel(fn (array $state): ?string => collect((array) ($state['name'] ?? []))->filter()->first())
                                 ->addActionLabel('Add variant')
                                 ->defaultItems(0)
                                 ->schema([
-                                    TextInput::make('name.en')
-                                        ->label('Name (English)')
-                                        ->placeholder('e.g. Size')
-                                        ->required()
-                                        ->maxLength(config('menu.dish_options.name_max')),
+                                    ...self::choiceName('e.g. Size'),
                                     Repeater::make('options')
                                         ->label('Options')
                                         ->relationship()
@@ -82,11 +79,7 @@ class DishForm
                                         ->addActionLabel('Add option')
                                         ->columns(2)
                                         ->schema([
-                                            TextInput::make('name.en')
-                                                ->label('Name (English)')
-                                                ->placeholder('e.g. Large')
-                                                ->required()
-                                                ->maxLength(config('menu.dish_options.name_max')),
+                                            ...self::choiceName('e.g. Large'),
                                             self::extraPrice(),
                                         ]),
                                 ]),
@@ -100,11 +93,7 @@ class DishForm
                                 ->defaultItems(0)
                                 ->columns(2)
                                 ->schema([
-                                    TextInput::make('name.en')
-                                        ->label('Name (English)')
-                                        ->placeholder('e.g. Extra cheese')
-                                        ->required()
-                                        ->maxLength(config('menu.dish_options.name_max')),
+                                    ...self::choiceName('e.g. Extra cheese'),
                                     self::extraPrice(),
                                 ]),
                         ]),
@@ -159,6 +148,20 @@ class DishForm
                         ]),
                 ])->columnSpan(['lg' => 1]),
             ]);
+    }
+
+    /**
+     * A variant's, option's or add-on's name, in the restaurant's main language.
+     *
+     * @return array<int, TextInput>
+     */
+    private static function choiceName(string $placeholder): array
+    {
+        return MenuTextInputs::make(fn (string $code, string $language): TextInput => TextInput::make("name.{$code}")
+            ->label("Name ({$language})")
+            ->placeholder($placeholder)
+            ->required()
+            ->maxLength(config('menu.dish_options.name_max')), MenuTextInputs::ofChosenRestaurant());
     }
 
     /** What a variant option or add-on adds to the dish's price. */

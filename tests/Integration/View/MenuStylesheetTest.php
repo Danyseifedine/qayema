@@ -35,4 +35,14 @@ class MenuStylesheetTest extends TestCase
         $this->assertDoesNotMatchRegularExpression('/\.order-bar-status\s*\{[^}]*white-space:\s*nowrap/', $css);
         $this->assertMatchesRegularExpression('/@media \(max-width: 380px\)\s*\{\s*\.order-bar-mark\s*\{\s*display:\s*none;/', $css);
     }
+
+    /** A dish photo is shown whole wherever it appears, never cropped to its box. */
+    public function test_dish_photos_are_never_cropped(): void
+    {
+        $css = (string) file_get_contents(public_path('css/menu-classic.css'));
+
+        foreach (['dish-photo', 'cart-line-photo', 'dish-sheet-photo'] as $class) {
+            $this->assertMatchesRegularExpression('/\\.'.$class.'\\s*\\{[^}]*object-fit:\\s*contain/', $css, $class);
+        }
+    }
 }

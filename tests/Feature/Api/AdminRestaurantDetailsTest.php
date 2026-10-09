@@ -89,6 +89,21 @@ class AdminRestaurantDetailsTest extends TestCase
         $this->get('/beit-rami')->assertRedirect('/beit-rami-grill');
     }
 
+    public function test_the_name_is_changed_in_the_menus_main_language(): void
+    {
+        $restaurant = $this->owner(['main_locale' => 'ar', 'name' => ['ar' => 'بيت رامي', 'en' => 'Beit Rami'], 'slug' => 'beit-rami']);
+
+        $this->getJson("/api/admin/restaurants/{$restaurant->id}")
+            ->assertJsonPath('data.name', 'بيت رامي')
+            ->assertJsonPath('data.main_locale', 'ar');
+
+        $this->patchJson("/api/admin/restaurants/{$restaurant->id}", ['name' => 'بيت رامي الجديد', 'slug' => 'beit-rami', 'phone' => ''])
+            ->assertOk()
+            ->assertJsonPath('data.name', 'بيت رامي الجديد');
+
+        $this->assertSame(['ar' => 'بيت رامي الجديد', 'en' => 'Beit Rami'], $restaurant->fresh()->getTranslations('name'));
+    }
+
     public function test_the_phone_may_be_cleared(): void
     {
         $restaurant = $this->owner(['phone' => '70123456', 'slug' => 'beit-rami']);

@@ -18,9 +18,10 @@
 @use('App\Support\Price')
 @php
     $isRtl = MenuLanguages::isRtl($locale);
-    // Every piece of text is this language, else English (the language every
-    // name is required in), so nothing on the menu is ever blank.
-    $text = fn ($model, string $field): string => MenuLanguages::text($model, $field, $locale);
+    // Every piece of text is this language, else the menu's main one (the
+    // language every name is required in), so nothing on the menu is ever blank.
+    $mainLocale = MenuLanguages::main($restaurant);
+    $text = fn ($model, string $field): string => MenuLanguages::text($model, $field, $locale, $mainLocale);
     $logo = $restaurant->getFirstMediaUrl('logo') ?: null;
     // The cover is the first picture on the page: a phone gets its 960px
     // version (registerMediaConversions), a wide screen the full one.

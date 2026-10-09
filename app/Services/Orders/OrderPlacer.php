@@ -207,7 +207,9 @@ class OrderPlacer
             ->get()
             ->keyBy('id')
             ->partition(fn (Dish $dish): bool => $evenUnavailable || $dish->is_available);
-        $unavailable = $gone->map(fn (Dish $dish): string => MenuLanguages::text($dish, 'name', $locale))->values()->all();
+        // A name missing in the guest's language falls back to the menu's main one.
+        $main = MenuLanguages::main($restaurant);
+        $unavailable = $gone->map(fn (Dish $dish): string => MenuLanguages::text($dish, 'name', $locale, $main))->values()->all();
 
         $items = [];
         $total = '0.00';
@@ -219,7 +221,7 @@ class OrderPlacer
                 continue;
             }
 
-            $variants = $variantsOn ? $this->variantChoices($dish, $line['options'], $locale) : [];
+            $variants = $variantsOn ? $this->variantChoices($dish, $line['options'], $locale, $main) : [];
 
             // No price of its own: its variants price it (a sandwich by
             // size), and without one to pick it is not for sale.
@@ -227,7 +229,7 @@ class OrderPlacer
                 continue;
             }
 
-            $addons = $addonsOn ? $this->addonChoices($dish, $line['addons'], $locale) : [];
+            $addons = $addonsOn ? $this->addonChoices($dish, $line['addons'], $locale, $main) : [];
 
             $unitPrice = $dish->price === null ? '0.00' : (string) $dish->price;
             foreach ([...$variants, ...$addons] as $choice) {
@@ -239,7 +241,7 @@ class OrderPlacer
             $items[] = [
                 'dish_id' => $dish->id,
                 // Copied, not looked up: the menu may change tomorrow.
-                'name' => MenuLanguages::text($dish, 'name', $locale),
+                'name' => MenuLanguages::text($dish, 'name', $locale, $main),
                 'options' => $variants === [] && $addons === [] ? null : ['variants' => $variants, 'addons' => $addons],
                 'unit_price' => $unitPrice,
                 'quantity' => $line['quantity'],
@@ -265,15 +267,15 @@ class OrderPlacer
      *
      * @throws ValidationException when a variant has no option picked, or more than one
      */
-    private function variantChoices(Dish $dish, array $chosen, string $locale): array
+    private function variantChoices(Dish $dish, array $chosen, string $locale, string $main): array
     {
         // As on the menu (MenuDishOptions): a variant with a single option
         // leaves nothing to pick, so it is not asked for.
         $variants = $dish->variants->filter(fn (DishVariant $variant): bool => $variant->options->count() >= 2);
 
-        return $variants->map(function (DishVariant $variant) use ($dish, $chosen, $locale): array {
+        return $variants->map(function (DishVariant $variant) use ($dish, $chosen, $locale, $main): array {
             $picked = $variant->options->whereIn('id', $chosen);
-            $replace = ['variant' => MenuLanguages::text($variant, 'name', $locale), 'dish' => MenuLanguages::text($dish, 'name', $locale)];
+            $replace = ['variant' => MenuLanguages::text($variant, 'name', $locale, $main), 'dish' => MenuLanguages::text($dish, 'name', $locale, $main)];
 
             if ($picked->count() !== 1) {
                 throw ValidationException::withMessages([
@@ -287,7 +289,7 @@ class OrderPlacer
 
             return [
                 'name' => $replace['variant'],
-                'choice' => MenuLanguages::text($option, 'name', $locale),
+                'choice' => MenuLanguages::text($option, 'name', $locale, $main),
                 'price' => (string) $option->price,
                 // So the guest's cart can be built again to change it.
                 'option_id' => $option->id,
@@ -301,12 +303,12 @@ class OrderPlacer
      * @param  array<int, int>  $chosen
      * @return array<int, array{name: string, price: string, addon_id: int}>
      */
-    private function addonChoices(Dish $dish, array $chosen, string $locale): array
+    private function addonChoices(Dish $dish, array $chosen, string $locale, string $main): array
     {
         return $dish->addons
             ->whereIn('id', $chosen)
             ->map(fn (DishAddon $addon): array => [
-                'name' => MenuLanguages::text($addon, 'name', $locale),
+                'name' => MenuLanguages::text($addon, 'name', $locale, $main),
                 'price' => (string) $addon->price,
                 'addon_id' => $addon->id,
             ])

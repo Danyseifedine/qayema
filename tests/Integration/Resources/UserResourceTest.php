@@ -21,7 +21,7 @@ class UserResourceTest extends TestCase
     private const USER_KEYS = ['name', 'username', 'email', 'has_completed_onboarding', 'has_password', 'impersonation'];
 
     private const RESTAURANT_KEYS = [
-        'id', 'languages', 'second_locale', 'default_locale', 'template_id', 'public_url',
+        'id', 'languages', 'main_locale', 'second_locale', 'default_locale', 'template_id', 'public_url',
         'package', 'lapsed', 'upcoming', 'limits', 'switched_off', 'ordering', 'plan',
     ];
 

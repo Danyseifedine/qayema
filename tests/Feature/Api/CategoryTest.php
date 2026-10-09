@@ -259,6 +259,21 @@ class CategoryTest extends TestCase
         @unlink($path);
     }
 
+    public function test_a_long_dish_photo_is_shrunk_whole_never_cropped(): void
+    {
+        [$user] = $this->owner();
+
+        $response = $this->actingAs($user)->post(
+            route('api.uploads.temp'),
+            ['file' => UploadedFile::fake()->image('sub.jpg', 2400, 800), 'context' => 'dish'],
+            ['Accept' => 'application/json'],
+        )->assertOk();
+
+        $path = app(\App\Services\Media\MediaService::class)->tempPath($user->id, $response->json('key'));
+        $this->assertSame([1200, 400], array_slice(getimagesize($path), 0, 2));
+        @unlink($path);
+    }
+
     public function test_store_ignores_a_spoofed_restaurant_id(): void
     {
         [$user, $restaurant] = $this->owner();

@@ -52,12 +52,29 @@ class MenuSpeedTest extends TestCase
 
         $this->assertTrue($media->hasGeneratedConversion('thumb'));
         [$width, $height] = getimagesize(Storage::disk('public')->path($media->getPathRelativeToRoot('thumb')));
-        $this->assertSame([240, 240], [$width, $height]);
+        // The whole photo in its own shape: shrunk, never cropped square.
+        $this->assertSame([240, 180], [$width, $height]);
 
         $html = $this->menu();
         $this->assertStringContainsString('class="dish-photo" src="'.$media->getUrl('thumb').'"', $html);
         $this->assertStringContainsString('width="72" height="72"', $html);
         $this->assertStringContainsString('data-image="'.$media->getUrl('thumb').'" data-photo="'.$media->getUrl().'"', $html);
+    }
+
+    public function test_a_long_photo_keeps_both_ends_on_the_card(): void
+    {
+        $media = $this->dish->addMedia(UploadedFile::fake()->image('sub.jpg', 1200, 400))->toMediaCollection('image');
+
+        [$width, $height] = getimagesize(Storage::disk('public')->path($media->getPathRelativeToRoot('thumb')));
+        $this->assertSame([240, 80], [$width, $height]);
+    }
+
+    public function test_a_small_photo_is_never_enlarged_for_the_card(): void
+    {
+        $media = $this->dish->addMedia(UploadedFile::fake()->image('tiny.jpg', 100, 60))->toMediaCollection('image');
+
+        [$width, $height] = getimagesize(Storage::disk('public')->path($media->getPathRelativeToRoot('thumb')));
+        $this->assertSame([100, 60], [$width, $height]);
     }
 
     public function test_a_photo_from_before_the_small_versions_still_shows(): void

@@ -110,6 +110,7 @@ class Restaurant extends Model implements HasMedia
         'opening_hours',
         'timezone',
         'currency',
+        'main_locale',
         'default_locale',
         'second_locale',
         'is_active',
@@ -400,7 +401,7 @@ class Restaurant extends Model implements HasMedia
     }
 
     /**
-     * English, then the second language when there is one.
+     * The main language, then the second one when there is one.
      *
      * @return array<int, string>
      */

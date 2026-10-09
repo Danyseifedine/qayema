@@ -44,7 +44,9 @@ class AdminRestaurantResource extends JsonResource
 
         return [
             'id' => $this->id,
-            'name' => MenuLanguages::text($this->resource, 'name', MenuLanguages::MAIN),
+            // In the menu's main language, the one the app edits it in.
+            'name' => MenuLanguages::text($this->resource, 'name', MenuLanguages::main($this->resource)),
+            'main_locale' => MenuLanguages::main($this->resource),
             'slug' => $this->slug,
             'is_active' => (bool) $this->is_active,
             'public_url' => rtrim((string) config('app.url'), '/').'/'.$this->slug,

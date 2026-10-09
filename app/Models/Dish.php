@@ -81,9 +81,11 @@ class Dish extends Model implements HasMedia
      */
     public function registerMediaConversions(?Media $media = null): void
     {
+        // The card's picture: the whole photo in its own shape, never
+        // cropped or enlarged; the card fits it in its square.
         $this->addMediaConversion('thumb')
             ->performOnCollections('image')
-            ->fit(Fit::Crop, 240, 240)
+            ->fit(Fit::Max, 240, 240)
             ->format('webp')
             ->quality(76)
             ->nonQueued();

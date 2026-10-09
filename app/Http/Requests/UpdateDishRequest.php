@@ -23,7 +23,7 @@ class UpdateDishRequest extends FormRequest
     public function rules(): array
     {
         $restaurantId = $this->user()?->restaurant?->id ?? 0;
-        // One entry per menu language; English is the one a name needs.
+        // One entry per menu language; the main one (first) is the one a name needs.
         $languages = MenuLanguages::forOwner($this->user());
 
         return [
@@ -51,8 +51,7 @@ class UpdateDishRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.en.required' => __('A dish name is required in English.'),
-            'name.en.required_with' => __('A dish name is required in English.'),
+            ...MenuLanguages::requiredMessages('name', MenuLanguages::forOwner($this->user()), 'A dish name is required in your menu\'s main language (:language).', ['required', 'required_with']),
             ...$this->dishOptionMessages(),
         ];
     }
