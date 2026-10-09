@@ -36,13 +36,21 @@ class MenuStylesheetTest extends TestCase
         $this->assertMatchesRegularExpression('/@media \(max-width: 380px\)\s*\{\s*\.order-bar-mark\s*\{\s*display:\s*none;/', $css);
     }
 
-    /** A dish photo is shown whole wherever it appears, never cropped to its box. */
-    public function test_dish_photos_are_never_cropped(): void
+    /**
+     * A dish photo is shown whole, in its own shape, wherever it appears:
+     * never cropped to a box, and with no grey box behind it.
+     */
+    public function test_dish_photos_are_never_cropped_or_boxed(): void
     {
         $css = (string) file_get_contents(public_path('css/menu-classic.css'));
 
         foreach (['dish-photo', 'cart-line-photo', 'dish-sheet-photo'] as $class) {
-            $this->assertMatchesRegularExpression('/\\.'.$class.'\\s*\\{[^}]*object-fit:\\s*contain/', $css, $class);
+            preg_match('/\\.'.$class.'\\s*\\{([^}]*)\\}/', $css, $rule);
+            $this->assertNotEmpty($rule, $class);
+            $this->assertStringNotContainsString('object-fit: cover', $rule[1], $class);
+            $this->assertStringNotContainsString('background', $rule[1], $class);
+            $this->assertStringNotContainsString('aspect-ratio', $rule[1], $class);
+            $this->assertStringContainsString('height: auto', $rule[1], $class);
         }
     }
 }
