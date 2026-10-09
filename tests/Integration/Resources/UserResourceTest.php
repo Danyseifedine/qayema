@@ -116,7 +116,7 @@ class UserResourceTest extends TestCase
             'social_links' => ['used' => 0, 'limit' => 1],
         ], $data['limits']);
         $this->assertSame([], $data['switched_off']);
-        $this->assertSame(['mode' => 'whatsapp', 'types' => ['delivery', 'pickup']], $data['ordering']);
+        $this->assertSame(['mode' => 'whatsapp', 'types' => ['delivery', 'pickup'], 'dine_in' => 'menu', 'whatsapp_number' => true], $data['ordering']);
         $this->assertSame(array_column(Feature::flags(), 'value'), array_keys($data['plan']));
         $this->assertSame(array_fill_keys(array_column(Feature::flags(), 'value'), false), $data['plan']);
     }
@@ -142,10 +142,10 @@ class UserResourceTest extends TestCase
     /** Ordering in the menu shows only while the package includes it; the choice is kept. */
     public function test_the_ordering_mode_follows_the_package(): void
     {
-        $restaurant = $this->ownerOn('premium', ['order_mode' => 'menu', 'order_types' => ['pickup']]);
+        $restaurant = $this->ownerOn('premium', ['order_mode' => 'menu', 'order_types' => ['pickup'], 'dine_in_mode' => 'whatsapp', 'phone' => null]);
 
         $this->assertSame(
-            ['mode' => 'menu', 'types' => ['pickup']],
+            ['mode' => 'menu', 'types' => ['pickup'], 'dine_in' => 'whatsapp', 'whatsapp_number' => false],
             $this->resolve($restaurant->user->load('restaurant'))['restaurant']['ordering'],
         );
 

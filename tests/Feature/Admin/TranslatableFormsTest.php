@@ -4,10 +4,13 @@ namespace Tests\Feature\Admin;
 
 use App\Filament\Admin\Resources\Categories\Pages\CreateCategory;
 use App\Filament\Admin\Resources\Categories\Pages\EditCategory;
+use App\Filament\Admin\Resources\Categories\Pages\ListCategories;
 use App\Filament\Admin\Resources\Dishes\Pages\CreateDish;
 use App\Filament\Admin\Resources\Dishes\Pages\EditDish;
+use App\Filament\Admin\Resources\Dishes\Pages\ListDishes;
 use App\Filament\Admin\Resources\Packages\Pages\EditPackage;
 use App\Filament\Admin\Resources\Restaurants\Pages\EditRestaurant;
+use App\Filament\Admin\Resources\Restaurants\Pages\ListRestaurants;
 use App\Filament\Admin\Resources\Templates\Pages\CreateTemplate;
 use App\Filament\Admin\Resources\Templates\Pages\EditTemplate;
 use App\Models\Category;
@@ -153,6 +156,23 @@ class TranslatableFormsTest extends TestCase
         $this->assertSame('en', $restaurant->second_locale);
         $this->assertSame('ar', $restaurant->default_locale);
         $this->assertSame(['en' => 'Olive', 'ar' => 'زيتون'], $restaurant->getTranslations('name'));
+    }
+
+    public function test_a_menu_written_only_in_arabic_reads_by_name_in_the_admin_lists(): void
+    {
+        $restaurant = $this->owner([
+            'main_locale' => 'ar',
+            'second_locale' => 'fr',
+            'name' => ['fr' => 'Chez Omaima', 'ar' => 'مطبخ أميمة'],
+        ]);
+        $category = Category::factory()->create(['restaurant_id' => $restaurant->id, 'name' => ['ar' => 'مشروبات']]);
+        Dish::factory()->create(['restaurant_id' => $restaurant->id, 'category_id' => $category->id, 'name' => ['ar' => 'ليموناضة']]);
+
+        // Neither English nor the admin's language is written: the lists
+        // used to show "N/A". The restaurant reads in its main language.
+        Livewire::test(ListRestaurants::class)->assertSee('مطبخ أميمة')->assertDontSee('Chez Omaima');
+        Livewire::test(ListCategories::class)->assertSee('مشروبات')->assertSee('مطبخ أميمة');
+        Livewire::test(ListDishes::class)->assertSee('ليموناضة')->assertSee('مشروبات');
     }
 
     public function test_a_package_edits_both_interface_languages(): void

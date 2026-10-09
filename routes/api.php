@@ -71,6 +71,9 @@ Route::middleware(['auth:sanctum', 'throttle:api', TellAdminsAboutMenuEdits::cla
     Route::put('/features/ordering', [OrderingSettingsController::class, 'update'])
         ->middleware('throttle:mutations')
         ->name('api.features.ordering');
+    Route::put('/features/dine-in', [OrderingSettingsController::class, 'dineIn'])
+        ->middleware('throttle:mutations')
+        ->name('api.features.dine-in');
     Route::get('/menu-languages', [MenuLanguagesController::class, 'show'])
         ->name('api.menu-languages.show');
     Route::put('/menu-languages', [MenuLanguagesController::class, 'update'])

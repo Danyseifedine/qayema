@@ -161,7 +161,7 @@ class PlaceOrderRequest extends FormRequest
         ];
     }
 
-    /** An order to the table the guest scanned, which is always placed in the menu. */
+    /** An order placed in the menu to the table the guest scanned. */
     public function isDineIn(): bool
     {
         return $this->inMenu() && $this->input('fulfilment') === Fulfilment::DineIn->value;

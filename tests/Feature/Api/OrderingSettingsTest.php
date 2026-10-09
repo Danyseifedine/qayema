@@ -9,7 +9,7 @@ use Tests\TestCase;
 
 /**
  * How guests send their orders, from the Features page: on WhatsApp, or in
- * the menu with delivery and/or pickup.
+ * the menu with delivery and/or pickup; and orders at the table, apart.
  */
 class OrderingSettingsTest extends TestCase
 {
@@ -32,7 +32,10 @@ class OrderingSettingsTest extends TestCase
 
         $this->actingAs($owner->user)
             ->getJson(route('api.user'))
-            ->assertJsonPath('data.restaurant.ordering', ['mode' => 'menu', 'types' => ['delivery', 'pickup']]);
+            ->assertJsonPath('data.restaurant.ordering.mode', 'menu')
+            ->assertJsonPath('data.restaurant.ordering.types', ['delivery', 'pickup'])
+            // Orders at the table keep their own way in.
+            ->assertJsonPath('data.restaurant.ordering.dine_in', 'menu');
     }
 
     public function test_pickup_only(): void
@@ -101,5 +104,55 @@ class OrderingSettingsTest extends TestCase
         $this->actingAs($user)
             ->putJson(route('api.features.ordering'), ['mode' => 'whatsapp', 'types' => ['pickup']])
             ->assertForbidden();
+        $this->actingAs($user)
+            ->putJson(route('api.features.dine-in'), ['mode' => 'menu'])
+            ->assertForbidden();
+    }
+
+    public function test_table_orders_move_to_whatsapp_and_back_without_touching_delivery(): void
+    {
+        $owner = $this->ownerOn('premium');
+        $owner->update(['order_mode' => 'menu', 'order_types' => ['pickup'], 'country_code' => 'LB', 'phone' => '70123456']);
+
+        $this->actingAs($owner->user)
+            ->putJson(route('api.features.dine-in'), ['mode' => 'whatsapp'])
+            ->assertOk()
+            ->assertExactJson(['data' => ['dine_in' => 'whatsapp']]);
+
+        $this->actingAs($owner->user)
+            ->getJson(route('api.user'))
+            ->assertJsonPath('data.restaurant.ordering.dine_in', 'whatsapp')
+            ->assertJsonPath('data.restaurant.ordering.whatsapp_number', true)
+            ->assertJsonPath('data.restaurant.ordering.mode', 'menu')
+            ->assertJsonPath('data.restaurant.ordering.types', ['pickup']);
+
+        $this->actingAs($owner->user)->putJson(route('api.features.dine-in'), ['mode' => 'menu'])->assertOk();
+        $this->assertSame('menu', $owner->fresh()->dine_in_mode);
+    }
+
+    public function test_whatsapp_for_table_orders_needs_a_number(): void
+    {
+        $owner = $this->ownerOn('premium');
+        $owner->update(['phone' => null]);
+
+        $this->actingAs($owner->user)
+            ->getJson(route('api.user'))
+            ->assertJsonPath('data.restaurant.ordering.whatsapp_number', false);
+
+        $this->actingAs($owner->user)
+            ->withHeader('Accept-Language', 'ar')
+            ->putJson(route('api.features.dine-in'), ['mode' => 'whatsapp'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['mode' => 'أضف رقم واتساب في صفحة المطعم أولاً.']);
+
+        $this->actingAs($owner->user)
+            ->putJson(route('api.features.dine-in'), ['mode' => 'carrier_pigeon'])
+            ->assertJsonValidationErrors(['mode']);
+        $this->assertSame('menu', $owner->fresh()->dine_in_mode);
+    }
+
+    public function test_choosing_how_table_orders_come_in_requires_authentication(): void
+    {
+        $this->putJson(route('api.features.dine-in'), ['mode' => 'menu'])->assertUnauthorized();
     }
 }

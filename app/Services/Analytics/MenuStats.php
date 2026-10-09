@@ -122,8 +122,9 @@ class MenuStats
             'searches' => $this->searches([MenuEventType::Search, MenuEventType::SearchMiss]),
             'missed_searches' => $this->searches([MenuEventType::SearchMiss]),
             'funnel' => $this->takesOrders() ? $this->funnel($visits) : null,
-            // Orders at the table are placed in the menu whatever the channel.
-            'menu_orders' => $this->channel() === OrderChannel::Menu || $this->restaurant->takesDineIn() ? $this->menuOrders() : null,
+            // Orders at the table may be placed in the menu whatever the
+            // channel of delivery and pickup.
+            'menu_orders' => $this->channel() === OrderChannel::Menu || $this->restaurant->dineInChannel() === OrderChannel::Menu ? $this->menuOrders() : null,
         ];
     }
 

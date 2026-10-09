@@ -810,6 +810,11 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
 - **Translatable** columns are spatie JSON keyed by language. For menu
   content see "Menu languages" below; packages and templates (platform
   content) stay `{en, ar}`, shown in the dashboard's interface language.
+  Spatie's accessor (`$model->name`, what the admin's tables, selects and
+  titles read) falls back to English, then to any language written
+  (`AppServiceProvider::neverShowWrittenTextBlank()`); a restaurant falls
+  back to its main language first (`Restaurant::getFallbackLocale()`).
+  Without it, a menu written only in Arabic or French showed "N/A" there.
 - **Media:** Spatie medialibrary on Cloudflare R2, the `r2` disk in
   `config/filesystems.php`, chosen by `MEDIA_DISK=r2`. Temp-upload flow: POST
   an image → optimized to WebP → parked per-user on the private `local` disk
@@ -990,8 +995,12 @@ Features page, `PUT /api/features/ordering`), and every order records the way
 it came in (`orders.channel`, `App\Enums\OrderChannel`):
 
 - **WhatsApp** (`ordering` flag, Premium and Custom): the order is stored and
-  the guest is sent to WhatsApp with it written out (`WhatsAppLink`), an
-  optional note included. We never learn whether it was sent or served, so
+  the guest is sent to WhatsApp with it written out (`WhatsAppLink`): in
+  WhatsApp's bold, no emoji, no order number, the table first when there is
+  one, each dish with its choices under it, the total, then the note; in the
+  menu's **main language** (labels and line names, `OrderPlacer` names a
+  WhatsApp order's lines in it), since the owner reads it, while anything the
+  guest is told stays in theirs. We never learn whether it was sent or served, so
   these orders are **not** listed on the Orders page and analytics call them
   "Sent to WhatsApp". It needs a usable number: without one the menu has no
   cart.
@@ -1010,6 +1019,19 @@ it came in (`orders.channel`, `App\Enums\OrderChannel`):
 `Restaurant::orderChannel()` is the rule: null without ordering, Menu only
 while the package has `menu_ordering` (a downgrade falls back to WhatsApp),
 WhatsApp otherwise.
+
+**Orders at the table** (dine-in, a table's QR code, the `dine_in` flag and
+switch) have their own way in, apart from delivery and pickup:
+`restaurants.dine_in_mode` (`menu` | `whatsapp`, `PUT /api/features/dine-in`,
+`UpdateDineInRequest`: WhatsApp needs a number, 422 otherwise), read through
+`Restaurant::dineInChannel()`: null without dine-in, WhatsApp when chosen and
+the restaurant has a number WhatsApp can reach, Menu otherwise (a number
+removed later sends them back to the Table orders page). At a table the menu
+builds its cart for that channel (`PublicMenuController`); on WhatsApp the
+cart says "This order is for Table 5." and the message names the table, and
+the order is not listed on Table orders. Without dine-in, a table's code on a
+WhatsApp order only labels it. `/api/user` sends `ordering.dine_in` (the
+choice) and `ordering.whatsapp_number`.
 
 - `App\Services\Orders\OrderPlacer` is the only way an order is created. Every
   dish is re-read scoped to the restaurant and every price comes from the
@@ -1362,8 +1384,10 @@ nothing to do with menus.
   `config('locales.menu')`.
 - The menu's own words live in `lang/{code}.json` (same keys as `ar.json`).
   The non-Arabic ones were written by Claude and still want a native read.
-- The cart sends the guest's language with an order; the WhatsApp text, any
-  error and the line names come back in it.
+- The cart sends the guest's language with an order; any error and the
+  line names of an order placed in the menu come back in it. A WhatsApp
+  message (labels and line names) is in the menu's main language: the
+  owner reads it.
 - Onboarding's first step asks "Your menu is written in" (suggested from the
   page's language); the name typed there is saved in it, the menu opens in
   it, and the second language starts as Arabic (English for an Arabic

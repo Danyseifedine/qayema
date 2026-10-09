@@ -90,6 +90,34 @@ class MenuTableTest extends TestCase
         $this->assertStringContainsString("mode: 'whatsapp'", $this->get(route('public.menu', 'olive'))->getContent());
     }
 
+    public function test_at_a_table_the_cart_goes_to_whatsapp_when_table_orders_do(): void
+    {
+        $this->shop->update(['dine_in_mode' => 'whatsapp', 'country_code' => 'LB', 'phone' => '70123456']);
+
+        $html = $this->get(route('public.menu', ['olive', 'table' => $this->table->code]))->assertOk()->getContent();
+
+        $this->assertStringContainsString("mode: 'whatsapp'", $html);
+        // The cart names the table before the guest sends.
+        $this->assertStringContainsString("forTable: 'This order is for :table.'", $html);
+        $this->assertStringContainsString('table: JSON.parse(\'{\\u0022code\\u0022:\\u0022'.$this->table->code.'\\u0022', $html);
+
+        // Away from a table, delivery and pickup are still taken in the menu,
+        // and a table remembered from an earlier scan is not offered there.
+        $away = $this->get(route('public.menu', 'olive'))->getContent();
+        $this->assertStringContainsString("mode: 'menu'", $away);
+        $this->assertStringContainsString('dineIn: false', $away);
+    }
+
+    public function test_without_a_number_a_tables_cart_stays_in_the_menu(): void
+    {
+        $this->shop->update(['dine_in_mode' => 'whatsapp', 'phone' => null]);
+
+        $html = $this->get(route('public.menu', ['olive', 'table' => $this->table->code]))->assertOk()->getContent();
+
+        $this->assertStringContainsString("mode: 'menu'", $html);
+        $this->assertStringContainsString('dineIn: true', $html);
+    }
+
     public function test_ordering_at_the_table_alone_still_gives_a_table_its_cart(): void
     {
         $this->defaultPackageSets(Feature::Ordering, 0);

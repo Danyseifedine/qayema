@@ -27,9 +27,16 @@ class RestaurantSlugTest extends TestCase
         $this->assertSame('joes-diner-3', $third->slug);
     }
 
+    public function test_a_name_written_only_in_arabic_gives_a_latin_link(): void
+    {
+        $restaurant = Restaurant::factory()->create(['slug' => null, 'name' => ['ar' => 'مطعم'], 'main_locale' => 'ar', 'default_locale' => 'ar']);
+
+        $this->assertSame('mtaam', $restaurant->slug);
+    }
+
     public function test_a_name_that_slugifies_to_nothing_falls_back_to_menu(): void
     {
-        $restaurant = Restaurant::factory()->create(['slug' => null, 'name' => ['ar' => 'مطعم'], 'default_locale' => 'ar']);
+        $restaurant = Restaurant::factory()->create(['slug' => null, 'name' => ['en' => '!!!']]);
 
         $this->assertSame('menu', $restaurant->slug);
     }

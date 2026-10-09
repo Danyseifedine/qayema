@@ -25,7 +25,8 @@ use Illuminate\Http\JsonResponse;
  *   waits on the dashboard's Orders page.
  *
  * An order to the table (dine-in, from a table's QR code) is its own feature
- * and always placed in the menu; it waits on the Table orders page.
+ * with its own way in (Restaurant::dineInChannel()): placed in the menu, it
+ * waits on the Table orders page; on WhatsApp, the message names the table.
  */
 class PublicOrderController extends Controller
 {
@@ -35,11 +36,12 @@ class PublicOrderController extends Controller
         // than a 403: a restaurant that does not take orders should not even
         // admit the endpoint exists.
         abort_unless($restaurant->is_active, 404);
-        // An order to the table is always placed in the menu, whichever way
-        // delivery and pickup come in (if they come in at all).
-        $channel = $request->isDineIn()
-            ? ($restaurant->takesDineIn() ? OrderChannel::Menu : null)
-            : $restaurant->orderChannel();
+        // An order to the table goes the table's way, whichever way delivery
+        // and pickup come in (if they come in at all). Without ordering at
+        // the table, a table's code on a WhatsApp order only labels it.
+        $atTable = $restaurant->takesDineIn()
+            && ($request->isDineIn() || ($request->mode() === OrderChannel::WhatsApp && $request->table() !== null));
+        $channel = $atTable ? $restaurant->dineInChannel() : $restaurant->orderChannel();
         abort_if($channel === null, 404);
 
         // Already the app's language (PlaceOrderRequest), for the lines too.

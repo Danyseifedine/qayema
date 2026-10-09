@@ -1015,6 +1015,11 @@
     function buildDetails(id) {
         var wrap = element('div', 'cart-details');
 
+        // On WhatsApp the message names the table; the guest sees it first.
+        if (!inMenu && table) {
+            wrap.appendChild(element('p', 'cart-closed', strings.forTable.replace(':table', table.name)));
+        }
+
         if (inMenu) {
             if (allTypes().length > 1) {
                 wrap.appendChild(typesField(id));

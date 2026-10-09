@@ -549,6 +549,17 @@ class MenuStatsTest extends TestCase
         );
     }
 
+    public function test_orders_at_the_table_bring_menu_orders_only_while_placed_in_the_menu(): void
+    {
+        $this->defaultPackageIncludes(Feature::Ordering, Feature::DineIn);
+
+        $this->assertNotNull((new MenuStats($this->restaurant(), '7d'))->advanced()['menu_orders']);
+        $this->assertNull(
+            (new MenuStats($this->restaurant(['dine_in_mode' => 'whatsapp']), '7d'))->advanced()['menu_orders'],
+            'Table orders sent to WhatsApp are taps too.',
+        );
+    }
+
     /**
      * Beirut is UTC+3 here, so 17:00 UTC is 20:00 local. The range starts on
      * Tuesday 2026-09-22; the period before it on 2026-09-15.

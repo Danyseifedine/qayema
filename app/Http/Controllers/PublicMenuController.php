@@ -93,9 +93,9 @@ class PublicMenuController extends Controller
         // WhatsApp the message says which table.
         $table = $channel === null && ! $dineIn ? null : $this->table($request, $restaurant);
 
-        // At a table that takes orders the cart orders in the menu, even
-        // while delivery and pickup go to WhatsApp.
-        $cartChannel = $table !== null && $dineIn ? OrderChannel::Menu : $channel;
+        // At a table that takes orders the cart orders the table's way (the
+        // menu or WhatsApp), whichever way delivery and pickup go.
+        $cartChannel = $table !== null && $dineIn ? $restaurant->dineInChannel() : $channel;
 
         return view($view, [
             'restaurant' => $restaurant,
@@ -122,7 +122,9 @@ class PublicMenuController extends Controller
             'order_channel' => $cartChannel,
             // Delivery and pickup, while those are taken in the menu.
             'order_types' => $channel === OrderChannel::Menu ? $restaurant->orderTypes() : [],
-            'dine_in' => $dineIn,
+            // Ordering to a table in the menu: a table remembered from an
+            // earlier scan is offered only then.
+            'dine_in' => $dineIn && $restaurant->dineInChannel() === OrderChannel::Menu,
             'table' => $table,
             // Each dish's variants and add-ons, for its sheet and the cart.
             'dish_options' => MenuDishOptions::for($restaurant, $restaurant->categories->flatMap->dishes, $locale),

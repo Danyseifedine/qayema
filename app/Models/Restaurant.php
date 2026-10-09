@@ -7,6 +7,7 @@ use App\Enums\Fulfilment;
 use App\Enums\OrderChannel;
 use App\Enums\PackageStatus;
 use App\Services\Menu\MenuLanguages;
+use App\Services\Orders\WhatsAppLink;
 use App\Services\Packages\Entitlements;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -42,6 +43,17 @@ class Restaurant extends Model implements HasMedia
 
     /** @var string[] */
     public array $translatable = ['name', 'description'];
+
+    /**
+     * Where spatie's accessor ($restaurant->name, the admin's tables and
+     * selects) looks when the language asked for is not written: the
+     * menu's main language, the one its name is required in. Anything else
+     * falls back to whatever is written (AppServiceProvider).
+     */
+    public function getFallbackLocale(): string
+    {
+        return MenuLanguages::validMain($this->main_locale);
+    }
 
     /**
      * Features an owner may switch off on the dashboard's Features page,
@@ -119,6 +131,7 @@ class Restaurant extends Model implements HasMedia
         'switched_off',
         'order_mode',
         'order_types',
+        'dine_in_mode',
         'menu_fonts',
     ];
 
@@ -512,13 +525,30 @@ class Restaurant extends Model implements HasMedia
 
     /**
      * Guests at a table can order to it: in the package and not switched
-     * off. A feature of its own, apart from ordering: an order at the table
-     * is always placed in the menu, even while delivery and pickup go to
-     * WhatsApp, or are off.
+     * off. A feature of its own, apart from ordering: it works whichever way
+     * delivery and pickup come in, or with them off (dineInChannel()).
      */
     public function takesDineIn(): bool
     {
         return $this->entitlements()->can(Feature::DineIn) && ! $this->isSwitchedOff('dine_in');
+    }
+
+    /**
+     * How orders at the table reach this restaurant, or null when it takes
+     * none: on WhatsApp when the owner chose it (`dine_in_mode`) and there
+     * is a number to send to, placed in the menu (the Table orders page)
+     * otherwise. A number removed later never leaves a table's cart going
+     * nowhere.
+     */
+    public function dineInChannel(): ?OrderChannel
+    {
+        if (! $this->takesDineIn()) {
+            return null;
+        }
+
+        return $this->dine_in_mode === OrderChannel::WhatsApp->value && WhatsAppLink::internationalNumber($this) !== null
+            ? OrderChannel::WhatsApp
+            : OrderChannel::Menu;
     }
 
     /** The QR studio's styling is on: in the package and not switched off. */

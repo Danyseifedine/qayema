@@ -98,7 +98,7 @@ class OrderPlacerTest extends TestCase
         $this->assertDatabaseHas('orders', ['id' => $order->id, 'total' => '0.30']);
     }
 
-    public function test_lines_are_named_in_the_guests_language(): void
+    public function test_lines_placed_in_the_menu_are_named_in_the_guests_language(): void
     {
         $this->defaultPackageIncludes(Feature::MultipleLanguages);
         $restaurant = $this->owner(['second_locale' => 'ar', 'default_locale' => 'en']);
@@ -108,9 +108,26 @@ class OrderPlacerTest extends TestCase
         $order = $this->placer()->place($restaurant, [
             ['dish_id' => $falafel->id, 'quantity' => 1],
             ['dish_id' => $fries->id, 'quantity' => 1],
-        ], locale: 'ar');
+        ], locale: 'ar', details: new OrderDetails(channel: OrderChannel::Menu));
 
         $this->assertSame(['فلافل', 'Fries'], $order->items->pluck('name')->all(), 'A dish without an Arabic name falls back to English.');
+    }
+
+    public function test_lines_sent_to_whatsapp_are_named_in_the_menus_main_language(): void
+    {
+        $this->defaultPackageIncludes(Feature::MultipleLanguages);
+        $restaurant = $this->owner(['main_locale' => 'ar', 'second_locale' => 'en', 'default_locale' => 'en']);
+        $falafel = $this->dish($restaurant, ['en' => 'Falafel', 'ar' => 'فلافل'], '3.00');
+        $fries = $this->dish($restaurant, ['en' => 'Fries'], '2.00');
+
+        $order = $this->placer()->place($restaurant, [
+            ['dish_id' => $falafel->id, 'quantity' => 1],
+            ['dish_id' => $fries->id, 'quantity' => 1],
+        ], locale: 'en');
+
+        // The owner reads the message; a dish not yet written in the main
+        // language keeps the name it has.
+        $this->assertSame(['فلافل', 'Fries'], $order->items->pluck('name')->all());
     }
 
     public function test_a_language_the_menu_does_not_offer_falls_back_to_the_menus_own(): void
@@ -119,8 +136,10 @@ class OrderPlacerTest extends TestCase
         $restaurant = $this->owner(['second_locale' => 'ar', 'default_locale' => 'ar']);
         $falafel = $this->dish($restaurant, ['en' => 'Falafel', 'ar' => 'فلافل', 'fr' => 'Falafel FR'], '3.00');
 
-        $this->assertSame('فلافل', $this->placer()->place($restaurant, [['dish_id' => $falafel->id, 'quantity' => 1]], locale: 'fr')->items[0]->name);
-        $this->assertSame('فلافل', $this->placer()->place($restaurant, [['dish_id' => $falafel->id, 'quantity' => 1]])->items[0]->name);
+        $inMenu = fn (): OrderDetails => new OrderDetails(channel: OrderChannel::Menu);
+
+        $this->assertSame('فلافل', $this->placer()->place($restaurant, [['dish_id' => $falafel->id, 'quantity' => 1]], locale: 'fr', details: $inMenu())->items[0]->name);
+        $this->assertSame('فلافل', $this->placer()->place($restaurant, [['dish_id' => $falafel->id, 'quantity' => 1]], details: $inMenu())->items[0]->name);
     }
 
     public function test_without_multiple_languages_lines_are_english(): void

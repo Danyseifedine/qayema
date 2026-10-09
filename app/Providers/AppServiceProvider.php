@@ -20,6 +20,7 @@ use Lab404\Impersonate\Events\LeaveImpersonation;
 use Lab404\Impersonate\Events\TakeImpersonation;
 use Laravel\Sanctum\PersonalAccessToken;
 use Laravel\Sanctum\Sanctum;
+use Spatie\Translatable\Translatable;
 use Symfony\Component\HttpFoundation\Response;
 
 class AppServiceProvider extends ServiceProvider
@@ -55,6 +56,21 @@ class AppServiceProvider extends ServiceProvider
         $this->keepImpersonationSignedIn();
         $this->pinTheSiteAddress();
         $this->keepTokensToTheirApp();
+        $this->neverShowWrittenTextBlank();
+    }
+
+    /**
+     * Text read through spatie's accessor ($restaurant->name: the admin's
+     * tables, selects, titles and search) asks for the app's language, then
+     * English. A menu written only in Arabic or French has neither, and read
+     * blank ("N/A" in the admin). When neither is written, whatever language
+     * is comes back instead; a restaurant asks its own main language first
+     * (Restaurant::getFallbackLocale()). Menu pages and the API read with
+     * MenuLanguages::text() and are not affected.
+     */
+    private function neverShowWrittenTextBlank(): void
+    {
+        app(Translatable::class)->fallback(fallbackAny: true);
     }
 
     /**

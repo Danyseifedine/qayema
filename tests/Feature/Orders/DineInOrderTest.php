@@ -245,17 +245,70 @@ class DineInOrderTest extends TestCase
             ->assertJsonPath('data.details.table', 'Table 4');
     }
 
-    public function test_on_whatsapp_the_table_heads_the_message(): void
+    /** What the cart sends for an order at the table that goes to WhatsApp. */
+    private function onWhatsApp(array $overrides = []): array
     {
-        $this->shop->update(['order_mode' => 'whatsapp']);
-
-        $response = $this->postJson(route('public.order', 'olive'), [
+        return array_merge([
             'items' => [['dish_id' => $this->dish->id, 'quantity' => 1]],
             'mode' => 'whatsapp',
             'table' => $this->table->code,
-        ])->assertCreated();
+            'locale' => 'ar',
+        ], $overrides);
+    }
 
-        $this->assertStringContainsString("Table: Table 4\n", rawurldecode((string) $response->json('data.whatsapp_url')));
+    public function test_table_orders_can_go_to_whatsapp_with_the_table_on_top(): void
+    {
+        $this->shop->update(['dine_in_mode' => 'whatsapp', 'name' => ['en' => 'Olive', 'ar' => 'زيتون']]);
+        $this->dish->update(['name' => ['en' => 'Kebab', 'ar' => 'كباب']]);
+
+        $response = $this->postJson(route('public.order', 'olive'), $this->onWhatsApp())
+            ->assertCreated()
+            ->assertJsonPath('data.channel', 'whatsapp');
+
+        $text = rawurldecode((string) parse_url((string) $response->json('data.whatsapp_url'), PHP_URL_QUERY));
+        // The guest read Arabic; the owner wrote the menu in English.
+        $this->assertStringStartsWith("text=*New order · Olive*\n*Table 4*\n\n*1 × Kebab*   \$6\n", $text);
+
+        $order = Order::query()->sole();
+        $this->assertSame(OrderChannel::WhatsApp, $order->channel);
+        $this->assertSame('Table 4', $order->table_name);
+        $this->assertSame('Kebab', $order->items->sole()->name);
+        // Not listed on the dashboard's Table orders page.
+        $this->assertSame(0, $this->shop->orders()->inMenu()->count());
+    }
+
+    public function test_while_table_orders_go_to_whatsapp_a_page_ordering_in_the_menu_is_told_to_refresh(): void
+    {
+        $this->shop->update(['dine_in_mode' => 'whatsapp']);
+
+        $this->postJson(route('public.order', 'olive'), $this->atTable())->assertConflict();
+        $this->assertSame(0, Order::query()->count());
+    }
+
+    public function test_table_orders_on_whatsapp_work_with_ordering_switched_off(): void
+    {
+        $this->shop->update(['dine_in_mode' => 'whatsapp', 'switched_off' => ['orders']]);
+
+        $this->postJson(route('public.order', 'olive'), $this->onWhatsApp())->assertCreated();
+    }
+
+    public function test_without_a_number_table_orders_stay_on_the_dashboard(): void
+    {
+        $this->shop->update(['dine_in_mode' => 'whatsapp', 'phone' => null]);
+
+        $this->postJson(route('public.order', 'olive'), $this->onWhatsApp())->assertConflict();
+        $this->postJson(route('public.order', 'olive'), $this->atTable())
+            ->assertCreated()
+            ->assertJsonPath('data.channel', 'menu');
+    }
+
+    public function test_without_ordering_at_the_table_a_tables_code_only_labels_a_whatsapp_order(): void
+    {
+        $this->shop->update(['order_mode' => 'whatsapp', 'switched_off' => ['dine_in']]);
+
+        $response = $this->postJson(route('public.order', 'olive'), $this->onWhatsApp(['locale' => 'en']))->assertCreated();
+
+        $this->assertStringContainsString("*Table 4*\n", rawurldecode((string) $response->json('data.whatsapp_url')));
         $this->assertSame('Table 4', Order::query()->sole()->table_name);
     }
 

@@ -100,21 +100,68 @@ class WhatsAppLinkTest extends TestCase
         $this->assertNull(WhatsAppLink::forOrder($shop, $this->order($shop)));
     }
 
-    public function test_the_message_carries_the_reference_lines_and_total(): void
+    /** The message the link carries, decoded. */
+    private function text(Restaurant $shop, Order $order): string
     {
-        $shop = $this->shop();
-        $url = WhatsAppLink::forOrder($shop, $this->order($shop));
-
-        $this->assertNotNull($url);
+        $url = (string) WhatsAppLink::forOrder($shop, $order);
         $this->assertStringStartsWith('https://wa.me/96170123456?text=', $url);
 
-        $text = rawurldecode(substr($url, strlen('https://wa.me/96170123456?text=')));
+        return rawurldecode(substr($url, strlen('https://wa.me/96170123456?text=')));
+    }
 
-        $this->assertStringContainsString('ABC234', $text);
-        $this->assertStringContainsString('Olive', $text);
-        $this->assertStringContainsString("2 × House Bowl  \$28\n", $text);
-        $this->assertStringContainsString("1 × Daily Tart  \$11\n", $text);
-        $this->assertStringContainsString('Total: $39', $text);
+    public function test_the_message_is_laid_out_for_the_owner_without_the_reference(): void
+    {
+        $shop = $this->shop();
+        $order = $this->order($shop);
+        $order->items->first()->update(['options' => [
+            'variants' => [['name' => 'Size', 'choice' => 'Large', 'price' => '2.00']],
+            'addons' => [['name' => 'Extra cheese', 'price' => '1.00']],
+        ]]);
+        $order->update(['note' => 'No coriander']);
+
+        $this->assertSame(implode("\n", [
+            '*New order · Olive*',
+            '',
+            '*2 × House Bowl*   $28',
+            '   Size: Large',
+            '   + Extra cheese',
+            '*1 × Daily Tart*   $11',
+            '',
+            '*Total: $39*',
+            '',
+            'Note: No coriander',
+        ]), $this->text($shop, $order->fresh()->load('items')));
+    }
+
+    public function test_it_is_written_in_the_menus_main_language(): void
+    {
+        $shop = $this->shop(['main_locale' => 'ar', 'name' => ['ar' => 'زيتون', 'en' => 'Olive']]);
+        app()->setLocale('fr');
+
+        $text = $this->text($shop, $this->order($shop));
+
+        $this->assertStringStartsWith("*طلب جديد · زيتون*\n", $text);
+        $this->assertStringContainsString("\n*المجموع: \$39*", $text);
+    }
+
+    public function test_the_table_comes_first_named_once(): void
+    {
+        $shop = $this->shop();
+        $order = $this->order($shop);
+
+        $order->update(['table_name' => 'Table 5']);
+        $this->assertStringStartsWith("*New order · Olive*\n*Table 5*\n\n", $this->text($shop, $order));
+
+        // A name that does not say "table" gets the word in front.
+        $order->update(['table_name' => 'Terrace']);
+        $this->assertStringStartsWith("*New order · Olive*\n*Table: Terrace*\n\n", $this->text($shop, $order));
+    }
+
+    public function test_an_asterisk_in_a_name_cannot_break_the_bold(): void
+    {
+        $shop = $this->shop(['name' => ['en' => 'Pizza *Hub*']]);
+
+        $this->assertStringStartsWith('*New order · Pizza Hub*', $this->text($shop, $this->order($shop)));
     }
 
     public function test_a_note_is_passed_along(): void

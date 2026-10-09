@@ -622,6 +622,7 @@
                 note: @js(__('Note for the restaurant')),
                 noteHint: @js(__('Anything they should know?')),
                 check: @js(__('Check the details above.')),
+                forTable: @js(__('This order is for :table.')),
                 @if ($inMenu)
                 how: @js(__('How would you like it?')),
                 delivery: @js(__('Delivery')),

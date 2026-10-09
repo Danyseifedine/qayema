@@ -8,6 +8,7 @@ use App\Enums\PackageStatus;
 use App\Models\Package;
 use App\Models\Restaurant;
 use App\Services\Menu\MenuLanguages;
+use App\Services\Orders\WhatsAppLink;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -132,6 +133,12 @@ class UserResource extends JsonResource
                     ? OrderChannel::Menu->value
                     : OrderChannel::WhatsApp->value,
                 'types' => $restaurant->orderTypes(),
+                // Orders at the table: the owner's choice (Table orders page
+                // or WhatsApp), which needs a number WhatsApp can reach;
+                // without one they arrive on the dashboard
+                // (Restaurant::dineInChannel()).
+                'dine_in' => $restaurant->dine_in_mode ?? OrderChannel::Menu->value,
+                'whatsapp_number' => WhatsAppLink::internationalNumber($restaurant) !== null,
             ],
             // What this restaurant may use: its package plus any grants. Every
             // flag in App\Enums\Feature, so a new one needs no edit here.
