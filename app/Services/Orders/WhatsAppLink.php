@@ -2,6 +2,7 @@
 
 namespace App\Services\Orders;
 
+use App\Enums\Fulfilment;
 use App\Models\Order;
 use App\Models\Restaurant;
 use App\Services\Menu\MenuLanguages;
@@ -44,7 +45,9 @@ class WhatsAppLink
      * order up on WhatsApp.
      *
      *     *New order · Olive*
-     *     *Table 5*
+     *     *Table 5*            (or *Delivery* / *Pickup*)
+     *     Name: Rami           (what the guest was asked for and gave)
+     *     Phone: +96170123456
      *
      *     *2 × Burger*   $16
      *        Size: Large
@@ -67,6 +70,23 @@ class WhatsAppLink
         // Scanned at a table: the first thing staff need to know.
         if ($order->table_name !== null) {
             $lines[] = self::bold(self::table($order->table_name, $say('Table')));
+        } elseif ($order->fulfilment === Fulfilment::Delivery || $order->fulfilment === Fulfilment::Pickup) {
+            $lines[] = self::bold($say($order->fulfilment === Fulfilment::Delivery ? 'Delivery' : 'Pickup'));
+        }
+
+        // What the restaurant asked the guest for (Restaurant::whatsappAsks()).
+        $details = [
+            'Name' => $order->guest_name,
+            'Phone' => $order->guest_phone,
+            'Address' => $order->address,
+            // Stored to seven places; the link needs no trailing zeros.
+            'Location' => $order->latitude !== null ? 'https://www.google.com/maps?q='.(float) $order->latitude.','.(float) $order->longitude : null,
+        ];
+
+        foreach ($details as $label => $value) {
+            if ($value !== null && $value !== '') {
+                $lines[] = $say($label).': '.$value;
+            }
         }
 
         $lines[] = '';

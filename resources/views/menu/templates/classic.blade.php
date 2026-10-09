@@ -560,6 +560,9 @@
         // Ordering in the menu: who to call and where to bring it. On
         // WhatsApp the guest only adds a note.
         $inMenu = $order_channel === \App\Enums\OrderChannel::Menu;
+        // The guest's details are asked in the menu, and on WhatsApp when the
+        // owner chose to ask any (Restaurant::whatsappAsks()).
+        $asksDetails = $inMenu || collect($whatsapp_asks ?? [])->contains(fn (string $rule): bool => $rule !== \App\Enums\Ask::Off->value);
         // Live order tracking through Pusher, when its keys are set; the
         // public key and cluster only, the secret stays on the server.
         $pusher = config('broadcasting.default') === 'pusher' && config('broadcasting.connections.pusher.key')
@@ -569,7 +572,7 @@
                 'script' => asset('js/pusher.min.js').'?v='.filemtime(public_path('js/pusher.min.js')),
             ]
             : null;
-        $guestCountries = $inMenu
+        $guestCountries = $asksDetails
             ? collect(config('countries'))->map(fn (array $country, string $code): array => [
                 'code' => $code,
                 'flag' => $country['flag'],
@@ -592,18 +595,24 @@
             // remembers it, so a reload or a language switch stays at it.
             table: @js($table ? ['code' => $table->code, 'name' => $table->name] : null),
             tableKey: @js('qayema-table-'.$restaurant->slug),
-            @if ($inMenu)
+            @if ($asksDetails)
             guestKey: @js('qayema-guest-'.$restaurant->slug),
             addressUrl: @js(route('public.address', $restaurant->slug)),
-            // Delivery and pickup taken in the menu; dine-in is its own
-            // feature, offered only at a table (menu-cart.js types()).
+            // Delivery and pickup taken in the menu, or asked on WhatsApp
+            // with the address; dine-in is its own feature, offered only at
+            // a table (menu-cart.js types()).
             types: @js($order_types ?? []),
-            dineIn: @js($dine_in ?? false),
             country: @js(isset(config('countries')[$restaurant->country_code]) ? $restaurant->country_code : array_key_first(config('countries'))),
             countries: @js($guestCountries),
+            @endif
+            @if ($inMenu)
+            dineIn: @js($dine_in ?? false),
             // An order placed in the menu waits for someone to read it, so
             // outside the hours the cart only shows what was picked.
             closed: @js(! $hours->isEmpty() && ! $hours->isOpenNow()),
+            @else
+            // What this WhatsApp cart asks for: each off, optional or required.
+            asks: @js($whatsapp_asks ?? null),
             @endif
             icons: { plus: @js($icons['plus']), minus: @js($icons['minus']), chevron: @js($icons['chevron']), check: @js($icons['check']), close: @js($icons['close']), pin: @js($icons['pin']) },
             strings: {
@@ -624,7 +633,7 @@
                 noteHint: @js(__('Anything they should know?')),
                 check: @js(__('Check the details above.')),
                 forTable: @js(__('This order is for :table.')),
-                @if ($inMenu)
+                @if ($asksDetails)
                 how: @js(__('How would you like it?')),
                 delivery: @js(__('Delivery')),
                 pickup: @js(__('Pickup')),
@@ -649,6 +658,8 @@
                 phoneMissing: @js(__('Add your phone number so the restaurant can call you.')),
                 phoneInvalid: @js(__('Check your phone number.')),
                 addressMissing: @js(__('Add your address for the delivery.')),
+                @endif
+                @if ($inMenu)
                 closed: @js(__('Closed now')),
                 closedNote: @js(__('We are closed right now. Ordering opens again when we do.')),
                 sent: @js(__('Order sent')),

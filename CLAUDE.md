@@ -1000,7 +1000,14 @@ it came in (`orders.channel`, `App\Enums\OrderChannel`):
   one, each dish with its choices under it, the total, then the note; in the
   menu's **main language** (labels and line names, `OrderPlacer` names a
   WhatsApp order's lines in it), since the owner reads it, while anything the
-  guest is told stays in theirs. We never learn whether it was sent or served, so
+  guest is told stays in theirs. Before WhatsApp opens the cart can ask the
+  guest's name, phone and (delivery and pickup only) a delivery address, each
+  off, optional or required as the owner set it (`restaurants.whatsapp_fields`,
+  `Restaurant::whatsappAsks()`, `App\Enums\Ask`, `PUT /api/features/whatsapp-fields`;
+  table orders have their own name and phone pair). Asking the address also
+  asks delivery or pickup (`order_types`), the address only for a delivery;
+  what was given heads the message and is kept on the order (cleared after 90
+  days like the rest). All off by default. We never learn whether it was sent or served, so
   these orders are **not** listed on the Orders page and analytics call them
   "Sent to WhatsApp". It needs a usable number: without one the menu has no
   cart.
@@ -1398,10 +1405,20 @@ language switch is one visit continuing, not two.
 
 ## Opening hours
 
-`restaurants.opening_hours` is one range per weekday (`null` = closed) and
+`restaurants.opening_hours` is a list of shifts per weekday (`null` =
+closed): `{mon: [{open: "12:00", close: "15:00"}, {open: "18:00", close:
+"23:00"}], ...}`, earliest first, at most `OpeningHours::MAX_SHIFTS` (3).
 `restaurants.timezone` is what makes "open now" mean anything.
-`App\Services\Menu\OpeningHours` owns the logic, including a range whose
-close is at or before its open, which runs past midnight.
+`App\Services\Menu\OpeningHours` owns the logic: a shift whose close is at
+or before its open runs past midnight, and only a day's last shift may;
+shifts never overlap (`problemWith()`, checked by `UpdateRestaurantRequest`
+in the owner's language). Hours saved before shifts (one `{open, close}` per
+day) read as one shift and take the new shape on the next save; a request in
+that shape (an app not yet updated) is taken as one shift too. The menu shows
+today's shifts ("12:00 - 15:00, 18:00 - 23:00") and is closed between them;
+the search data has one `OpeningHoursSpecification` per shift. The dashboard
+(`opening-hours-section.tsx`) and the owner app (`restaurant_screen.dart`)
+edit them the same way.
 
 ## Not yet built
 

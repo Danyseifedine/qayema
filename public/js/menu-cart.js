@@ -52,6 +52,11 @@
 
     var inMenu = config.mode === 'menu';
 
+    /** What a WhatsApp cart asks the guest for ({name, phone, address}:
+     *  off, optional or required, Restaurant::whatsappAsks()); null in the
+     *  menu, which asks its own way. */
+    var asks = inMenu ? null : config.asks || null;
+
     /** How long a table's code is remembered after scanning it: a meal,
      *  not until tomorrow. */
     var TABLE_HOURS = 4;
@@ -136,6 +141,16 @@
             return editing.table || '';
         }
         return table ? table.name : '';
+    }
+
+    /** The menu asks every detail; WhatsApp only those the owner turned on. */
+    function asked(key) {
+        return inMenu || Boolean(asks && asks[key] && asks[key] !== 'off');
+    }
+
+    /** Asked on WhatsApp, but the guest may leave it empty. */
+    function optionalOnWhatsApp(key) {
+        return !inMenu && asks[key] === 'optional';
     }
 
     /** Delivery and pickup as the restaurant takes them, and dine-in while it is on. */
@@ -699,9 +714,11 @@
     }
 
     function nameField(id) {
-        var wrap = field('name', strings.name);
+        var wrap = field('name', strings.name, optionalOnWhatsApp('name'));
         wrap.querySelector('label').htmlFor = 'cart-name-' + id;
-        optionalAtTable(wrap);
+        if (inMenu) {
+            optionalAtTable(wrap);
+        }
 
         var input = document.createElement('input');
         input.id = 'cart-name-' + id;
@@ -916,10 +933,12 @@
     }
 
     function phoneField(id) {
-        var wrap = field('phone', strings.phone);
+        var wrap = field('phone', strings.phone, optionalOnWhatsApp('phone'));
         wrap.classList.add('cart-phone-field');
         wrap.querySelector('label').htmlFor = 'cart-phone-' + id;
-        optionalAtTable(wrap);
+        if (inMenu) {
+            optionalAtTable(wrap);
+        }
 
         var row = element('div', 'cart-phone');
         // Digits read left to right, on an Arabic menu too.
@@ -932,6 +951,14 @@
         input.autocomplete = 'tel-national';
         input.maxLength = 30;
         input.placeholder = strings.phoneHint;
+        // Before bind(), so what is kept is already clean: only what a
+        // number is written with, as the server accepts it.
+        input.addEventListener('input', function () {
+            var clean = phoneCharacters(input.value);
+            if (clean !== input.value) {
+                input.value = clean;
+            }
+        });
         bind(input, 'phone');
 
         row.appendChild(countryPicker(id, wrap, input));
@@ -943,8 +970,21 @@
         return wrap;
     }
 
+    /** Digits, spaces, + ( ) - and dots; Arabic and Persian digits become 0 to 9. */
+    function phoneCharacters(text) {
+        return text
+            .replace(/[\u0660-\u0669]/g, function (digit) {
+                return String(digit.charCodeAt(0) - 0x0660);
+            })
+            .replace(/[\u06f0-\u06f9]/g, function (digit) {
+                return String(digit.charCodeAt(0) - 0x06f0);
+            })
+            .replace(/[^0-9+() .\-]/g, '')
+            .replace(/^ +/, '');
+    }
+
     function addressField(id) {
-        var wrap = field('address', strings.address);
+        var wrap = field('address', strings.address, optionalOnWhatsApp('address'));
         wrap.setAttribute('data-delivery-only', '');
         wrap.querySelector('label').htmlFor = 'cart-address-' + id;
 
@@ -1027,6 +1067,21 @@
             wrap.appendChild(nameField(id));
             wrap.appendChild(phoneField(id));
             wrap.appendChild(addressField(id));
+        } else {
+            // On WhatsApp only what the owner asks for. An address also asks
+            // delivery or pickup, and shows only for a delivery.
+            if (asked('address') && allTypes().length > 1) {
+                wrap.appendChild(typesField(id));
+            }
+            if (asked('name')) {
+                wrap.appendChild(nameField(id));
+            }
+            if (asked('phone')) {
+                wrap.appendChild(phoneField(id));
+            }
+            if (asked('address')) {
+                wrap.appendChild(addressField(id));
+            }
         }
         wrap.appendChild(noteField(id));
         if (inMenu) {
@@ -1220,6 +1275,26 @@
             }
 
             if (details.fulfilment === 'delivery' && details.address.trim() === '') {
+                found.address = strings.addressMissing;
+            }
+        } else if (asks) {
+            // On WhatsApp, what the owner made required.
+            if (asks.name === 'required' && details.name.trim() === '') {
+                found.name = strings.nameMissing;
+            }
+
+            if (asked('phone')) {
+                var number = details.phone.replace(/\D+/g, '');
+                if (number === '') {
+                    if (asks.phone === 'required') {
+                        found.phone = strings.phoneMissing;
+                    }
+                } else if (number.length < 6 || number.length > 15) {
+                    found.phone = strings.phoneInvalid;
+                }
+            }
+
+            if (asks.address === 'required' && details.fulfilment === 'delivery' && details.address.trim() === '') {
                 found.address = strings.addressMissing;
             }
         }
@@ -1460,6 +1535,24 @@
             body.longitude = delivery ? details.longitude : null;
             body.client_token = orderToken;
             body.website = details.website;
+        } else if (asks) {
+            // Only what the owner asks for; the message carries it.
+            var toDoor = asked('address') && details.fulfilment === 'delivery';
+            if (asked('address')) {
+                body.fulfilment = details.fulfilment;
+            }
+            if (asked('name')) {
+                body.name = details.name;
+            }
+            if (asked('phone')) {
+                body.phone_country = details.country;
+                body.phone = details.phone;
+            }
+            if (toDoor) {
+                body.address = details.address;
+                body.latitude = details.latitude;
+                body.longitude = details.longitude;
+            }
         }
 
         // Which version of the order the change was made from: one made
@@ -1897,8 +1990,10 @@
     render();
     paintFulfilment();
     paintLocation();
-    if (inMenu) {
+    if (asked('phone')) {
         paintCountry();
+    }
+    if (inMenu) {
         document.addEventListener('qayema:edit', function (event) {
             startEditing(event.detail.token);
         });

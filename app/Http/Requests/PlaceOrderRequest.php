@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\Ask;
 use App\Enums\Fulfilment;
 use App\Enums\OrderChannel;
 use App\Models\DiningTable;
@@ -79,7 +80,7 @@ class PlaceOrderRequest extends FormRequest
         ];
 
         if (! $this->inMenu()) {
-            return $rules;
+            return [...$rules, ...$this->whatsappRules()];
         }
 
         // At the table the restaurant can see who ordered, so a name and a
@@ -113,12 +114,14 @@ class PlaceOrderRequest extends FormRequest
      */
     public function after(): array
     {
-        if (! $this->inMenu()) {
+        if (! $this->inMenu() && ! array_key_exists('phone', $this->whatsappRules())) {
             return [];
         }
 
         return [function (Validator $validator): void {
-            $this->checkTable($validator);
+            if ($this->inMenu()) {
+                $this->checkTable($validator);
+            }
 
             if ($validator->errors()->hasAny(['phone', 'phone_country']) || ! $this->filled('phone')) {
                 return;
@@ -177,8 +180,7 @@ class PlaceOrderRequest extends FormRequest
     public function details(): OrderDetails
     {
         if (! $this->inMenu()) {
-            // On WhatsApp the table only labels the message.
-            return new OrderDetails(note: $this->validated('note'), table: $this->table());
+            return $this->whatsappDetails();
         }
 
         $located = $this->validated('latitude') !== null;
@@ -196,6 +198,64 @@ class PlaceOrderRequest extends FormRequest
             longitude: $located ? (string) $this->validated('longitude') : null,
             clientToken: $this->validated('client_token'),
             table: $fulfilment === Fulfilment::DineIn ? $this->table() : null,
+        );
+    }
+
+    /**
+     * What a WhatsApp order asks for (Restaurant::whatsappAsks()): the
+     * table's set when it goes to a table, delivery and pickup's otherwise
+     * (the same test as PublicOrderController). An address asked also asks
+     * delivery or pickup, and is wanted only for a delivery. Off asks
+     * nothing, so nothing is kept.
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    private function whatsappRules(): array
+    {
+        $atTable = $this->table() !== null && $this->restaurant()->takesDineIn();
+        $asks = $this->restaurant()->whatsappAsks()[$atTable ? 'table' : 'away'];
+        $needed = fn (string $field): string => $asks[$field] === Ask::Required->value ? 'required' : 'nullable';
+        $rules = [];
+
+        if ($asks['name'] !== Ask::Off->value) {
+            $rules['name'] = [$needed('name'), 'string', 'max:60'];
+        }
+
+        if ($asks['phone'] !== Ask::Off->value) {
+            $rules['phone'] = [$needed('phone'), 'string', 'max:30', 'regex:/^[0-9+() .\-]+$/'];
+            $rules['phone_country'] = ['required_with:phone', 'nullable', 'string', Rule::in(array_keys((array) config('countries')))];
+        }
+
+        if (($asks['address'] ?? Ask::Off->value) !== Ask::Off->value) {
+            $rules['fulfilment'] = ['required', Rule::in($this->restaurant()->orderTypes())];
+            $rules['address'] = [
+                ...$asks['address'] === Ask::Required->value ? ['required_if:fulfilment,'.Fulfilment::Delivery->value] : [],
+                'nullable', 'string', 'max:500',
+            ];
+            $rules['latitude'] = ['nullable', 'required_with:longitude', 'numeric', 'between:-90,90'];
+            $rules['longitude'] = ['nullable', 'required_with:latitude', 'numeric', 'between:-180,180'];
+        }
+
+        return $rules;
+    }
+
+    /** A WhatsApp order's details: the note, the table it labels, and what was asked. */
+    private function whatsappDetails(): OrderDetails
+    {
+        $asked = $this->whatsappRules();
+        $fulfilment = isset($asked['fulfilment']) ? Fulfilment::from($this->validated('fulfilment')) : null;
+        $phone = isset($asked['phone']) && $this->filled('phone') ? $this->internationalPhone() : null;
+        $located = $fulfilment === Fulfilment::Delivery && $this->validated('latitude') !== null;
+
+        return new OrderDetails(
+            note: $this->validated('note'),
+            fulfilment: $fulfilment,
+            name: isset($asked['name']) ? $this->validated('name') : null,
+            phone: $phone === null ? null : '+'.$phone,
+            address: isset($asked['address']) ? $this->validated('address') : null,
+            latitude: $located ? (string) $this->validated('latitude') : null,
+            longitude: $located ? (string) $this->validated('longitude') : null,
+            table: $this->table(),
         );
     }
 

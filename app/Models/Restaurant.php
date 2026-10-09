@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Ask;
 use App\Enums\Feature;
 use App\Enums\Fulfilment;
 use App\Enums\OrderChannel;
@@ -74,6 +75,12 @@ class Restaurant extends Model implements HasMedia
      *
      * @var array<int, string>
      */
+    /** What a WhatsApp order can ask the guest for, per way in (whatsappAsks()). */
+    public const WHATSAPP_ASKS = [
+        'away' => ['name', 'phone', 'address'],
+        'table' => ['name', 'phone'],
+    ];
+
     public const OPTIONAL_FEATURES = ['orders', 'dine_in', 'qr', 'analytics', 'languages', 'variants', 'addons'];
 
     /** The package flag each optional feature needs before it can be on. */
@@ -132,6 +139,7 @@ class Restaurant extends Model implements HasMedia
         'order_mode',
         'order_types',
         'dine_in_mode',
+        'whatsapp_fields',
         'menu_fonts',
     ];
 
@@ -149,6 +157,7 @@ class Restaurant extends Model implements HasMedia
             'qr_settings' => 'array',
             'switched_off' => 'array',
             'order_types' => 'array',
+            'whatsapp_fields' => 'array',
             'menu_fonts' => 'array',
         ];
     }
@@ -549,6 +558,29 @@ class Restaurant extends Model implements HasMedia
         return $this->dine_in_mode === OrderChannel::WhatsApp->value && WhatsAppLink::internationalNumber($this) !== null
             ? OrderChannel::WhatsApp
             : OrderChannel::Menu;
+    }
+
+    /**
+     * What a WhatsApp order asks the guest for, per way in: delivery and
+     * pickup (`away`: name, phone, and an address, which also asks delivery
+     * or pickup) and orders at the table (`table`: name, phone). Each
+     * Ask::value; anything not set is off.
+     *
+     * @return array{away: array{name: string, phone: string, address: string}, table: array{name: string, phone: string}}
+     */
+    public function whatsappAsks(): array
+    {
+        $stored = (array) $this->whatsapp_fields;
+        $asks = [];
+
+        foreach (self::WHATSAPP_ASKS as $group => $fields) {
+            foreach ($fields as $field) {
+                $asks[$group][$field] = Ask::tryFrom((string) ($stored[$group][$field] ?? ''))?->value ?? Ask::Off->value;
+            }
+        }
+
+        /** @var array{away: array{name: string, phone: string, address: string}, table: array{name: string, phone: string}} $asks */
+        return $asks;
     }
 
     /** The QR studio's styling is on: in the package and not switched off. */

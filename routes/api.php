@@ -74,6 +74,9 @@ Route::middleware(['auth:sanctum', 'throttle:api', TellAdminsAboutMenuEdits::cla
     Route::put('/features/dine-in', [OrderingSettingsController::class, 'dineIn'])
         ->middleware('throttle:mutations')
         ->name('api.features.dine-in');
+    Route::put('/features/whatsapp-fields', [OrderingSettingsController::class, 'whatsappFields'])
+        ->middleware('throttle:mutations')
+        ->name('api.features.whatsapp-fields');
     Route::get('/menu-languages', [MenuLanguagesController::class, 'show'])
         ->name('api.menu-languages.show');
     Route::put('/menu-languages', [MenuLanguagesController::class, 'update'])

@@ -107,7 +107,7 @@ $list = collect(config('countries', []))
         class="ui-phone-num"
         placeholder="70 123 456"
         value="{{ old($name, $value) }}"
-        oninput="this.value = this.value.replace(/[^0-9+()\s.\-]/g, '')"
+        oninput="this.value = this.value.replace(/[\u0660-\u0669]/g, d => d.charCodeAt(0) - 0x0660).replace(/[\u06f0-\u06f9]/g, d => d.charCodeAt(0) - 0x06f0).replace(/[^0-9+() .\-]/g, '').replace(/^ +/, '')"
         {{ $attributes->except(['class','type','name','placeholder']) }}
     >
 </div>

@@ -7,6 +7,8 @@ use App\Http\Controllers\Concerns\ResolvesRestaurant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateDineInRequest;
 use App\Http\Requests\UpdateOrderingRequest;
+use App\Http\Requests\UpdateWhatsAppFieldsRequest;
+use App\Models\Restaurant;
 use Illuminate\Http\JsonResponse;
 
 /**
@@ -44,5 +46,17 @@ class OrderingSettingsController extends Controller
         $restaurant->update(['dine_in_mode' => $request->validated('mode')]);
 
         return response()->json(['data' => ['dine_in' => $restaurant->dine_in_mode]]);
+    }
+
+    /**
+     * What a WhatsApp order asks the guest for (Restaurant::whatsappAsks()),
+     * the whole setting at once.
+     */
+    public function whatsappFields(UpdateWhatsAppFieldsRequest $request): JsonResponse
+    {
+        $restaurant = $this->restaurant($request);
+        $restaurant->update(['whatsapp_fields' => $request->safe()->only(array_keys(Restaurant::WHATSAPP_ASKS))]);
+
+        return response()->json(['data' => $restaurant->whatsappAsks()]);
     }
 }

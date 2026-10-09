@@ -139,6 +139,8 @@ class UserResource extends JsonResource
                 // (Restaurant::dineInChannel()).
                 'dine_in' => $restaurant->dine_in_mode ?? OrderChannel::Menu->value,
                 'whatsapp_number' => WhatsAppLink::internationalNumber($restaurant) !== null,
+                // What a WhatsApp order asks the guest for, per way in.
+                'whatsapp_fields' => $restaurant->whatsappAsks(),
             ],
             // What this restaurant may use: its package plus any grants. Every
             // flag in App\Enums\Feature, so a new one needs no edit here.

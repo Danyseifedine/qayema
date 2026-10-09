@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Ask;
 use App\Enums\OrderChannel;
 use App\Models\DiningTable;
 use App\Models\Restaurant;
@@ -95,7 +96,10 @@ class PublicMenuController extends Controller
 
         // At a table that takes orders the cart orders the table's way (the
         // menu or WhatsApp), whichever way delivery and pickup go.
-        $cartChannel = $table !== null && $dineIn ? $restaurant->dineInChannel() : $channel;
+        $atTable = $table !== null && $dineIn;
+        $cartChannel = $atTable ? $restaurant->dineInChannel() : $channel;
+        // What a WhatsApp cart asks the guest for, the table's set at a table.
+        $asks = $cartChannel === OrderChannel::WhatsApp ? $restaurant->whatsappAsks()[$atTable ? 'table' : 'away'] : null;
 
         return view($view, [
             'restaurant' => $restaurant,
@@ -120,8 +124,10 @@ class PublicMenuController extends Controller
                 null => false,
             },
             'order_channel' => $cartChannel,
-            // Delivery and pickup, while those are taken in the menu.
-            'order_types' => $channel === OrderChannel::Menu ? $restaurant->orderTypes() : [],
+            // Delivery and pickup, while those are taken in the menu, or asked
+            // on WhatsApp along with the address.
+            'order_types' => $channel === OrderChannel::Menu || ($asks['address'] ?? Ask::Off->value) !== Ask::Off->value ? $restaurant->orderTypes() : [],
+            'whatsapp_asks' => $asks,
             // Ordering to a table in the menu: a table remembered from an
             // earlier scan is offered only then.
             'dine_in' => $dineIn && $restaurant->dineInChannel() === OrderChannel::Menu,

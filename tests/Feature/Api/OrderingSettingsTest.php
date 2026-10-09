@@ -155,4 +155,46 @@ class OrderingSettingsTest extends TestCase
     {
         $this->putJson(route('api.features.dine-in'), ['mode' => 'menu'])->assertUnauthorized();
     }
+
+    public function test_what_a_whatsapp_order_asks_for_is_saved_whole_and_starts_off(): void
+    {
+        $owner = $this->ownerOn('premium');
+        $off = ['away' => ['name' => 'off', 'phone' => 'off', 'address' => 'off'], 'table' => ['name' => 'off', 'phone' => 'off']];
+
+        $this->actingAs($owner->user)
+            ->getJson(route('api.user'))
+            ->assertJsonPath('data.restaurant.ordering.whatsapp_fields', $off);
+
+        $asks = ['away' => ['name' => 'required', 'phone' => 'optional', 'address' => 'required'], 'table' => ['name' => 'optional', 'phone' => 'off']];
+        $this->actingAs($owner->user)
+            ->putJson(route('api.features.whatsapp-fields'), $asks)
+            ->assertOk()
+            ->assertExactJson(['data' => $asks]);
+
+        $this->assertSame($asks, $owner->fresh()->whatsappAsks());
+    }
+
+    public function test_whatsapp_fields_take_only_off_optional_or_required_for_every_field(): void
+    {
+        $owner = $this->ownerOn('premium');
+
+        $this->actingAs($owner->user)
+            ->putJson(route('api.features.whatsapp-fields'), [
+                'away' => ['name' => 'always', 'phone' => 'off'],
+                'table' => ['name' => 'off', 'phone' => 'off'],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['away.name', 'away.address']);
+
+        $this->assertNull($owner->fresh()->whatsapp_fields);
+    }
+
+    public function test_whatsapp_fields_need_a_signed_in_owner_with_a_restaurant(): void
+    {
+        $this->putJson(route('api.features.whatsapp-fields'), [])->assertUnauthorized();
+
+        $this->actingAs(\App\Models\User::factory()->create())
+            ->putJson(route('api.features.whatsapp-fields'), [])
+            ->assertForbidden();
+    }
 }
