@@ -316,8 +316,12 @@
                                 // The card and the cart draw the small version; the
                                 // full photo is only fetched when the dish's sheet opens.
                                 $photoMedia = $dish->getFirstMedia('image');
-                                $photo = $photoMedia?->getUrl();
-                                $image = $photoMedia?->getAvailableUrl(['thumb']);
+                                // Versioned by the photo's last change: a remade card
+                                // picture keeps its address, and Cloudflare and browsers
+                                // keep an image a week, so a new ?v= is what shows it.
+                                $photoVersion = $photoMedia ? '?v='.$photoMedia->updated_at?->timestamp : '';
+                                $photo = $photoMedia ? $photoMedia->getUrl().$photoVersion : null;
+                                $image = $photoMedia ? $photoMedia->getAvailableUrl(['thumb']).$photoVersion : null;
                                 $ingredients = $text($dish, 'ingredients');
                                 $dishName = $text($dish, 'name');
                                 $choices = $dish_options[$dish->id] ?? null;

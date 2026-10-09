@@ -56,9 +56,10 @@ class MenuSpeedTest extends TestCase
         $this->assertSame([240, 180], [$width, $height]);
 
         $html = $this->menu();
-        $this->assertStringContainsString('class="dish-photo" src="'.$media->getUrl('thumb').'"', $html);
+        $version = '?v='.$media->fresh()->updated_at->timestamp;
+        $this->assertStringContainsString('class="dish-photo" src="'.$media->getUrl('thumb').$version.'"', $html);
         $this->assertStringContainsString('width="72" height="72"', $html);
-        $this->assertStringContainsString('data-image="'.$media->getUrl('thumb').'" data-photo="'.$media->getUrl().'"', $html);
+        $this->assertStringContainsString('data-image="'.$media->getUrl('thumb').$version.'" data-photo="'.$media->getUrl().$version.'"', $html);
     }
 
     public function test_a_long_photo_keeps_both_ends_on_the_card(): void
@@ -83,7 +84,30 @@ class MenuSpeedTest extends TestCase
         // As a photo stored before conversions existed: none generated.
         Media::query()->whereKey($media->id)->update(['generated_conversions' => json_encode([])]);
 
-        $this->assertStringContainsString('class="dish-photo" src="'.$media->getUrl().'"', $this->menu());
+        $this->assertStringContainsString('class="dish-photo" src="'.$media->getUrl().'?v='.$media->fresh()->updated_at->timestamp.'"', $this->menu());
+    }
+
+    public function test_a_remade_card_picture_gets_a_new_address_so_caches_let_it_go(): void
+    {
+        $media = $this->dish->addMedia(UploadedFile::fake()->image('kafta.jpg', 1200, 900))->toMediaCollection('image');
+        $before = $this->menu();
+
+        $this->travel(1)->hour();
+        $media->fresh()->touch();
+
+        $this->assertStringContainsString('-thumb.webp?v=', $before);
+        $this->assertNotSame(
+            $this->photoAddress($before),
+            $this->photoAddress($this->menu()),
+            'The same address would keep showing the old picture for a week.',
+        );
+    }
+
+    private function photoAddress(string $html): string
+    {
+        preg_match('/class="dish-photo" src="([^"]+)"/', $html, $match);
+
+        return $match[1] ?? '';
     }
 
     public function test_the_cover_is_asked_for_first_and_a_phone_gets_its_smaller_version(): void
