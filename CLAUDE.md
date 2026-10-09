@@ -467,6 +467,12 @@ Forms\Components\Select::make('user_id')
    what you would run and wait for the user to say go; run only that, then
    stop again. One go-ahead covers one task, never the next. The same
    cPanel account hosts other sites, and the login can reach all of them.
+8. **Never touch any project except Qayema.** On the server only
+   `~/qayema.com`, `~/dashboard.qayema.com` and Qayema's own crontab line;
+   never the other sites on the account (aboulira.com, barja.shop,
+   devleb.org, the *.lebify.dev sites and the rest), not to read, report on
+   or fix, even when something there looks broken. On this computer only
+   the Qayema folders. Narrow any server-wide command to Qayema's paths.
 
 # Qayema: Project Architecture
 
