@@ -110,13 +110,14 @@ class RestaurantTest extends TestCase
             ->patchJson(route('api.restaurant.update'), $this->basePayload([
                 'timezone' => 'Asia/Beirut',
                 'opening_hours' => [
-                    'mon' => ['open' => '07:30', 'close' => '22:00'],
+                    // Dinner sent first: kept earliest first.
+                    'mon' => [['open' => '18:00', 'close' => '23:00'], ['open' => '12:00', 'close' => '15:00']],
                     'tue' => null,
                 ],
             ]))
             ->assertOk()
             ->assertJsonPath('data.timezone', 'Asia/Beirut')
-            ->assertJsonPath('data.opening_hours.mon', ['open' => '07:30', 'close' => '22:00'])
+            ->assertJsonPath('data.opening_hours.mon', [['open' => '12:00', 'close' => '15:00'], ['open' => '18:00', 'close' => '23:00']])
             ->assertJsonPath('data.opening_hours.tue', null)
             // The whole week always comes back, so the form never guesses.
             ->assertJsonPath('data.opening_hours.sun', null);
@@ -124,16 +125,59 @@ class RestaurantTest extends TestCase
         $this->assertSame('Asia/Beirut', $restaurant->fresh()->timezone);
     }
 
-    public function test_a_half_written_range_is_rejected(): void
+    public function test_one_range_per_day_from_an_older_app_is_one_shift(): void
     {
         [$user] = $this->owner();
 
         $this->actingAs($user)
             ->patchJson(route('api.restaurant.update'), $this->basePayload([
-                'opening_hours' => ['mon' => ['open' => '07:30']],
+                'opening_hours' => ['mon' => ['open' => '07:30', 'close' => '22:00'], 'tue' => ['open' => null, 'close' => null]],
+            ]))
+            ->assertOk()
+            ->assertJsonPath('data.opening_hours.mon', [['open' => '07:30', 'close' => '22:00']])
+            ->assertJsonPath('data.opening_hours.tue', null);
+    }
+
+    public function test_a_half_written_shift_is_rejected(): void
+    {
+        [$user] = $this->owner();
+
+        $this->actingAs($user)
+            ->patchJson(route('api.restaurant.update'), $this->basePayload([
+                'opening_hours' => ['mon' => [['open' => '07:30']]],
             ]))
             ->assertStatus(422)
-            ->assertJsonValidationErrors('opening_hours.mon.close');
+            ->assertJsonValidationErrors(['opening_hours.mon.0.close' => 'Choose when this shift closes.']);
+
+        $this->actingAs($user)
+            ->patchJson(route('api.restaurant.update'), $this->basePayload([
+                'opening_hours' => ['mon' => ['open' => '07:30']],
+            ]))
+            ->assertJsonValidationErrors('opening_hours.mon.0.close');
+    }
+
+    public function test_shifts_that_overlap_or_too_many_are_rejected_in_the_owners_language(): void
+    {
+        [$user] = $this->owner();
+
+        $this->actingAs($user)
+            ->patchJson(route('api.restaurant.update'), $this->basePayload([
+                'opening_hours' => ['fri' => [['open' => '20:00', 'close' => '02:00'], ['open' => '22:00', 'close' => '23:00']]],
+            ]))
+            ->assertJsonValidationErrors(['opening_hours.fri' => 'Only the last shift of a day can run past midnight.']);
+
+        $this->actingAs($user)
+            ->patchJson(route('api.restaurant.update'), $this->basePayload([
+                'opening_hours' => ['fri' => array_fill(0, 4, ['open' => '09:00', 'close' => '10:00'])],
+            ]))
+            ->assertJsonValidationErrors(['opening_hours.fri' => 'A day can have up to 3 shifts.']);
+
+        $this->actingAs($user)
+            ->withHeader('Accept-Language', 'ar')
+            ->patchJson(route('api.restaurant.update'), $this->basePayload([
+                'opening_hours' => ['fri' => [['open' => '12:00', 'close' => '16:00'], ['open' => '15:00', 'close' => '23:00']]],
+            ]))
+            ->assertJsonValidationErrors(['opening_hours.fri' => 'لا يمكن أن تتداخل فترات اليوم نفسه.']);
     }
 
     public function test_an_unreal_timezone_is_rejected(): void

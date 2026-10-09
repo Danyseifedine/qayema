@@ -34,7 +34,8 @@
     $currency = config("currencies.{$restaurant->currency}.symbol", $restaurant->currency);
     $name = $text($restaurant, 'name');
     $description = $text($restaurant, 'description');
-    $todayRange = $hours->todayRange();
+    // Every shift today, lunch then dinner: "12:00 - 15:00, 18:00 - 23:00".
+    $todayHours = collect($hours->todayShifts())->map(fn (array $shift): string => $shift['open'].' - '.$shift['close'])->implode(', ');
 
     $accent = $settings['primary_color'] ?? Template::DEFAULT_PRIMARY_COLOR;
     $background = $settings['background_color'] ?? '#FFFFFF';
@@ -74,7 +75,7 @@
         $facts[] = [
             'icon' => 'clock',
             'label' => $open ? __('Open now') : __('Closed now'),
-            'value' => $todayRange ? $todayRange['open'].' - '.$todayRange['close'] : __('Closed today'),
+            'value' => $todayHours !== '' ? $todayHours : __('Closed today'),
             'href' => null,
             'tone' => $open ? 'open' : 'shut',
             'ltr' => true,

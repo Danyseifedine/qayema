@@ -59,7 +59,7 @@ class OpeningHoursTest extends TestCase
 
         $this->atUtc('2026-01-07 10:00');
         $this->assertFalse($hours->isOpenNow());
-        $this->assertNull($hours->todayRange());
+        $this->assertSame([], $hours->todayShifts());
     }
 
     public function test_a_kitchen_that_shuts_after_midnight_is_still_open_at_one(): void
@@ -76,7 +76,7 @@ class OpeningHoursTest extends TestCase
         $this->assertFalse($hours->isOpenNow());
     }
 
-    public function test_todays_range_is_todays(): void
+    public function test_todays_shifts_are_todays(): void
     {
         $hours = $this->hours([
             'wed' => ['open' => '09:00', 'close' => '17:00'],
@@ -84,7 +84,7 @@ class OpeningHoursTest extends TestCase
         ]);
 
         $this->atUtc('2026-01-07 08:00');
-        $this->assertSame(['open' => '09:00', 'close' => '17:00'], $hours->todayRange());
+        $this->assertSame([['open' => '09:00', 'close' => '17:00']], $hours->todayShifts());
     }
 
     public function test_rubbish_is_dropped_rather_than_stored(): void
@@ -99,7 +99,7 @@ class OpeningHoursTest extends TestCase
         ]);
 
         $this->assertSame(OpeningHours::DAYS, array_keys($week), 'Only the seven days survive.');
-        $this->assertSame(['open' => '09:00', 'close' => '17:00'], $week['mon']);
+        $this->assertSame([['open' => '09:00', 'close' => '17:00']], $week['mon'], 'One range is one shift.');
         $this->assertNull($week['tue'], 'There is no 25th hour.');
         $this->assertNull($week['wed'], 'A range needs both ends.');
         $this->assertNull($week['thu']);
@@ -122,13 +122,13 @@ class OpeningHoursTest extends TestCase
         ])->toArray();
 
         $this->assertSame([
-            'mon' => ['open' => '09:00', 'close' => '17:00'],
+            'mon' => [['open' => '09:00', 'close' => '17:00']],
             'tue' => null,
             'wed' => null,
             'thu' => null,
             'fri' => null,
             'sat' => null,
-            'sun' => ['open' => '12:00', 'close' => '23:00'],
+            'sun' => [['open' => '12:00', 'close' => '23:00']],
         ], $week);
     }
 
@@ -162,5 +162,56 @@ class OpeningHoursTest extends TestCase
 
         $this->atUtc('2026-01-07 05:59');
         $this->assertFalse($hours->isOpenNow(), 'Tuesday has no range of its own.');
+    }
+
+    public function test_a_split_day_is_shut_between_its_shifts(): void
+    {
+        $hours = $this->hours(['wed' => [['open' => '12:00', 'close' => '15:00'], ['open' => '18:00', 'close' => '23:00']]], 'UTC');
+
+        $this->atUtc('2026-01-07 13:00');
+        $this->assertTrue($hours->isOpenNow());
+
+        $this->atUtc('2026-01-07 16:30');
+        $this->assertFalse($hours->isOpenNow(), 'Between lunch and dinner.');
+
+        $this->atUtc('2026-01-07 20:00');
+        $this->assertTrue($hours->isOpenNow());
+        $this->assertSame([['open' => '12:00', 'close' => '15:00'], ['open' => '18:00', 'close' => '23:00']], $hours->todayShifts());
+    }
+
+    public function test_a_late_last_shift_runs_into_the_next_morning(): void
+    {
+        $hours = $this->hours(['wed' => [['open' => '12:00', 'close' => '15:00'], ['open' => '20:00', 'close' => '02:00']]], 'UTC');
+
+        $this->atUtc('2026-01-08 01:30');
+        $this->assertTrue($hours->isOpenNow(), 'Thursday 01:30 is still inside Wednesday\'s last shift.');
+
+        $this->atUtc('2026-01-08 13:00');
+        $this->assertFalse($hours->isOpenNow(), 'Thursday has no shifts of its own.');
+    }
+
+    public function test_shifts_are_kept_earliest_first_and_three_at_most(): void
+    {
+        $week = OpeningHours::normalise(['fri' => [
+            ['open' => '18:00', 'close' => '22:00'],
+            ['open' => '07:00', 'close' => '10:00'],
+            ['open' => 'noon', 'close' => '15:00'],
+            ['open' => '12:00', 'close' => '15:00'],
+            ['open' => '23:00', 'close' => '23:30'],
+        ]]);
+
+        $this->assertSame([
+            ['open' => '07:00', 'close' => '10:00'],
+            ['open' => '12:00', 'close' => '15:00'],
+            ['open' => '18:00', 'close' => '22:00'],
+        ], $week['fri']);
+    }
+
+    public function test_overlapping_shifts_and_an_early_late_night_are_problems(): void
+    {
+        $this->assertNull(OpeningHours::problemWith([['open' => '18:00', 'close' => '01:00'], ['open' => '12:00', 'close' => '15:00']]));
+        $this->assertNull(OpeningHours::problemWith([['open' => '12:00', 'close' => '15:00'], ['open' => '15:00', 'close' => '18:00']]), 'Back to back is fine.');
+        $this->assertNotNull(OpeningHours::problemWith([['open' => '12:00', 'close' => '16:00'], ['open' => '15:00', 'close' => '18:00']]));
+        $this->assertNotNull(OpeningHours::problemWith([['open' => '20:00', 'close' => '02:00'], ['open' => '22:00', 'close' => '23:00']]));
     }
 }

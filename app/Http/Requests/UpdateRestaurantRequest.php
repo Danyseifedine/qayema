@@ -3,8 +3,10 @@
 namespace App\Http\Requests;
 
 use App\Services\Menu\MenuLanguages;
+use App\Services\Menu\OpeningHours;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class UpdateRestaurantRequest extends FormRequest
 {
@@ -45,13 +47,16 @@ class UpdateRestaurantRequest extends FormRequest
             'phone' => ['required', 'string', 'max:30', 'regex:/^(?=(?:\D*\d){6,})[0-9+() .\-]{6,30}$/'],
             'currency' => ['required', 'string', Rule::in(array_keys(config('currencies', [])))],
 
-            // One range per weekday, or null for a day it does not open. The
-            // service normalises before saving, so anything malformed here is
-            // dropped rather than stored.
+            // A list of shifts per weekday (OpeningHours::MAX_SHIFTS at
+            // most), or null for a day it does not open. One range per day,
+            // the shape before shifts, arrives as a list of one
+            // (prepareForValidation()). Overlaps are after()'s question; the
+            // service normalises before saving.
             'opening_hours' => ['nullable', 'array'],
-            'opening_hours.*' => ['nullable', 'array'],
-            'opening_hours.*.open' => ['required_with:opening_hours.*.close', 'nullable', 'date_format:H:i'],
-            'opening_hours.*.close' => ['required_with:opening_hours.*.open', 'nullable', 'date_format:H:i'],
+            'opening_hours.*' => ['nullable', 'array', 'max:'.OpeningHours::MAX_SHIFTS],
+            'opening_hours.*.*' => ['array'],
+            'opening_hours.*.*.open' => ['required', 'date_format:H:i'],
+            'opening_hours.*.*.close' => ['required', 'date_format:H:i'],
             // With the backward-compatible names: browsers still list some
             // zones only by them (Asia/Calcutta, Europe/Kiev), and the
             // dashboard offers the browser's list.
@@ -68,11 +73,58 @@ class UpdateRestaurantRequest extends FormRequest
     }
 
     /**
+     * A day sent as one range, the shape before shifts (an app not yet
+     * updated), becomes a list of one; one with neither time is a closed day.
+     */
+    protected function prepareForValidation(): void
+    {
+        $hours = $this->input('opening_hours');
+
+        if (! is_array($hours)) {
+            return;
+        }
+
+        foreach ($hours as $day => $value) {
+            if (is_array($value) && (array_key_exists('open', $value) || array_key_exists('close', $value))) {
+                $hours[$day] = blank($value['open'] ?? null) && blank($value['close'] ?? null) ? null : [$value];
+            }
+        }
+
+        $this->merge(['opening_hours' => $hours]);
+    }
+
+    /**
+     * A day's shifts must not overlap, and only the last may run past
+     * midnight (OpeningHours::problemWith()).
+     *
+     * @return array<int, \Closure>
+     */
+    public function after(): array
+    {
+        return [function (Validator $validator): void {
+            if ($validator->errors()->has('opening_hours*')) {
+                return;
+            }
+
+            foreach ((array) $this->input('opening_hours') as $day => $shifts) {
+                $problem = is_array($shifts) ? OpeningHours::problemWith(array_values($shifts)) : null;
+
+                if ($problem !== null) {
+                    $validator->errors()->add("opening_hours.{$day}", __($problem));
+                }
+            }
+        }];
+    }
+
+    /**
      * @return array<string, string>
      */
     public function messages(): array
     {
         return [
+            'opening_hours.*.max' => __('A day can have up to :max shifts.', ['max' => OpeningHours::MAX_SHIFTS]),
+            'opening_hours.*.*.open.*' => __('Choose when this shift opens.'),
+            'opening_hours.*.*.close.*' => __('Choose when this shift closes.'),
             'country_code.size' => __('Please choose a country from the list.'),
             'country_code.alpha' => __('Please choose a country from the list.'),
             'phone.regex' => __('Please enter a valid phone number using digits only.'),

@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Dish;
 use App\Models\Restaurant;
 use App\Models\Template;
+use App\Services\Menu\OpeningHours;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\CreatesOwners;
 use Tests\TestCase;
@@ -121,6 +122,23 @@ class PublicMenuTest extends TestCase
 
         // Still present in the header facts row.
         $this->assertStringContainsString('class="fact" href="tel:70123456"', $html);
+    }
+
+    public function test_a_split_day_shows_every_shift_and_is_shut_between_them(): void
+    {
+        $restaurant = $this->published([
+            'opening_hours' => array_fill_keys(OpeningHours::DAYS, [['open' => '12:00', 'close' => '15:00'], ['open' => '18:00', 'close' => '23:00']]),
+            'timezone' => 'UTC',
+        ]);
+
+        $this->travelTo(now('UTC')->setTime(16, 30));
+        $html = $this->get(route('public.menu', $restaurant->slug))->assertOk()->getContent();
+
+        $this->assertStringContainsString('12:00 - 15:00, 18:00 - 23:00', $html);
+        $this->assertStringContainsString('Closed now', $html);
+
+        $this->travelTo(now('UTC')->setTime(19, 0));
+        $this->assertStringContainsString('Open now', $this->get(route('public.menu', $restaurant->slug))->getContent());
     }
 
     public function test_the_category_filter_opens_on_all(): void

@@ -34,7 +34,7 @@ class MenuSeoTest extends TestCase
             'currency' => 'USD',
             'phone' => '+96170123456',
             'google_maps_url' => 'https://www.google.com/maps/@33.6489,35.4406,17z',
-            'opening_hours' => ['mon' => ['open' => '12:00', 'close' => '23:00'], 'tue' => null],
+            'opening_hours' => ['mon' => [['open' => '12:00', 'close' => '15:00'], ['open' => '18:00', 'close' => '23:00']], 'tue' => null],
         ], $restaurant));
 
         $category = Category::factory()->create([
@@ -114,7 +114,11 @@ class MenuSeoTest extends TestCase
         $this->assertSame('+96170123456', $schema['telephone']);
         $this->assertSame(['@type' => 'GeoCoordinates', 'latitude' => 33.6489, 'longitude' => 35.4406], $schema['geo']);
         $this->assertSame('LB', $schema['address']['addressCountry']);
-        $this->assertSame([['@type' => 'OpeningHoursSpecification', 'dayOfWeek' => 'Monday', 'opens' => '12:00', 'closes' => '23:00']], $schema['openingHoursSpecification']);
+        // One entry per shift.
+        $this->assertSame([
+            ['@type' => 'OpeningHoursSpecification', 'dayOfWeek' => 'Monday', 'opens' => '12:00', 'closes' => '15:00'],
+            ['@type' => 'OpeningHoursSpecification', 'dayOfWeek' => 'Monday', 'opens' => '18:00', 'closes' => '23:00'],
+        ], $schema['openingHoursSpecification']);
 
         $section = $schema['hasMenu']['hasMenuSection'][0];
         $this->assertSame('Grills', $section['name']);

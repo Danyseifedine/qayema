@@ -46,8 +46,9 @@ class RestaurantResourceTest extends TestCase
             'phone' => '70123456',
             'country_code' => 'LB',
             'currency' => 'USD',
+            // Saved before shifts: one range reads as one shift.
             'opening_hours' => [
-                'mon' => ['open' => '09:00', 'close' => '17:00'],
+                'mon' => [['open' => '09:00', 'close' => '17:00']],
                 'tue' => null, 'wed' => null, 'thu' => null, 'fri' => null, 'sat' => null, 'sun' => null,
             ],
             'timezone' => 'Asia/Beirut',

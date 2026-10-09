@@ -153,17 +153,20 @@ class MenuSeo
     {
         $specification = [];
 
-        foreach (OpeningHours::for($restaurant)->toArray() as $day => $range) {
-            if ($range === null || ! isset(self::DAYS[$day])) {
+        // One entry per shift: a day split into lunch and dinner is two.
+        foreach (OpeningHours::for($restaurant)->toArray() as $day => $shifts) {
+            if (! isset(self::DAYS[$day])) {
                 continue;
             }
 
-            $specification[] = [
-                '@type' => 'OpeningHoursSpecification',
-                'dayOfWeek' => self::DAYS[$day],
-                'opens' => $range['open'],
-                'closes' => $range['close'],
-            ];
+            foreach ($shifts ?? [] as $shift) {
+                $specification[] = [
+                    '@type' => 'OpeningHoursSpecification',
+                    'dayOfWeek' => self::DAYS[$day],
+                    'opens' => $shift['open'],
+                    'closes' => $shift['close'],
+                ];
+            }
         }
 
         return $specification;
