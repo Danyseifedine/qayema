@@ -94,7 +94,9 @@ class RestaurantResourceTest extends TestCase
 
         $data = $this->resolve($restaurant->fresh());
 
-        $this->assertStringEndsWith('logo.png', $data['logo_url']);
-        $this->assertStringEndsWith('cover.jpg', $data['cover_url']);
+        // Versioned (media-library.version_urls), so a remade image is fetched again.
+        $this->assertMatchesRegularExpression('/logo\.png\?v=\d+$/', $data['logo_url']);
+        // Versioned (media-library.version_urls), so a remade image is fetched again.
+        $this->assertMatchesRegularExpression('/cover\.jpg\?v=\d+$/', $data['cover_url']);
     }
 }

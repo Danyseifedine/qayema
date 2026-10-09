@@ -4,6 +4,7 @@ namespace App\Services\Menu;
 
 use App\Models\Restaurant;
 use App\Models\User;
+use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
@@ -47,9 +48,31 @@ class MenuLanguages
      */
     public static function main(Restaurant $restaurant): string
     {
-        $main = (string) $restaurant->main_locale;
+        return self::validMain($restaurant->main_locale);
+    }
 
-        return in_array($main, self::choices(), true) ? $main : self::DEFAULT_MAIN;
+    /** A language on the list, else English: what a main language falls back to. */
+    public static function validMain(?string $code): string
+    {
+        return in_array($code, self::choices(), true) ? (string) $code : self::DEFAULT_MAIN;
+    }
+
+    /** The signed-in owner's main language, English when there is no restaurant. */
+    public static function mainForOwner(?User $user): string
+    {
+        $restaurant = $user?->restaurant;
+
+        return $restaurant === null ? self::DEFAULT_MAIN : self::main($restaurant);
+    }
+
+    /**
+     * Every language as `{code: its own name}`, for a picker.
+     *
+     * @return array<string, string>
+     */
+    public static function options(): array
+    {
+        return array_map(fn (array $language): string => $language['name'], self::catalogue());
     }
 
     /**
@@ -133,17 +156,19 @@ class MenuLanguages
      * Validation for one translatable field: an entry per menu language, each
      * a string up to `$max`. The first language, the main one (`for()` and
      * `forOwner()` put it first), carries `$mainRule` ('required',
-     * 'required_with:name', or 'nullable').
+     * 'required_with:name', or 'nullable'); `$extra` rules apply to every
+     * language.
      *
      * @param  array<int, string>  $languages
+     * @param  array<int, string>  $extra
      * @return array<string, array<int, string>>
      */
-    public static function rules(string $field, array $languages, int $max, string $mainRule = 'nullable'): array
+    public static function rules(string $field, array $languages, int $max, string $mainRule = 'nullable', array $extra = []): array
     {
         $rules = [];
 
         foreach (array_values($languages) as $index => $code) {
-            $rules["{$field}.{$code}"] = [$index === 0 ? $mainRule : 'nullable', 'string', "max:{$max}"];
+            $rules["{$field}.{$code}"] = [$index === 0 ? $mainRule : 'nullable', 'string', "max:{$max}", ...$extra];
         }
 
         return $rules;
@@ -160,16 +185,15 @@ class MenuLanguages
 
     /**
      * "<what> is required in <the main language>" for a translatable field,
-     * keyed as the validator looks it up (`name.fr.required`).
+     * keyed as the validator looks it up (`name.fr.required`), for either
+     * way of requiring it ('required', 'required_with').
      *
-     * @param  array<int, string>  $languages  the menu's languages, the main one first
-     * @param  array<int, string>  $rules  the rule names the message covers
      * @return array<string, string>
      */
-    public static function requiredMessages(string $field, array $languages, string $message, array $rules = ['required']): array
+    public static function requiredMessages(string $field, string $main, string $message): array
     {
-        $main = $languages[0] ?? self::DEFAULT_MAIN;
         $text = __($message, ['language' => self::nameOf($main)]);
+        $rules = ['required', 'required_with'];
 
         return collect($rules)->mapWithKeys(fn (string $rule): array => ["{$field}.{$main}.{$rule}" => $text])->all();
     }
@@ -185,16 +209,16 @@ class MenuLanguages
      * whatever language it was written in: after the main language changes,
      * a dish not yet written in the new one still shows its old name rather
      * than nothing. Never spatie's accessor, which falls back to the app
-     * locale and so showed Arabic-only text as blank.
+     * locale and so showed Arabic-only text as blank. Pages use `reader()`.
      */
-    public static function text(Model $model, string $field, string $locale, ?string $main = null): string
+    public static function text(Model $model, string $field, string $locale, string $main): string
     {
         // Every language at once: spatie's getTranslation() decodes the
         // column several times per call, and a menu asks hundreds of times.
         $all = $model->getTranslations($field);
 
         foreach ([$locale, $main] as $code) {
-            if ($code !== null && ($all[$code] ?? '') !== '') {
+            if (($all[$code] ?? '') !== '') {
                 return (string) $all[$code];
             }
         }
@@ -206,6 +230,19 @@ class MenuLanguages
         }
 
         return '';
+    }
+
+    /**
+     * Reads a restaurant's text in one language, falling back to its main
+     * language: `$read($dish, 'name')`. The main language is looked up once.
+     *
+     * @return Closure(Model, string): string
+     */
+    public static function reader(Restaurant $restaurant, string $locale): Closure
+    {
+        $main = self::main($restaurant);
+
+        return fn (Model $model, string $field): string => self::text($model, $field, $locale, $main);
     }
 
     /**

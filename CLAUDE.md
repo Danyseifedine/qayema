@@ -476,7 +476,7 @@ Forms\Components\Select::make('user_id')
 
 # Qayema: Project Architecture
 
-Bilingual (ar/en) restaurant-menu SaaS. Two codebases in this folder:
+Bilingual (ar/en) restaurant-menu SaaS. The codebases in this folder:
 
 - **Laravel app (this repo)**: the public portal (landing, legal, contact), auth
   (Google OAuth, or a username + password made at `/create-account`; both
@@ -490,13 +490,41 @@ Bilingual (ar/en) restaurant-menu SaaS. Two codebases in this folder:
   Vite + TS, Sanctum **session-cookie** auth (no tokens), CSRF primed from
   `GET /api/csrf-token` (the body, because a cross-subdomain SPA can't read the
   cookie). It also holds the Playwright end-to-end suite for both apps (`e2e/`).
+- **`qayema-app/` (Flutter, Android and iOS)**: the owner's phone app, in
+  English and Arabic (`lib/l10n/*.arb`, Flutter's gen-l10n; the phone's
+  language unless the owner picks one with the language button, kept on the
+  phone). Three onboarding pages (once per phone), the sign-in, then four
+  tabs over the owner API, nothing of its own on the server:
+  Home (the menu's link to share or show as a QR code, the week's views
+  from `/api/analytics` or the teaser without analytics, orders waiting,
+  dishes and the package), Menu (dishes by category, the sold-out switch
+  through `/availability`, a dish's photo (`/api/uploads/temp`), names per
+  menu language, price, category; categories added, renamed, deleted; a
+  dish's variants and add-ons are left to the dashboard), Orders (in-menu
+  and table orders, the one next step, cancel; `/api/orders/pulse` every 20
+  seconds and on return to the app: a banner, a badge) and More
+  (restaurant name, logo, phone and opening hours, saved as the whole form
+  since `PATCH /api/restaurant` clears what is left out; the QR code;
+  language; sign out). Run against the e2e server to try it with test data:
+  `--dart-define=API_URL=http://10.0.2.2:8001`.
+  It signs in at `POST /api/login` (email or username + password,
+  `OwnerLoginRequest`, menu owners only: an admin gets the same "not
+  correct") and gets a **Sanctum bearer token** carrying the ability
+  `AuthController::TOKEN_ABILITY` (60 days, one per phone). The token opens
+  the owner API (`api/*`, the same endpoints the dashboard reaches with its
+  session; `/api/user` is who is signed in) while the account is still a
+  menu owner (checked on every call: an owner made an admin is shut out), and `POST /api/logout` ends
+  that phone's token only. The answers come in the app's language
+  (`Accept-Language`).
 - **`qayema-admin-app/` (Flutter, Android and iOS)**: the admin's phone app.
   It signs in at `POST /api/admin/login` (email or username + password,
   `AdminLoginRequest`, the website's lockout after five wrong tries, no
   captcha) and gets a **Sanctum bearer token** (60 days, one per phone,
-  `personal_access_tokens`). Tokens open `api/admin/*` only
-  (`AppServiceProvider::keepTokensToTheAdminApp()`): sent to the dashboard's
-  API they count as no sign-in. Every admin route also checks the account is
+  `personal_access_tokens`). Both apps' sign-ins share `AppLoginRequest`.
+  Each app's tokens open its own routes only
+  (`AppServiceProvider::keepTokensToTheirApp()`): an admin token opens
+  `api/admin/*` and counts as no sign-in on the owner API, and an owner
+  token the reverse; anywhere else a token is no sign-in. Every admin route also checks the account is
   still an admin (`EnsureUserIsAdmin`). An owner's account, a wrong password
   and a Google-only admin get the same "not correct" answer.
   What it does (`Api\Admin\*` controllers, `AdminRestaurantResource`,
@@ -895,8 +923,11 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
   `OTEL_SDK_DISABLED=true`. Every trace carries
   `deployment.environment.name` (APP_ENV). The Privacy Policy names Grafana.
   In production the app sends to Grafana Alloy on the same machine
-  (`GRAFANA_OTLP_ENDPOINT=http://127.0.0.1:4318`, no auth header), which
-  batches and forwards: PHP has no background thread, and sending straight
+  (`GRAFANA_OTLP_ENDPOINT=http://127.0.0.1:43180`, no auth header), which
+  batches and forwards; on A2 it runs from `storage/app/alloy`, kept up by
+  cron, everything labelled `deployment.environment.name=prod`, and
+  metrics come from the traces (`spanmetrics`), PHP's own are off
+  (`docs/grafana-alloy.md`): PHP has no background thread, and sending straight
   to Grafana Cloud kept each worker busy 1 to 3 s after its response
   (`docs/grafana-alloy.md`). A long-running script that sends many requests
   also stalls wherever the batch fills, so a slow span there is not the
@@ -1175,7 +1206,8 @@ the password too. Local and the tests keep the database and array stores.
 The public menu is opened on a phone, often on mobile data, so it stays light
 (`tests/Feature/Menu/MenuSpeedTest`):
 - Pictures: a dish photo has a 240px `thumb` (the card and the cart) and the
-  full one only for its sheet (`data-photo`); the cover has a 960px `phone`
+  full one only for its sheet (`data-photo`), or, on a dish without
+  choices, the big view a tap on its photo opens (`#pop-photo`, `menu-nav.js`); the cover has a 960px `phone`
   version in a `srcset`, is never `loading="lazy"` and has
   `fetchpriority="high"`. Conversions are made with the upload (`nonQueued`);
   a photo from before them falls back to the full one until

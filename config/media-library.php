@@ -25,4 +25,13 @@ return [
         ],
     ],
 
+    /*
+     * Every image address ends with ?v=<when the record last changed>. A
+     * small version remade in place (a new crop for the cards) keeps its
+     * path, and is kept a year by phones and Cloudflare; the new ?v= is what
+     * makes them fetch it. Applies wherever an address is built: menus,
+     * search data, the dashboard and the admin.
+     */
+    'version_urls' => true,
+
 ];

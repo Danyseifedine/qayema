@@ -47,7 +47,7 @@ class RestaurantForm
                             // Picking the second one swaps the two (EditRestaurant).
                             Select::make('main_locale')
                                 ->label('Main language')
-                                ->options(collect(MenuLanguages::choices())->mapWithKeys(fn (string $code): array => [$code => MenuLanguages::nameOf($code)])->all())
+                                ->options(MenuLanguages::options())
                                 ->default(MenuLanguages::DEFAULT_MAIN)
                                 ->required()
                                 ->live()

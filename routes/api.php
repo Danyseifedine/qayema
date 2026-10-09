@@ -32,9 +32,9 @@ use Illuminate\Support\Facades\Route;
 
 /*
 | First-party dashboard SPA endpoints. Authentication is the Sanctum stateful
-| session cookie (see `statefulApi()` in bootstrap/app.php); there are no
-| bearer tokens. The one exception is `api/admin/*` at the end: the admin
-| phone app, signed in with a Sanctum token.
+| session cookie (see `statefulApi()` in bootstrap/app.php). The owner phone
+| app reaches the same endpoints with a Sanctum token from `/login`, and
+| `api/admin/*` at the end is the admin phone app, with tokens of its own.
 */
 // The CSRF token in the body: the SPA primes it here because, on another
 // subdomain, it can't read the cookie. Public (the token is session-scoped and
@@ -42,6 +42,12 @@ use Illuminate\Support\Facades\Route;
 Route::get('/csrf-token', [AuthController::class, 'csrfToken'])
     ->middleware('throttle:api')
     ->name('api.csrf-token');
+
+// The owner phone app's sign-in: a token for this API (the lockout after five
+// wrong passwords is OwnerLoginRequest's). Signing out is `/logout` below.
+Route::post('/login', [AuthController::class, 'login'])
+    ->middleware('throttle:login')
+    ->name('api.login');
 
 // TellAdminsAboutMenuEdits: an owner changing their menu tells the admins'
 // phones, once an hour at most.

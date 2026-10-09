@@ -80,6 +80,7 @@ class TemplateResourceTest extends TestCase
         $data = $this->resolve($template->fresh(), null);
 
         $this->assertSame(['en' => null, 'ar' => null], $data['description']);
-        $this->assertStringEndsWith('thumb.png', $data['thumbnail_url']);
+        // Versioned (media-library.version_urls), so a remade image is fetched again.
+        $this->assertMatchesRegularExpression('/thumb\.png\?v=\d+$/', $data['thumbnail_url']);
     }
 }

@@ -176,6 +176,8 @@ a.fact:hover { color: var(--text); }
 /* Each photo in its own shape, never cropped and with no box behind it:
    a long sandwich shows long, a plate square. */
 .dish-photo { flex-shrink: 0; align-self: center; width: auto; height: auto; max-width: 96px; max-height: 72px; border-radius: 8px; }
+/* A photo that opens big (#pop-photo): the button takes the photo's place and size. */
+.dish-photo-open { flex-shrink: 0; align-self: center; display: flex; padding: 0; border: 0; background: none; border-radius: 8px; cursor: zoom-in; }
 .dish-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .dish-name { font-size: 15px; font-weight: 600; letter-spacing: -0.005em; line-height: 1.3; }
 .ingredients { margin: 2px 0 0; font-size: 11.5px; color: var(--muted); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
@@ -626,6 +628,11 @@ dialog.pop[open]::backdrop { animation: fade-in .2s ease; }
 .pop-item.is-facebook .icon { color: #1877F2; }
 .pop-item.is-x .icon, .pop-item.is-tiktok .icon { color: var(--text); }
 .pop-item[aria-current="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--bg)); font-weight: 600; }
+
+/* A dish's full photo, as large as the screen allows, in its own shape. */
+dialog.photo-pop { width: auto; max-width: min(960px, calc(100% - 32px)); }
+.photo-pop-img { display: block; max-width: 100%; max-height: 85dvh; width: auto; height: auto; border-radius: 14px; cursor: zoom-out; }
+.photo-pop .dish-sheet-close { top: 10px; inset-inline-end: 10px; }
 
 .qr-code { display: flex; justify-content: center; min-height: 196px; margin-top: 14px; }
 .qr-code svg { width: 196px; height: 196px; }

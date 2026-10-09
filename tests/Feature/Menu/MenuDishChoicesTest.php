@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Dish;
 use App\Models\Restaurant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Testing\TestResponse;
 use Tests\Support\CreatesOwners;
 use Tests\TestCase;
@@ -84,6 +85,20 @@ class MenuDishChoicesTest extends TestCase
         $this->assertSame('Extra cheese', $data['addons'][0]['name']);
         $this->assertSame('8.00', $data['lowest']);
         $this->assertTrue($data['priced']);
+    }
+
+    public function test_a_plain_dish_photo_opens_big_and_a_dish_with_choices_opens_its_sheet(): void
+    {
+        $this->dish(['name' => ['en' => 'Kafta']])->addMedia(UploadedFile::fake()->image('kafta.jpg', 1200, 900))->toMediaCollection('image');
+        Dish::factory()->withAddons(['Extra cheese' => 1])
+            ->create(['restaurant_id' => $this->shop->id, 'category_id' => $this->plates->id, 'name' => ['en' => 'Burger'], 'price' => '8.00'])
+            ->addMedia(UploadedFile::fake()->image('burger.jpg', 1200, 900))->toMediaCollection('image');
+
+        $html = (string) $this->menu()->assertSee('id="pop-photo"', false)->getContent();
+
+        // One photo button, Kafta's; Burger's photo shows in its sheet.
+        $this->assertSame(1, substr_count($html, 'data-photo-open'));
+        $this->assertMatchesRegularExpression('#data-photo-open[^>]*aria-label="View photo">\s*<img class="dish-photo"[^>]*alt="Kafta"#', $html);
     }
 
     public function test_the_card_price_starts_at_the_cheapest_choice(): void

@@ -21,7 +21,7 @@ class UpdateMenuLanguagesRequest extends FormRequest
         // Not sent: the main language stays what it is.
         $main = $this->input('main_locale', MenuLanguages::main($this->user()->restaurant));
         $second = $this->input('second_locale');
-        $languages = array_values(array_filter([$main, $second], fn ($code): bool => is_string($code)));
+        $languages = array_filter([$main, $second], 'is_string');
 
         return [
             // The language every name is written in: any on the list.

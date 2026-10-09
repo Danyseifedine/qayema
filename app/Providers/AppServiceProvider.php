@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Http\Controllers\Api\AuthController;
+use App\Models\User;
 use App\Services\Security\AbuseGuard;
 use App\Support\SiteAddress;
 use Closure;
@@ -52,19 +54,29 @@ class AppServiceProvider extends ServiceProvider
         $this->configureRateLimiters();
         $this->keepImpersonationSignedIn();
         $this->pinTheSiteAddress();
-        $this->keepTokensToTheAdminApp();
+        $this->keepTokensToTheirApp();
     }
 
     /**
-     * Bearer tokens belong to the admin phone app and open `api/admin/*`
-     * only. The dashboard's API stays on its session cookie: a token sent
-     * anywhere else is treated as no sign-in at all.
+     * Bearer tokens belong to the phone apps, and each opens its own app's
+     * routes only: the admin app's `api/admin/*`, the owner app's the rest
+     * of `api/*` (the dashboard's API, which the dashboard itself reaches
+     * with its session cookie). A token sent anywhere else, or to the other
+     * app's routes, is treated as no sign-in at all.
      */
-    private function keepTokensToTheAdminApp(): void
+    private function keepTokensToTheirApp(): void
     {
-        Sanctum::authenticateAccessTokensUsing(
-            fn (PersonalAccessToken $token, bool $isValid): bool => $isValid && request()->is('api/admin/*'),
-        );
+        Sanctum::authenticateAccessTokensUsing(function (PersonalAccessToken $token, bool $isValid): bool {
+            $ownerApp = in_array(AuthController::TOKEN_ABILITY, $token->abilities ?? [], true);
+
+            return $isValid && match (true) {
+                request()->is('api/admin/*') => ! $ownerApp,
+                // Owners only, checked on every call: an account made an
+                // admin after signing in is shut out at once.
+                request()->is('api/*') => $ownerApp && $token->tokenable instanceof User && $token->tokenable->isMenuOwner(),
+                default => false,
+            };
+        });
     }
 
     /**

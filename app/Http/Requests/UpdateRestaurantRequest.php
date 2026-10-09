@@ -58,16 +58,11 @@ class UpdateRestaurantRequest extends FormRequest
             'timezone' => ['nullable', 'string', 'timezone:all_with_bc'],
         ];
 
-        foreach (array_values($languages) as $index => $code) {
-            // The /u regex rejects interior control characters and malformed
-            // UTF-8, so a hostile name can't corrupt the JSON column or 500
-            // the save. The main language (first) is the one a name needs.
-            $rules["name.{$code}"] = [
-                $index === 0 ? 'required' : 'nullable',
-                'string', 'min:2', 'max:255', 'regex:/^[^\x00-\x1F\x7F]+$/u',
-            ];
-            $rules["description.{$code}"] = ['nullable', 'string', 'max:2000'];
-        }
+        // The /u regex rejects interior control characters and malformed
+        // UTF-8, so a hostile name can't corrupt the JSON column or 500 the
+        // save. The main language (first) is the one a name needs.
+        $rules += MenuLanguages::rules('name', $languages, 255, 'required', ['min:2', 'regex:/^[^\x00-\x1F\x7F]+$/u']);
+        $rules += MenuLanguages::rules('description', $languages, 2000);
 
         return $rules;
     }
@@ -82,7 +77,7 @@ class UpdateRestaurantRequest extends FormRequest
             'country_code.alpha' => __('Please choose a country from the list.'),
             'phone.regex' => __('Please enter a valid phone number using digits only.'),
             'currency.in' => __('Please choose a currency from the list.'),
-            ...MenuLanguages::requiredMessages('name', MenuLanguages::forOwner($this->user()), 'The restaurant name is required in your menu\'s main language (:language).'),
+            ...MenuLanguages::requiredMessages('name', MenuLanguages::mainForOwner($this->user()), 'The restaurant name is required in your menu\'s main language (:language).'),
         ];
     }
 }

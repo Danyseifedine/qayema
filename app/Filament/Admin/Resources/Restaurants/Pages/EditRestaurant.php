@@ -48,8 +48,9 @@ class EditRestaurant extends EditRecord
         $this->record->packageChangeNote = $data['note'] ?? null;
 
         // A new main language: the second one becomes the old main when they
-        // swap, and the menu keeps opening in the main one if it did.
-        if (($data['main_locale'] ?? null) !== null && $data['main_locale'] !== MenuLanguages::main($this->record)) {
+        // swap, and the menu keeps opening in the main one if it did. The
+        // same language again changes nothing.
+        if (isset($data['main_locale'])) {
             $data = [...$data, ...MenuLanguages::withMain($this->record, $data['main_locale'])];
         }
 

@@ -51,7 +51,7 @@ class UpdateDishRequest extends FormRequest
     public function messages(): array
     {
         return [
-            ...MenuLanguages::requiredMessages('name', MenuLanguages::forOwner($this->user()), 'A dish name is required in your menu\'s main language (:language).', ['required', 'required_with']),
+            ...MenuLanguages::requiredMessages('name', MenuLanguages::mainForOwner($this->user()), 'A dish name is required in your menu\'s main language (:language).'),
             ...$this->dishOptionMessages(),
         ];
     }

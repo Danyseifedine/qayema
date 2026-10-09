@@ -111,6 +111,7 @@ class DishResourceTest extends TestCase
         // rejects a relative URL, which once broke the whole Design page.
         $this->assertSame(url($dish->fresh()->getFirstMediaUrl('image')), $url);
         $this->assertStringStartsWith('http', $url);
-        $this->assertStringEndsWith('dish.jpg', $url);
+        // Versioned (media-library.version_urls), so a remade image is fetched again.
+        $this->assertMatchesRegularExpression('/dish\.jpg\?v=\d+$/', $url);
     }
 }

@@ -20,8 +20,7 @@
     $isRtl = MenuLanguages::isRtl($locale);
     // Every piece of text is this language, else the menu's main one (the
     // language every name is required in), so nothing on the menu is ever blank.
-    $mainLocale = MenuLanguages::main($restaurant);
-    $text = fn ($model, string $field): string => MenuLanguages::text($model, $field, $locale, $mainLocale);
+    $text = MenuLanguages::reader($restaurant, $locale);
     $logo = $restaurant->getFirstMediaUrl('logo') ?: null;
     // The cover is the first picture on the page: a phone gets its 960px
     // version (registerMediaConversions), a wide screen the full one.
@@ -315,13 +314,11 @@
                             @php
                                 // The card and the cart draw the small version; the
                                 // full photo is only fetched when the dish's sheet opens.
+                                // Versioned addresses (media-library.version_urls), so a
+                                // remade card picture is fetched again.
                                 $photoMedia = $dish->getFirstMedia('image');
-                                // Versioned by the photo's last change: a remade card
-                                // picture keeps its address, and Cloudflare and browsers
-                                // keep an image a week, so a new ?v= is what shows it.
-                                $photoVersion = $photoMedia ? '?v='.$photoMedia->updated_at?->timestamp : '';
-                                $photo = $photoMedia ? $photoMedia->getUrl().$photoVersion : null;
-                                $image = $photoMedia ? $photoMedia->getAvailableUrl(['thumb']).$photoVersion : null;
+                                $photo = $photoMedia?->getUrl();
+                                $image = $photoMedia?->getAvailableUrl(['thumb']);
                                 $ingredients = $text($dish, 'ingredients');
                                 $dishName = $text($dish, 'name');
                                 $choices = $dish_options[$dish->id] ?? null;
@@ -335,8 +332,14 @@
                                      data-price="{{ $basePrice ?? '' }}"
                                      @if ($choices) data-choices data-ingredients="{{ $ingredients }}" @endif
                                      data-search="{{ Str::lower($dishName.' '.$ingredients) }}">
-                                @if ($image)
+                                @if ($image && $choices)
                                     <img class="dish-photo" src="{{ $image }}" alt="{{ $dishName }}" width="72" height="72" loading="lazy" decoding="async">
+                                @elseif ($image)
+                                    {{-- Opens the full photo (#pop-photo, menu-nav.js); a dish with
+                                         choices shows it at the top of its sheet instead. --}}
+                                    <button type="button" class="dish-photo-open" data-photo-open aria-haspopup="dialog" aria-label="{{ __('View photo') }}">
+                                        <img class="dish-photo" src="{{ $image }}" alt="{{ $dishName }}" width="72" height="72" loading="lazy" decoding="async">
+                                    </button>
                                 @endif
                                 <div class="dish-body">
                                     <span class="dish-name">{{ $dishName }}</span>
@@ -466,6 +469,14 @@
         </div>
     </dialog>
 @endif
+
+{{-- A dish's full photo, filled by menu-nav.js; a tap anywhere closes it. --}}
+<dialog class="pop photo-pop" id="pop-photo">
+    <button type="button" class="dish-sheet-close" data-pop-close aria-label="{{ __('Close') }}">
+        <span class="icon">{!! $icons['close'] !!}</span>
+    </button>
+    <img class="photo-pop-img" data-photo-view data-pop-close alt="">
+</dialog>
 
 @if ($restaurant->google_maps_url)
     <dialog class="pop" id="pop-map">

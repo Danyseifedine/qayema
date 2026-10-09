@@ -40,7 +40,7 @@ class MoveMediaToR2Test extends TestCase
         $original = $media->getPathRelativeToRoot();
         $thumb = $media->getPathRelativeToRoot('thumb');
 
-        $this->artisan('media:move-to-r2')->assertSuccessful();
+        $this->artisan('media:move-to-r2', ['--disk' => 'r2'])->assertSuccessful();
 
         Storage::disk('r2')->assertExists([$original, $thumb]);
         $this->assertSame(Storage::disk('public')->size($original), Storage::disk('r2')->size($original));
@@ -55,7 +55,7 @@ class MoveMediaToR2Test extends TestCase
     {
         $media = $this->photo();
 
-        $this->artisan('media:move-to-r2', ['--dry-run' => true])
+        $this->artisan('media:move-to-r2', ['--disk' => 'r2', '--dry-run' => true])
             ->expectsOutputToContain('1 images would move. Nothing was changed.')
             ->assertSuccessful();
 
@@ -68,13 +68,13 @@ class MoveMediaToR2Test extends TestCase
         $first = $this->photo();
         $second = $this->photo();
 
-        $this->artisan('media:move-to-r2', ['--limit' => 1])->assertSuccessful();
+        $this->artisan('media:move-to-r2', ['--disk' => 'r2', '--limit' => 1])->assertSuccessful();
         $this->assertSame(['r2', 'public'], [$first->fresh()->disk, $second->fresh()->disk]);
 
-        $this->artisan('media:move-to-r2')->assertSuccessful();
+        $this->artisan('media:move-to-r2', ['--disk' => 'r2'])->assertSuccessful();
         $this->assertSame('r2', $second->fresh()->disk);
 
-        $this->artisan('media:move-to-r2')->expectsOutputToContain('Every image is already on [r2].')->assertSuccessful();
+        $this->artisan('media:move-to-r2', ['--disk' => 'r2'])->expectsOutputToContain('Every image is already on [r2].')->assertSuccessful();
     }
 
     public function test_an_image_whose_files_do_not_arrive_stays_where_it_was(): void
@@ -85,13 +85,23 @@ class MoveMediaToR2Test extends TestCase
         $broken->shouldReceive('exists')->andReturnFalse();
         Storage::set('r2', $broken);
 
-        $this->artisan('media:move-to-r2')
+        $this->artisan('media:move-to-r2', ['--disk' => 'r2'])
             ->expectsOutputToContain("#{$media->id} stays on [public]")
             ->assertFailed();
 
         $media->refresh();
         $this->assertSame('public', $media->disk);
         $this->assertSame('public', $media->conversions_disk);
+    }
+
+    public function test_without_a_disk_it_moves_to_the_media_disk(): void
+    {
+        $media = $this->photo();
+        config(['media-library.disk_name' => 'r2']);
+
+        $this->artisan('media:move-to-r2')->assertSuccessful();
+
+        $this->assertSame('r2', $media->fresh()->disk);
     }
 
     public function test_a_disk_that_does_not_exist_is_refused(): void

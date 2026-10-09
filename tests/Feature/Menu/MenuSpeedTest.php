@@ -56,10 +56,11 @@ class MenuSpeedTest extends TestCase
         $this->assertSame([240, 180], [$width, $height]);
 
         $html = $this->menu();
-        $version = '?v='.$media->fresh()->updated_at->timestamp;
-        $this->assertStringContainsString('class="dish-photo" src="'.$media->getUrl('thumb').$version.'"', $html);
+        $media = $media->fresh();
+        $this->assertStringEndsWith('?v='.$media->updated_at->timestamp, $media->getUrl('thumb'));
+        $this->assertStringContainsString('class="dish-photo" src="'.$media->getUrl('thumb').'"', $html);
         $this->assertStringContainsString('width="72" height="72"', $html);
-        $this->assertStringContainsString('data-image="'.$media->getUrl('thumb').$version.'" data-photo="'.$media->getUrl().$version.'"', $html);
+        $this->assertStringContainsString('data-image="'.$media->getUrl('thumb').'" data-photo="'.$media->getUrl().'"', $html);
     }
 
     public function test_a_long_photo_keeps_both_ends_on_the_card(): void
@@ -84,7 +85,7 @@ class MenuSpeedTest extends TestCase
         // As a photo stored before conversions existed: none generated.
         Media::query()->whereKey($media->id)->update(['generated_conversions' => json_encode([])]);
 
-        $this->assertStringContainsString('class="dish-photo" src="'.$media->getUrl().'?v='.$media->fresh()->updated_at->timestamp.'"', $this->menu());
+        $this->assertStringContainsString('class="dish-photo" src="'.$media->fresh()->getUrl().'"', $this->menu());
     }
 
     public function test_a_remade_card_picture_gets_a_new_address_so_caches_let_it_go(): void

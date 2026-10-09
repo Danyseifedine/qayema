@@ -107,3 +107,40 @@ Alloy adds Grafana's credentials itself.
    ```bash
    sudo journalctl -u alloy -n 50
    ```
+
+## Production today (A2 shared hosting, no root)
+
+There is no `apt` or `systemctl` on the shared server, so Alloy runs as the
+account's own process, all inside the app's folder (git ignores
+`storage/app`, and the web cannot reach it):
+
+- `~/qayema.com/storage/app/alloy/alloy`: the official v1.20.1 binary
+  (checksum-checked), about 550 MB.
+- `config.alloy`: receives on `127.0.0.1:43180` (not 4318: `localhost` is
+  shared with other accounts on the machine), status page on
+  `127.0.0.1:43181`.
+- `alloy.env` (private): `GRAFANA_CLOUD_OTLP_ENDPOINT`, `GRAFANA_INSTANCE_ID`,
+  `GRAFANA_TOKEN`, `GOMEMLIMIT=256MiB`. The token ends with `=`; copy it
+  whole.
+- `run.sh`, started every minute by a crontab line under `flock`, so it is
+  back within a minute if it stops. Its output goes to `alloy.log`.
+
+The app's `.env`: `GRAFANA_OTLP_ENDPOINT=http://127.0.0.1:43180`,
+`GRAFANA_AUTH_HEADER=` (empty), `OTEL_METRICS_EXPORTER=null`,
+`OTEL_RESOURCE_ATTRIBUTES=deployment.environment.name=prod`, then
+`php artisan config:cache`.
+
+**Metrics come from the traces**, not from PHP: Alloy's `spanmetrics`
+connector turns every span into `traces_span_metrics_calls_total` and
+`traces_span_metrics_duration_milliseconds_*` (per route, status code and
+database query). PHP can only send its own metrics per request (delta), and
+Grafana Cloud refuses delta histograms; the converter that would fix that
+(`otelcol.processor.deltatocumulative`) is still experimental in Alloy.
+
+In Grafana everything from production carries
+`deployment_environment_name="prod"`:
+
+- Traces: `{resource.deployment.environment.name="prod"}`
+- Logs: `{service_name="qayema", deployment_environment_name="prod"}`
+- Metrics: `traces_span_metrics_calls_total{deployment_environment_name="prod"}`
+

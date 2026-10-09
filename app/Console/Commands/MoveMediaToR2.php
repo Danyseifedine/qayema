@@ -21,7 +21,7 @@ use Spatie\MediaLibrary\Support\PathGenerator\PathGeneratorFactory;
 class MoveMediaToR2 extends Command
 {
     protected $signature = 'media:move-to-r2
-                            {--disk=r2 : The disk to move the images to}
+                            {--disk= : The disk to move the images to (default: the media disk, MEDIA_DISK)}
                             {--limit= : Move at most this many images}
                             {--dry-run : Say what would move, change nothing}';
 
@@ -29,7 +29,7 @@ class MoveMediaToR2 extends Command
 
     public function handle(): int
     {
-        $target = (string) $this->option('disk');
+        $target = (string) ($this->option('disk') ?: config('media-library.disk_name'));
         $dryRun = (bool) $this->option('dry-run');
         $limit = $this->option('limit') === null ? null : max(1, (int) $this->option('limit'));
 
@@ -63,7 +63,7 @@ class MoveMediaToR2 extends Command
                 continue;
             }
 
-            $problem = $this->copy($item, $files, Storage::disk($target));
+            $problem = $this->copy($files, Storage::disk($target));
 
             if ($problem !== null) {
                 $failed[] = $item->id;
@@ -72,9 +72,8 @@ class MoveMediaToR2 extends Command
                 continue;
             }
 
-            // A query update, not a save: the record's observers would treat
-            // the change as a new upload. Nothing about the file changes but
-            // where it is read from.
+            // Only where the files are read from changes, nothing about them:
+            // a plain update, with no model events to run.
             Media::query()->whereKey($item->getKey())->update(['disk' => $target, 'conversions_disk' => $target]);
             $moved++;
             $this->line("#{$item->id} {$item->collection_name}: ".count($files).' files moved.');
@@ -128,7 +127,7 @@ class MoveMediaToR2 extends Command
      *
      * @param  array<int, array{disk: string, path: string}>  $files
      */
-    private function copy(Media $media, array $files, Filesystem $target): ?string
+    private function copy(array $files, Filesystem $target): ?string
     {
         if ($files === []) {
             return 'no files found on its disk';

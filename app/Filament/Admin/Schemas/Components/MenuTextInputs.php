@@ -45,17 +45,25 @@ final class MenuTextInputs
         return fn (Get $get, mixed $livewire): ?string => self::mainOf($livewire->data['restaurant_id'] ?? null);
     }
 
-    /** Read once per restaurant and request: every input of the form asks. */
+    /**
+     * Read once per restaurant and request: every input of the form asks
+     * (eleven per text field), so only the one column, kept on the request
+     * (never in the cache, where it would outlive a change of language).
+     */
     private static function mainOf(mixed $restaurantId): ?string
     {
         if (! is_numeric($restaurantId)) {
             return null;
         }
 
-        return once(function () use ($restaurantId): ?string {
-            $restaurant = Restaurant::query()->find((int) $restaurantId);
+        $memo = request()->attributes;
+        $key = "admin-menu-main:{$restaurantId}";
 
-            return $restaurant === null ? null : MenuLanguages::main($restaurant);
-        });
+        if (! $memo->has($key)) {
+            $main = Restaurant::query()->whereKey((int) $restaurantId)->value('main_locale');
+            $memo->set($key, $main === null ? null : MenuLanguages::validMain($main));
+        }
+
+        return $memo->get($key);
     }
 }

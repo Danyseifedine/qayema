@@ -3,13 +3,43 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\OwnerLoginRequest;
 use App\Http\Resources\UserResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Laravel\Sanctum\PersonalAccessToken;
 
+/**
+ * The owner's sign-in: the dashboard rides its session cookie, the owner
+ * phone app a token from `login()` that opens this API and nothing else
+ * (`AppServiceProvider::keepTokensToTheirApp()`).
+ */
 class AuthController extends Controller
 {
+    /** What marks a token as the owner app's. */
+    public const TOKEN_ABILITY = 'owner-app';
+
+    /** How long a phone stays signed in without signing in again. */
+    public const TOKEN_DAYS = 60;
+
+    public function login(OwnerLoginRequest $request): JsonResponse
+    {
+        $owner = $request->owner();
+
+        $token = $owner->createToken(
+            $request->string('device_name')->value(),
+            [self::TOKEN_ABILITY],
+            now()->addDays(self::TOKEN_DAYS),
+        );
+
+        return response()->json([
+            'token' => $token->plainTextToken,
+            'expires_at' => $token->accessToken->expires_at?->toIso8601String(),
+            'data' => new UserResource($owner->load('restaurant')),
+        ]);
+    }
+
     /**
      * Return the current session's CSRF token in the response body.
      *
@@ -38,12 +68,21 @@ class AuthController extends Controller
     }
 
     /**
-     * Log the SPA user out by tearing down the session that backs the Sanctum
-     * stateful cookie, then rotating the CSRF token. Returns 204 so the SPA can
-     * handle the redirect itself instead of following a server redirect.
+     * Log the user out: the owner app's token, or the SPA's session (torn
+     * down, then the CSRF token rotated). Returns 204 so the SPA can handle
+     * the redirect itself instead of following a server redirect.
      */
     public function logout(Request $request): JsonResponse
     {
+        // The owner app: end this phone's token only; the owner's other
+        // phones and their browser stay signed in.
+        $token = $request->user()->currentAccessToken();
+        if ($token instanceof PersonalAccessToken) {
+            $token->delete();
+
+            return response()->json(status: 204);
+        }
+
         Auth::guard('web')->logout();
 
         // Stateful SPA logout requests carry a session; tear it down and rotate

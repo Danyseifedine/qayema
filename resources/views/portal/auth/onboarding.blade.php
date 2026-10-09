@@ -19,11 +19,12 @@
 
     // The language the menu is written in, suggested from this page's
     // language until the owner has chosen one.
-    $languageOptions = collect(config('locales.menu', []))
+    $languageOptions = collect(\App\Services\Menu\MenuLanguages::catalogue())
         ->map(fn ($l, $code) => ['value' => $code, 'label' => $l['name'], 'flag' => $l['flag'] ?? ''])
         ->values()->all();
-    $mainLocale = $restaurant?->main_locale
-        ?? (array_key_exists($locale, config('locales.menu', [])) ? $locale : \App\Services\Menu\MenuLanguages::DEFAULT_MAIN);
+    $mainLocale = $restaurant
+        ? \App\Services\Menu\MenuLanguages::main($restaurant)
+        : \App\Services\Menu\MenuLanguages::validMain($locale);
 
     $stepData = [
         ['key' => __('owner.onboarding.step1_title'), 'short' => __('owner.onboarding.step1_desc'), 'stage' => __('owner.onboarding.step1_stage'), 'tag' => __('owner.onboarding.step1_tag')],

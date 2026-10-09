@@ -3,6 +3,7 @@
 namespace App\Services\Menu;
 
 use App\Models\Restaurant;
+use Closure;
 use Illuminate\Support\Str;
 
 /**
@@ -45,8 +46,8 @@ class MenuSeo
      */
     public function for(Restaurant $restaurant, string $locale, bool $preview): array
     {
-        $main = MenuLanguages::main($restaurant);
-        $name = MenuLanguages::text($restaurant, 'name', $locale, $main);
+        $read = MenuLanguages::reader($restaurant, $locale);
+        $name = $read($restaurant, 'name');
         // Only a description written in this language: an Arabic page with an
         // English description reads as the wrong language to a search engine.
         $description = trim((string) $restaurant->getTranslation('description', $locale, false));
@@ -74,7 +75,7 @@ class MenuSeo
                 ?: $restaurant->getFirstMediaUrl('logo')
                 ?: asset((string) config('seo.images.en')),
             'og_locale' => self::OG_LOCALES[$locale] ?? $locale,
-            'schema' => $indexable ? $this->schema($restaurant, $locale, $name, $description, $visible) : null,
+            'schema' => $indexable ? $this->schema($restaurant, $locale, $read, $name, $description, $visible) : null,
         ];
     }
 
@@ -93,11 +94,11 @@ class MenuSeo
      * The restaurant and its menu as schema.org data: every category a
      * section, every dish an item with its price.
      *
+     * @param  Closure(\Illuminate\Database\Eloquent\Model, string): string  $read  the menu's text in this language (MenuLanguages::reader())
      * @param  \Illuminate\Support\Collection<int, \App\Models\Category>  $categories
      */
-    private function schema(Restaurant $restaurant, string $locale, string $name, string $description, $categories): string
+    private function schema(Restaurant $restaurant, string $locale, Closure $read, string $name, string $description, $categories): string
     {
-        $main = MenuLanguages::main($restaurant);
         $url = $this->url($restaurant, $locale);
         $currency = (string) $restaurant->currency;
         $point = MapPoint::fromUrl($restaurant->google_maps_url);
@@ -127,12 +128,12 @@ class MenuSeo
                 'inLanguage' => $locale,
                 'hasMenuSection' => $categories->map(fn ($category): array => array_filter([
                     '@type' => 'MenuSection',
-                    'name' => MenuLanguages::text($category, 'name', $locale, $main),
-                    'description' => trim(MenuLanguages::text($category, 'description', $locale, $main)) ?: null,
+                    'name' => $read($category, 'name'),
+                    'description' => trim($read($category, 'description')) ?: null,
                     'hasMenuItem' => $category->dishes->map(fn ($dish): array => array_filter([
                         '@type' => 'MenuItem',
-                        'name' => MenuLanguages::text($dish, 'name', $locale, $main),
-                        'description' => trim(MenuLanguages::text($dish, 'ingredients', $locale, $main)) ?: null,
+                        'name' => $read($dish, 'name'),
+                        'description' => trim($read($dish, 'ingredients')) ?: null,
                         'image' => $dish->getFirstMediaUrl('image') ?: null,
                         'offers' => $dish->price !== null && $currency !== ''
                             ? ['@type' => 'Offer', 'price' => number_format((float) $dish->price, 2, '.', ''), 'priceCurrency' => $currency]

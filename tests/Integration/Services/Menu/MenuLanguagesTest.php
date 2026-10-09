@@ -112,6 +112,23 @@ class MenuLanguagesTest extends TestCase
         $this->assertSame('Soup', MenuLanguages::text($this->category(['en' => 'Soup']), 'name', 'fr', 'fr'));
     }
 
+    public function test_the_reader_falls_back_to_the_restaurants_main_language(): void
+    {
+        $restaurant = $this->owner(['main_locale' => 'ar']);
+        $category = $this->category(['ar' => 'شوربة', 'fr' => 'Soupe']);
+
+        $this->assertSame('Soupe', MenuLanguages::reader($restaurant, 'fr')($category, 'name'));
+        $this->assertSame('شوربة', MenuLanguages::reader($restaurant, 'en')($category, 'name'));
+    }
+
+    public function test_a_valid_main_language_or_english(): void
+    {
+        $this->assertSame('fr', MenuLanguages::validMain('fr'));
+        $this->assertSame('en', MenuLanguages::validMain('xx'));
+        $this->assertSame('en', MenuLanguages::validMain(null));
+        $this->assertSame('Français', MenuLanguages::options()['fr']);
+    }
+
     public function test_it_counts_what_has_no_name_in_the_main_language(): void
     {
         $restaurant = $this->owner(['main_locale' => 'fr']);
@@ -253,8 +270,8 @@ class MenuLanguagesTest extends TestCase
     {
         $category = $this->category(['en' => 'Soup', 'ar' => 'شوربة']);
 
-        $this->assertSame('شوربة', MenuLanguages::text($category, 'name', 'ar'));
-        $this->assertSame('Soup', MenuLanguages::text($category, 'name', 'en'));
+        $this->assertSame('شوربة', MenuLanguages::text($category, 'name', 'ar', 'en'));
+        $this->assertSame('Soup', MenuLanguages::text($category, 'name', 'en', 'en'));
     }
 
     public function test_text_falls_back_to_english_not_to_the_app_locale(): void
@@ -263,19 +280,19 @@ class MenuLanguagesTest extends TestCase
 
         $category = $this->category(['en' => 'Soup', 'ar' => 'شوربة']);
 
-        $this->assertSame('Soup', MenuLanguages::text($category, 'name', 'fr'));
+        $this->assertSame('Soup', MenuLanguages::text($category, 'name', 'fr', 'en'));
     }
 
     public function test_arabic_only_text_shows_under_an_english_app_locale(): void
     {
         app()->setLocale('en');
 
-        $this->assertSame('شوربة', MenuLanguages::text($this->category(['ar' => 'شوربة']), 'name', 'ar'));
+        $this->assertSame('شوربة', MenuLanguages::text($this->category(['ar' => 'شوربة']), 'name', 'ar', 'en'));
     }
 
     public function test_text_with_nothing_written_is_blank(): void
     {
-        $this->assertSame('', MenuLanguages::text($this->category([]), 'name', 'ar'));
+        $this->assertSame('', MenuLanguages::text($this->category([]), 'name', 'ar', 'en'));
         $this->assertSame('', MenuLanguages::text($this->category(['fr' => '']), 'name', 'ar', 'fr'));
     }
 

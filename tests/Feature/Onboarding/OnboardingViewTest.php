@@ -38,10 +38,11 @@ class OnboardingViewTest extends TestCase
 
         $html = $this->actingAs($user)->get(route('onboarding'))->assertOk()->getContent();
 
-        foreach (['name', 'phone', 'currency', 'logo'] as $field) {
+        foreach (['name', 'main_locale', 'phone', 'currency', 'logo'] as $field) {
             $this->assertStringNotContainsString('x-show="!errors.'.$field.'"', $html);
         }
-        $this->assertSame(5, substr_count($html, 'class="ui-helps"'));
+        // Name, menu language, link, phone, currency and logo.
+        $this->assertSame(6, substr_count($html, 'class="ui-helps"'));
     }
 
     public function test_the_onboarding_page_renders_mid_flow(): void

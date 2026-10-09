@@ -140,11 +140,20 @@
             pill.classList.add('ready');
         });
 
-        window.addEventListener('resize', movePill);
+        // Measure again whenever a tab or the row changes size. The menu's
+        // fonts arrive after this script runs (their stylesheet switches on
+        // when loaded), so document.fonts.ready has nothing to wait for yet,
+        // and the font that lands later changes every tab's width.
+        if ('ResizeObserver' in window) {
+            var watcher = new ResizeObserver(movePill);
 
-        // Web fonts land after first paint and change every tab's width.
-        if (document.fonts && document.fonts.ready) {
-            document.fonts.ready.then(movePill);
+            watcher.observe(inner);
+            tabs.forEach(function (tab) {
+                watcher.observe(tab);
+            });
+        } else {
+            window.addEventListener('resize', movePill);
+            window.addEventListener('load', movePill);
         }
     }
 
@@ -272,10 +281,33 @@
         pop.addEventListener('close', clearDock);
     });
 
+    var photoPop = document.getElementById('pop-photo');
+    var photoView = photoPop && photoPop.querySelector('[data-photo-view]');
+
+    /** A dish's full photo, the one its card shows small (the `thumb`). */
+    function showPhoto(dish) {
+        if (!photoPop || !dish) {
+            return;
+        }
+
+        photoView.src = dish.dataset.photo || dish.dataset.image;
+        photoView.alt = dish.dataset.name;
+        photoPop.setAttribute('aria-label', dish.dataset.name);
+        photoPop.showModal();
+    }
+
     document.addEventListener('click', function (event) {
         if (event.target.closest('[data-scroll-top]')) {
             // The dock is a phone-only thing, so the window is what scrolls.
             window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            return;
+        }
+
+        var photoOpener = event.target.closest('[data-photo-open]');
+
+        if (photoOpener) {
+            showPhoto(photoOpener.closest('.dish'));
 
             return;
         }

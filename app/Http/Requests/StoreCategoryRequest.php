@@ -38,7 +38,7 @@ class StoreCategoryRequest extends FormRequest
     public function messages(): array
     {
         return [
-            ...MenuLanguages::requiredMessages('name', MenuLanguages::forOwner($this->user()), 'A category name is required in your menu\'s main language (:language).'),
+            ...MenuLanguages::requiredMessages('name', MenuLanguages::mainForOwner($this->user()), 'A category name is required in your menu\'s main language (:language).'),
         ];
     }
 }

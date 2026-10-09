@@ -36,7 +36,7 @@ class OnboardingService
             $restaurant = $user->restaurant;
             $restaurant->fill([
                 'slug' => $slug,
-                ...MenuLanguages::withMain($restaurant, $this->mainLanguage($mainLocale)),
+                ...MenuLanguages::withMain($restaurant, MenuLanguages::validMain($mainLocale)),
             ]);
             $restaurant->setTranslation('name', MenuLanguages::main($restaurant), $name);
             $restaurant->save();
@@ -64,7 +64,7 @@ class OnboardingService
      */
     public function newRestaurant(User $user, string $name, string $slug, ?string $mainLocale = null): Restaurant
     {
-        $main = $this->mainLanguage($mainLocale);
+        $main = MenuLanguages::validMain($mainLocale);
 
         return new Restaurant([
             'user_id' => $user->id,
@@ -105,12 +105,6 @@ class OnboardingService
         $owner->update(['onboarding_step' => 1]);
 
         return $restaurant;
-    }
-
-    /** A language from the menu list, English otherwise. */
-    private function mainLanguage(?string $locale): string
-    {
-        return in_array($locale, MenuLanguages::choices(), true) ? (string) $locale : MenuLanguages::DEFAULT_MAIN;
     }
 
     /** Step 2: country code, phone and currency. */

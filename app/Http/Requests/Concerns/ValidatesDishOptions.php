@@ -63,14 +63,14 @@ trait ValidatesDishOptions
      */
     protected function dishOptionMessages(): array
     {
-        $languages = MenuLanguages::forOwner($this->user());
+        $main = MenuLanguages::mainForOwner($this->user());
 
         return [
-            ...MenuLanguages::requiredMessages('variants.*.name', $languages, 'Give every variant a name in your menu\'s main language (:language).'),
+            ...MenuLanguages::requiredMessages('variants.*.name', $main, 'Give every variant a name in your menu\'s main language (:language).'),
             'variants.*.options.required' => __('A variant needs at least 2 options.'),
             'variants.*.options.min' => __('A variant needs at least 2 options.'),
-            ...MenuLanguages::requiredMessages('variants.*.options.*.name', $languages, 'Give every option a name in your menu\'s main language (:language).'),
-            ...MenuLanguages::requiredMessages('addons.*.name', $languages, 'Give every add-on a name in your menu\'s main language (:language).'),
+            ...MenuLanguages::requiredMessages('variants.*.options.*.name', $main, 'Give every option a name in your menu\'s main language (:language).'),
+            ...MenuLanguages::requiredMessages('addons.*.name', $main, 'Give every add-on a name in your menu\'s main language (:language).'),
         ];
     }
 

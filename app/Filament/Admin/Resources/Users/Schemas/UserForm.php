@@ -103,7 +103,7 @@ class UserForm
                             ->helperText('In the menu\'s main language, chosen beside it.'),
                         Select::make('main_locale')
                             ->label('Menu language')
-                            ->options(collect(MenuLanguages::choices())->mapWithKeys(fn (string $code): array => [$code => MenuLanguages::nameOf($code)])->all())
+                            ->options(MenuLanguages::options())
                             ->default(MenuLanguages::DEFAULT_MAIN)
                             ->required()
                             ->helperText('Every dish is written in it. The owner can add a second one, or change it, in the dashboard.'),
