@@ -53,4 +53,26 @@ class MenuStylesheetTest extends TestCase
             $this->assertStringContainsString('height: auto', $rule[1], $class);
         }
     }
+
+    /**
+     * Whatever a photo's shape, it sits in a slot of one size, so every
+     * dish's name starts in the same place down the menu (and the cart).
+     */
+    public function test_every_dish_photo_sits_in_a_slot_of_one_size(): void
+    {
+        $css = (string) file_get_contents(public_path('css/menu-classic.css'));
+
+        foreach (['dish-photo-slot' => ['96px', '72px'], 'cart-line-photo-slot' => ['72px', '56px']] as $class => [$width, $height]) {
+            preg_match('/\\.'.$class.'\\s*\\{([^}]*)\\}/', $css, $rule);
+            $this->assertNotEmpty($rule, $class);
+            $this->assertStringContainsString("width: {$width}", $rule[1], $class);
+            $this->assertStringContainsString("height: {$height}", $rule[1], $class);
+            $this->assertStringContainsString('flex-shrink: 0', $rule[1], $class);
+        }
+
+        // The photo fits inside its slot rather than setting its size.
+        preg_match('/\\.dish-photo\\s*\\{([^}]*)\\}/', $css, $photo);
+        $this->assertStringContainsString('max-width: 100%', $photo[1]);
+        $this->assertStringContainsString('max-height: 100%', $photo[1]);
+    }
 }

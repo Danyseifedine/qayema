@@ -598,7 +598,10 @@
             photo.src = line.image;
             photo.alt = '';
             photo.loading = 'lazy';
-            row.appendChild(photo);
+            // In a slot of one size, so every line's name starts in one place.
+            var slot = element('span', 'cart-line-photo-slot');
+            slot.appendChild(photo);
+            row.appendChild(slot);
         }
 
         var body = element('div', 'cart-line-body');

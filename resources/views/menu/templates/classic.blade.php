@@ -334,11 +334,13 @@
                                      @if ($choices) data-choices data-ingredients="{{ $ingredients }}" @endif
                                      data-search="{{ Str::lower($dishName.' '.$ingredients) }}">
                                 @if ($image && $choices)
-                                    <img class="dish-photo" src="{{ $image }}" alt="{{ $dishName }}" width="72" height="72" loading="lazy" decoding="async">
+                                    <span class="dish-photo-slot">
+                                        <img class="dish-photo" src="{{ $image }}" alt="{{ $dishName }}" width="72" height="72" loading="lazy" decoding="async">
+                                    </span>
                                 @elseif ($image)
                                     {{-- Opens the full photo (#pop-photo, menu-nav.js); a dish with
                                          choices shows it at the top of its sheet instead. --}}
-                                    <button type="button" class="dish-photo-open" data-photo-open aria-haspopup="dialog" aria-label="{{ __('View photo') }}">
+                                    <button type="button" class="dish-photo-slot dish-photo-open" data-photo-open aria-haspopup="dialog" aria-label="{{ __('View photo') }}">
                                         <img class="dish-photo" src="{{ $image }}" alt="{{ $dishName }}" width="72" height="72" loading="lazy" decoding="async">
                                     </button>
                                 @endif
