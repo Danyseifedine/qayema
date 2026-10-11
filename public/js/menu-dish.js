@@ -246,13 +246,28 @@
         ingredients.textContent = dish.dataset.ingredients || '';
         ingredients.hidden = !dish.dataset.ingredients;
 
-        // The full photo, not the card's small one.
-        if (dish.dataset.photo) {
-            photo.src = dish.dataset.photo;
-            photo.hidden = false;
-        } else {
-            photo.removeAttribute('src');
-            photo.hidden = true;
+        // The full photo, never the last dish's: the card's small one, already
+        // loaded, at once (the box is the sheet's width, so it takes the same
+        // place), then the full one once it has arrived, if this dish is
+        // still the one open.
+        var full = dish.dataset.photo;
+        var small = dish.dataset.image;
+        photo.removeAttribute('src');
+        photo.hidden = !full;
+        photo.dataset.full = full || '';
+
+        if (full) {
+            photo.src = small || full;
+
+            if (small && small !== full) {
+                var loader = new Image();
+                loader.onload = function () {
+                    if (photo.dataset.full === full) {
+                        photo.src = full;
+                    }
+                };
+                loader.src = full;
+            }
         }
 
         groups.textContent = '';

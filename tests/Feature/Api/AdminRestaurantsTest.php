@@ -260,9 +260,28 @@ class AdminRestaurantsTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['name', 'slug', 'owner_name', 'username', 'password', 'package_id']);
 
-        $this->postJson('/api/admin/restaurants', $this->newRestaurant(['password' => 'short', 'months' => 2, 'package_id' => 999]))
+        $this->postJson('/api/admin/restaurants', $this->newRestaurant(['password' => 'short', 'months' => 13, 'package_id' => 999]))
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['password', 'months', 'package_id']);
+    }
+
+    public function test_any_number_of_months_from_1_to_12_sets_the_end(): void
+    {
+        $this->freezeTime();
+        $restaurant = $this->owner();
+
+        $this->putJson("/api/admin/restaurants/{$restaurant->id}/package", ['package_id' => Package::findBySlug('pro')->id, 'months' => 7])
+            ->assertOk();
+        $this->assertSame(now()->addMonthsNoOverflow(7)->toDateTimeString(), $restaurant->refresh()->package_ends_at->toDateTimeString());
+
+        $this->postJson("/api/admin/restaurants/{$restaurant->id}/package/extend", ['months' => 5])->assertOk();
+        $this->assertSame(now()->addMonthsNoOverflow(12)->toDateTimeString(), $restaurant->refresh()->package_ends_at->toDateTimeString());
+
+        foreach ([0, 13] as $months) {
+            $this->postJson("/api/admin/restaurants/{$restaurant->id}/package/extend", ['months' => $months])
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors(['months']);
+        }
     }
 
     public function test_a_menu_is_switched_off_and_on(): void

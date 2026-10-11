@@ -284,16 +284,50 @@
     var photoPop = document.getElementById('pop-photo');
     var photoView = photoPop && photoPop.querySelector('[data-photo-view]');
 
-    /** A dish's full photo, the one its card shows small (the `thumb`). */
+    /**
+     * A dish's full photo, the one its card shows small (the `thumb`). Never
+     * the last dish's photo: the card's small one, already loaded, shows at
+     * once, at the size the full one takes (the same shape, --ratio), and
+     * the full one replaces it once it has arrived, if it is still the photo
+     * asked for.
+     */
     function showPhoto(dish) {
         if (!photoPop || !dish) {
             return;
         }
 
-        photoView.src = dish.dataset.photo || dish.dataset.image;
+        var small = dish.dataset.image;
+        var full = dish.dataset.photo || small;
+
+        photoView.removeAttribute('src');
+        photoView.dataset.full = full;
         photoView.alt = dish.dataset.name;
+        photoView.src = small || full;
         photoPop.setAttribute('aria-label', dish.dataset.name);
         photoPop.showModal();
+
+        if (small && full !== small) {
+            whenLoaded(full, function () {
+                if (photoView.dataset.full === full) {
+                    photoView.src = full;
+                }
+            });
+        }
+    }
+
+    /** Fetch a photo in the background, then call back. */
+    function whenLoaded(url, then) {
+        var loader = new Image();
+        loader.onload = then;
+        loader.src = url;
+    }
+
+    if (photoView) {
+        photoView.addEventListener('load', function () {
+            if (photoView.naturalWidth && photoView.naturalHeight) {
+                photoView.style.setProperty('--ratio', String(photoView.naturalWidth / photoView.naturalHeight));
+            }
+        });
     }
 
     document.addEventListener('click', function (event) {

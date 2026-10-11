@@ -214,7 +214,7 @@ class PackageFieldsTest extends TestCase
     public function test_the_month_choices_are_the_offered_durations(): void
     {
         $this->assertSame(
-            [1 => '1 month', 3 => '3 months', 6 => '6 months', 12 => '12 months'],
+            [1 => '1 month'] + array_combine(range(2, 12), array_map(fn (int $months): string => "{$months} months", range(2, 12))),
             PackageFields::monthOptions(),
         );
     }

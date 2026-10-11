@@ -538,7 +538,8 @@ Bilingual (ar/en) restaurant-menu SaaS. The codebases in this folder:
   (`PATCH …/{id}/active`), change its package from today
   (`PUT …/{id}/package`) or add time (`POST …/{id}/package/extend`, 422 on a
   package with no end), both through `PackageAssigner`, and
-  `GET /api/admin/packages`. Months are `PackageAssigner::DURATIONS`; no
+  `GET /api/admin/packages`. Months are `PackageAssigner::DURATIONS`, any
+  from 1 to 12, added to today (or to the current end when extending); no
   months means no end date. Also: the home screen's numbers
   (`GET /api/admin/summary`, `SummaryController`: restaurants, new in 7
   days (list filter `new`), menus off, ending in 7 days, ended, menu visits

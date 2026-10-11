@@ -16,8 +16,8 @@ use Carbon\CarbonInterface;
  */
 class PackageAssigner
 {
-    /** The durations the admin picks from, in months. */
-    public const DURATIONS = [1, 3, 6, 12];
+    /** The durations the admin picks from, in months: any from 1 to 12. */
+    public const DURATIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
     /**
      * Put a restaurant on a package from `$startsAt` (now when null) until

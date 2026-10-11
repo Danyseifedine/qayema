@@ -48,7 +48,7 @@ class PackageAssignerEdgeTest extends TestCase
 
     public function test_the_durations_on_offer(): void
     {
-        $this->assertSame([1, 3, 6, 12], PackageAssigner::DURATIONS);
+        $this->assertSame(range(1, 12), PackageAssigner::DURATIONS);
     }
 
     public function test_assign_with_no_dates_starts_now_and_runs_forever(): void

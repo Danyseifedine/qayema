@@ -110,7 +110,7 @@ class PackageFields
         ];
     }
 
-    /** @return array<int, string> 1, 3, 6 and 12 months. */
+    /** @return array<int, string> 1 month to 12 months. */
     public static function monthOptions(): array
     {
         return collect(PackageAssigner::DURATIONS)

@@ -636,7 +636,9 @@ dialog.pop[open]::backdrop { animation: fade-in .2s ease; }
 
 /* A dish's full photo, as large as the screen allows, in its own shape. */
 dialog.photo-pop { width: auto; max-width: min(960px, calc(100% - 32px)); }
-.photo-pop-img { display: block; max-width: 100%; max-height: 85dvh; width: auto; height: auto; border-radius: 14px; cursor: zoom-out; }
+/* Sized by the photo's shape (--ratio, set by menu-nav.js), not its pixels,
+   so the small photo shown first takes the place the full one will. */
+.photo-pop-img { display: block; width: min(960px, calc(100vw - 32px), calc(85dvh * var(--ratio, 1))); max-width: 100%; max-height: 85dvh; height: auto; border-radius: 14px; cursor: zoom-out; }
 .photo-pop .dish-sheet-close { top: 10px; inset-inline-end: 10px; }
 
 .qr-code { display: flex; justify-content: center; min-height: 196px; margin-top: 14px; }
