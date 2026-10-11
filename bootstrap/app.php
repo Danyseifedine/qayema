@@ -57,6 +57,14 @@ $app = Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'portal.locale' => \App\Http\Middleware\SetPortalLocale::class,
         ]);
+
+        // Laravel runs `throttle` ahead of a route's own middleware whatever
+        // their order; PaceWritingHelp goes first so a "busy" answer is never
+        // counted against the owner's uses for the day.
+        $middleware->prependToPriorityList(
+            before: \Illuminate\Routing\Middleware\ThrottleRequests::class,
+            prepend: \App\Http\Middleware\PaceWritingHelp::class,
+        );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Every `api/*` error is JSON (never a redirect to the login page or an

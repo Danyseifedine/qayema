@@ -785,7 +785,8 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
   DisplayOrder, DishOptionsSync, MenuDishOptions), `Orders` (OrderPlacer, WhatsAppLink), `Packages`
   (Entitlements, PackageAssigner), `Qr` (QrStyle), `Media` (MediaService, UploadLimits),
   `Security` (AbuseGuard, Captcha), `Contact` (ContactService), `Portal`
-  (OnboardingService). A new service goes in the group it serves.
+  (OnboardingService), `Ai` (WritingHelp). A new service goes in the group it serves.
+- `app/Ai/Agents/` holds the AI SDK's agents (see Writing help).
 - `app/Support/` is for value helpers with no dependencies (`Color`).
 - Every owner API controller resolves its restaurant through the
   `ResolvesRestaurant` trait (403 when the user has none); never copy the
@@ -1420,6 +1421,57 @@ today's shifts ("12:00 - 15:00, 18:00 - 23:00") and is closed between them;
 the search data has one `OpeningHoursSpecification` per shift. The dashboard
 (`opening-hours-section.tsx`) and the owner app (`restaurant_screen.dart`)
 edit them the same way.
+
+## Writing help (AI)
+
+The dashboard's AI buttons, through the official Laravel AI SDK
+(`laravel/ai`): **Translate** on every translatable field (the main
+language's text put into the menu's other language) and **Write with AI /
+Improve with AI** on a category's description and on the restaurant's.
+`POST /api/writing/translate` (`text`, `from`, `to`: menu languages, never
+the same), `POST /api/writing/category-description` (`name`, `text` to
+improve or empty, `language`) and `POST /api/writing/restaurant-description`
+(`text`, `language`; the name and the saved menu, up to 12 categories with 6
+dishes each, are read by the server; the menu only inspires the line, the
+kind of place and its mood, and is never listed back; an empty menu gets a
+welcome that suits any restaurant) answer `{data: {text}}`; nothing is saved there, the
+owner checks it in the form and saves as usual. `App\Services\Ai\WritingHelp`
+holds the calls; the agents are `App\Ai\Agents\MenuTranslator`,
+`CategoryDescriptionWriter` and `RestaurantDescriptionWriter` (structured
+output, one `text`).
+
+- **Off until set up:** `config('services.writing_help')` reads `AI_PROVIDER`
+  (anthropic, openai, gemini...), `AI_MODEL` (empty = the provider's cheapest,
+  `#[UseCheapestModel]`) and `AI_DAILY_LIMIT` (30). It is on only while the
+  provider is named **and** its key is set in `config/ai.php`
+  (`ANTHROPIC_API_KEY`...): `WritingHelp::isOn()`, sent to the dashboard as
+  `restaurant.writing_help`. Off, the endpoints 404 and no button shows.
+  Every restaurant gets it; no package flag.
+- **Cost cap:** the `writing-help` limiter, per restaurant per day (rolling
+  24 hours), every button together; past it a 429 with
+  `code: writing_help_limit` and the message the dashboard shows. It never
+  bans.
+- **A written description is never a wrong length and never has a dash**:
+  a category's 60 to 70 characters (`WritingHelp::CATEGORY_LENGTH`), the
+  restaurant's 100 to 110 (`RESTAURANT_LENGTH`). Models cannot count, so the server
+  checks: dashes are removed (`withoutDashes()`: between words a comma, inside
+  a word a space), and a wrong length is asked again with its count, 3 tries,
+  then the failure below; never a wrong length. The writer invents nothing
+  about the food (no oven, fresh, homemade... unless the owner wrote it),
+  pads with the moment (sharing, the table) and keeps every fact of the
+  owner's own text.
+- **Never starves the menus:** a call holds a PHP worker while it waits, so
+  `PaceWritingHelp` lets one run at a time per restaurant and at most
+  `AI_AT_ONCE` (10) on the server (cache locks, 30 s at most); past either,
+  an instant 503 `writing_help_busy`. It is in the middleware priority list
+  ahead of `throttle` (bootstrap/app.php), so a busy answer costs no daily
+  use. Each call waits at most `WritingHelp::TRY_SECONDS` (10) and a whole
+  description, every retry together, `TIME_BUDGET` (15).
+- **Failures:** a provider that is down, out of credit or refusing the key,
+  or an empty answer, is one 503 `writing_help_failed` ("try again in a
+  moment"); the cause is reported to the log.
+- Tests fake the agents (`MenuTranslator::fake()`), so they need no key and
+  make no calls: `tests/Feature/Api/WritingHelpTest.php`.
 
 ## Not yet built
 

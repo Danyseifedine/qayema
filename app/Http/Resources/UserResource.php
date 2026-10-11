@@ -7,6 +7,7 @@ use App\Enums\OrderChannel;
 use App\Enums\PackageStatus;
 use App\Models\Package;
 use App\Models\Restaurant;
+use App\Services\Ai\WritingHelp;
 use App\Services\Menu\MenuLanguages;
 use App\Services\Orders\WhatsAppLink;
 use Illuminate\Http\Request;
@@ -147,6 +148,9 @@ class UserResource extends JsonResource
             'plan' => collect(Feature::flags())
                 ->mapWithKeys(fn (Feature $flag): array => [$flag->value => $entitlements->can($flag)])
                 ->all(),
+            // The AI buttons (translate, write a description): every
+            // restaurant, while the server has a provider set up.
+            'writing_help' => WritingHelp::isOn(),
         ];
     }
 

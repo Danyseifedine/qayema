@@ -175,6 +175,17 @@ class AppServiceProvider extends ServiceProvider
         // feeds the abuse auto-ban.
         $this->defineRateLimiter('mutations', fn (): Limit => Limit::perMinute(120));
         $this->defineRateLimiter('uploads', fn (): Limit => Limit::perMinute(20));
+
+        // Writing help calls a paid AI provider, so each restaurant gets
+        // config('services.writing_help.daily_limit') uses a day, every
+        // button together. Running out is not abuse: it never bans.
+        RateLimiter::for('writing-help', fn (Request $request): Limit => Limit::perDay((int) config('services.writing_help.daily_limit'))
+            ->by('writing-help:'.($request->user()?->restaurant?->id ?? $request->ip()))
+            ->response(fn (Request $request, array $headers): Response => response()->json([
+                'message' => __('You have used today\'s writing help. It comes back tomorrow.'),
+                'code' => 'writing_help_limit',
+                'retry_after' => isset($headers['Retry-After']) ? (int) $headers['Retry-After'] : null,
+            ], 429, $headers)));
     }
 
     /**

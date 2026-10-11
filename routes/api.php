@@ -25,8 +25,10 @@ use App\Http\Controllers\Api\RestaurantController;
 use App\Http\Controllers\Api\RestaurantSlugController;
 use App\Http\Controllers\Api\SocialLinkController;
 use App\Http\Controllers\Api\TemplateController;
+use App\Http\Controllers\Api\WritingHelpController;
 use App\Http\Controllers\TempUploadController;
 use App\Http\Middleware\EnsureUserIsAdmin;
+use App\Http\Middleware\PaceWritingHelp;
 use App\Http\Middleware\TellAdminsAboutMenuEdits;
 use Illuminate\Support\Facades\Route;
 
@@ -82,6 +84,20 @@ Route::middleware(['auth:sanctum', 'throttle:api', TellAdminsAboutMenuEdits::cla
     Route::put('/menu-languages', [MenuLanguagesController::class, 'update'])
         ->middleware('throttle:mutations')
         ->name('api.menu-languages.update');
+
+    // Writing help: menu text translated, a category's or the restaurant's
+    // description written or improved. One at a time per restaurant and a
+    // few at once on the server (PaceWritingHelp, before the daily count, so
+    // a busy answer costs nothing), each restaurant's uses a day capped
+    // (`writing-help`).
+    Route::middleware(['throttle:mutations', PaceWritingHelp::class, 'throttle:writing-help'])->group(function () {
+        Route::post('/writing/translate', [WritingHelpController::class, 'translate'])
+            ->name('api.writing.translate');
+        Route::post('/writing/category-description', [WritingHelpController::class, 'categoryDescription'])
+            ->name('api.writing.category-description');
+        Route::post('/writing/restaurant-description', [WritingHelpController::class, 'restaurantDescription'])
+            ->name('api.writing.restaurant-description');
+    });
 
     // Analytics: the summary every package gets, and the advanced breakdowns
     // behind the advanced_analytics flag.
