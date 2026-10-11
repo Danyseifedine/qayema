@@ -543,7 +543,12 @@ Bilingual (ar/en) restaurant-menu SaaS. The codebases in this folder:
   months means no end date. Also: the home screen's numbers
   (`GET /api/admin/summary`, `SummaryController`: restaurants, new in 7
   days (list filter `new`), menus off, ending in 7 days, ended, menu visits
-  today since midnight in Beirut; two queries), a restaurant's basics
+  today since midnight in Beirut, and `writing_help_today`: the AI writing
+  help's uses and tokens in and out today; three queries), what the AI
+  writing help spent (`GET /api/admin/writing-help?range=today|30d`,
+  `WritingHelpUsageController`: totals from `WritingHelpLog::totalsSince()`
+  and each restaurant, the most tokens first, `byRestaurantSince()`, at most
+  100; a day is Lebanon's, each restaurant's rows its own days), a restaurant's basics
   (`PATCH /api/admin/restaurants/{id}`: English name with its other
   languages kept, menu link through `AvailableSlug` (the former one keeps
   forwarding), phone), and the owner's password
@@ -551,7 +556,9 @@ Bilingual (ar/en) restaurant-menu SaaS. The codebases in this folder:
   remember-me token, and the owner's open sessions end on their next
   request). One restaurant (`AdminRestaurantResource::detail()`, every
   answer about one restaurant) also carries its phone with its dial code and
-  its visits (`trafficTotals()`, `qrScans()`).
+  its visits (`trafficTotals()`, `qrScans()`) and its writing help
+  (`stats.writing_help`, `WritingHelpLog::of()`: uses today, uses and tokens
+  over 30 days).
 - **Admin phone notifications** (Firebase Cloud Messaging, `kreait/laravel-firebase`,
   Firebase project `qayema`). The app registers its phone after signing in
   (`PUT /api/admin/devices`, table `device_tokens`, one row per phone; a

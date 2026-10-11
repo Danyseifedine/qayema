@@ -3,7 +3,9 @@
 namespace Tests\Feature\Api;
 
 use App\Models\MenuSession;
+use App\Models\WritingHelpDay;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\Support\CreatesOwners;
 use Tests\TestCase;
 
@@ -37,6 +39,7 @@ class AdminSummaryTest extends TestCase
                 'ending_soon' => 1,
                 'ended' => 1,
                 'visits_today' => 1,
+                'writing_help_today' => ['uses' => 0, 'input_tokens' => 0, 'output_tokens' => 0, 'restaurants' => 0],
             ]]);
     }
 
@@ -47,7 +50,20 @@ class AdminSummaryTest extends TestCase
             ->assertExactJson(['data' => [
                 'restaurants' => 0, 'new_this_week' => 0, 'menus_off' => 0,
                 'ending_soon' => 0, 'ended' => 0, 'visits_today' => 0,
+                'writing_help_today' => ['uses' => 0, 'input_tokens' => 0, 'output_tokens' => 0, 'restaurants' => 0],
             ]]);
+    }
+
+    public function test_it_says_what_the_writing_help_spent_today_in_lebanon(): void
+    {
+        $this->travelTo(Carbon::parse('2026-10-12 10:00', 'Asia/Beirut'));
+        WritingHelpDay::factory()->for($this->owner())->create(['day' => '2026-10-12', 'uses' => 3, 'input_tokens' => 900, 'output_tokens' => 120]);
+        WritingHelpDay::factory()->for($this->owner())->create(['day' => '2026-10-12', 'uses' => 1, 'input_tokens' => 300, 'output_tokens' => 40]);
+        WritingHelpDay::factory()->for($this->owner())->create(['day' => '2026-10-11', 'uses' => 9, 'input_tokens' => 5000, 'output_tokens' => 500]);
+
+        $this->withToken($this->admin()->createToken('phone')->plainTextToken)
+            ->getJson('/api/admin/summary')
+            ->assertJsonPath('data.writing_help_today', ['uses' => 4, 'input_tokens' => 1200, 'output_tokens' => 160, 'restaurants' => 2]);
     }
 
     public function test_new_this_week_has_its_own_list(): void

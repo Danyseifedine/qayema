@@ -6,19 +6,21 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\IndexRestaurantsRequest;
 use App\Models\MenuSession;
 use App\Models\Restaurant;
+use App\Services\Ai\WritingHelpLog;
 use App\Services\Push\AdminAlerts;
 use Illuminate\Http\JsonResponse;
 
 /**
  * The admin app's home: how many restaurants, how many new, off, ending
- * soon and ended, and how many menu visits today. Two queries.
+ * soon and ended, how many menu visits today, and what the writing help
+ * (AI) spent today. Three queries.
  */
 class SummaryController extends Controller
 {
     /** "Ending soon" on the home screen. */
     public const ENDING_DAYS = 7;
 
-    public function __invoke(): JsonResponse
+    public function __invoke(WritingHelpLog $log): JsonResponse
     {
         $now = now();
 
@@ -39,6 +41,7 @@ class SummaryController extends Controller
             'ended' => (int) $counts->ended,
             // Since midnight in Lebanon, where the admins are.
             'visits_today' => MenuSession::query()->where('viewed_at', '>=', now(AdminAlerts::TIMEZONE)->startOfDay()->utc())->count(),
+            'writing_help_today' => $log->totalsSince(now(AdminAlerts::TIMEZONE)->toDateString()),
         ]]);
     }
 }

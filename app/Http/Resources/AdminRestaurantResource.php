@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Enums\PackageStatus;
 use App\Models\Restaurant;
+use App\Services\Ai\WritingHelpLog;
 use App\Services\Menu\MenuLanguages;
 use App\Support\MediaUrl;
 use Carbon\CarbonImmutable;
@@ -86,8 +87,9 @@ class AdminRestaurantResource extends JsonResource
     }
 
     /**
-     * Visits (today in the restaurant's own day, and ever) and QR scans:
-     * the two counts the admin's user page reads, two queries.
+     * Visits (today in the restaurant's own day, and ever), QR scans, and
+     * its writing help (AI uses today and over the last WritingHelpLog::DAYS
+     * days, with their tokens): three queries.
      *
      * @return array<string, mixed>
      */
@@ -101,6 +103,7 @@ class AdminRestaurantResource extends JsonResource
             'visitors_total' => $traffic['visitors'],
             'last_visit_at' => $traffic['last'] === null ? null : CarbonImmutable::parse($traffic['last'], 'UTC')->toIso8601String(),
             'qr_scans' => $this->qrScans(),
+            'writing_help' => app(WritingHelpLog::class)->of($this->resource),
         ];
     }
 }

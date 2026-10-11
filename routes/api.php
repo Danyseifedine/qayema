@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\Admin\RestaurantController as AdminRestaurantContro
 use App\Http\Controllers\Api\Admin\RestaurantDetailsController as AdminRestaurantDetailsController;
 use App\Http\Controllers\Api\Admin\RestaurantPackageController as AdminRestaurantPackageController;
 use App\Http\Controllers\Api\Admin\SummaryController as AdminSummaryController;
+use App\Http\Controllers\Api\Admin\WritingHelpUsageController as AdminWritingHelpUsageController;
 use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\AppearanceController;
 use App\Http\Controllers\Api\AuthController;
@@ -222,6 +223,7 @@ Route::prefix('admin')->name('api.admin.')->group(function () {
         Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');
 
         Route::get('/summary', AdminSummaryController::class)->name('summary');
+        Route::get('/writing-help', AdminWritingHelpUsageController::class)->name('writing-help');
         Route::get('/packages', [AdminPackageController::class, 'index'])->name('packages.index');
 
         Route::get('/restaurants', [AdminRestaurantController::class, 'index'])->name('restaurants.index');

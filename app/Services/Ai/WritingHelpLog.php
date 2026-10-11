@@ -5,6 +5,7 @@ namespace App\Services\Ai;
 use App\Models\Restaurant;
 use App\Models\WritingHelpDay;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -97,5 +98,44 @@ class WritingHelpLog
             'tokens' => (int) $totals?->tokens,
             'restaurants' => (int) $totals?->restaurants,
         ];
+    }
+
+    /**
+     * Everyone's use from $day (a calendar day) through today, the tokens
+     * in and out apart: the admin phone app's home and its AI page.
+     *
+     * @return array{uses: int, input_tokens: int, output_tokens: int, restaurants: int}
+     */
+    public function totalsSince(string $day): array
+    {
+        $totals = WritingHelpDay::query()
+            ->whereDate('day', '>=', $day)
+            ->selectRaw('COALESCE(SUM(uses), 0) AS uses, COALESCE(SUM(input_tokens), 0) AS input_tokens, COALESCE(SUM(output_tokens), 0) AS output_tokens, COUNT(DISTINCT restaurant_id) AS restaurants')
+            ->first();
+
+        return [
+            'uses' => (int) $totals?->uses,
+            'input_tokens' => (int) $totals?->input_tokens,
+            'output_tokens' => (int) $totals?->output_tokens,
+            'restaurants' => (int) $totals?->restaurants,
+        ];
+    }
+
+    /**
+     * Each restaurant's use from $day, the most tokens first, with the
+     * restaurant and its logo: one query for the sums, then the restaurants.
+     *
+     * @return Collection<int, WritingHelpDay>
+     */
+    public function byRestaurantSince(string $day, int $limit): Collection
+    {
+        return WritingHelpDay::query()
+            ->whereDate('day', '>=', $day)
+            ->groupBy('restaurant_id')
+            ->selectRaw('restaurant_id, SUM(uses) AS uses, SUM(input_tokens) AS input_tokens, SUM(output_tokens) AS output_tokens')
+            ->orderByRaw('SUM(input_tokens + output_tokens) DESC')
+            ->limit($limit)
+            ->with('restaurant.media')
+            ->get();
     }
 }

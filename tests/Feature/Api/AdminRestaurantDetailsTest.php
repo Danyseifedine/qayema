@@ -6,6 +6,7 @@ use App\Models\MenuSession;
 use App\Models\PreviousSlug;
 use App\Models\Restaurant;
 use App\Models\User;
+use App\Models\WritingHelpDay;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\Support\CreatesOwners;
@@ -46,6 +47,19 @@ class AdminRestaurantDetailsTest extends TestCase
             ->assertJsonPath('data.stats.qr_scans.today', 1)
             ->assertJsonPath('data.stats.qr_scans.total', 2)
             ->assertJsonPath('data.stats.last_visit_at', now()->subMinutes(30)->toIso8601String());
+    }
+
+    public function test_a_restaurant_shows_its_writing_help_today_and_over_thirty_days(): void
+    {
+        $restaurant = $this->owner(['timezone' => 'Asia/Beirut']);
+        $today = now('Asia/Beirut')->toDateString();
+        WritingHelpDay::factory()->for($restaurant)->create(['day' => $today, 'uses' => 2, 'input_tokens' => 500, 'output_tokens' => 60]);
+        WritingHelpDay::factory()->for($restaurant)->create(['day' => now('Asia/Beirut')->subDays(5)->toDateString(), 'uses' => 6, 'input_tokens' => 1500, 'output_tokens' => 140]);
+        WritingHelpDay::factory()->for($restaurant)->create(['day' => now('Asia/Beirut')->subDays(45)->toDateString(), 'uses' => 99, 'input_tokens' => 99000, 'output_tokens' => 900]);
+
+        $this->getJson("/api/admin/restaurants/{$restaurant->id}")
+            ->assertOk()
+            ->assertJsonPath('data.stats.writing_help', ['today' => 2, 'uses' => 8, 'tokens' => 2200]);
     }
 
     public function test_a_restaurant_never_visited_has_no_last_visit(): void
