@@ -23,6 +23,7 @@ class FeatureTest extends TestCase
         $this->assertTrue(Feature::DishLimit->isLimit());
         $this->assertTrue(Feature::CategoryLimit->isLimit());
         $this->assertTrue(Feature::SocialLinkLimit->isLimit());
+        $this->assertTrue(Feature::WritingHelpLimit->isLimit());
         $this->assertFalse(Feature::QrStudio->isLimit());
         $this->assertSame(FeatureKind::Flag, Feature::QrStudio->kind());
     }
@@ -56,18 +57,26 @@ class FeatureTest extends TestCase
     public function test_the_registry_is_exactly_these_slugs(): void
     {
         $this->assertSame([
-            'dish_limit', 'category_limit', 'social_link_limit', 'multiple_languages', 'variants', 'addons',
+            'dish_limit', 'category_limit', 'social_link_limit', 'writing_help_limit', 'multiple_languages', 'variants', 'addons',
             'appearance', 'premium_designs', 'qr_studio', 'ordering', 'menu_ordering', 'dine_in', 'analytics', 'advanced_analytics',
         ], array_map(fn (Feature $feature): string => $feature->value, Feature::cases()));
     }
 
-    public function test_the_three_limits_and_the_ten_flags(): void
+    public function test_the_four_limits_and_the_eleven_flags(): void
     {
-        $this->assertSame([Feature::DishLimit, Feature::CategoryLimit, Feature::SocialLinkLimit], Feature::limits());
+        $this->assertSame([Feature::DishLimit, Feature::CategoryLimit, Feature::SocialLinkLimit, Feature::WritingHelpLimit], Feature::limits());
         $this->assertSame([
             Feature::MultipleLanguages, Feature::Variants, Feature::Addons, Feature::Appearance, Feature::PremiumDesigns, Feature::QrStudio,
             Feature::Ordering, Feature::MenuOrdering, Feature::DineIn, Feature::Analytics, Feature::AdvancedAnalytics,
         ], Feature::flags());
+    }
+
+    public function test_only_the_ais_daily_uses_stay_off_the_pricing_cards(): void
+    {
+        $this->assertSame(
+            [Feature::WritingHelpLimit],
+            array_values(array_filter(Feature::cases(), fn (Feature $feature): bool => ! $feature->isOnPricing())),
+        );
     }
 
     public function test_limits_and_flags_split_every_case_between_them(): void
@@ -90,6 +99,8 @@ class FeatureTest extends TestCase
         $this->assertSame(40, Feature::DishLimit->defaultValue());
         $this->assertSame(8, Feature::CategoryLimit->defaultValue());
         $this->assertSame(1, Feature::SocialLinkLimit->defaultValue());
+        // The AI's uses a day: on for every package until an admin sets them.
+        $this->assertSame(30, Feature::WritingHelpLimit->defaultValue());
 
         foreach (Feature::flags() as $feature) {
             $this->assertSame(0, $feature->defaultValue(), "{$feature->value} is on by default.");
@@ -127,6 +138,7 @@ class FeatureTest extends TestCase
             'dish_limit' => 'Dishes',
             'category_limit' => 'Categories',
             'social_link_limit' => 'Social links',
+            'writing_help_limit' => 'AI writing help a day',
             'multiple_languages' => 'Second menu language',
             'variants' => 'Variants',
             'addons' => 'Add-ons',

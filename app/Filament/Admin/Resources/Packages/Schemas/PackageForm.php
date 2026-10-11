@@ -99,7 +99,7 @@ class PackageForm
                 ])->columnSpan(['lg' => 2]),
                 Group::make([
                     Section::make('Limits')
-                        ->description('How many of each item a restaurant on this package may create. Grants on a single restaurant stack on top of these.')
+                        ->description('How many of each item a restaurant on this package may create, and its AI writing help a day. Grants on a single restaurant stack on top of these.')
                         ->schema([
                             ...self::limitFields(),
                             CheckboxList::make('fair_use')

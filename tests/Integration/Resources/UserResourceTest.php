@@ -22,7 +22,7 @@ class UserResourceTest extends TestCase
 
     private const RESTAURANT_KEYS = [
         'id', 'languages', 'main_locale', 'second_locale', 'default_locale', 'template_id', 'public_url',
-        'package', 'lapsed', 'upcoming', 'limits', 'switched_off', 'ordering', 'plan',
+        'package', 'lapsed', 'upcoming', 'limits', 'switched_off', 'ordering', 'plan', 'writing_help',
     ];
 
     protected function setUp(): void

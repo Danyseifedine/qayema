@@ -44,6 +44,7 @@ class PackageResourceTest extends TestCase
                 'dish_limit' => 40,
                 'category_limit' => 8,
                 'social_link_limit' => 1,
+                'writing_help_limit' => 10,
                 'multiple_languages' => false,
                 'variants' => false,
                 'addons' => false,

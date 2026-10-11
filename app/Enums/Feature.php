@@ -14,6 +14,7 @@ enum Feature: string
     case DishLimit = 'dish_limit';
     case CategoryLimit = 'category_limit';
     case SocialLinkLimit = 'social_link_limit';
+    case WritingHelpLimit = 'writing_help_limit';
     case MultipleLanguages = 'multiple_languages';
     case Variants = 'variants';
     case Addons = 'addons';
@@ -33,7 +34,7 @@ enum Feature: string
     public function kind(): FeatureKind
     {
         return match ($this) {
-            self::DishLimit, self::CategoryLimit, self::SocialLinkLimit => FeatureKind::Limit,
+            self::DishLimit, self::CategoryLimit, self::SocialLinkLimit, self::WritingHelpLimit => FeatureKind::Limit,
             self::MultipleLanguages, self::Variants, self::Addons, self::Appearance, self::PremiumDesigns,
             self::QrStudio, self::Ordering, self::MenuOrdering, self::DineIn, self::Analytics, self::AdvancedAnalytics => FeatureKind::Flag,
         };
@@ -42,6 +43,15 @@ enum Feature: string
     public function isLimit(): bool
     {
         return $this->kind() === FeatureKind::Limit;
+    }
+
+    /**
+     * Listed on the landing page's pricing cards. The AI's daily uses are a
+     * dashboard detail, kept off the public page (which claims no AI).
+     */
+    public function isOnPricing(): bool
+    {
+        return $this !== self::WritingHelpLimit;
     }
 
     /** @return array<int, self> */
@@ -67,6 +77,9 @@ enum Feature: string
             self::DishLimit => 40,
             self::CategoryLimit => 8,
             self::SocialLinkLimit => 1,
+            // Uses of the dashboard's AI a day (App\Services\Ai\WritingHelp);
+            // 0 turns it off for the package.
+            self::WritingHelpLimit => 30,
             self::MultipleLanguages, self::Variants, self::Addons, self::Appearance, self::PremiumDesigns,
             self::QrStudio, self::Ordering, self::MenuOrdering, self::DineIn, self::Analytics, self::AdvancedAnalytics => 0,
         };

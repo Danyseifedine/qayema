@@ -32,13 +32,12 @@ return [
     // and writing a category's description. Off until a provider is named
     // here and its key is set in config/ai.php's providers (ANTHROPIC_API_KEY,
     // OPENAI_API_KEY...). With no model, the provider's cheapest one is used.
-    // Each restaurant gets `daily_limit` uses a day, all buttons together,
-    // and the server runs at most `at_once` at the same time
+    // Uses a day are set per package at /admin (Feature::WritingHelpLimit);
+    // the server runs at most `at_once` at the same time
     // (App\Http\Middleware\PaceWritingHelp), so they never take every worker.
     'writing_help' => [
         'provider' => env('AI_PROVIDER'),
         'model' => env('AI_MODEL'),
-        'daily_limit' => (int) env('AI_DAILY_LIMIT', 30),
         'at_once' => (int) env('AI_AT_ONCE', 10),
     ],
 

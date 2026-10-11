@@ -42,7 +42,7 @@ class PricingCards
             $covers = $previous !== null && $this->covers($package, $previous);
 
             $features = array_values(array_filter(
-                Feature::cases(),
+                array_filter(Feature::cases(), fn (Feature $feature): bool => $feature->isOnPricing()),
                 // Compared as owners see them: two "Unlimited"s are no change.
                 fn (Feature $feature): bool => $feature->isLimit()
                     ? ! $covers || $package->shownValue($feature) !== $previous->shownValue($feature)
@@ -104,7 +104,7 @@ class PricingCards
             $limits = [];
 
             foreach (Feature::limits() as $feature) {
-                if ($package->isFairUse($feature)) {
+                if ($feature->isOnPricing() && $package->isFairUse($feature)) {
                     $value = (int) $package->featureValue($feature);
                     $limits[] = trans_choice('portal.pricing.limits.'.$feature->value, $value, ['count' => Number::format($value)]);
                 }

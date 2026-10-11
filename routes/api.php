@@ -86,11 +86,10 @@ Route::middleware(['auth:sanctum', 'throttle:api', TellAdminsAboutMenuEdits::cla
         ->name('api.menu-languages.update');
 
     // Writing help: menu text translated, a category's or the restaurant's
-    // description written or improved. One at a time per restaurant and a
-    // few at once on the server (PaceWritingHelp, before the daily count, so
-    // a busy answer costs nothing), each restaurant's uses a day capped
-    // (`writing-help`).
-    Route::middleware(['throttle:mutations', PaceWritingHelp::class, 'throttle:writing-help'])->group(function () {
+    // description written or improved. PaceWritingHelp counts each
+    // restaurant's uses a day and runs one at a time per restaurant, a few
+    // at once on the server.
+    Route::middleware(['throttle:mutations', PaceWritingHelp::class])->group(function () {
         Route::post('/writing/translate', [WritingHelpController::class, 'translate'])
             ->name('api.writing.translate');
         Route::post('/writing/category-description', [WritingHelpController::class, 'categoryDescription'])

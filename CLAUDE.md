@@ -1441,16 +1441,28 @@ holds the calls; the agents are `App\Ai\Agents\MenuTranslator`,
 output, one `text`).
 
 - **Off until set up:** `config('services.writing_help')` reads `AI_PROVIDER`
-  (anthropic, openai, gemini...), `AI_MODEL` (empty = the provider's cheapest,
-  `#[UseCheapestModel]`) and `AI_DAILY_LIMIT` (30). It is on only while the
-  provider is named **and** its key is set in `config/ai.php`
-  (`ANTHROPIC_API_KEY`...): `WritingHelp::isOn()`, sent to the dashboard as
-  `restaurant.writing_help`. Off, the endpoints 404 and no button shows.
-  Every restaurant gets it; no package flag.
-- **Cost cap:** the `writing-help` limiter, per restaurant per day (rolling
-  24 hours), every button together; past it a 429 with
-  `code: writing_help_limit` and the message the dashboard shows. It never
-  bans.
+  (anthropic, openai, gemini...) and `AI_MODEL` (empty = the provider's
+  cheapest, `#[UseCheapestModel]`). It is on only while the provider is named
+  **and** its key is set in `config/ai.php` (`ANTHROPIC_API_KEY`...):
+  `WritingHelp::isOn()`. For a restaurant it also needs uses on its package:
+  `isOnFor()`, sent to the dashboard as `restaurant.writing_help`. Off, the
+  endpoints 404 and no button shows.
+- **Uses a day per package:** the limit `Feature::WritingHelpLimit`
+  (`writing_help_limit`), set per package at /admin → Packages like dishes:
+  0 is no writing help, empty is no daily cap, grants add to it. A package
+  saved before it existed reads `defaultValue()` (30) until edited; the
+  seeded catalog has Free 10, Pro 30, Premium and Custom 100. Kept off the
+  landing page's pricing cards (`Feature::isOnPricing()`; the page claims no
+  AI, `LandingContentTest`); the dashboard's Package page lists it.
+- **Counting the uses:** `App\Services\Ai\WritingHelpUses` (a rate
+  limiter key per restaurant, 24 hours from the first use), checked by
+  `PaceWritingHelp`: none left is an instant 429 `writing_help_limit` with
+  `left: 0` and `retry_after`; a use is taken only once the request may run
+  and given back when the answer is not a success (the provider failed, a
+  422), so an owner only spends a use on text they got. Every answer carries
+  `left` (null for no cap) and the session sends `writing_help: {limit,
+  left}` (null when off); the dashboard shows it on each AI button. It
+  never bans.
 - **A written description is never a wrong length and never has a dash**:
   a category's 60 to 70 characters (`WritingHelp::CATEGORY_LENGTH`), the
   restaurant's 100 to 110 (`RESTAURANT_LENGTH`). Models cannot count, so the server
@@ -1463,10 +1475,9 @@ output, one `text`).
 - **Never starves the menus:** a call holds a PHP worker while it waits, so
   `PaceWritingHelp` lets one run at a time per restaurant and at most
   `AI_AT_ONCE` (10) on the server (cache locks, 30 s at most); past either,
-  an instant 503 `writing_help_busy`. It is in the middleware priority list
-  ahead of `throttle` (bootstrap/app.php), so a busy answer costs no daily
-  use. Each call waits at most `WritingHelp::TRY_SECONDS` (10) and a whole
-  description, every retry together, `TIME_BUDGET` (15).
+  an instant 503 `writing_help_busy`, which costs no use. Each call waits at
+  most `WritingHelp::TRY_SECONDS` (10) and a whole description, every retry
+  together, `TIME_BUDGET` (15).
 - **Failures:** a provider that is down, out of credit or refusing the key,
   or an empty answer, is one 503 `writing_help_failed` ("try again in a
   moment"); the cause is reported to the log.

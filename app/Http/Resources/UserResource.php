@@ -7,7 +7,7 @@ use App\Enums\OrderChannel;
 use App\Enums\PackageStatus;
 use App\Models\Package;
 use App\Models\Restaurant;
-use App\Services\Ai\WritingHelp;
+use App\Services\Ai\WritingHelpUses;
 use App\Services\Menu\MenuLanguages;
 use App\Services\Orders\WhatsAppLink;
 use Illuminate\Http\Request;
@@ -148,9 +148,10 @@ class UserResource extends JsonResource
             'plan' => collect(Feature::flags())
                 ->mapWithKeys(fn (Feature $flag): array => [$flag->value => $entitlements->can($flag)])
                 ->all(),
-            // The AI buttons (translate, write a description): every
-            // restaurant, while the server has a provider set up.
-            'writing_help' => WritingHelp::isOn(),
+            // The AI buttons (translate, write a description), while the
+            // server has a provider set up and the package gives uses: how
+            // many a day (null for no cap) and how many are left. Null is off.
+            'writing_help' => app(WritingHelpUses::class)->forDashboard($restaurant),
         ];
     }
 

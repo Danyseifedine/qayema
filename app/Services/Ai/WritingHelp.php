@@ -5,6 +5,7 @@ namespace App\Services\Ai;
 use App\Ai\Agents\CategoryDescriptionWriter;
 use App\Ai\Agents\MenuTranslator;
 use App\Ai\Agents\RestaurantDescriptionWriter;
+use App\Enums\Feature;
 use App\Models\Category;
 use App\Models\Dish;
 use App\Models\Restaurant;
@@ -18,7 +19,8 @@ use RuntimeException;
  * The dashboard's writing help: menu text put into the menu's other
  * language, and a category's description written or polished. On only while
  * config('services.writing_help.provider') names a provider whose key is set,
- * so a server with no key simply has no AI buttons.
+ * so a server with no key simply has no AI buttons, and for a restaurant
+ * whose package gives it uses (Feature::WritingHelpLimit, 0 for none).
  */
 class WritingHelp
 {
@@ -53,6 +55,12 @@ class WritingHelp
         $provider = self::provider();
 
         return $provider !== null && filled(config("ai.providers.{$provider}.key"));
+    }
+
+    /** On for this restaurant: on at all, and not 0 uses a day on its package. */
+    public static function isOnFor(Restaurant $restaurant): bool
+    {
+        return self::isOn() && $restaurant->entitlements()->limit(Feature::WritingHelpLimit) !== 0;
     }
 
     public static function provider(): ?string
