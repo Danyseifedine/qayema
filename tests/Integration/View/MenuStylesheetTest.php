@@ -37,25 +37,34 @@ class MenuStylesheetTest extends TestCase
     }
 
     /**
-     * A dish photo is shown whole, in its own shape, wherever it appears:
-     * never cropped to a box, and with no grey box behind it.
+     * The small photos (a card, a cart line) fill their slot, trimmed at the
+     * edges, so every card looks the same; the big one (the dish sheet) is
+     * the whole photo. None has a box drawn behind it.
      */
-    public function test_dish_photos_are_never_cropped_or_boxed(): void
+    public function test_small_photos_fill_their_slot_and_the_big_one_is_whole(): void
     {
         $css = (string) file_get_contents(public_path('css/menu-classic.css'));
+        $rule = function (string $class) use ($css): string {
+            preg_match('/\\.'.$class.'\\s*\\{([^}]*)\\}/', $css, $match);
+            $this->assertNotEmpty($match, $class);
 
-        foreach (['dish-photo', 'cart-line-photo', 'dish-sheet-photo'] as $class) {
-            preg_match('/\\.'.$class.'\\s*\\{([^}]*)\\}/', $css, $rule);
-            $this->assertNotEmpty($rule, $class);
-            $this->assertStringNotContainsString('object-fit: cover', $rule[1], $class);
-            $this->assertStringNotContainsString('background', $rule[1], $class);
-            $this->assertStringNotContainsString('aspect-ratio', $rule[1], $class);
-            $this->assertStringContainsString('height: auto', $rule[1], $class);
+            return $match[1];
+        };
+
+        foreach (['dish-photo', 'cart-line-photo'] as $class) {
+            $this->assertStringContainsString('object-fit: cover', $rule($class), $class);
+            $this->assertStringContainsString('width: 100%', $rule($class), $class);
+            $this->assertStringContainsString('height: 100%', $rule($class), $class);
+            $this->assertStringNotContainsString('background', $rule($class), $class);
         }
+
+        $this->assertStringContainsString('object-fit: contain', $rule('dish-sheet-photo'));
+        $this->assertStringContainsString('height: auto', $rule('dish-sheet-photo'));
+        $this->assertStringNotContainsString('background', $rule('dish-sheet-photo'));
     }
 
     /**
-     * Whatever a photo's shape, it sits in a slot of one size, so every
+     * Whatever a photo's shape, it fills a slot of one size, so every
      * dish's name starts in the same place down the menu (and the cart).
      */
     public function test_every_dish_photo_sits_in_a_slot_of_one_size(): void
@@ -70,9 +79,5 @@ class MenuStylesheetTest extends TestCase
             $this->assertStringContainsString('flex-shrink: 0', $rule[1], $class);
         }
 
-        // The photo fits inside its slot rather than setting its size.
-        preg_match('/\\.dish-photo\\s*\\{([^}]*)\\}/', $css, $photo);
-        $this->assertStringContainsString('max-width: 100%', $photo[1]);
-        $this->assertStringContainsString('max-height: 100%', $photo[1]);
     }
 }

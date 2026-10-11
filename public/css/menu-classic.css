@@ -173,11 +173,12 @@ a.fact:hover { color: var(--text); }
 .category-head p { margin: 3px 0 0; font-size: 12.5px; color: var(--muted); line-height: 1.4; }
 .dishes { display: flex; flex-direction: column; gap: 10px; padding: 0 16px; }
 .dish { display: flex; gap: 12px; padding: 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; }
-/* Every photo sits in the same slot, so the names line up down the menu.
-   Inside it each photo keeps its own shape (a long sandwich long, a plate
-   square), centred, never cropped and with no box behind it. */
-.dish-photo-slot { flex-shrink: 0; align-self: center; display: flex; align-items: center; justify-content: center; width: 96px; height: 72px; }
-.dish-photo { display: block; width: auto; height: auto; max-width: 100%; max-height: 100%; border-radius: 8px; }
+/* Every photo fills the same slot, so the cards look even and the names line
+   up down the menu. The slot is 4:3, the usual shape of a food photo, so
+   only its edges are trimmed; the whole photo is one tap away (its sheet,
+   or #pop-photo). */
+.dish-photo-slot { flex-shrink: 0; align-self: center; display: block; width: 96px; height: 72px; }
+.dish-photo { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
 /* A photo that opens big (#pop-photo): the slot is the button. */
 .dish-photo-open { padding: 0; border: 0; background: none; border-radius: 8px; cursor: zoom-in; }
 .dish-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
@@ -219,9 +220,9 @@ a.fact:hover { color: var(--text); }
 .cart-lines { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
 .cart-line { display: flex; gap: 12px; padding: 14px; align-items: flex-start; }
 .cart-line + .cart-line { border-top: 1px solid var(--line); }
-/* The same slot idea as the menu's photos, smaller. */
-.cart-line-photo-slot { flex-shrink: 0; align-self: center; display: flex; align-items: center; justify-content: center; width: 72px; height: 56px; }
-.cart-line-photo { display: block; width: auto; height: auto; max-width: 100%; max-height: 100%; border-radius: 8px; }
+/* Filled like the menu's photos, smaller. */
+.cart-line-photo-slot { flex-shrink: 0; align-self: center; display: block; width: 72px; height: 56px; }
+.cart-line-photo { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
 .cart-line-body { flex: 1; min-width: 0; }
 .cart-line-name { font-size: 14px; font-weight: 600; letter-spacing: -0.005em; line-height: 1.3; }
 .cart-line-choices { font-size: 12px; color: var(--text); opacity: .78; margin-top: 2px; line-height: 1.4; }
