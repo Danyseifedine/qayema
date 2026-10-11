@@ -11,12 +11,15 @@ use App\Models\Package;
 use App\Models\Restaurant;
 use App\Models\Template;
 use App\Models\User;
+use App\Services\Ai\WritingHelpUses;
 use App\Services\Packages\PackageAssigner;
 use Carbon\CarbonImmutable;
+use Illuminate\Cache\RateLimiter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 
@@ -42,7 +45,9 @@ class E2eController extends Controller
      * an address | whatsapp), order_choices (bool: their line carries a
      * size and an add-on),
      * visits (count), qr_scans (count), settings {key: value} for the
-     * design, qr_settings {…}, logo (bool).
+     * design, qr_settings {…}, logo (bool), writing_help_used (count: the AI
+     * uses already spent today, in the store the writing help's requests
+     * count in, E2eServiceProvider::WRITING_HELP_CACHE).
      */
     public function scenario(Request $request): JsonResponse
     {
@@ -127,6 +132,11 @@ class E2eController extends Controller
 
         foreach ($input['social_links'] ?? [] as $link) {
             $restaurant->socialLinks()->create($link);
+        }
+
+        $uses = new WritingHelpUses(new RateLimiter(Cache::store(E2eServiceProvider::WRITING_HELP_CACHE)));
+        for ($i = 0; $i < (int) ($input['writing_help_used'] ?? 0); $i++) {
+            $uses->take($restaurant);
         }
 
         for ($i = 0; $i < (int) ($input['orders'] ?? 0); $i++) {

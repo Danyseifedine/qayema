@@ -33,8 +33,8 @@ class PackageAdminEdgeTest extends TestCase
     {
         Livewire::test(ListPackages::class)
             ->assertTableColumnFormattedStateSet('price_cents', 'Free', Package::findBySlug('free'))
-            ->assertTableColumnFormattedStateSet('price_cents', '12.00', Package::findBySlug('pro'))
-            ->assertTableColumnFormattedStateSet('price_cents', '29.00', Package::findBySlug('premium'));
+            ->assertTableColumnFormattedStateSet('price_cents', '7.99', Package::findBySlug('pro'))
+            ->assertTableColumnFormattedStateSet('price_cents', '10.00', Package::findBySlug('premium'));
     }
 
     /**

@@ -10,6 +10,7 @@ use App\Filament\Admin\Resources\Restaurants\RestaurantResource;
 use App\Filament\Admin\Resources\Restaurants\Schemas\PackageFields;
 use App\Models\MenuSession;
 use App\Models\Restaurant;
+use App\Services\Ai\WritingHelpLog;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
@@ -25,6 +26,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Number;
 
 class RestaurantsTable
 {
@@ -42,6 +44,10 @@ class RestaurantsTable
                 ->addSelect(['unique_visitors' => MenuSession::query()
                     ->selectRaw('count(distinct session_id)')
                     ->whereColumn('menu_sessions.restaurant_id', 'restaurants.id'),
+                ])
+                ->addSelect([
+                    'writing_help_uses' => WritingHelpLog::lastDaysOf('uses'),
+                    'writing_help_tokens' => WritingHelpLog::lastDaysOf('input_tokens + output_tokens'),
                 ]))
             ->columns([
                 SpatieMediaLibraryImageColumn::make('logo')
@@ -78,6 +84,20 @@ class RestaurantsTable
                         PackageStatus::Active => $record->package_ends_at !== null && $record->package_ends_at->lte(now()->addDays(7)) ? 'warning' : 'success',
                     })
                     ->description(fn (Restaurant $record): string => self::packageDates($record))
+                    ->toggleable(),
+
+                // The dashboard's AI buttons: who leans on them, heaviest
+                // first when sorted, with what they cost underneath.
+                TextColumn::make('writing_help_uses')
+                    ->label('AI uses (30 days)')
+                    ->getStateUsing(fn (Restaurant $record): int => (int) $record->writing_help_uses)
+                    ->formatStateUsing(fn (int $state): string => Number::format($state))
+                    ->description(fn (Restaurant $record): ?string => (int) $record->writing_help_tokens === 0
+                        ? null
+                        : Number::format((int) $record->writing_help_tokens).' tokens')
+                    ->badge()
+                    ->color(fn (int $state): string => $state === 0 ? 'gray' : 'primary')
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => $query->orderBy('writing_help_uses', $direction))
                     ->toggleable(),
 
                 TextColumn::make('template.name')

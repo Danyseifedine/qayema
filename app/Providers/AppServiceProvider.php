@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Http\Controllers\Api\AuthController;
 use App\Models\User;
+use App\Services\Ai\WritingHelp;
 use App\Services\Security\AbuseGuard;
 use App\Support\SiteAddress;
 use Closure;
@@ -30,6 +31,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // One writing help a request, so PaceWritingHelp logs the tokens the
+        // controller's calls spent.
+        $this->app->scoped(WritingHelp::class);
+
         // Grafana Cloud telemetry (config/opentelemetry.php) loads only when it
         // will send: once loaded it hooks every query and request and leaves
         // exporters to flush at exit, which tests and the e2e suite (no

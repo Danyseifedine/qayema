@@ -119,7 +119,7 @@ class SeoTest extends TestCase
         $this->assertSame('BusinessApplication', $app['applicationCategory']);
         // Every package with a price, as the admin set it; Custom is "Let's talk".
         $this->assertSame(['Free', 'Pro', 'Premium'], array_column($app['offers'], 'name'));
-        $this->assertSame(['0.00', '12.00', '29.00'], array_column($app['offers'], 'price'));
+        $this->assertSame(['0.00', '7.99', '10.00'], array_column($app['offers'], 'price'));
         $this->assertSame(count(__('portal.faq.items')), count($faq['mainEntity']));
         $this->assertSame(__('portal.faq.items')[0]['q'], $faq['mainEntity'][0]['name']);
         $this->assertArrayNotHasKey('potentialAction', $website);
@@ -133,7 +133,7 @@ class SeoTest extends TestCase
         $app = $this->schemas($this->page('/'))[0]['@graph'][2];
 
         $this->assertSame(['Free', 'Premium'], array_column($app['offers'], 'name'));
-        $this->assertStringNotContainsString('$12', $this->get('/')->getContent());
+        $this->assertStringNotContainsString('$7.99', $this->get('/')->getContent());
     }
 
     public function test_the_arabic_home_page_describes_itself_in_arabic(): void

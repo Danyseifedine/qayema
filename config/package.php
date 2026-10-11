@@ -21,10 +21,10 @@ return [
     | Catalog
     |--------------------------------------------------------------------------
     |
-    | What each package includes, as decided with the owner (2026-09). Prices
-    | are still placeholders. This seeds a fresh database only; after that
-    | /admin → Packages owns the numbers, and changing this file does not move
-    | them. The landing page's pricing reads the table too
+    | What each package includes, as decided with the owner (2026-09; the
+    | prices and the AI's uses a day 2026-10). This seeds a fresh database
+    | only; after that /admin → Packages owns the numbers, and changing this
+    | file does not move them. The landing page's pricing reads the table too
     | (App\Services\Portal\PricingCards).
     |
     | A feature value of null means unlimited. A flag is 0 or 1. A key left out
@@ -69,7 +69,7 @@ return [
                 'en' => 'Your own look, two languages and your numbers.',
                 'ar' => 'مظهرك الخاص ولغتان وأرقامك.',
             ],
-            'price_cents' => 1200,
+            'price_cents' => 799,
             'is_contact_only' => false,
             'is_default' => false,
             'sort_order' => 1,
@@ -77,7 +77,7 @@ return [
                 'dish_limit' => 150,
                 'category_limit' => 15,
                 'social_link_limit' => 2,
-                'writing_help_limit' => 30,
+                'writing_help_limit' => 100,
                 'multiple_languages' => 1,
                 'variants' => 1,
                 'addons' => 1,
@@ -98,7 +98,7 @@ return [
                 'en' => 'Everything, with ordering and the QR studio.',
                 'ar' => 'كل شيء، مع الطلبات واستوديو QR.',
             ],
-            'price_cents' => 2900,
+            'price_cents' => 1000,
             'is_contact_only' => false,
             'is_default' => false,
             'sort_order' => 2,
@@ -109,7 +109,7 @@ return [
                 'dish_limit' => 1000,
                 'category_limit' => 1000,
                 'social_link_limit' => 10,
-                'writing_help_limit' => 100,
+                'writing_help_limit' => 200,
                 'multiple_languages' => 1,
                 'variants' => 1,
                 'addons' => 1,
@@ -144,7 +144,7 @@ return [
                 'dish_limit' => null,
                 'category_limit' => null,
                 'social_link_limit' => null,
-                'writing_help_limit' => 100,
+                'writing_help_limit' => 200,
                 'multiple_languages' => 1,
                 'variants' => 1,
                 'addons' => 1,

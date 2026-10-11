@@ -7,6 +7,7 @@ use App\Enums\PackageStatus;
 use App\Filament\Admin\Schemas\Components\MenuTextInputs;
 use App\Models\Restaurant;
 use App\Rules\AvailableSlug;
+use App\Services\Ai\WritingHelpLog;
 use App\Services\Menu\MenuLanguages;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
@@ -18,6 +19,7 @@ use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Number;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 use Ysfkaya\FilamentPhoneInput\PhoneInputNumberType;
 
@@ -96,6 +98,11 @@ class RestaurantForm
                                 ->state(fn (?Restaurant $record): ?string => $record === null ? null : self::entitlementsSummary($record))
                                 ->visibleOn('edit')
                                 ->columnSpanFull(),
+                            TextEntry::make('writing_help_used')
+                                ->label('AI writing help used')
+                                ->state(fn (?Restaurant $record): ?string => $record === null ? null : self::writingHelpSummary($record))
+                                ->visibleOn('edit')
+                                ->columnSpanFull(),
                         ]),
                     Section::make('Media')
                         ->description('Logo and cover image are shown on the public menu.')
@@ -154,6 +161,16 @@ class RestaurantForm
      * The package in force and every feature it resolves to with grants, as
      * one line an admin can read at a glance.
      */
+    /** "3 today, 41 in the last 30 days (52,300 tokens)", from the usage log. */
+    private static function writingHelpSummary(Restaurant $restaurant): string
+    {
+        $usage = app(WritingHelpLog::class)->of($restaurant);
+
+        return $usage['uses'] === 0
+            ? 'Not used in the last '.WritingHelpLog::DAYS.' days.'
+            : Number::format($usage['today']).' today, '.Number::format($usage['uses']).' in the last '.WritingHelpLog::DAYS.' days ('.Number::format($usage['tokens']).' tokens)';
+    }
+
     private static function entitlementsSummary(Restaurant $restaurant): string
     {
         $entitlements = $restaurant->entitlements();

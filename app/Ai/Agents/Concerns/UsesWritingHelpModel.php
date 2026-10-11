@@ -3,6 +3,7 @@
 namespace App\Ai\Agents\Concerns;
 
 use App\Services\Ai\WritingHelp;
+use App\Services\Ai\WritingHelpSetup;
 
 /**
  * The provider and model the writing help runs on, from the config, so
@@ -13,12 +14,12 @@ trait UsesWritingHelpModel
 {
     public function provider(): ?string
     {
-        return WritingHelp::provider();
+        return WritingHelpSetup::provider();
     }
 
     public function model(): ?string
     {
-        return WritingHelp::model();
+        return WritingHelpSetup::model();
     }
 
     /** One call's wait on the provider; WritingHelp::TIME_BUDGET caps a whole description. */

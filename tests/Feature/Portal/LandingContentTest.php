@@ -20,8 +20,8 @@ class LandingContentTest extends TestCase
     {
         $this->get('/')
             ->assertOk()
-            ->assertSeeInOrder(['Free', '40 dishes', 'Pro', '$12', '/ month', 'Everything in Free, plus:', '150 dishes', 'Premium', '$29', 'Custom', "Let's talk"], false)
-            ->assertSeeInOrder(['Pro', 'Premium', 'Most popular', '$29'], false)
+            ->assertSeeInOrder(['Free', '40 dishes', 'Pro', '$7.99', '/ month', 'Everything in Free, plus:', '150 dishes', 'Premium', '$10', 'Custom', "Let's talk"], false)
+            ->assertSeeInOrder(['Pro', 'Premium', 'Most popular', '$10'], false)
             ->assertSee('Orders on WhatsApp');
     }
 
@@ -29,7 +29,7 @@ class LandingContentTest extends TestCase
     {
         Package::findBySlug('premium')->update(['price_cents' => 3500]);
 
-        $this->get('/')->assertOk()->assertSee('$35')->assertDontSee('$29');
+        $this->get('/')->assertOk()->assertSee('$35')->assertDontSee('$10');
     }
 
     public function test_the_numbers_are_true_of_the_product(): void

@@ -38,7 +38,7 @@ class PricingCardsTest extends TestCase
         $this->assertNull($free['base']);
         $this->assertSame(['40 dishes', '8 categories', '1 social link'], $free['lines']);
 
-        $this->assertSame('$12', $pro['price']);
+        $this->assertSame('$7.99', $pro['price']);
         $this->assertSame('/ month', $pro['per']);
         $this->assertFalse($pro['featured']);
         $this->assertSame('Free', $pro['base']);
@@ -47,7 +47,7 @@ class PricingCardsTest extends TestCase
             $pro['lines'],
         );
 
-        $this->assertSame('$29', $premium['price']);
+        $this->assertSame('$10', $premium['price']);
         $this->assertTrue($premium['featured']);
         $this->assertSame('Pro', $premium['base']);
         $this->assertSame(
@@ -134,7 +134,7 @@ class PricingCardsTest extends TestCase
         $this->assertSame('* الاستخدام العادل في باقة مميّز: حتى 1,000 طبق و1,000 قسم.', app(PricingCards::class)->fairUseNote());
         $this->assertSame('لنتحدّث', $cards[3]['price']);
         // A price reads the same in both languages.
-        $this->assertSame('$12', $cards[1]['price']);
+        $this->assertSame('$7.99', $cards[1]['price']);
     }
 
     /** Not on offer: gone from the cards, and the next one builds on what is left. */
@@ -158,7 +158,7 @@ class PricingCardsTest extends TestCase
 
         $pro->update(['highlights' => ['en' => ['Room to grow'], 'ar' => ['مساحة للنمو']]]);
         app()->setLocale('ar');
-        $this->assertSame(['مساحة للنمو'], collect(app(PricingCards::class)->all())->firstWhere('price', '$12')['lines']);
+        $this->assertSame(['مساحة للنمو'], collect(app(PricingCards::class)->all())->firstWhere('price', '$7.99')['lines']);
     }
 
     /** Lines cleared: the card lists what the package adds again. */

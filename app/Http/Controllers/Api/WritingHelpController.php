@@ -9,6 +9,7 @@ use App\Http\Requests\DescribeRestaurantRequest;
 use App\Http\Requests\TranslateMenuTextRequest;
 use App\Models\Restaurant;
 use App\Services\Ai\WritingHelp;
+use App\Services\Ai\WritingHelpSetup;
 use App\Services\Ai\WritingHelpUses;
 use Illuminate\Http\JsonResponse;
 
@@ -30,12 +31,14 @@ class WritingHelpController extends Controller
     public function translate(TranslateMenuTextRequest $request): JsonResponse
     {
         $restaurant = $this->restaurant($request);
-        abort_unless(WritingHelp::isOnFor($restaurant), 404);
+        abort_unless(WritingHelpSetup::isOnFor($restaurant), 404);
 
         $text = $this->help->translate(
             $request->validated('text'),
             $request->validated('from'),
             $request->validated('to'),
+            $request->validated('max'),
+            $request->validated('fit'),
         );
 
         return $this->answer($restaurant, $text);
@@ -44,7 +47,7 @@ class WritingHelpController extends Controller
     public function categoryDescription(DescribeCategoryRequest $request): JsonResponse
     {
         $restaurant = $this->restaurant($request);
-        abort_unless(WritingHelp::isOnFor($restaurant), 404);
+        abort_unless(WritingHelpSetup::isOnFor($restaurant), 404);
 
         $text = $this->help->describeCategory(
             $request->validated('name'),
@@ -58,7 +61,7 @@ class WritingHelpController extends Controller
     public function restaurantDescription(DescribeRestaurantRequest $request): JsonResponse
     {
         $restaurant = $this->restaurant($request);
-        abort_unless(WritingHelp::isOnFor($restaurant), 404);
+        abort_unless(WritingHelpSetup::isOnFor($restaurant), 404);
 
         $text = $this->help->describeRestaurant(
             $restaurant,

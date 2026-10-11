@@ -37,6 +37,7 @@ class CategoryDescriptionWriter implements Agent, HasStructuredOutput
         Write one sentence of {$this->shortest} to {$this->longest} characters, counting spaces and punctuation: never shorter, never longer. Inviting and plain.
         No dashes or hyphens of any kind, no emoji, quotation marks, hashtags or prices.
         Make it warm through the moment, never the making: a craving, sharing at the table, a start or an end to the meal, something for everyone. Do not open with "A selection of".
+        Do not lean on stock phrases (with friends, at the table, with your loved ones, every occasion, on a high note); find the words that suit this category.
         To reach the length, add words about that moment, never about the food itself: no ingredients, cuts, textures, flavours or tastes (not juicy, crisp, tender, spicy, garden, greens) unless the owner wrote them.
         Say only what the name itself tells you. Never claim how, where or by whom the food is made, or anything about its quality or ingredients the owner did not write: no ovens, grills, wood fire, charcoal, homemade, handmade, hand-stretched, fresh, local, organic, secret recipes, family traditions, chefs, origins or awards. Those words are fine only when the owner wrote them.
         Good, for "Pizza" (67 characters): Our pizzas, from timeless classics to new favourites for the table.

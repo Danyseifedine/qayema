@@ -13,6 +13,7 @@ use App\Filament\Admin\Resources\RestaurantSocialLinks\RestaurantSocialLinkResou
 use App\Filament\Admin\Resources\Templates\TemplateResource;
 use App\Filament\Admin\Resources\Users\UserResource;
 use App\Filament\Admin\Widgets\PackagesEndingSoon;
+use App\Filament\Admin\Widgets\WritingHelpUsage;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Services\Media\MediaService;
 use Filament\Forms\Components\Select;
@@ -64,6 +65,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->widgets([
                 PackagesEndingSoon::class,
+                WritingHelpUsage::class,
             ])
             ->middleware([
                 EncryptCookies::class,

@@ -74,14 +74,14 @@ class ContentPagesTest extends TestCase
 
     public function test_the_pricing_page_shows_the_packages_as_the_admin_set_them(): void
     {
-        $this->get('/pricing')->assertOk()->assertSeeInOrder(['Free', 'Pro', '$12', 'Premium', '$29']);
+        $this->get('/pricing')->assertOk()->assertSeeInOrder(['Free', 'Pro', '$7.99', 'Premium', '$10']);
 
         Package::findBySlug('pro')->update(['price_cents' => 1500]);
         $html = $this->get('/pricing')->assertOk()->getContent();
         $this->assertStringContainsString('$15', $html);
 
         $app = collect($this->schemas(HTMLDocument::createFromString($html, LIBXML_NOERROR)))->firstWhere('@type', 'SoftwareApplication');
-        $this->assertSame(['0.00', '15.00', '29.00'], array_column($app['offers'], 'price'));
+        $this->assertSame(['0.00', '15.00', '10.00'], array_column($app['offers'], 'price'));
     }
 
     public function test_every_footer_links_the_new_pages_in_its_language(): void

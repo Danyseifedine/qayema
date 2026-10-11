@@ -10,6 +10,7 @@ use App\Models\Category;
 use App\Models\Dish;
 use App\Models\FeatureGrant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Testing\TestResponse;
 use Laravel\Ai\Exceptions\ProviderOverloadedException;
@@ -153,13 +154,13 @@ class WritingHelpTest extends TestCase
 
     public function test_a_description_never_carries_a_dash(): void
     {
-        CategoryDescriptionWriter::fake([['text' => "Hand-stretched pizzas \u{2014} classics and new favourites \u{2013} to share"]]);
+        CategoryDescriptionWriter::fake([['text' => "Slow-cooked soups \u{2014} warm bowls \u{2013} made to start your meal and linger over"]]);
         $owner = $this->owner();
 
         $this->actingAs($owner->user)
-            ->describe(['name' => 'Pizza', 'language' => 'en'])
+            ->describe(['name' => 'Soups', 'language' => 'en'])
             ->assertOk()
-            ->assertJsonPath('data.text', 'Hand stretched pizzas, classics and new favourites, to share');
+            ->assertJsonPath('data.text', 'Slow cooked soups, warm bowls, made to start your meal and linger over');
 
         CategoryDescriptionWriter::assertPrompted(fn (AgentPrompt $prompt): bool => $prompt->agent->shortest === 60
             && $prompt->agent->longest === 70);
@@ -424,21 +425,22 @@ class WritingHelpTest extends TestCase
     {
         $this->defaultPackageSets(Feature::WritingHelpLimit, 1);
         CategoryDescriptionWriter::fake(fn (): array => ['text' => 'Warm bowls of soup to start your meal or share across the table.']);
-        $owner = $this->owner();
+        $owner = $this->owner(['timezone' => 'Asia/Tokyo']);
+        $this->travelTo(Carbon::parse('2026-10-11 21:00', 'Asia/Tokyo'));
 
         $this->actingAs($owner->user)->describe(['name' => 'Soups', 'language' => 'en'])->assertJsonPath('data.left', 0);
-        $this->travel(2)->hours();
+        $this->travel(1)->hours();
 
+        // Back at the restaurant's midnight, two hours away.
         $this->actingAs($owner->user)
             ->describe(['name' => 'Soups', 'language' => 'en'])
             ->assertTooManyRequests()
             ->assertJsonPath('code', 'writing_help_limit')
             ->assertJsonPath('left', 0)
-            ->assertJsonPath('retry_after', 22 * 3600)
-            ->assertHeader('Retry-After', (string) (22 * 3600));
+            ->assertJsonPath('retry_after', 2 * 3600)
+            ->assertHeader('Retry-After', (string) (2 * 3600));
 
-        // A day after the first use, they are all back.
-        $this->travel(22)->hours();
+        $this->travel(2)->hours();
         $this->actingAs($owner->user)->describe(['name' => 'Soups', 'language' => 'en'])->assertOk();
     }
 
