@@ -8,12 +8,15 @@ use App\Models\Restaurant;
 use App\Models\Template;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Js;
+use Illuminate\Testing\TestResponse;
 use Tests\Support\CreatesOwners;
+use Tests\Support\SendsMenuToken;
 use Tests\TestCase;
 
 class MenuTrackingTest extends TestCase
 {
-    use CreatesOwners, RefreshDatabase;
+    use CreatesOwners, RefreshDatabase, SendsMenuToken;
 
     protected function setUp(): void
     {
@@ -33,21 +36,91 @@ class MenuTrackingTest extends TestCase
         ]);
     }
 
+    /**
+     * What the page's tracking reports on opening (public/js/menu-track.js).
+     *
+     * @param  array<string, mixed>  $visit
+     */
+    private function visit(Restaurant $restaurant, array $visit = [], ?string $visitor = null): TestResponse
+    {
+        return $this->postJson(route('public.events', $restaurant->slug), array_filter([
+            'visitor' => $visitor,
+            'visit' => ['locale' => 'en', 'qr' => false, ...$visit],
+            'events' => [],
+        ], fn ($value) => $value !== null));
+    }
+
     public function test_a_visit_is_recorded(): void
     {
         $restaurant = $this->published();
 
-        $this->get(route('public.menu', $restaurant->slug))->assertOk();
+        $this->visit($restaurant)->assertNoContent();
 
         $this->assertDatabaseCount('menu_sessions', 1);
         $this->assertSame(1, $restaurant->trafficTotals()['views']);
+    }
+
+    public function test_opening_the_page_counts_nothing_by_itself(): void
+    {
+        // The page counts its own visit, so a crawler that runs no script,
+        // or a page served from a cache, is no different.
+        $restaurant = $this->published();
+
+        $this->get(route('public.menu', $restaurant->slug))
+            ->assertOk()
+            ->assertSee('menu: '.Js::from(route('public.menu', $restaurant->slug)), false);
+
+        $this->assertDatabaseCount('menu_sessions', 0);
+    }
+
+    public function test_the_visit_and_its_actions_count_as_one_guest(): void
+    {
+        $restaurant = $this->published();
+        $guest = str_repeat('ab', 16);
+
+        $this->visit($restaurant, [], $guest)->assertNoContent();
+        $this->postJson(route('public.events', $restaurant->slug), ['visitor' => $guest, 'events' => [['type' => 'map']]])->assertNoContent();
+
+        $this->assertDatabaseHas('menu_sessions', ['session_id' => $guest]);
+        $this->assertDatabaseHas('menu_events', ['session_id' => $guest, 'type' => 'map']);
+    }
+
+    public function test_the_same_browser_coming_back_is_one_visitor(): void
+    {
+        $restaurant = $this->published();
+
+        $this->visit($restaurant, [], str_repeat('ab', 16));
+        $this->visit($restaurant, [], str_repeat('ab', 16));
+        $this->visit($restaurant, [], str_repeat('cd', 16));
+
+        $this->assertSame(['views' => 3, 'visitors' => 2], array_intersect_key($restaurant->trafficTotals(), ['views' => 0, 'visitors' => 0]));
+    }
+
+    public function test_a_browser_that_sends_no_id_is_told_apart_by_a_hash(): void
+    {
+        $restaurant = $this->published();
+
+        $this->visit($restaurant)->assertNoContent();
+
+        $id = MenuSession::query()->sole()->session_id;
+        $this->assertMatchesRegularExpression('/^[a-f0-9]{32}$/', $id);
+        $this->assertNotSame('127.0.0.1', $id);
+    }
+
+    public function test_a_language_the_menu_does_not_offer_counts_as_its_own(): void
+    {
+        $restaurant = $this->published();
+
+        $this->visit($restaurant, ['locale' => 'xx'])->assertNoContent();
+
+        $this->assertSame('en', MenuSession::query()->sole()->locale);
     }
 
     public function test_a_qr_scan_is_flagged_as_one(): void
     {
         $restaurant = $this->published();
 
-        $this->get(route('public.menu', $restaurant->slug).'?qr=1')->assertOk();
+        $this->visit($restaurant, ['qr' => true])->assertNoContent();
 
         $this->assertDatabaseHas('menu_sessions', [
             'restaurant_id' => $restaurant->id,
@@ -60,7 +133,7 @@ class MenuTrackingTest extends TestCase
     {
         $restaurant = $this->published();
 
-        $this->get(route('public.menu', $restaurant->slug))->assertOk();
+        $this->visit($restaurant)->assertNoContent();
 
         $this->assertSame(1, $restaurant->trafficTotals()['views']);
         $this->assertSame(0, $restaurant->qrScans()['total']);
@@ -114,8 +187,8 @@ class MenuTrackingTest extends TestCase
             'source' => 'admin',
         ]);
 
-        $this->get(route('public.menu', $restaurant->slug).'?qr=1')->assertOk();
-        $this->get(route('public.menu', $restaurant->slug).'?qr=1')->assertOk();
+        $this->visit($restaurant, ['qr' => true])->assertNoContent();
+        $this->visit($restaurant, ['qr' => true])->assertNoContent();
 
         $this->actingAs($restaurant->user)
             ->getJson(route('api.qr.show'))
@@ -130,7 +203,7 @@ class MenuTrackingTest extends TestCase
 
         $this->withHeaders([
             'User-Agent' => 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
-        ])->get(route('public.menu', $restaurant->slug))->assertOk();
+        ])->postJson(route('public.events', $restaurant->slug), ['visit' => ['qr' => false], 'events' => []])->assertNoContent();
 
         $this->assertDatabaseHas('menu_sessions', [
             'restaurant_id' => $restaurant->id,
@@ -146,7 +219,7 @@ class MenuTrackingTest extends TestCase
 
         $this->withHeaders([
             'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        ])->get(route('public.menu', $restaurant->slug))->assertOk();
+        ])->postJson(route('public.events', $restaurant->slug), ['visit' => ['qr' => false], 'events' => []])->assertNoContent();
 
         $this->assertDatabaseHas('menu_sessions', [
             'restaurant_id' => $restaurant->id,
@@ -163,6 +236,7 @@ class MenuTrackingTest extends TestCase
         $restaurant->update(['is_active' => false]);
 
         $this->get(route('public.menu', $restaurant->slug))->assertNotFound();
+        $this->visit($restaurant)->assertNotFound();
 
         $this->assertDatabaseCount('menu_sessions', 0);
     }

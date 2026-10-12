@@ -28,8 +28,6 @@ $app = Application::configure(basePath: dirname(__DIR__))
     // ceiling keeps a stuck page from asking without end.
     ->withBroadcasting(__DIR__.'/../routes/channels.php', ['prefix' => 'api', 'middleware' => ['api', 'auth:sanctum', 'throttle:api']])
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->trustProxies(at: env('TRUSTED_PROXIES'));
-
         // Let first-party SPA requests (from SANCTUM_STATEFUL_DOMAINS) authenticate
         // via the session cookie instead of a bearer token. This wraps the `api`
         // group with the cookie/session/CSRF stack only for our own frontend.
@@ -41,9 +39,12 @@ $app = Application::configure(basePath: dirname(__DIR__))
         // StartSession, where auth()->user() is always null and the bypass is dead).
         // RedirectToMainAddress comes first: a www. visit moves to the main
         // address before anything else runs (production only).
+        // StartSessionForReturningVisitors is StartSession, except on the pages
+        // a stranger may open without a session stored for them.
         $middleware->web(
             prepend: [\App\Http\Middleware\RedirectToMainAddress::class, \App\Http\Middleware\SecurityHeaders::class],
             append: [\App\Http\Middleware\BlockAbusiveIps::class],
+            replace: [\Illuminate\Session\Middleware\StartSession::class => \App\Http\Middleware\StartSessionForReturningVisitors::class],
         );
 
         // JSON API responses get the same hardening headers as the web surface.

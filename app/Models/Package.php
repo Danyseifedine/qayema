@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\Feature;
+use App\Services\Menu\MenuCache;
 use App\Services\Packages\Entitlements;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -72,6 +73,8 @@ class Package extends Model
             // default() keeps its answer for the request (once()).
             Once::flush();
             Entitlements::flushAll();
+            // What a package gives shows on its menus (ordering, designs).
+            app(MenuCache::class)->forgetAll();
         };
 
         static::saved($flush);

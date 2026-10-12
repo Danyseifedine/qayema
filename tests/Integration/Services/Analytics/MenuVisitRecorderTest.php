@@ -2,55 +2,49 @@
 
 namespace Tests\Integration\Services\Analytics;
 
+use App\Enums\Feature;
 use App\Models\MenuSession;
 use App\Services\Analytics\MenuVisitRecorder;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
-use Illuminate\Session\ArraySessionHandler;
-use Illuminate\Session\Store;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\CreatesOwners;
 use Tests\TestCase;
 
 /**
- * MenuVisitRecorder called directly. Whether a render is recorded at all (a
- * preview, a self-referred language switch) is the controller's decision and
- * is tested with it in Tests\Feature\Menu; this is what one row holds.
+ * MenuVisitRecorder called directly. Whether a visit is reported at all (a
+ * preview, a language switch) is the page's (menu-track.js), and the visitor
+ * id the request's (MenuEventsRequest); this is what one row holds.
  */
 class MenuVisitRecorderTest extends TestCase
 {
     use CreatesOwners, RefreshDatabase;
 
-    private function request(string $query = '', string $agent = 'TestAgent/1.0', ?string $sessionId = null): Request
+    private function request(string $agent = 'TestAgent/1.0'): Request
     {
-        $request = Request::create('/menu'.($query !== '' ? '?'.$query : ''), 'GET', server: [
+        return Request::create('/tracked/events', 'POST', server: [
             'REMOTE_ADDR' => '198.51.100.9',
             'HTTP_USER_AGENT' => $agent,
         ]);
-
-        if ($sessionId !== null) {
-            $request->setLaravelSession(new Store('test', new ArraySessionHandler(10), $sessionId));
-        }
-
-        return $request;
     }
 
     public function test_a_visit_is_one_row_with_everything_it_knows(): void
     {
         $this->travelTo(CarbonImmutable::parse('2026-09-28 22:30:00', 'UTC'));
-        $restaurant = $this->owner();
+        $this->defaultPackageIncludes(Feature::MultipleLanguages);
+        $restaurant = $this->owner(['second_locale' => 'ar']);
         $agent = 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36';
 
-        $row = app(MenuVisitRecorder::class)->record($restaurant, $this->request('qr=1', $agent, str_repeat('k', 40)), 'ar');
+        $row = app(MenuVisitRecorder::class)->record($restaurant, $this->request($agent), str_repeat('k', 32), 'ar', true);
 
         $this->assertInstanceOf(MenuSession::class, $row);
         $this->assertSame(1, MenuSession::query()->count());
         $this->assertSame(
             [
                 'restaurant_id' => $restaurant->id,
-                'session_id' => str_repeat('k', 40),
+                'session_id' => str_repeat('k', 32),
                 'device_type' => 'mobile',
                 'browser' => 'Chrome',
                 'os' => 'Android',
@@ -65,44 +59,36 @@ class MenuVisitRecorderTest extends TestCase
         );
     }
 
-    public function test_without_a_session_the_visitor_is_the_ip_and_agent(): void
-    {
-        $row = app(MenuVisitRecorder::class)->record($this->owner(), $this->request());
-
-        $this->assertSame(md5('198.51.100.9'.'TestAgent/1.0'), $row->session_id);
-    }
-
     public function test_the_same_guest_twice_is_two_views_of_one_visitor(): void
     {
         $restaurant = $this->owner();
         $recorder = app(MenuVisitRecorder::class);
 
-        $recorder->record($restaurant, $this->request());
-        $recorder->record($restaurant, $this->request());
+        $recorder->record($restaurant, $this->request(), 'guest', 'en', false);
+        $recorder->record($restaurant, $this->request(), 'guest', 'en', false);
 
         $this->assertSame(2, $restaurant->menuSessions()->count());
         $this->assertSame(1, $restaurant->menuSessions()->distinct('session_id')->count('session_id'));
     }
 
-    public function test_no_locale_is_stored_as_null(): void
+    public function test_a_language_missing_or_off_the_menu_counts_as_its_main_one(): void
     {
-        $row = app(MenuVisitRecorder::class)->record($this->owner(), $this->request());
+        $recorder = app(MenuVisitRecorder::class);
+        $this->defaultPackageIncludes(Feature::MultipleLanguages);
+        $restaurant = $this->owner(['second_locale' => 'ar']);
 
-        $this->assertNull($row->fresh()->locale);
+        $this->assertSame('en', $recorder->record($restaurant, $this->request(), 'guest', null, false)->fresh()->locale);
+        $this->assertSame('en', $recorder->record($restaurant, $this->request(), 'guest', 'fr', false)->fresh()->locale);
+        $this->assertSame('ar', $recorder->record($restaurant, $this->request(), 'guest', 'ar', false)->fresh()->locale);
     }
 
-    public function test_only_the_exact_qr_marker_counts_as_a_scan(): void
+    public function test_a_scan_is_what_the_page_reports(): void
     {
         $recorder = app(MenuVisitRecorder::class);
         $restaurant = $this->owner();
 
-        $this->assertTrue($recorder->record($restaurant, $this->request('qr=1&lang=ar'))->via_qr);
-        $this->assertFalse($recorder->record($restaurant, $this->request('qr=01'))->via_qr);
-        $this->assertFalse($recorder->record($restaurant, $this->request('qr[]=1'))->via_qr);
-        $this->assertFalse($recorder->record($restaurant, $this->request('QR=1'))->via_qr);
-        $this->assertFalse($recorder->record($restaurant, $this->request('qr=true'))->via_qr);
-        $this->assertFalse($recorder->record($restaurant, $this->request('qr=0'))->via_qr);
-        $this->assertFalse($recorder->record($restaurant, $this->request())->via_qr);
+        $this->assertTrue($recorder->record($restaurant, $this->request(), 'guest', 'en', true)->via_qr);
+        $this->assertFalse($recorder->record($restaurant, $this->request(), 'guest', 'en', false)->via_qr);
         $this->assertSame(1, $restaurant->menuSessions()->where('via_qr', true)->count());
     }
 
@@ -134,7 +120,7 @@ class MenuVisitRecorderTest extends TestCase
     #[DataProvider('userAgents')]
     public function test_user_agents_are_classified(string $agent, string $device, ?string $browser, ?string $os): void
     {
-        $row = app(MenuVisitRecorder::class)->record($this->owner(), $this->request('', $agent));
+        $row = app(MenuVisitRecorder::class)->record($this->owner(), $this->request($agent), 'guest', 'en', false);
 
         $this->assertSame(
             ['device_type' => $device, 'browser' => $browser, 'os' => $os],
@@ -147,6 +133,6 @@ class MenuVisitRecorderTest extends TestCase
         $restaurant = $this->owner();
         DB::statement('DROP TABLE menu_sessions');
 
-        $this->assertNull(app(MenuVisitRecorder::class)->record($restaurant, $this->request()));
+        $this->assertNull(app(MenuVisitRecorder::class)->record($restaurant, $this->request(), 'guest', 'en', false));
     }
 }

@@ -3,8 +3,9 @@
 
     Every menu template is a standalone page: it receives $restaurant, $template,
     $settings (the owner's choices merged over the template's defaults), $locale
-    (the language the owner writes in), $hours, $can_order, $is_preview and
-    $dish_options (each dish's variants and add-ons, App\Services\Menu\MenuDishOptions).
+    (the language the owner writes in), $hours, $can_order, $is_preview,
+    $dish_options (each dish's variants and add-ons, App\Services\Menu\MenuDishOptions)
+    and $menu_token (what its requests carry in place of a CSRF token).
     Its static styles are public/css/menu-classic.css; the owner's fonts and
     the design's colour variables come from menu.partials.theme, and only the
     colours this design names differently stay inline below. Run
@@ -127,7 +128,8 @@
             document.querySelector('meta[name=viewport]').setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1');
         }
     </script>
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+    {{-- What the cart and the tracking send in place of a CSRF token (App\Services\Menu\MenuToken). --}}
+    <meta name="menu-token" content="{{ $menu_token }}">
     <meta name="theme-color" content="{{ $accent }}">
     @include('menu.partials.seo')
     @if ($mediaOrigin)
@@ -187,10 +189,10 @@
                     @endif
                         <span class="icon">{!! $icons[$fact['icon']] !!}</span>
                         @if ($fact['tone'])
-                            <span class="fact-{{ $fact['tone'] }}">{{ $fact['label'] }}</span>
+                            <span class="fact-{{ $fact['tone'] }}" @if ($fact['icon'] === 'clock') data-hours-label @endif>{{ $fact['label'] }}</span>
                             <span aria-hidden="true">·</span>
                         @endif
-                        <span @if ($fact['ltr']) dir="ltr" @endif>{{ $fact['value'] }}</span>
+                        <span @if ($fact['ltr']) dir="ltr" @endif @if ($fact['icon'] === 'clock') data-hours-value @endif>{{ $fact['value'] }}</span>
                     {!! $fact['href'] ? '</a>' : '</span>' !!}
                 @endforeach
             </div>
@@ -269,10 +271,10 @@
                 <div class="info-row">
                     <span class="info-icon"><span class="icon">{!! $icons['clock'] !!}</span></span>
                     <span class="info-text">
-                        <span class="info-label fact-{{ $hoursFact['tone'] }}">{{ $hoursFact['label'] }}</span>
+                        <span class="info-label fact-{{ $hoursFact['tone'] }}" data-hours-label>{{ $hoursFact['label'] }}</span>
                         {{-- The line follows the page (right in Arabic); only the
                              times inside it read left to right. --}}
-                        <span class="info-value"><bdi dir="ltr">{{ $hoursFact['value'] }}</bdi></span>
+                        <span class="info-value"><bdi dir="ltr" data-hours-value>{{ $hoursFact['value'] }}</bdi></span>
                     </span>
                 </div>
                 @endif
@@ -543,6 +545,20 @@
     </dialog>
 @endif
 
+{{-- Open or closed, worked out again on the guest's phone (menu-hours.js), so
+     a copy of this page that Cloudflare kept is never wrong about the time.
+     Before the cart, which asks it. --}}
+@unless ($hours->isEmpty())
+    <script>
+        window.QAYEMA_HOURS = {
+            timezone: @js($hours->timezone()),
+            week: @js($hours->toArray()),
+            labels: { open: @js(__('Open now')), closed: @js(__('Closed now')), closedToday: @js(__('Closed today')) },
+        };
+    </script>
+    <script src="{{ asset('js/menu-hours.js') }}?v={{ filemtime(public_path('js/menu-hours.js')) }}" defer></script>
+@endunless
+
 @if ($can_order)
     <dialog class="sheet" id="cart-sheet">
         <div class="sheet-body">
@@ -778,7 +794,11 @@
 
 @unless ($is_preview)
     <script>
-        window.QAYEMA_TRACK = { url: @js(route('public.events', $restaurant->slug)) };
+        window.QAYEMA_TRACK = {
+            url: @js(route('public.events', $restaurant->slug)),
+            menu: @js($menu_url),
+            locale: @js($locale),
+        };
     </script>
     <script src="{{ asset('js/menu-track.js') }}?v={{ filemtime(public_path('js/menu-track.js')) }}" defer></script>
 @endunless

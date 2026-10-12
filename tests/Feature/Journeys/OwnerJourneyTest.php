@@ -11,6 +11,7 @@ use App\Models\Package;
 use App\Models\Restaurant;
 use App\Models\Template;
 use App\Models\User;
+use App\Services\Menu\MenuToken;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
@@ -97,8 +98,11 @@ class OwnerJourneyTest extends TestCase
         $this->actingAs($user)->postJson(route('api.dishes.store'), ['name' => ['en' => 'Fourth'], 'price' => 5, 'category_id' => $category])->assertCreated();
         $this->actingAs($user)->getJson(route('api.user'))->assertJsonPath('data.restaurant.limits.dishes', ['used' => 4, 'limit' => 5]);
 
-        // Guests see all four; the visit is counted.
+        // Guests see all four; the page reports its visit, and it is counted.
         $this->get('/journey?qr=1')->assertOk()->assertSee('Hummus')->assertSee('Fourth');
+        $this->withHeader(MenuToken::HEADER, MenuToken::issue())
+            ->postJson(route('public.events', 'journey'), ['visit' => ['locale' => 'en', 'qr' => true], 'events' => []])
+            ->assertNoContent();
         $this->actingAs($user)->getJson(route('api.analytics'))->assertJsonPath('data.totals.qr_scans', 1);
         // The welcome email is switched off by default.
         Mail::assertNothingOutgoing();

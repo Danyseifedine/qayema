@@ -3,14 +3,18 @@
 namespace App\Providers;
 
 use App\Http\Controllers\Api\AuthController;
+use App\Models\Dish;
+use App\Models\Restaurant;
 use App\Models\User;
 use App\Services\Ai\WritingHelp;
+use App\Services\Menu\MenuCache;
 use App\Services\Security\AbuseGuard;
 use App\Support\SiteAddress;
 use Closure;
 use Illuminate\Auth\SessionGuard;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
@@ -21,6 +25,7 @@ use Lab404\Impersonate\Events\LeaveImpersonation;
 use Lab404\Impersonate\Events\TakeImpersonation;
 use Laravel\Sanctum\PersonalAccessToken;
 use Laravel\Sanctum\Sanctum;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\Translatable\Translatable;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -34,6 +39,10 @@ class AppServiceProvider extends ServiceProvider
         // One writing help a request, so PaceWritingHelp logs the tokens the
         // controller's calls spent.
         $this->app->scoped(WritingHelp::class);
+
+        // One menu cache a request, so what a request changed is cleared from
+        // Cloudflare in one call, after the response.
+        $this->app->scoped(MenuCache::class);
 
         // Grafana Cloud telemetry (config/opentelemetry.php) loads only when it
         // will send: once loaded it hooks every query and request and leaves
@@ -57,11 +66,50 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->trustTheProxies();
+        $this->forgetMenusWhenTheirPhotosChange();
         $this->configureRateLimiters();
         $this->keepImpersonationSignedIn();
         $this->pinTheSiteAddress();
         $this->keepTokensToTheirApp();
         $this->neverShowWrittenTextBlank();
+    }
+
+    /**
+     * A logo, cover or dish photo is on the menu: a new, replaced or removed
+     * one clears that restaurant's menu from Cloudflare (MenuCache), like
+     * the rows in Models\Concerns\ClearsMenuCache.
+     */
+    private function forgetMenusWhenTheirPhotosChange(): void
+    {
+        $forget = function (Media $media): void {
+            $restaurant = match ($media->model_type) {
+                (new Restaurant)->getMorphClass() => $media->model_id,
+                (new Dish)->getMorphClass() => Dish::query()->whereKey($media->model_id)->value('restaurant_id'),
+                default => null,
+            };
+
+            if ($restaurant !== null) {
+                app(MenuCache::class)->forget((int) $restaurant);
+            }
+        };
+
+        Media::saved($forget);
+        Media::deleted($forget);
+    }
+
+    /**
+     * The proxies whose X-Forwarded-For names the guest
+     * (config/security.php). Set here, after config is read, rather than in
+     * bootstrap/app.php, where env() comes back empty once config is cached.
+     */
+    private function trustTheProxies(): void
+    {
+        $proxies = config('security.trusted_proxies');
+
+        if (filled($proxies)) {
+            TrustProxies::at($proxies);
+        }
     }
 
     /**

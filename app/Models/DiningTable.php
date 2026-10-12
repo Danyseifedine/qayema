@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ClearsMenuCache;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class DiningTable extends Model
 {
     /** @use HasFactory<\Database\Factories\DiningTableFactory> */
-    use HasFactory;
+    use ClearsMenuCache, HasFactory;
 
     /** Letters and digits that cannot be misread from a printed card. */
     private const ALPHABET = 'abcdefghjkmnpqrstuvwxyz23456789';

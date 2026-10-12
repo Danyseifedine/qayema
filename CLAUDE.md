@@ -858,7 +858,17 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
 - **Analytics:** see the Analytics section below.
 - Rate limiters in `AppServiceProvider` (`api`/`mutations`/`uploads`/`auth`/
   `contact`); the high-volume ones feed the `AbuseGuard` auto-ban.
-- Session lifetime is intentionally 1 year (the SPA rides it).
+- Session lifetime is intentionally 1 year (the SPA rides it). So a
+  stranger is not given one where none is needed: the web group's
+  StartSession is `StartSessionForReturningVisitors` (bootstrap/app.php),
+  and routes grouped under its `ONLY_RETURNING` attribute (the website's
+  pages without a form, and every guest route of the menu) store no session and send no session cookie to
+  anyone who does not already have a stored one. A crawler or a new guest
+  gets a session for that request only. Contact, sign-in and everything
+  else start one as before. The website language a public page remembers
+  for the sign-in pages is its own cookie, `owner_locale`
+  (`SetPortalLocale::remember`), not session data. A test sends it with
+  `withCookie`, plus `withCredentials()` on a JSON request.
 - `restaurants.switched_off` holds the optional features the owner
   switched off on the dashboard's Features page (`PUT /api/features` with
   `{off: [...]}`, limited to `Restaurant::OPTIONAL_FEATURES`): `orders` (no ordering at all:
@@ -1060,8 +1070,15 @@ choice) and `ordering.whatsapp_number`.
 - Order lines carry **their own** `name` and `unit_price`. A dish renamed,
   repriced or deleted later must not rewrite what was ordered, which is why
   `order_items.dish_id` is `nullOnDelete`.
-- `POST /{slug}/order` is public, on the `web` group (session + CSRF), limited
-  to 10/min per IP with **`autoBan: false`**: a dining room is one IP. The page
+- `POST /{slug}/order` is public, on the `web` group, limited
+  to 10/min per IP with **`autoBan: false`**: a dining room is one IP. Like
+  every guest route of the menu (the group in routes/web.php) it stores no
+  session for a guest and checks no CSRF token; the menu's own POST/PUT
+  requests carry the page's `X-Menu-Token` instead (`MenuToken`, signed with
+  the app key and the time, good for a day; `VerifyMenuToken` answers a
+  missing or stale one with 419 `menu_expired`, which the cart shows). A
+  test sends it with `Tests\Support\SendsMenuToken` (`freshMenuToken()`
+  after moving the clock). The page
   sends `mode`, the way it was built for; a mismatch (the owner switched while
   the guest had the menu open) is a 409 asking to refresh. A hidden `website`
   box is a spam trap. `PlaceOrderRequest` sets the guest's menu language
@@ -1234,6 +1251,29 @@ cheese; the guest picks any). Every option and add-on has a `price` that is
   come from the index, and `viewed_at` / `menu_events.occurred_at` alone for
   the nightly prune.
 
+## Deploying (the owner does it; never run from here)
+
+On the server, after the new code is in place:
+
+1. `composer install --no-dev --optimize-autoloader`
+2. `php artisan migrate --force`, when the release has migrations.
+3. `php artisan optimize`: caches config, routes, events and views. Production
+   ran without it until 2026-10, and starting Laravel and finding the route
+   took about 120 ms of every request's 170 ms (Grafana traces). Run it again
+   after every deploy and after any `.env` change (`php artisan
+   optimize:clear` undoes it).
+4. The dashboard: upload its `dist/`.
+
+With config cached, `.env` is no longer read, so `env()` works only inside
+`config/*.php`; anywhere else it comes back empty. The trusted proxies
+(`TRUSTED_PROXIES`, Cloudflare's forwarded IP) are read in
+`config/security.php` and applied by AppServiceProvider for that reason
+(`tests/Feature/Security/TrustedProxiesTest`); read in bootstrap/app.php,
+every guest would become Cloudflare's IP to the rate limits and AbuseGuard.
+
+After a deploy, from outside: a menu page sets no cookie (`curl -sI`), an
+order goes through, and visits keep arriving in the analytics.
+
 ## Menu speed
 
 Production (qayema.com, A2 Hosting with Redis turned on) keeps the cache, sessions and rate
@@ -1242,6 +1282,38 @@ database they cost 4 to 6 queries on every request. The account has its own
 Redis on its own port with a password (cPanel's Redis page), set in
 `REDIS_HOST`, `REDIS_PORT` and `REDIS_PASSWORD`; `redis-cli` needs `-p` and
 the password too. Local and the tests keep the database and array stores.
+
+**Cloudflare keeps the menu page** (`tests/Feature/Menu/MenuEdgeCacheTest`,
+`MenuCacheTest`). A guest's menu page (`/{slug}` and every `?lang=`,
+`?table=`, `?qr=` address) is sent with `Cache-Control: public, max-age=0,
+s-maxage=3600` (`CacheMenuForGuests`), so Cloudflare answers the next guests
+itself in under 0.1 s and the server is not asked. Never kept: a request
+with a session cookie (owner, admin), `?preview=`, `?track=`, anything but a
+200. It works because the page holds nothing of one guest: no session or
+cookie (StartSessionForReturningVisitors), the visit counted by the phone
+(menu-track.js), open or closed and today's hours worked out on the phone
+(`public/js/menu-hours.js`, the twin of `OpeningHours`; the cart asks
+`QAYEMA_HOURS.isOpen()`), and the order token valid a day (`MenuToken`).
+- **A change clears it at once** (`App\Services\Menu\MenuCache`, one per
+  request, sent after the response): a saved or deleted row of
+  `Models\Concerns\ClearsMenuCache` (Category, Dish, RestaurantSocialLink,
+  DiningTable, FeatureGrant), the restaurant (its old link too), a reorder
+  (`DisplayOrder`, which saves no model), a photo (spatie Media, in
+  AppServiceProvider). A package or a design clears every menu
+  (`purge_everything`). Cloudflare is asked by prefix (`qayema.com/<slug>`),
+  which covers every address under it; a refused call (the Free plan allows
+  five a minute) goes to `PurgeMenuCache` on the queue, retried, then
+  logged as an error. A new writer of menu data that saves no model must
+  call `MenuCache::forget()` itself.
+- **What Cloudflare needs** (the owner sets it up): a cache rule for
+  qayema.com, path not starting with /api, /admin or /livewire, "Eligible
+  for cache", edge TTL "Use cache-control header if present, bypass cache
+  if not", browser TTL "Respect origin"; and `CLOUDFLARE_ZONE_ID` +
+  `CLOUDFLARE_API_TOKEN` (only Zone, Cache Purge) in `.env`. Without them
+  nothing is cleared and a copy lives at most the hour.
+- Time-driven changes save nothing (a package or grant ending overnight):
+  those menus catch up within the hour; the server refuses what the package
+  no longer allows meanwhile (an order).
 
 The public menu is opened on a phone, often on mobile data, so it stays light
 (`tests/Feature/Menu/MenuSpeedTest`):
@@ -1259,7 +1331,8 @@ The public menu is opened on a phone, often on mobile data, so it stays light
 - Every local script and stylesheet is linked with `?v=filemtime(...)`:
   `public/.htaccess` keeps css/js for a year, so one without a version would
   go stale for guests. It also compresses text (mod_deflate).
-- The visit is written after the response (`defer()`), and entitlements are
+- Opening the menu writes nothing: no session for a guest (Redis) and no
+  visit row (the page reports its visit, see Analytics). Entitlements are
   memoized per request (`Cache::memo()`), so a view is one read of them.
 - The QR pop-up is ready before it is tapped: once the page has loaded and
   the phone is idle, `menu-nav.js` fetches the library and
@@ -1324,9 +1397,20 @@ with the design**, so a printed code keeps working whatever is saved.
 
 ## Analytics
 
-- **Visits:** every menu render (not a preview, not a self-referred language
-  switch) writes a `menu_sessions` row with device, browser, OS, the `locale`
-  it opened in, and `via_qr` from the `?qr=1` the QR codes encode.
+- **Visits:** the page reports its own visit (`public/js/menu-track.js`,
+  with its first batch to `POST /{slug}/events`, at most 4 s after opening
+  or as the guest leaves), so a crawler that runs no script is not counted
+  and a page served from a cache still is. A preview loads no tracker, and a
+  page reached from the same menu (a language switch) reports no visit.
+  `MenuVisitRecorder` writes the `menu_sessions` row with device, browser,
+  OS, the `locale` it opened in (one off the menu counts as its main
+  language) and `via_qr` from the `?qr=1` the QR codes encode.
+- **Who is one guest:** a random id the menu keeps in local storage
+  (`qayema-visitor`, stored as `<id>.<day made>` and made anew after 395
+  days, as audience counting is expected to), sent as `visitor` with every batch; without one, a
+  hash of the IP and user agent (`MenuEventsRequest::visitor()`). It is the
+  `session_id` of the visit and of its actions alike. The menu stores no
+  session for guests, so the session id is not it.
 - **Guest actions:** `public/js/menu-track.js` batches what guests do into
   `POST /{slug}/events` (`throttle:menu-events`, never a ban, since a dining room
   shares one IP) → `MenuEventRecorder` → `menu_events`. Types are
@@ -1335,7 +1419,7 @@ with the design**, so a printed code keeps working whatever is saved.
   `qayema:track` DOM event rather than calling the tracker, so a menu without
   it loses nothing. The recorder drops a dish/category that is not the
   restaurant's, clears fields a type does not carry, and normalises search
-  terms. Events share the visit's `session_id`, which is what the funnel counts.
+  terms. Events share the visit's `session_id` (the visitor id), which is what the funnel counts.
   Recorded on **every** package, so moving up shows history at once. Owner
   previews load no tracker.
 - **Reading:** `App\Services\Analytics\MenuStats`. `summary()` (`GET /api/analytics`)
@@ -1411,8 +1495,9 @@ nothing to do with menus.
   it, and the second language starts as Arabic (English for an Arabic
   menu), shown once the package has more than one language.
 
-A load whose referer is this same menu is **not** recorded as a visit: a
-language switch is one visit continuing, not two.
+A page reached from this same menu reports **no** visit (menu-track.js
+compares `document.referrer` with `QAYEMA_TRACK.menu`): a language switch is
+one visit continuing, not two.
 
 ## Opening hours
 

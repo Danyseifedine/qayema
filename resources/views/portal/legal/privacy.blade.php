@@ -9,8 +9,8 @@
 @section('headline_plain', 'Privacy')
 @section('headline_italic', 'Policy')
 @section('headline_ar', 'سياسة الخصوصية')
-@section('updated', 'Last updated: October 3, 2026')
-@section('updated_ar', 'آخر تحديث: 3 أكتوبر 2026')
+@section('updated', 'Last updated: October 12, 2026')
+@section('updated_ar', 'آخر تحديث: 12 أكتوبر 2026')
 
 @section('toc')
     <li><a href="#information">Information we collect</a></li>
@@ -56,8 +56,8 @@
 <p>When you use our contact form or ask for a package from your dashboard, we store your name, email address, your message and the IP address it was sent from (used to limit each address to three messages a day). For a package request we also store your account and the package you asked for. An email with the message is sent to our team.</p>
 
 <h3>Guests on public menus</h3>
-<p>We do not track how you use the dashboard. When a guest opens a public menu, we record one entry per menu view with: a session identifier (the browser session's ID or, when there is no session, a one-way hash of the IP address and browser; the IP address itself is not stored in these entries), the device type (mobile, tablet or desktop), the browser name, the operating system, the menu language, whether the visit came through the menu's QR code, and the time.</p>
-<p>We also record some of the actions guests take on a menu, tied to the same session identifier: adding a dish to the cart, opening a category, search terms (in a normalised form) and searches that found nothing, taps on the WhatsApp, map, call and social links, and switching language. The restaurant's owner sees these records as statistics. Both kinds of records are deleted automatically after 6 months. Owners previewing their own menu are not recorded. These records hold no names, phone numbers or other contact details; the only guest contact details we keep are those a guest types into an order placed in the menu (see Orders).</p>
+<p>We do not track how you use the dashboard. When a guest opens a public menu, we record one entry per menu view with: an anonymous identifier (a random one the menu keeps in the guest's browser storage or, where the browser keeps none, a one-way hash of the IP address and browser; the IP address itself is not stored in these entries), the device type (mobile, tablet or desktop), the browser name, the operating system, the menu language, whether the visit came through the menu's QR code, and the time.</p>
+<p>We also record some of the actions guests take on a menu, tied to the same anonymous identifier: adding a dish to the cart, opening a category, search terms (in a normalised form) and searches that found nothing, taps on the WhatsApp, map, call and social links, and switching language. The restaurant's owner sees these records as statistics. Both kinds of records are deleted automatically after 6 months. Owners previewing their own menu are not recorded. These records hold no names, phone numbers or other contact details; the only guest contact details we keep are those a guest types into an order placed in the menu (see Orders).</p>
 
 <h3>Orders</h3>
 <p>On menus whose package includes ordering, the restaurant takes orders in one of two ways. Either way, when a guest places an order we store the dishes ordered (name, price and quantity), the total, the currency, an optional note written by the guest, and the time.</p>
@@ -69,7 +69,7 @@
 <p>We delete a guest's name, phone number, address and location from an order 90 days after it was placed. The rest of the order stays as part of the restaurant's records.</p>
 
 <h3>Technical data</h3>
-<p>Like any website, our servers receive the IP address, browser details and time of each request, which we use for security, debugging, and keeping the service running. We keep a session record for each browser that visits, including guests on a menu, holding its IP address, browser user agent and last activity time; it is removed after a year without activity. An IP address that sends abusive traffic can be blocked automatically for a period, and we keep the blocked address, the reason and when the block ends.</p>
+<p>Like any website, our servers receive the IP address, browser details and time of each request, which we use for security, debugging, and keeping the service running. We keep a session record for each browser that signs in or sends a form on our website, holding what is needed to keep it signed in; it is removed after a year without activity. Guests on a menu, and visitors who only read our pages, are not given one. An IP address that sends abusive traffic can be blocked automatically for a period, and we keep the blocked address, the reason and when the block ends.</p>
 
 <h3>Payments</h3>
 <p>Qayema does not take payments. Paid packages are arranged and paid for directly with Lebify Group, so no payment details are entered into or stored by Qayema.</p>
@@ -169,8 +169,8 @@
 <p>عند استخدامك نموذج التواصل أو طلبك باقة من لوحة تحكمك، نحتفظ باسمك وعنوان بريدك الإلكتروني ورسالتك وعنوان IP الذي أُرسلت منه (ويُستخدم لحصر كل عنوان في ثلاث رسائل يوميًا). وفي طلب الباقة نحتفظ أيضًا بحسابك والباقة التي طلبتها. تُرسل رسالة بريد إلكتروني تتضمن الرسالة إلى فريقنا.</p>
 
 <h3>ضيوف القوائم العامة</h3>
-<p>لا نتتبّع كيفية استخدامك للوحة التحكم. عندما يفتح ضيف قائمة عامة، نسجّل إدخالًا واحدًا لكل مشاهدة للقائمة يتضمن: معرّف جلسة (معرّف جلسة المتصفح، أو عند عدم وجود جلسة، تجزئة أحادية الاتجاه لعنوان IP والمتصفح؛ ولا يُخزَّن عنوان IP نفسه في هذه الإدخالات)، ونوع الجهاز (هاتف أو جهاز لوحي أو حاسوب)، واسم المتصفح، ونظام التشغيل، ولغة القائمة، وما إذا جاءت الزيارة عبر رمز QR الخاص بالقائمة، ووقت الزيارة.</p>
-<p>ونسجّل أيضًا بعض ما يفعله الضيوف في القائمة، مرتبطًا بمعرّف الجلسة نفسه: إضافة طبق إلى السلة، وفتح فئة، وكلمات البحث (بصيغة موحّدة) وعمليات البحث التي لم تجد نتيجة، والنقر على روابط WhatsApp والخريطة والاتصال ومواقع التواصل، وتبديل اللغة. يرى صاحب المطعم هذه السجلات على شكل إحصاءات. ويُحذف النوعان تلقائيًا بعد 6 أشهر. لا تُسجَّل معاينة أصحاب المطاعم لقوائمهم. ولا تتضمن هذه السجلات أسماء أو أرقام هواتف أو أي بيانات تواصل؛ فبيانات التواصل الوحيدة التي نحتفظ بها هي ما يكتبه الضيف في طلب يرسله من داخل القائمة (انظر الطلبات).</p>
+<p>لا نتتبّع كيفية استخدامك للوحة التحكم. عندما يفتح ضيف قائمة عامة، نسجّل إدخالًا واحدًا لكل مشاهدة للقائمة يتضمن: معرّف مجهول (معرّف عشوائي تحفظه القائمة في تخزين متصفح الضيف، أو حين لا يحفظ المتصفح شيئًا، تجزئة أحادية الاتجاه لعنوان IP والمتصفح؛ ولا يُخزَّن عنوان IP نفسه في هذه الإدخالات)، ونوع الجهاز (هاتف أو جهاز لوحي أو حاسوب)، واسم المتصفح، ونظام التشغيل، ولغة القائمة، وما إذا جاءت الزيارة عبر رمز QR الخاص بالقائمة، ووقت الزيارة.</p>
+<p>ونسجّل أيضًا بعض ما يفعله الضيوف في القائمة، مرتبطًا بالمعرّف المجهول نفسه: إضافة طبق إلى السلة، وفتح فئة، وكلمات البحث (بصيغة موحّدة) وعمليات البحث التي لم تجد نتيجة، والنقر على روابط WhatsApp والخريطة والاتصال ومواقع التواصل، وتبديل اللغة. يرى صاحب المطعم هذه السجلات على شكل إحصاءات. ويُحذف النوعان تلقائيًا بعد 6 أشهر. لا تُسجَّل معاينة أصحاب المطاعم لقوائمهم. ولا تتضمن هذه السجلات أسماء أو أرقام هواتف أو أي بيانات تواصل؛ فبيانات التواصل الوحيدة التي نحتفظ بها هي ما يكتبه الضيف في طلب يرسله من داخل القائمة (انظر الطلبات).</p>
 
 <h3>الطلبات</h3>
 <p>في القوائم التي تتضمن باقتها استقبال الطلبات، يستقبل المطعم الطلبات بإحدى طريقتين. وفي الحالتين، عندما يرسل ضيف طلبًا نحتفظ بالأطباق المطلوبة (الاسم والسعر والكمية) والمجموع والعملة وملاحظة اختيارية يكتبها الضيف ووقت الطلب.</p>
@@ -182,7 +182,7 @@
 <p>نحذف اسم الضيف ورقم هاتفه وعنوانه وموقعه من الطلب بعد 90 يومًا من إرساله. ويبقى باقي الطلب ضمن سجلات المطعم.</p>
 
 <h3>البيانات التقنية</h3>
-<p>كما في أي موقع إلكتروني، تتلقى خوادمنا عنوان IP وتفاصيل المتصفح ووقت كل طلب، ونستخدمها لأغراض الأمان والتصحيح والحفاظ على عمل الخدمة. ونحتفظ بسجل جلسة لكل متصفح يزورنا، بما في ذلك ضيوف القوائم، يتضمن عنوان IP ووكيل المستخدم للمتصفح ووقت آخر نشاط، ويُحذف بعد سنة دون نشاط. وقد يُحظر تلقائيًا لفترة محددة عنوان IP يرسل حركة مسيئة، ونحتفظ بالعنوان المحظور وسبب الحظر وموعد انتهائه.</p>
+<p>كما في أي موقع إلكتروني، تتلقى خوادمنا عنوان IP وتفاصيل المتصفح ووقت كل طلب، ونستخدمها لأغراض الأمان والتصحيح والحفاظ على عمل الخدمة. ونحتفظ بسجل جلسة لكل متصفح يسجّل الدخول أو يرسل نموذجًا في موقعنا، يتضمن ما يلزم لإبقائه مسجّل الدخول، ويُحذف بعد سنة دون نشاط. ولا يُعطى ضيوف القوائم، ولا الزوار الذين يقرؤون صفحاتنا فقط، سجلًا منها. وقد يُحظر تلقائيًا لفترة محددة عنوان IP يرسل حركة مسيئة، ونحتفظ بالعنوان المحظور وسبب الحظر وموعد انتهائه.</p>
 
 <h3>المدفوعات</h3>
 <p>لا تتقاضى Qayema أي مدفوعات. يُتفق على الباقات المدفوعة وتُدفع مباشرةً مع مجموعة ليبيفاي، لذلك لا تُدخل أي بيانات دفع في Qayema ولا تحتفظ بها.</p>

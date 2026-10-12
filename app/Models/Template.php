@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Menu\MenuCache;
 use App\Support\Color;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -21,6 +22,15 @@ use Spatie\Translatable\HasTranslations;
 class Template extends Model implements HasMedia
 {
     use HasFactory, HasTranslations, InteractsWithMedia;
+
+    /** A design reaches every menu drawn with it: Cloudflare forgets them all (MenuCache). */
+    protected static function booted(): void
+    {
+        $forget = fn () => app(MenuCache::class)->forgetAll();
+
+        static::saved($forget);
+        static::deleted($forget);
+    }
 
     /**
      * Qayema's own gold: the accent a menu has until its owner picks one.

@@ -7,6 +7,7 @@ use App\Enums\Feature;
 use App\Enums\Fulfilment;
 use App\Enums\OrderChannel;
 use App\Enums\PackageStatus;
+use App\Services\Menu\MenuCache;
 use App\Services\Menu\MenuLanguages;
 use App\Services\Orders\WhatsAppLink;
 use App\Services\Packages\Entitlements;
@@ -230,6 +231,14 @@ class Restaurant extends Model implements HasMedia
             }
             PreviousSlug::query()->where('slug', $restaurant->slug)->delete();
         });
+
+        // What guests see changed: Cloudflare forgets the menu, under the link
+        // it just left too (MenuCache). Gone, it forgets the link it had.
+        static::saved(function (self $restaurant): void {
+            app(MenuCache::class)->forget($restaurant, (string) ($restaurant->wasChanged('slug') ? $restaurant->getOriginal('slug') : ''));
+        });
+
+        static::deleted(fn (self $restaurant) => app(MenuCache::class)->forget($restaurant, (string) $restaurant->slug));
 
         static::saved(function (self $restaurant): void {
             // Only an update carries changes; the insert is recorded above.

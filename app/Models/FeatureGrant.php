@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\Feature;
+use App\Models\Concerns\ClearsMenuCache;
 use App\Services\Packages\Entitlements;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class FeatureGrant extends Model
 {
-    use HasFactory;
+    use ClearsMenuCache, HasFactory;
 
     protected $fillable = [
         'restaurant_id',

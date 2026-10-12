@@ -10,11 +10,12 @@ use App\Models\Restaurant;
 use App\Models\Template;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\CreatesOwners;
+use Tests\Support\SendsMenuToken;
 use Tests\TestCase;
 
 class MenuEventsTest extends TestCase
 {
-    use CreatesOwners, RefreshDatabase;
+    use CreatesOwners, RefreshDatabase, SendsMenuToken;
 
     protected function setUp(): void
     {
@@ -161,7 +162,11 @@ class MenuEventsTest extends TestCase
     {
         $restaurant = $this->published(['default_locale' => 'en']);
 
-        $this->get(route('public.menu', ['restaurant' => $restaurant->slug, 'lang' => 'ar']))->assertOk();
+        // The page hands its language to the tracking, which reports it.
+        $this->get(route('public.menu', ['restaurant' => $restaurant->slug, 'lang' => 'ar']))
+            ->assertOk()
+            ->assertSee("locale: 'ar'", false);
+        $this->postJson(route('public.events', $restaurant->slug), ['visit' => ['locale' => 'ar'], 'events' => []])->assertNoContent();
 
         $this->assertDatabaseHas('menu_sessions', ['restaurant_id' => $restaurant->id, 'locale' => 'ar']);
     }

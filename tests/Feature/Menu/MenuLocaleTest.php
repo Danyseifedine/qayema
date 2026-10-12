@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Dish;
 use App\Models\Restaurant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Js;
 use Tests\Support\CreatesOwners;
 use Tests\TestCase;
 
@@ -228,21 +229,18 @@ class MenuLocaleTest extends TestCase
             ->assertDontSee('El+Messiri', false);
     }
 
-    public function test_a_language_switch_is_not_counted_as_a_second_visit(): void
+    public function test_a_language_switch_can_be_told_from_a_new_visit(): void
     {
+        // menu-track.js counts no visit for a page reached from the menu
+        // itself: the link it compares with is the one every language
+        // switch leads back to.
         $restaurant = $this->shop('en');
         $base = route('public.menu', $restaurant->slug);
 
-        $this->get($base)->assertOk();
-        $this->assertSame(1, $restaurant->menuSessions()->count());
-
-        // Arriving from the menu itself is the same visit continuing.
-        $this->get($base.'?lang=ar', ['referer' => $base])->assertOk();
-        $this->assertSame(1, $restaurant->menuSessions()->count());
-
-        // Someone opening a shared Arabic link is a new visit.
-        $this->get($base.'?lang=ar')->assertOk();
-        $this->assertSame(2, $restaurant->menuSessions()->count());
+        $this->get($base)
+            ->assertOk()
+            ->assertSee('menu: '.Js::from($base), false)
+            ->assertSee('href="'.e($base.'?lang=ar').'"', false);
     }
 
     public function test_a_preview_keeps_previewing_when_the_language_changes(): void

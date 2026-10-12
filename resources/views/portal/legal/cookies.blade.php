@@ -9,15 +9,15 @@
 @section('headline_plain', 'Cookie')
 @section('headline_italic', 'Policy')
 @section('headline_ar', 'سياسة ملفات الارتباط')
-@section('updated', 'Last updated: September 28, 2026')
-@section('updated_ar', 'آخر تحديث: 28 سبتمبر 2026')
+@section('updated', 'Last updated: October 12, 2026')
+@section('updated_ar', 'آخر تحديث: 12 أكتوبر 2026')
 
 @section('toc')
     <li><a href="#what">What are cookies</a></li>
     <li><a href="#types">Cookies we use</a></li>
     <li><a href="#essential">Essential cookies</a></li>
     <li><a href="#functional">Functional storage</a></li>
-    <li><a href="#analytics">Analytics cookies</a></li>
+    <li><a href="#analytics">Menu statistics</a></li>
     <li><a href="#third">Third-party cookies</a></li>
     <li><a href="#control">Controlling cookies</a></li>
     <li><a href="#changes">Changes</a></li>
@@ -29,7 +29,7 @@
     <li><a href="#types-ar">ملفات الارتباط التي نستخدمها</a></li>
     <li><a href="#essential-ar">ملفات الارتباط الأساسية</a></li>
     <li><a href="#functional-ar">التخزين الوظيفي</a></li>
-    <li><a href="#analytics-ar">ملفات الارتباط التحليلية</a></li>
+    <li><a href="#analytics-ar">إحصاءات القوائم</a></li>
     <li><a href="#third-ar">ملفات الارتباط من الأطراف الثالثة</a></li>
     <li><a href="#control-ar">التحكم في ملفات الارتباط</a></li>
     <li><a href="#changes-ar">التغييرات</a></li>
@@ -51,11 +51,11 @@
 
 <h2 id="types">Cookies we use</h2>
 
-<p>We use two categories of cookies and browser storage, and no analytics or advertising cookies:</p>
+<p>We use two categories of cookies and browser storage, plus one anonymous identifier for menu statistics, and no advertising cookies or third-party analytics:</p>
 <ul>
     <li><strong>Essential cookies</strong>: required for the service to function. Cannot be disabled.</li>
     <li><strong>Functional storage</strong>: remembers your preferences (such as the dashboard language) and a guest's cart on a menu.</li>
-    <li><strong>Analytics cookies</strong>: we use none. Menu statistics are recorded on our server, as described below.</li>
+    <li><strong>Menu statistics</strong>: a public menu keeps one random identifier in the guest's browser so its statistics can tell guests apart, as described below. We use no analytics cookies from anyone else.</li>
 </ul>
 
 <h2 id="essential">Essential cookies</h2>
@@ -73,7 +73,7 @@
     <tbody>
         <tr style="border-bottom:1px solid rgba(15,15,16,.06)">
             <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema-session</code></td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Keeps you signed in and holds temporary data such as your chosen website language. On a public menu, it links a guest's visit and actions together for the menu's statistics and protects orders</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Keeps you signed in and holds temporary data, such as the message a form shows once it is sent. Guests on a public menu are not given one</td>
             <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Up to 1 year</td>
         </tr>
         <tr style="border-bottom:1px solid rgba(15,15,16,.06)">
@@ -91,7 +91,7 @@
 
 <h2 id="functional">Functional storage</h2>
 
-<p>Functional storage allows the service to remember choices you make, such as your preferred language and theme, and keeps a guest's cart on a menu. Apart from your website language, which is kept inside the session, these entries live in your browser's local storage and are never sent to our servers on their own. Clearing them may affect your experience.</p>
+<p>Functional storage allows the service to remember choices you make, such as your preferred language and theme, and keeps a guest's cart on a menu. Apart from your website language, which is kept in a small cookie, these entries live in your browser's local storage and are never sent to our servers on their own. Clearing them may affect your experience.</p>
 
 <table style="width:100%;border-collapse:collapse;font-size:13.5px;margin-bottom:16px">
     <thead>
@@ -103,9 +103,9 @@
     </thead>
     <tbody>
         <tr style="border-bottom:1px solid rgba(15,15,16,.06)">
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">owner_locale</code> (inside the session)</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">owner_locale</code> (cookie)</td>
             <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Remembers the language you chose on the website and sign-in pages</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">As long as the session</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">1 year</td>
         </tr>
         <tr style="border-bottom:1px solid rgba(15,15,16,.06)">
             <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema-theme</code> (localStorage)</td>
@@ -125,11 +125,11 @@
     </tbody>
 </table>
 
-<h2 id="analytics">Analytics cookies</h2>
+<h2 id="analytics">Menu statistics</h2>
 
-<p>We do not use analytics cookies or third-party analytics tools, and we do not track how you use the dashboard. Nothing here is used to follow anyone across websites.</p>
+<p>We do not use third-party analytics tools, and we do not track how you use the dashboard. Nothing here is used to follow anyone across websites.</p>
 
-<p>On public menu pages, statistics are recorded on our server rather than in a separate cookie. Each menu view is recorded with the session identifier from the session cookie above (or, without a session, a one-way hash of the IP address and browser; the IP address itself is not stored), the device type, browser name, operating system, menu language, whether the visit came through the menu's QR code, and the time. Some guest actions are recorded with the same identifier: adding a dish to the cart, opening a category, searches (including ones that found nothing), taps on the WhatsApp, map, call and social links, and switching language. The restaurant's owner sees these records as statistics; they are deleted after 6 months, and owners previewing their own menu are not recorded. See our <a href="{{ \App\Support\PortalUrl::to('privacy') }}">Privacy Policy</a> for details.</p>
+<p>On public menu pages, statistics are recorded on our server rather than in a separate cookie. The menu page reports each view itself, with a random identifier it keeps in the guest's local storage (<code>qayema-visitor</code>, replaced by a new one after 13 months; it says nothing about who the guest is). Where the browser keeps no storage, a one-way hash of the IP address and browser is used instead; the IP address itself is not stored. Each view is recorded with that identifier, the device type, browser name, operating system, menu language, whether the visit came through the menu's QR code, and the time. Some guest actions are recorded with the same identifier: adding a dish to the cart, opening a category, searches (including ones that found nothing), taps on the WhatsApp, map, call and social links, and switching language. The restaurant's owner sees these records as statistics; they are deleted after 6 months, and owners previewing their own menu are not recorded. See our <a href="{{ \App\Support\PortalUrl::to('privacy') }}">Privacy Policy</a> for details.</p>
 
 <h2 id="third">Third-party cookies</h2>
 
@@ -157,7 +157,7 @@
     <li><a href="https://support.microsoft.com/en-us/microsoft-edge/delete-cookies-in-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09" target="_blank">Microsoft Edge</a></li>
 </ul>
 
-<p>You can also clear localStorage from your browser's settings or Developer Tools (Application tab) to remove the stored theme, dashboard preferences and menu carts.</p>
+<p>You can also clear localStorage from your browser's settings or Developer Tools (Application tab) to remove the stored theme, dashboard preferences, menu carts and the menu statistics identifier.</p>
 
 <h2 id="changes">Changes to this policy</h2>
 
@@ -182,11 +182,11 @@
 
 <h2 id="types-ar">ملفات الارتباط التي نستخدمها</h2>
 
-<p>نستخدم فئتين من ملفات تعريف الارتباط والتخزين في المتصفح، ولا نستخدم أي ملفات ارتباط تحليلية أو إعلانية:</p>
+<p>نستخدم فئتين من ملفات تعريف الارتباط والتخزين في المتصفح، إضافةً إلى معرّف مجهول واحد لإحصاءات القوائم، ولا نستخدم ملفات ارتباط إعلانية أو أدوات تحليل من أطراف ثالثة:</p>
 <ul>
     <li><strong>ملفات الارتباط الأساسية</strong>: ضرورية لعمل الخدمة. لا يمكن تعطيلها.</li>
     <li><strong>التخزين الوظيفي</strong>: يتذكر تفضيلاتك (مثل لغة لوحة التحكم) وسلة الضيف في القائمة.</li>
-    <li><strong>ملفات الارتباط التحليلية</strong>: لا نستخدم أيًا منها. تُسجَّل إحصاءات القوائم على خادمنا كما هو موضح أدناه.</li>
+    <li><strong>إحصاءات القوائم</strong>: تحفظ القائمة العامة معرّفًا عشوائيًا واحدًا في متصفح الضيف كي تميّز إحصاءاتها بين الضيوف، كما هو موضح أدناه. ولا نستخدم ملفات ارتباط تحليلية من أي جهة أخرى.</li>
 </ul>
 
 <h2 id="essential-ar">ملفات الارتباط الأساسية</h2>
@@ -204,7 +204,7 @@
     <tbody>
         <tr style="border-bottom:1px solid rgba(15,15,16,.06)">
             <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema-session</code></td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">يُبقيك مسجّل الدخول ويخزّن بيانات مؤقتة مثل لغة الموقع التي اخترتها. وفي القائمة العامة، يربط زيارة الضيف وما يفعله ببعضهما لإحصاءات القائمة ويحمي الطلبات</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">يُبقيك مسجّل الدخول ويخزّن بيانات مؤقتة، مثل الرسالة التي يعرضها النموذج بعد إرساله. ولا يُعطى ضيوف القائمة العامة ملفًا منه</td>
             <td style="padding:8px 12px;color:rgba(15,15,16,.75)">حتى سنة واحدة</td>
         </tr>
         <tr style="border-bottom:1px solid rgba(15,15,16,.06)">
@@ -222,7 +222,7 @@
 
 <h2 id="functional-ar">التخزين الوظيفي</h2>
 
-<p>يتيح التخزين الوظيفي للخدمة تذكّر الخيارات التي تتخذها، مثل اللغة والمظهر المفضّلين لديك، ويحفظ سلة الضيف في القائمة. باستثناء لغة الموقع التي تُحفظ داخل الجلسة، تُخزَّن هذه الإدخالات في التخزين المحلي لمتصفحك ولا تُرسل وحدها إلى خوادمنا. قد يؤثر مسحها على تجربتك.</p>
+<p>يتيح التخزين الوظيفي للخدمة تذكّر الخيارات التي تتخذها، مثل اللغة والمظهر المفضّلين لديك، ويحفظ سلة الضيف في القائمة. باستثناء لغة الموقع التي تُحفظ في ملف ارتباط صغير، تُخزَّن هذه الإدخالات في التخزين المحلي لمتصفحك ولا تُرسل وحدها إلى خوادمنا. قد يؤثر مسحها على تجربتك.</p>
 
 <table style="width:100%;border-collapse:collapse;font-size:13.5px;margin-bottom:16px">
     <thead>
@@ -234,9 +234,9 @@
     </thead>
     <tbody>
         <tr style="border-bottom:1px solid rgba(15,15,16,.06)">
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">owner_locale</code> (داخل الجلسة)</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">owner_locale</code> (ملف ارتباط)</td>
             <td style="padding:8px 12px;color:rgba(15,15,16,.75)">يتذكر اللغة التي اخترتها في الموقع وصفحات تسجيل الدخول</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">طوال مدة الجلسة</td>
+            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">سنة واحدة</td>
         </tr>
         <tr style="border-bottom:1px solid rgba(15,15,16,.06)">
             <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema-theme</code> (localStorage)</td>
@@ -256,11 +256,11 @@
     </tbody>
 </table>
 
-<h2 id="analytics-ar">ملفات الارتباط التحليلية</h2>
+<h2 id="analytics-ar">إحصاءات القوائم</h2>
 
-<p>لا نستخدم ملفات ارتباط تحليلية أو أدوات تحليل من أطراف ثالثة، ولا نتتبّع كيفية استخدامك للوحة التحكم. ولا يُستخدم أي مما سبق لتتبّع أحد عبر المواقع.</p>
+<p>لا نستخدم أدوات تحليل من أطراف ثالثة، ولا نتتبّع كيفية استخدامك للوحة التحكم. ولا يُستخدم أي مما سبق لتتبّع أحد عبر المواقع.</p>
 
-<p>في صفحات القوائم العامة، تُسجَّل الإحصاءات على خادمنا وليس في ملف ارتباط منفصل. تُسجَّل كل مشاهدة للقائمة مع معرّف الجلسة المأخوذ من ملف ارتباط الجلسة أعلاه (أو، عند عدم وجود جلسة، تجزئة أحادية الاتجاه لعنوان IP والمتصفح؛ ولا يُخزَّن عنوان IP نفسه)، ونوع الجهاز واسم المتصفح ونظام التشغيل ولغة القائمة وما إذا جاءت الزيارة عبر رمز QR الخاص بالقائمة ووقتها. وتُسجَّل بعض أفعال الضيوف بالمعرّف نفسه: إضافة طبق إلى السلة، وفتح فئة، وعمليات البحث (بما فيها التي لم تجد نتيجة)، والنقر على روابط WhatsApp والخريطة والاتصال ومواقع التواصل، وتبديل اللغة. يرى صاحب المطعم هذه السجلات على شكل إحصاءات، وتُحذف بعد 6 أشهر، ولا تُسجَّل معاينة أصحاب المطاعم لقوائمهم. راجع <a href="{{ \App\Support\PortalUrl::to('privacy') }}">سياسة الخصوصية</a> لمزيد من التفاصيل.</p>
+<p>في صفحات القوائم العامة، تُسجَّل الإحصاءات على خادمنا وليس في ملف ارتباط منفصل. تُبلغ صفحة القائمة عن كل مشاهدة بنفسها، مع معرّف عشوائي تحفظه في التخزين المحلي لمتصفح الضيف (<code>qayema-visitor</code>، يُستبدل بمعرّف جديد بعد 13 شهرًا، ولا يدل على هوية الضيف). وحين لا يحفظ المتصفح شيئًا، تُستخدم بدلًا منه تجزئة أحادية الاتجاه لعنوان IP والمتصفح، ولا يُخزَّن عنوان IP نفسه. وتُسجَّل كل مشاهدة مع ذلك المعرّف، ونوع الجهاز واسم المتصفح ونظام التشغيل ولغة القائمة وما إذا جاءت الزيارة عبر رمز QR الخاص بالقائمة ووقتها. وتُسجَّل بعض أفعال الضيوف بالمعرّف نفسه: إضافة طبق إلى السلة، وفتح فئة، وعمليات البحث (بما فيها التي لم تجد نتيجة)، والنقر على روابط WhatsApp والخريطة والاتصال ومواقع التواصل، وتبديل اللغة. يرى صاحب المطعم هذه السجلات على شكل إحصاءات، وتُحذف بعد 6 أشهر، ولا تُسجَّل معاينة أصحاب المطاعم لقوائمهم. راجع <a href="{{ \App\Support\PortalUrl::to('privacy') }}">سياسة الخصوصية</a> لمزيد من التفاصيل.</p>
 
 <h2 id="third-ar">ملفات الارتباط من الأطراف الثالثة</h2>
 
@@ -288,7 +288,7 @@
     <li><a href="https://support.microsoft.com/en-us/microsoft-edge/delete-cookies-in-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09" target="_blank">Microsoft Edge</a></li>
 </ul>
 
-<p>يمكنك أيضًا مسح التخزين المحلي من إعدادات متصفحك أو أدوات المطوّرين فيه (علامة تبويب التطبيقات) لإزالة المظهر المحفوظ وتفضيلات لوحة التحكم وسلال القوائم.</p>
+<p>يمكنك أيضًا مسح التخزين المحلي من إعدادات متصفحك أو أدوات المطوّرين فيه (علامة تبويب التطبيقات) لإزالة المظهر المحفوظ وتفضيلات لوحة التحكم وسلال القوائم ومعرّف إحصاءات القوائم.</p>
 
 <h2 id="changes-ar">التغييرات على هذه السياسة</h2>
 

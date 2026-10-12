@@ -7,8 +7,10 @@ use App\Models\Category;
 use App\Models\Dish;
 use App\Models\Restaurant;
 use App\Models\RestaurantSocialLink;
+use App\Services\Menu\MenuToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\CreatesOwners;
+use Tests\Support\SendsMenuToken;
 use Tests\TestCase;
 
 /**
@@ -16,7 +18,7 @@ use Tests\TestCase;
  */
 class MenuOrderingTest extends TestCase
 {
-    use CreatesOwners, RefreshDatabase;
+    use CreatesOwners, RefreshDatabase, SendsMenuToken;
 
     protected function setUp(): void
     {
@@ -378,13 +380,15 @@ class MenuOrderingTest extends TestCase
             ->assertDontSee('menu-cart.js', false);
     }
 
-    public function test_the_page_carries_a_csrf_token_for_the_order_post(): void
+    public function test_the_page_carries_the_token_its_order_post_needs(): void
     {
         $shop = $this->shop(true);
 
-        $this->get(route('public.menu', $shop->slug))
-            ->assertOk()
-            ->assertSee('name="csrf-token"', false);
+        $html = $this->get(route('public.menu', $shop->slug))->assertOk()->getContent();
+
+        $this->assertSame(1, preg_match('/<meta name="menu-token" content="([^"]+)">/', $html, $token));
+        $this->assertTrue(MenuToken::isValid($token[1]));
+        $this->assertStringNotContainsString('name="csrf-token"', $html);
     }
 
     public function test_every_dish_carries_what_the_cart_needs(): void
@@ -446,7 +450,7 @@ class MenuOrderingTest extends TestCase
         $this->get(route('public.menu', $shop->slug))
             ->assertOk()
             ->assertSee('dir="rtl"', false)
-            ->assertSee('<span class="info-value"><bdi dir="ltr">09:00 - 22:00</bdi></span>', false)
+            ->assertSee('<span class="info-value"><bdi dir="ltr" data-hours-value>09:00 - 22:00</bdi></span>', false)
             ->assertDontSee('<span class="info-value" dir="ltr">', false);
     }
 

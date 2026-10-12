@@ -8,6 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Testing\TestResponse;
 use Tests\Support\CreatesOwners;
+use Tests\Support\SendsMenuToken;
 use Tests\TestCase;
 
 /**
@@ -16,7 +17,7 @@ use Tests\TestCase;
  */
 class MenuEventsRateLimitTest extends TestCase
 {
-    use CreatesOwners, RefreshDatabase;
+    use CreatesOwners, RefreshDatabase, SendsMenuToken;
 
     private const IP = '203.0.113.9';
 

@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ClearsMenuCache;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class RestaurantSocialLink extends Model
 {
-    use HasFactory;
+    use ClearsMenuCache, HasFactory;
 
     /** Platforms whose icon the menu can render. */
     public const PLATFORMS = ['instagram', 'x', 'facebook', 'tiktok'];

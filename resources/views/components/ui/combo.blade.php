@@ -70,7 +70,9 @@
             <span style="font-size:14.5px;padding:6px 4px;color:rgba(15,15,16,.38);pointer-events:none;user-select:none">{{ $placeholder }}</span>
         </template>
 
+        {{-- Named by the field's label (x-ui.field's for="{{ $name }}"). --}}
         <input class="ui-combo-input"
+               @if ($name) id="{{ $name }}" @endif
                x-model="q"
                @focus="open = true"
                @click.stop="open = true">

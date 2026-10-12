@@ -12,6 +12,7 @@ use App\Models\Restaurant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\Support\CreatesOwners;
+use Tests\Support\SendsMenuToken;
 use Tests\TestCase;
 
 /**
@@ -21,7 +22,7 @@ use Tests\TestCase;
  */
 class MenuOrderTest extends TestCase
 {
-    use CreatesOwners, RefreshDatabase;
+    use CreatesOwners, RefreshDatabase, SendsMenuToken;
 
     private const TOKEN = '1b4e28ba-2fa1-41d2-883f-0016d3cca427';
 
@@ -226,6 +227,7 @@ class MenuOrderTest extends TestCase
     public function test_outside_the_hours_nobody_would_read_it(): void
     {
         $this->travelTo(Carbon::parse('2026-10-05 03:00', 'Asia/Beirut'));
+        $this->freshMenuToken();
         $shop = $this->shop([
             'timezone' => 'Asia/Beirut',
             'opening_hours' => array_fill_keys(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'], ['open' => '09:00', 'close' => '17:00']),
@@ -236,6 +238,7 @@ class MenuOrderTest extends TestCase
             ->assertJsonPath('message', 'We are closed right now, so we cannot take your order.');
 
         $this->travelTo(Carbon::parse('2026-10-05 12:00', 'Asia/Beirut'));
+        $this->freshMenuToken();
 
         $this->postJson(route('public.order', $shop->slug), $this->order($shop))->assertCreated();
     }

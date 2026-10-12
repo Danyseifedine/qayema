@@ -4,7 +4,6 @@ namespace App\Services\Analytics;
 
 use App\Enums\MenuEventType;
 use App\Models\Restaurant;
-use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 /**
@@ -21,16 +20,13 @@ use Illuminate\Support\Str;
 class MenuEventRecorder
 {
     /**
+     * @param  string  $visitor  the guest's anonymous id, the one their visit is recorded under
      * @param  array<int, array{type: string, dish_id?: int|null, category_id?: int|null, value?: string|null}>  $events
      * @return int how many were stored
      */
-    public function record(Restaurant $restaurant, Request $request, array $events): int
+    public function record(Restaurant $restaurant, string $visitor, array $events): int
     {
         try {
-            $session = $request->hasSession()
-                ? $request->session()->getId()
-                : md5($request->ip().$request->userAgent());
-
             $dishIds = $this->idsFor($events, 'dish_id', fn (array $ids) => $restaurant->dishes()->whereKey($ids)->pluck('dishes.id'));
             $categoryIds = $this->idsFor($events, 'category_id', fn (array $ids) => $restaurant->categories()->whereKey($ids)->pluck('id'));
 
@@ -57,7 +53,7 @@ class MenuEventRecorder
 
                 $rows[] = [
                     'restaurant_id' => $restaurant->id,
-                    'session_id' => $session,
+                    'session_id' => $visitor,
                     'type' => $type->value,
                     'dish_id' => $dish,
                     'category_id' => $category,

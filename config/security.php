@@ -18,4 +18,20 @@ return [
         explode(',', (string) env('SECURITY_TRUSTED_IPS', '')),
     ))),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Trusted proxies
+    |--------------------------------------------------------------------------
+    |
+    | The reverse proxies in front of the app (Cloudflare in production), as
+    | comma-separated IPs/CIDRs or * for all: their X-Forwarded-For names the
+    | guest, so rate limits and AbuseGuard see real IPs. Read here, not in
+    | bootstrap/app.php, so a cached config (php artisan optimize) keeps it:
+    | once config is cached, .env is no longer read. AppServiceProvider
+    | applies it.
+    |
+    */
+
+    'trusted_proxies' => env('TRUSTED_PROXIES'),
+
 ];

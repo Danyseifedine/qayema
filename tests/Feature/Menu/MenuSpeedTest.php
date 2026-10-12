@@ -5,11 +5,9 @@ namespace Tests\Feature\Menu;
 use App\Models\Category;
 use App\Models\Dish;
 use App\Models\Restaurant;
-use Illuminate\Foundation\Http\Events\RequestHandled;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Tests\Support\CreatesOwners;
@@ -157,18 +155,14 @@ class MenuSpeedTest extends TestCase
         $this->assertLessThanOrEqual(1, $reads);
     }
 
-    public function test_the_visit_is_written_after_the_page(): void
+    public function test_a_guest_costs_no_session_and_no_write(): void
     {
-        $this->withDefer();
-        $atResponse = null;
-        Event::listen(RequestHandled::class, function () use (&$atResponse): void {
-            $atResponse = $this->shop->menuSessions()->count();
-        });
+        // Nothing is stored for a guest opening the menu: no session (Redis),
+        // no visit row (the page reports its own visit, later), no cookie.
+        $response = $this->get(route('public.menu', $this->shop->slug))->assertOk();
 
-        $this->get(route('public.menu', $this->shop->slug))->assertOk();
-
-        $this->assertSame(0, $atResponse, 'Nothing written before the page went out.');
-        $this->assertSame(1, $this->shop->menuSessions()->count());
+        $response->assertCookieMissing((string) config('session.cookie'))->assertCookieMissing('XSRF-TOKEN');
+        $this->assertSame(0, $this->shop->menuSessions()->count());
     }
 
     public function test_uploads_are_cached_for_a_year_and_text_is_compressed(): void

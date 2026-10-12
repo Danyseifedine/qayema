@@ -91,8 +91,8 @@ class TemplatePreviewTest extends TestCase
             ->assertSee('--accent: #111111', false)
             ->assertDontSee('#ABCDEF');
 
-        // Counted as an ordinary visit.
-        $this->assertDatabaseCount('menu_sessions', 1);
+        // Counted as an ordinary visit: the page carries its tracking.
+        $this->get(route('public.menu', $restaurant->slug).'?preview='.$candidate->id)->assertSee('js/menu-track.js', false);
     }
 
     public function test_another_owner_cannot_preview_on_someone_elses_menu(): void

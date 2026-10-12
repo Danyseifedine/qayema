@@ -10,8 +10,13 @@ use App\Http\Controllers\PublicOrderTrackingController;
 use App\Http\Controllers\QrCardController;
 use App\Http\Controllers\SeoController;
 use App\Http\Controllers\TempUploadController;
+use App\Http\Middleware\CacheMenuForGuests;
 use App\Http\Middleware\EnsureUserIsAdmin;
+use App\Http\Middleware\SetPortalLocale;
+use App\Http\Middleware\StartSessionForReturningVisitors;
+use App\Http\Middleware\VerifyMenuToken;
 use App\Support\PortalUrl;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 
 // The public pages, once per language: English at the root, Arabic under
@@ -24,18 +29,23 @@ foreach (PortalUrl::LOCALES as $locale) {
         ->prefix($root ? '' : $locale)
         ->name($root ? '' : "{$locale}.")
         ->group(function () {
-            Route::get('/', fn () => view('portal.welcome'))->name('home');
-            Route::get('/qr-menu-lebanon', fn () => view('portal.pages.topic', ['topic' => 'lebanon']))->name('lebanon');
-            Route::get('/digital-menu-for-cafes', fn () => view('portal.pages.topic', ['topic' => 'cafes']))->name('cafes');
-            Route::get('/pricing', fn () => view('portal.pages.pricing'))->name('pricing');
-            Route::get('/guides', fn () => view('portal.pages.guides'))->name('guides');
-            Route::get('/guides/{guide}', fn (string $guide) => view('portal.pages.guide', ['guide' => $guide]))
-                ->whereIn('guide', PortalUrl::GUIDES)
-                ->name('guide');
-            Route::get('/privacy-policy', fn () => view('portal.legal.privacy'))->name('privacy');
-            Route::get('/terms-of-service', fn () => view('portal.legal.terms'))->name('terms');
-            Route::get('/cookie-policy', fn () => view('portal.legal.cookies'))->name('cookies');
-            Route::get('/refund-policy', fn () => view('portal.legal.refund'))->name('refund');
+            // The pages without a form store no session for a stranger.
+            Route::group([StartSessionForReturningVisitors::ONLY_RETURNING => true], function () {
+                Route::get('/', fn () => view('portal.welcome'))->name('home');
+                Route::get('/qr-menu-lebanon', fn () => view('portal.pages.topic', ['topic' => 'lebanon']))->name('lebanon');
+                Route::get('/digital-menu-for-cafes', fn () => view('portal.pages.topic', ['topic' => 'cafes']))->name('cafes');
+                Route::get('/pricing', fn () => view('portal.pages.pricing'))->name('pricing');
+                Route::get('/guides', fn () => view('portal.pages.guides'))->name('guides');
+                Route::get('/guides/{guide}', fn (string $guide) => view('portal.pages.guide', ['guide' => $guide]))
+                    ->whereIn('guide', PortalUrl::GUIDES)
+                    ->name('guide');
+                Route::get('/privacy-policy', fn () => view('portal.legal.privacy'))->name('privacy');
+                Route::get('/terms-of-service', fn () => view('portal.legal.terms'))->name('terms');
+                Route::get('/cookie-policy', fn () => view('portal.legal.cookies'))->name('cookies');
+                Route::get('/refund-policy', fn () => view('portal.legal.refund'))->name('refund');
+            });
+
+            // The contact form needs its session from the first visit.
             Route::get('/contact', [ContactController::class, 'show'])->name('contact');
         });
 }
@@ -53,8 +63,7 @@ Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('sitemap');
 Route::middleware(['portal.locale'])->group(function () {
     Route::get('/locale/{locale}', function (string $locale) {
         if (in_array($locale, config('locales.supported', ['en']), true)) {
-            session()->put('owner_locale', $locale);
-            session()->save();
+            SetPortalLocale::remember($locale);
         }
 
         // Only a plain path on this site: no full address, no "//elsewhere",
@@ -91,53 +100,64 @@ Route::middleware(['auth', 'portal.locale'])->group(function () {
         ->name('temp-upload');
 });
 
-// Public, shareable QR table card (qr_studio owners only; 404 otherwise).
-Route::get('/{restaurant:slug}/qr', [QrCardController::class, 'show'])->name('public.qr');
+// Everything a guest does on a menu. A guest is never stored a session
+// (StartSessionForReturningVisitors): the menu needs none, and a year-long
+// one for every guest and crawler would fill Redis. Without one there is no
+// CSRF token to keep, so what the menu sends carries the token its page was
+// given instead (VerifyMenuToken); an owner previewing keeps their session.
+Route::group([
+    StartSessionForReturningVisitors::ONLY_RETURNING => true,
+    'excluded_middleware' => [ValidateCsrfToken::class],
+], function () {
+    // Public, shareable QR table card (qr_studio owners only; 404 otherwise).
+    Route::get('/{restaurant:slug}/qr', [QrCardController::class, 'show'])->name('public.qr');
 
-// The owner's QR design for the menu's "Scan to open this menu" pop-up,
-// fetched once the menu has loaded so the pop-up opens at once.
-Route::get('/{restaurant:slug}/qr-options', [QrCardController::class, 'options'])->name('public.qr.options');
+    // The owner's QR design for the menu's "Scan to open this menu" pop-up,
+    // fetched once the menu has loaded so the pop-up opens at once.
+    Route::get('/{restaurant:slug}/qr-options', [QrCardController::class, 'options'])->name('public.qr.options');
 
-// "Use my location" in the cart, as an address line. A guest taps it once
-// or twice; the limit keeps anyone from using us as a free geocoder.
-Route::get('/{restaurant:slug}/address', [PublicAddressController::class, 'show'])
-    ->middleware('throttle:geocode')
-    ->name('public.address');
+    // "Use my location" in the cart, as an address line. A guest taps it once
+    // or twice; the limit keeps anyone from using us as a free geocoder.
+    Route::get('/{restaurant:slug}/address', [PublicAddressController::class, 'show'])
+        ->middleware('throttle:geocode')
+        ->name('public.address');
 
-// A guest placing an order from the public menu. Two segments, so it is safe
-// beside the one-segment catch-all below; the limiter is deliberately gentle
-// because a whole restaurant shares one wifi and therefore one IP.
-Route::post('/{restaurant:slug}/order', [PublicOrderController::class, 'store'])
-    ->middleware('throttle:orders')
-    ->name('public.order');
+    // A guest placing an order from the public menu. Two segments, so it is safe
+    // beside the one-segment catch-all below; the limiter is deliberately gentle
+    // because a whole restaurant shares one wifi and therefore one IP.
+    Route::post('/{restaurant:slug}/order', [PublicOrderController::class, 'store'])
+        ->middleware(['throttle:orders', VerifyMenuToken::class])
+        ->name('public.order');
 
-// A guest following an order they placed in the menu, in the menu's
-// tracking sheet. The token is long and random, so it cannot be found by
-// guessing; opened as a page it is the menu with the sheet up.
-Route::get('/{restaurant:slug}/order/{token}', [PublicOrderTrackingController::class, 'show'])
-    ->where('token', '[A-Za-z0-9]{40}')
-    ->middleware('throttle:order-status')
-    ->name('public.order.track');
-// The guest changing it from the menu, until the restaurant accepts it.
-Route::get('/{restaurant:slug}/order/{token}/cart', [PublicOrderTrackingController::class, 'cart'])
-    ->where('token', '[A-Za-z0-9]{40}')
-    ->middleware('throttle:order-status')
-    ->name('public.order.cart');
-Route::put('/{restaurant:slug}/order/{token}', [PublicOrderController::class, 'update'])
-    ->where('token', '[A-Za-z0-9]{40}')
-    ->middleware('throttle:orders')
-    ->name('public.order.update');
+    // A guest following an order they placed in the menu, in the menu's
+    // tracking sheet. The token is long and random, so it cannot be found by
+    // guessing; opened as a page it is the menu with the sheet up.
+    Route::get('/{restaurant:slug}/order/{token}', [PublicOrderTrackingController::class, 'show'])
+        ->where('token', '[A-Za-z0-9]{40}')
+        ->middleware('throttle:order-status')
+        ->name('public.order.track');
+    // The guest changing it from the menu, until the restaurant accepts it.
+    Route::get('/{restaurant:slug}/order/{token}/cart', [PublicOrderTrackingController::class, 'cart'])
+        ->where('token', '[A-Za-z0-9]{40}')
+        ->middleware('throttle:order-status')
+        ->name('public.order.cart');
+    Route::put('/{restaurant:slug}/order/{token}', [PublicOrderController::class, 'update'])
+        ->where('token', '[A-Za-z0-9]{40}')
+        ->middleware(['throttle:orders', VerifyMenuToken::class])
+        ->name('public.order.update');
 
-// What guests do on a menu once it is open, in small batches. Keyed per IP
-// like ordering, and for the same reason never a ban: a full dining room
-// shares one address.
-Route::post('/{restaurant:slug}/events', [PublicMenuEventController::class, 'store'])
-    ->middleware('throttle:menu-events')
-    ->name('public.events');
+    // What guests do on a menu once it is open, in small batches. Keyed per IP
+    // like ordering, and for the same reason never a ban: a full dining room
+    // shares one address.
+    Route::post('/{restaurant:slug}/events', [PublicMenuEventController::class, 'store'])
+        ->middleware(['throttle:menu-events', VerifyMenuToken::class])
+        ->name('public.events');
 
-// The public menu: what the QR code points at. Declared last because the slug
-// would otherwise swallow every other path, and constrained to the shape a slug
-// can actually take so reserved prefixes can never be captured.
-Route::get('/{restaurant:slug}', [PublicMenuController::class, 'show'])
-    ->where('restaurant', '(?!(?:'.implode('|', array_map('preg_quote', \App\Models\Restaurant::RESERVED_SLUGS)).')$)[a-z0-9][a-z0-9-]*')
-    ->name('public.menu');
+    // The public menu: what the QR code points at. Declared last because the slug
+    // would otherwise swallow every other path, and constrained to the shape a slug
+    // can actually take so reserved prefixes can never be captured.
+    Route::get('/{restaurant:slug}', [PublicMenuController::class, 'show'])
+        ->middleware(CacheMenuForGuests::class)
+        ->where('restaurant', '(?!(?:'.implode('|', array_map('preg_quote', \App\Models\Restaurant::RESERVED_SLUGS)).')$)[a-z0-9][a-z0-9-]*')
+        ->name('public.menu');
+});

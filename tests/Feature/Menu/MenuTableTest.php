@@ -130,8 +130,8 @@ class MenuTableTest extends TestCase
 
     public function test_a_scan_of_a_table_counts_as_a_qr_scan(): void
     {
-        $this->get($this->table->menuUrl())->assertOk();
-
-        $this->assertTrue($this->shop->menuSessions()->sole()->via_qr);
+        // The table's code carries ?qr=1, which the page's tracking reports.
+        $this->assertStringContainsString('qr=1', $this->table->menuUrl());
+        $this->get($this->table->menuUrl())->assertOk()->assertSee('js/menu-track.js', false);
     }
 }

@@ -7,17 +7,15 @@ use App\Enums\OrderChannel;
 use App\Models\DiningTable;
 use App\Models\Restaurant;
 use App\Models\Template;
-use App\Services\Analytics\MenuVisitRecorder;
 use App\Services\Menu\MapPoint;
 use App\Services\Menu\MenuDishOptions;
 use App\Services\Menu\MenuLanguages;
 use App\Services\Menu\MenuSeo;
+use App\Services\Menu\MenuToken;
 use App\Services\Menu\OpeningHours;
 use App\Services\Orders\WhatsAppLink;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
-
-use function Illuminate\Support\defer;
 
 /**
  * The public menu at /{slug}: the page a guest lands on after scanning the QR
@@ -28,11 +26,13 @@ use function Illuminate\Support\defer;
  * The owner can also open their own menu with `?preview={template_id}` to see
  * any active design on their real content before buying it. Previews are only
  * honoured for the signed-in owner, and are never counted as visits.
+ *
+ * The visit itself is counted by the page (public/js/menu-track.js), so a
+ * page served from a cache counts too.
  */
 class PublicMenuController extends Controller
 {
     public function __construct(
-        private readonly MenuVisitRecorder $visits,
         private readonly MenuSeo $seo,
     ) {}
 
@@ -73,13 +73,6 @@ class PublicMenuController extends Controller
         $settings = $restaurant->designSettings($template);
 
         $locale = $this->locale($request, $restaurant);
-
-        // A guest switching language navigates from this menu back to it.
-        // That is one visit, not two, so a self-referred load is not recorded.
-        // Written after the page is on its way: the guest never waits on it.
-        if ($preview === null && ! $this->cameFromThisMenu($request, $restaurant)) {
-            defer(fn () => $this->visits->record($restaurant, $request, $locale));
-        }
 
         // The menu route carries no locale middleware, so without this every
         // __() on the page resolves against APP_LOCALE and an Arabic menu
@@ -135,6 +128,8 @@ class PublicMenuController extends Controller
             // Each dish's variants and add-ons, for its sheet and the cart.
             'dish_options' => MenuDishOptions::for($restaurant, $restaurant->categories->flatMap->dishes, $locale),
             'seo' => $this->seo->for($restaurant, $locale, $preview !== null),
+            // What the cart and the tracking send in place of a CSRF token.
+            'menu_token' => MenuToken::issue(),
         ]);
     }
 
@@ -198,21 +193,6 @@ class PublicMenuController extends Controller
         return is_string($code) && $code !== '' && strlen($code) <= 16
             ? $restaurant->diningTables()->where('code', $code)->first()
             : null;
-    }
-
-    /** Whether this request is a navigation from this same menu page. */
-    private function cameFromThisMenu(Request $request, Restaurant $restaurant): bool
-    {
-        $referer = (string) $request->headers->get('referer');
-
-        if ($referer === '') {
-            return false;
-        }
-
-        return str_starts_with(
-            rtrim(strtok($referer, '?'), '/'),
-            rtrim(route('public.menu', $restaurant->slug), '/')
-        );
     }
 
     /**

@@ -18,6 +18,14 @@ return [
         'key' => env('RESEND_API_KEY'),
     ],
 
+    // Clears a menu's copies kept by Cloudflare when it changes
+    // (App\Services\Menu\MenuCache). A token allowed only Zone, Cache Purge.
+    // Without both, nothing is cleared and copies expire on their own.
+    'cloudflare' => [
+        'zone_id' => env('CLOUDFLARE_ZONE_ID'),
+        'api_token' => env('CLOUDFLARE_API_TOKEN'),
+    ],
+
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),

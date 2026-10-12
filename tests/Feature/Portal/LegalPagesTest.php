@@ -39,7 +39,7 @@ class LegalPagesTest extends TestCase
     {
         // An Arabic visitor opening the English address still gets English:
         // the address decides.
-        $this->withSession(['owner_locale' => 'ar'])
+        $this->withCookie('owner_locale', 'ar')
             ->get($path)
             ->assertOk()
             ->assertSee('<html lang="en" dir="ltr"', false)
@@ -61,10 +61,26 @@ class LegalPagesTest extends TestCase
             ->assertDontSee("<h2 id=\"{$section}\">", false);
     }
 
-    #[DataProvider('pages')]
-    public function test_an_unsupported_session_locale_changes_nothing(string $path, string $route, string $title, string $section): void
+    public function test_the_cookie_policy_names_what_a_menu_keeps_in_the_browser(): void
     {
-        $this->withSession(['owner_locale' => 'xx'])
+        $this->get('/cookie-policy')
+            ->assertOk()
+            ->assertSee('qayema-visitor', false)
+            ->assertSee('replaced by a new one after 13 months')
+            ->assertSee('Guests on a public menu are not given one')
+            ->assertSee('owner_locale', false);
+
+        $this->get('/ar/cookie-policy')
+            ->assertOk()
+            ->assertSee('qayema-visitor', false)
+            ->assertSee('يُستبدل بمعرّف جديد بعد 13 شهرًا')
+            ->assertSee('ولا يُعطى ضيوف القائمة العامة ملفًا منه');
+    }
+
+    #[DataProvider('pages')]
+    public function test_an_unsupported_remembered_locale_changes_nothing(string $path, string $route, string $title, string $section): void
+    {
+        $this->withCookie('owner_locale', 'xx')
             ->get($path)
             ->assertOk()
             ->assertSee('<html lang="en" dir="ltr"', false)

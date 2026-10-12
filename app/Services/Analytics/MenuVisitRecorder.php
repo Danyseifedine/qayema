@@ -4,32 +4,38 @@ namespace App\Services\Analytics;
 
 use App\Models\MenuSession;
 use App\Models\Restaurant;
+use App\Services\Menu\MenuLanguages;
 use Illuminate\Http\Request;
 
 /**
  * Records one `menu_sessions` row per public menu view: the raw data behind
  * the owner's QR scan counts and the admin visitor widgets. Rows are pruned
- * after the retention window by `stats:rollup`.
+ * after the retention window by `stats:rollup`. The page reports its own
+ * visit (public/js/menu-track.js, through PublicMenuEventController), under
+ * the guest's anonymous visitor id (MenuEventsRequest::visitor()).
  *
  * Deliberately best-effort: analytics must never be the reason a guest can't
  * see a menu, so a failure here is swallowed.
  */
 class MenuVisitRecorder
 {
-    public function record(Restaurant $restaurant, Request $request, ?string $locale = null): ?MenuSession
+    /**
+     * @param  string|null  $locale  the language the page was read in; one the menu does not offer counts as its default
+     */
+    public function record(Restaurant $restaurant, Request $request, string $visitor, ?string $locale, bool $viaQr): ?MenuSession
     {
         try {
             $agent = (string) $request->userAgent();
 
             return $restaurant->menuSessions()->create([
-                'session_id' => $request->hasSession() ? $request->session()->getId() : md5($request->ip().$agent),
+                'session_id' => $visitor,
                 'device_type' => $this->deviceType($agent),
                 'browser' => $this->browser($agent),
                 'os' => $this->os($agent),
-                'locale' => $locale,
+                'locale' => in_array($locale, $restaurant->menuLanguages(), true) ? $locale : MenuLanguages::default($restaurant),
                 // The QR codes encode ?qr=1, which is the only way we can tell a
                 // scan from someone following a shared link.
-                'via_qr' => $request->query('qr') === '1',
+                'via_qr' => $viaQr,
                 'viewed_at' => now(),
             ]);
         } catch (\Throwable) {

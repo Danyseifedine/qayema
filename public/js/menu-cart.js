@@ -96,6 +96,22 @@
         return !editing && going && going.status === 'placed' ? going : null;
     }
 
+    /**
+     * An order placed in the menu waits outside the opening hours: asked of
+     * the guest's own clock (menu-hours.js), so a page Cloudflare kept from
+     * earlier is right; the page's answer when that file is not there. A
+     * WhatsApp cart is never closed (config.closed is not set).
+     */
+    function closedNow() {
+        var hours = window.QAYEMA_HOURS;
+
+        if (config.closed === undefined) {
+            return false;
+        }
+
+        return hours && hours.isOpen ? !hours.isOpen() : config.closed;
+    }
+
     /** The order accepted, on its way or ready: no new one until it is done. */
     function waitingFor() {
         return !editing && going && (going.status === 'accepted' || going.status === 'ready') ? going : null;
@@ -1364,7 +1380,7 @@
 
         parts.filled.appendChild(parts.editing);
         parts.filled.appendChild(parts.lines);
-        if (config.closed) {
+        if (closedNow()) {
             parts.filled.appendChild(element('p', 'cart-closed', strings.closedNote));
         } else if (needsTable()) {
             // Only orders at the table are taken, and this guest has none.
@@ -1388,10 +1404,10 @@
     function paintPlace(button, amount) {
         button.textContent = '';
 
-        if (config.closed || waitingFor() || (needsTable() && !editing)) {
+        if (closedNow() || waitingFor() || (needsTable() && !editing)) {
             button.disabled = true;
             button.classList.remove('split');
-            button.textContent = config.closed ? strings.closed : waitingFor() ? strings.oneAtATime : strings.needsTableShort;
+            button.textContent = closedNow() ? strings.closed : waitingFor() ? strings.oneAtATime : strings.needsTableShort;
             return;
         }
 
@@ -1574,7 +1590,7 @@
 
     function submit(parts) {
         var current = lines();
-        if (current.length === 0 || sending || config.closed || waitingFor() || (needsTable() && !editing)) {
+        if (current.length === 0 || sending || closedNow() || waitingFor() || (needsTable() && !editing)) {
             return;
         }
 
@@ -1598,7 +1614,7 @@
 
         orderToken = orderToken || newToken();
 
-        var token = document.querySelector('meta[name="csrf-token"]');
+        var token = document.querySelector('meta[name="menu-token"]');
 
         sending = true;
         parts.place.disabled = true;
@@ -1611,7 +1627,7 @@
                 headers: {
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
-                    'X-CSRF-TOKEN': token ? token.getAttribute('content') : '',
+                    'X-Menu-Token': token ? token.getAttribute('content') : '',
                 },
                 credentials: 'same-origin',
                 body: JSON.stringify(payload(current)),
@@ -1828,7 +1844,7 @@
         // on the way back, are not added a second time.
         orderToken = orderToken || newToken();
 
-        var token = document.querySelector('meta[name="csrf-token"]');
+        var token = document.querySelector('meta[name="menu-token"]');
 
         window
             .fetch(config.orderUrl + '/' + order.token + '/cart', { headers: { Accept: 'application/json' }, cache: 'no-store' })
@@ -1857,7 +1873,7 @@
                     headers: {
                         'Content-Type': 'application/json',
                         Accept: 'application/json',
-                        'X-CSRF-TOKEN': token ? token.getAttribute('content') : '',
+                        'X-Menu-Token': token ? token.getAttribute('content') : '',
                     },
                     credentials: 'same-origin',
                     body: JSON.stringify({

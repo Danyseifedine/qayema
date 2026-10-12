@@ -34,7 +34,8 @@ class ContactHoneypotTest extends TestCase
 
     public function test_a_filled_honeypot_over_json_looks_sent_but_stores_nothing(): void
     {
-        $this->withSession(['owner_locale' => 'en'])
+        $this->withCredentials()
+            ->withCookie('owner_locale', 'en')
             ->postJson(route('contact.store'), $this->payload(['hp_field' => 'I am a bot']))
             ->assertOk()
             ->assertExactJson(['message' => 'Your message has been sent.']);
@@ -54,7 +55,8 @@ class ContactHoneypotTest extends TestCase
 
     public function test_the_answer_is_in_the_visitors_language(): void
     {
-        $this->withSession(['owner_locale' => 'ar'])
+        $this->withCredentials()
+            ->withCookie('owner_locale', 'ar')
             ->postJson(route('contact.store'), $this->payload(['hp_field' => 'I am a bot']))
             ->assertOk()
             ->assertExactJson(['message' => 'تم إرسال رسالتك.']);

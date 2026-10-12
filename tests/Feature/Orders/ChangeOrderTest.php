@@ -14,6 +14,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Testing\TestResponse;
 use Tests\Support\CreatesOwners;
+use Tests\Support\SendsMenuToken;
 use Tests\TestCase;
 
 /**
@@ -22,7 +23,7 @@ use Tests\TestCase;
  */
 class ChangeOrderTest extends TestCase
 {
-    use CreatesOwners, RefreshDatabase;
+    use CreatesOwners, RefreshDatabase, SendsMenuToken;
 
     private Restaurant $shop;
 
@@ -122,6 +123,7 @@ class ChangeOrderTest extends TestCase
     {
         $order = $this->place();
         $this->travelTo(Carbon::parse('2026-10-03 12:05', 'UTC'));
+        $this->freshMenuToken();
 
         $this->update($order, $this->change([
             ['dish_id' => $this->burger->id, 'quantity' => 2, 'options' => [$this->option('Large')]],

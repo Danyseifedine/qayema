@@ -2,6 +2,7 @@
 
 namespace App\Services\Menu;
 
+use App\Models\Restaurant;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
 
@@ -42,5 +43,10 @@ class DisplayOrder
             ->reorder()
             ->whereIn('id', $orderedIds)
             ->update([...$extra, 'display_order' => DB::raw('case id '.implode(' ', $cases).' end')]);
+
+        // One statement saves no model, so ClearsMenuCache never hears it.
+        if ($relation->getParent() instanceof Restaurant) {
+            app(MenuCache::class)->forget($relation->getParent());
+        }
     }
 }

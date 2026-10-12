@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ClearsMenuCache;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,7 +20,7 @@ use Spatie\Translatable\HasTranslations;
  */
 class Dish extends Model implements HasMedia
 {
-    use HasFactory, HasTranslations, InteractsWithMedia;
+    use ClearsMenuCache, HasFactory, HasTranslations, InteractsWithMedia;
 
     /** @var string[] */
     public array $translatable = ['name', 'ingredients'];

@@ -9,12 +9,13 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\CreatesOwners;
+use Tests\Support\SendsMenuToken;
 use Tests\TestCase;
 
 /** App\Http\Requests\MenuEventsRequest, through POST /{slug}/events. */
 class MenuEventsRequestTest extends TestCase
 {
-    use CreatesOwners, RefreshDatabase;
+    use CreatesOwners, RefreshDatabase, SendsMenuToken;
 
     /** @param  array<string, mixed>  $body */
     private function send(Restaurant $restaurant, array $body): TestResponse
@@ -28,10 +29,10 @@ class MenuEventsRequestTest extends TestCase
         $whatsapp = ['type' => 'whatsapp'];
 
         return [
-            'no events' => [[], 'events', 'The events field is required.'],
-            'events null' => [['events' => null], 'events', 'The events field is required.'],
+            'no events' => [[], 'events', 'The events field is required when visit is not present.'],
+            'events null' => [['events' => null], 'events', 'The events field is required when visit is not present.'],
             'events a string' => [['events' => 'whatsapp'], 'events', 'The events field must be an array.'],
-            'an empty batch' => [['events' => []], 'events', 'The events field is required.'],
+            'an empty batch' => [['events' => []], 'events', 'The events field is required when visit is not present.'],
             'twenty-six events' => [['events' => array_fill(0, 26, $whatsapp)], 'events', 'The events field must not have more than 25 items.'],
             'no type' => [['events' => [['dish_id' => 1]]], 'events.0.type', 'The events.0.type field is required.'],
             'an unknown type' => [['events' => [['type' => 'teleport']]], 'events.0.type', 'The selected events.0.type is invalid.'],
@@ -44,6 +45,12 @@ class MenuEventsRequestTest extends TestCase
             'a value over 64 characters' => [['events' => [['type' => 'search', 'value' => str_repeat('a', 65)]]], 'events.0.value', 'The events.0.value field must not be greater than 64 characters.'],
             'a value that is not a string' => [['events' => [['type' => 'search', 'value' => ['soup']]]], 'events.0.value', 'The events.0.value field must be a string.'],
             'a bad second event' => [['events' => [$whatsapp, ['type' => 'nope']]], 'events.1.type', 'The selected events.1.type is invalid.'],
+            'a visitor id of the wrong shape' => [['visitor' => 'guest-1', 'events' => [$whatsapp]], 'visitor', 'The visitor field format is invalid.'],
+            'a visitor id in capitals' => [['visitor' => str_repeat('A', 32), 'events' => [$whatsapp]], 'visitor', 'The visitor field format is invalid.'],
+            'a visit that is not a list' => [['visit' => 'yes'], 'visit', 'The visit field must be an array.'],
+            'a visit carrying more' => [['visit' => ['qr' => true, 'ip' => '1.2.3.4']], 'visit', 'The visit field must be an array.'],
+            'a visit language too long' => [['visit' => ['locale' => str_repeat('a', 11)]], 'visit.locale', 'The visit.locale field must not be greater than 10 characters.'],
+            'a scan that is not yes or no' => [['visit' => ['qr' => 'maybe']], 'visit.qr', 'The visit.qr field must be true or false.'],
         ];
     }
 
@@ -69,6 +76,21 @@ class MenuEventsRequestTest extends TestCase
         $this->send($restaurant, ['events' => $events])->assertNoContent();
 
         $this->assertDatabaseHas('menu_events', ['restaurant_id' => $restaurant->id, 'type' => MenuEventType::WhatsApp->value]);
+    }
+
+    public function test_a_visit_on_its_own_is_accepted(): void
+    {
+        $this->send($this->published(), ['visitor' => str_repeat('a1', 16), 'visit' => ['locale' => 'en', 'qr' => false], 'events' => []])->assertNoContent();
+
+        $this->assertDatabaseCount('menu_sessions', 1);
+    }
+
+    public function test_a_visit_with_its_first_actions_is_accepted(): void
+    {
+        $this->send($this->published(), ['visitor' => str_repeat('a1', 16), 'visit' => ['locale' => 'en'], 'events' => [['type' => 'map']]])->assertNoContent();
+
+        $this->assertDatabaseCount('menu_sessions', 1);
+        $this->assertDatabaseCount('menu_events', 1);
     }
 
     public function test_a_batch_of_exactly_twenty_five_is_accepted(): void

@@ -10,9 +10,6 @@ use App\Models\Restaurant;
 use App\Services\Analytics\MenuEventRecorder;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\Request;
-use Illuminate\Session\ArraySessionHandler;
-use Illuminate\Session\Store;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\CreatesOwners;
 use Tests\TestCase;
@@ -25,27 +22,12 @@ class MenuEventRecorderTest extends TestCase
 {
     use CreatesOwners, RefreshDatabase;
 
-    private function request(?string $sessionId = null): Request
-    {
-        $request = Request::create('/menu/events', 'POST', server: [
-            'REMOTE_ADDR' => '198.51.100.7',
-            'HTTP_USER_AGENT' => 'TestAgent/1.0',
-        ]);
-
-        if ($sessionId !== null) {
-            $session = new Store('test', new ArraySessionHandler(10), $sessionId);
-            $request->setLaravelSession($session);
-        }
-
-        return $request;
-    }
-
     /**
      * @param  array<int, array<string, mixed>>  $events
      */
-    private function record(Restaurant $restaurant, array $events, ?Request $request = null): int
+    private function record(Restaurant $restaurant, array $events, string $visitor = 'guest'): int
     {
-        return app(MenuEventRecorder::class)->record($restaurant, $request ?? $this->request(), $events);
+        return app(MenuEventRecorder::class)->record($restaurant, $visitor, $events);
     }
 
     /**
@@ -69,12 +51,12 @@ class MenuEventRecorderTest extends TestCase
         $this->assertDatabaseCount('menu_events', 0);
     }
 
-    public function test_every_row_carries_the_restaurant_the_session_and_the_time(): void
+    public function test_every_row_carries_the_restaurant_the_visitor_and_the_time(): void
     {
         $this->travelTo(CarbonImmutable::parse('2026-09-28 12:34:56', 'UTC'));
         $restaurant = $this->owner();
 
-        $count = $this->record($restaurant, [['type' => 'map'], ['type' => 'call']], $this->request(str_repeat('s', 40)));
+        $count = $this->record($restaurant, [['type' => 'map'], ['type' => 'call']], str_repeat('s', 32));
 
         $this->assertSame(2, $count);
         $events = MenuEvent::query()->get();
@@ -82,16 +64,9 @@ class MenuEventRecorderTest extends TestCase
 
         foreach ($events as $event) {
             $this->assertSame($restaurant->id, $event->restaurant_id);
-            $this->assertSame(str_repeat('s', 40), $event->session_id);
+            $this->assertSame(str_repeat('s', 32), $event->session_id);
             $this->assertSame('2026-09-28 12:34:56', $event->occurred_at->format('Y-m-d H:i:s'));
         }
-    }
-
-    public function test_without_a_session_the_visitor_is_the_ip_and_agent(): void
-    {
-        $this->record($this->owner(), [['type' => 'whatsapp']]);
-
-        $this->assertSame(md5('198.51.100.7'.'TestAgent/1.0'), MenuEvent::query()->value('session_id'));
     }
 
     public function test_another_restaurants_category_is_dropped(): void

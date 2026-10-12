@@ -175,7 +175,7 @@ class SignupTest extends TestCase
 
     public function test_the_page_is_in_arabic_for_an_arabic_visitor(): void
     {
-        $this->withSession(['owner_locale' => 'ar'])
+        $this->withCookie('owner_locale', 'ar')
             ->get(route('signup'))
             ->assertOk()
             ->assertSee('أنشئ حسابك.');

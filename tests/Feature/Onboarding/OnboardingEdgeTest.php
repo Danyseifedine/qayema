@@ -52,7 +52,7 @@ class OnboardingEdgeTest extends TestCase
 
     public function test_step_one_offers_every_menu_language_and_suggests_the_page_language(): void
     {
-        $this->withSession(['owner_locale' => 'ar'])
+        $this->withCookie('owner_locale', 'ar')
             ->actingAs($this->fresh())
             ->get(route('onboarding'))
             ->assertOk()
@@ -61,6 +61,17 @@ class OnboardingEdgeTest extends TestCase
             ->assertSee('\u0022value\u0022:\u0022fr\u0022', false)
             ->assertSee('\u0022value\u0022:\u0022hi\u0022', false)
             ->assertSee('main_locale:        "ar"', false);
+    }
+
+    public function test_each_searchable_list_is_named_by_its_label(): void
+    {
+        // A screen reader reads the label for the box people type in.
+        $html = $this->actingAs($this->fresh())->get(route('onboarding'))->assertOk()->getContent();
+
+        foreach (['main_locale', 'currency'] as $field) {
+            $this->assertStringContainsString('for="'.$field.'"', $html);
+            $this->assertMatchesRegularExpression('/<input class="ui-combo-input"\s+id="'.$field.'"/', $html);
+        }
     }
 
     public function test_running_step_one_again_keeps_the_other_languages_of_the_name(): void
