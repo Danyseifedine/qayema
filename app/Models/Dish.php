@@ -46,21 +46,25 @@ class Dish extends Model implements HasMedia
         ];
     }
 
+    /** @return BelongsTo<Restaurant, $this> */
     public function restaurant(): BelongsTo
     {
         return $this->belongsTo(Restaurant::class);
     }
 
+    /** @return BelongsTo<Category, $this> */
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
     }
 
+    /** @return HasMany<DishVariant, $this> */
     public function variants(): HasMany
     {
         return $this->hasMany(DishVariant::class)->orderBy('display_order')->orderBy('id');
     }
 
+    /** @return HasMany<DishAddon, $this> */
     public function addons(): HasMany
     {
         return $this->hasMany(DishAddon::class)->orderBy('display_order')->orderBy('id');

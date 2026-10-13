@@ -2,9 +2,14 @@
 
 namespace Tests\Feature\Menu;
 
+use App\Enums\Feature;
 use App\Models\Category;
 use App\Models\Dish;
+use App\Models\DishAddon;
+use App\Models\DishVariant;
+use App\Models\DishVariantOption;
 use App\Models\Restaurant;
+use App\Models\RestaurantSocialLink;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +26,12 @@ use Tests\TestCase;
 class MenuSpeedTest extends TestCase
 {
     use CreatesOwners, RefreshDatabase;
+
+    /**
+     * What a guest's menu costs once the caches are warm, with every option
+     * on (variants, add-ons, photos, links): 10 in October 2026.
+     */
+    private const MENU_QUERIES = 10;
 
     private Restaurant $shop;
 
@@ -139,6 +150,51 @@ class MenuSpeedTest extends TestCase
         foreach ($local as $url) {
             $this->assertStringContainsString('?v=', $url, "{$url} would be kept a year without a version.");
         }
+    }
+
+    /** Categories of dishes, each with a size to pick, an add-on and a photo. */
+    private function fillMenu(int $categories, int $dishesEach): void
+    {
+        foreach (range(1, $categories) as $ignored) {
+            $category = Category::factory()->create(['restaurant_id' => $this->shop->id]);
+
+            foreach (range(1, $dishesEach) as $ignoredToo) {
+                $dish = Dish::factory()->create(['restaurant_id' => $this->shop->id, 'category_id' => $category->id, 'price' => 5]);
+                $variant = DishVariant::factory()->create(['dish_id' => $dish->id]);
+                DishVariantOption::factory()->count(2)->create(['dish_variant_id' => $variant->id]);
+                DishAddon::factory()->create(['dish_id' => $dish->id]);
+                $dish->addMedia(UploadedFile::fake()->image('dish.jpg', 300, 200))->toMediaCollection('image');
+            }
+        }
+        RestaurantSocialLink::factory()->create(['restaurant_id' => $this->shop->id]);
+    }
+
+    private function queriesForTheMenu(): int
+    {
+        $queries = 0;
+        DB::listen(function () use (&$queries): void {
+            $queries++;
+        });
+        $this->menu();
+
+        return $queries;
+    }
+
+    public function test_the_menu_costs_the_same_few_queries_however_many_dishes_it_has(): void
+    {
+        $this->defaultPackageIncludes(Feature::Variants, Feature::Addons, Feature::Ordering, Feature::MultipleLanguages);
+        $this->fillMenu(1, 1);
+        // The first view also fills the caches every later guest reads.
+        $this->menu();
+        $this->app->forgetScopedInstances();
+        $small = $this->queriesForTheMenu();
+
+        $this->fillMenu(4, 6);
+        $this->app->forgetScopedInstances();
+        $big = $this->queriesForTheMenu();
+
+        $this->assertSame($small, $big, 'A query per dish, category or choice crept in.');
+        $this->assertLessThanOrEqual(self::MENU_QUERIES, $big);
     }
 
     public function test_the_package_is_read_once_per_view(): void

@@ -36,6 +36,7 @@ class MenuEvent extends Model
         ];
     }
 
+    /** @return BelongsTo<Restaurant, $this> */
     public function restaurant(): BelongsTo
     {
         return $this->belongsTo(Restaurant::class);

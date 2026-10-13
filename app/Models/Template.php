@@ -21,6 +21,7 @@ use Spatie\Translatable\HasTranslations;
  */
 class Template extends Model implements HasMedia
 {
+    /** @use HasFactory<\Database\Factories\TemplateFactory> */
     use HasFactory, HasTranslations, InteractsWithMedia;
 
     /** A design reaches every menu drawn with it: Cloudflare forgets them all (MenuCache). */
@@ -88,6 +89,7 @@ class Template extends Model implements HasMedia
         ];
     }
 
+    /** @return HasMany<Restaurant, $this> */
     public function restaurants(): HasMany
     {
         return $this->hasMany(Restaurant::class);

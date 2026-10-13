@@ -17,6 +17,9 @@ use Illuminate\Support\Facades\Cache;
  */
 class Entitlements
 {
+    /** Bumped by flushAll(): every answer kept under an older one is stale. */
+    private const VERSION_KEY = 'entitlements:version';
+
     /** @var array<string, int|null>|null */
     private ?array $resolved = null;
 
@@ -117,15 +120,16 @@ class Entitlements
 
     /**
      * Drop every restaurant's resolved entitlements. Used when something
-     * underneath all of them moves, such as a package's limits.
+     * underneath all of them moves, such as a package's limits. One write
+     * however many restaurants there are: every answer is kept under the
+     * current version (cacheKey()), so a new version leaves the old answers
+     * unread until they expire.
      */
     public static function flushAll(): void
     {
-        Restaurant::query()->select('id')->chunkById(500, function ($restaurants): void {
-            foreach ($restaurants as $restaurant) {
-                self::flush($restaurant->id);
-            }
-        });
+        if (Cache::memo()->increment(self::VERSION_KEY) === false) {
+            Cache::memo()->forever(self::VERSION_KEY, 1);
+        }
     }
 
     /** @return \Illuminate\Support\Collection<int, \App\Models\FeatureGrant> */
@@ -134,9 +138,11 @@ class Entitlements
         return $this->grants ??= $this->restaurant->featureGrants()->active()->get();
     }
 
-    private static function cacheKey(int $restaurantId): string
+    /** Where a restaurant's answer is kept, under the current version (flushAll()). */
+    public static function cacheKey(int $restaurantId): string
     {
-        return 'entitlements:'.$restaurantId;
+        // Memoized: read once a request, whatever the number of restaurants asked about.
+        return 'entitlements:'.(int) Cache::memo()->get(self::VERSION_KEY, 0).':'.$restaurantId;
     }
 
     /**

@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class PreviousSlug extends Model
 {
+    /** @use HasFactory<\Database\Factories\PreviousSlugFactory> */
     use HasFactory;
 
     protected $fillable = [
@@ -27,6 +28,7 @@ class PreviousSlug extends Model
         ];
     }
 
+    /** @return BelongsTo<Restaurant, $this> */
     public function restaurant(): BelongsTo
     {
         return $this->belongsTo(Restaurant::class);

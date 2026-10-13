@@ -7,17 +7,24 @@ use App\Models\Dish;
 use App\Models\Restaurant;
 use App\Models\User;
 use App\Services\Ai\WritingHelp;
+use App\Services\Health\HealthChecks;
 use App\Services\Menu\MenuCache;
 use App\Services\Security\AbuseGuard;
 use App\Support\SiteAddress;
 use Closure;
+use Illuminate\Auth\Events\Authenticated;
 use Illuminate\Auth\SessionGuard;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Events\DiagnosingHealth;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Events\RouteMatched;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -73,6 +80,66 @@ class AppServiceProvider extends ServiceProvider
         $this->pinTheSiteAddress();
         $this->keepTokensToTheirApp();
         $this->neverShowWrittenTextBlank();
+        $this->checkHealthOnUp();
+        $this->nameTheRequestInLogs();
+        $this->keepModelsStrict();
+    }
+
+    /**
+     * A relation read one row at a time (N+1), an attribute that is not
+     * fillable silently dropped, or one read that was never selected throws
+     * locally and in the tests, so it is fixed before it ships. In
+     * production nothing throws: a lazy load is logged once a request per
+     * relation, for Grafana.
+     */
+    private function keepModelsStrict(): void
+    {
+        $production = $this->app->isProduction();
+
+        Model::preventLazyLoading();
+        Model::preventSilentlyDiscardingAttributes(! $production);
+        Model::preventAccessingMissingAttributes(! $production);
+
+        if ($production) {
+            Model::handleLazyLoadingViolationUsing(function (Model $model, string $relation): void {
+                $key = $model::class.'::'.$relation;
+
+                if (! Context::hasHidden('lazy:'.$key)) {
+                    Context::addHidden('lazy:'.$key, true);
+                    Log::warning('Lazy loading: '.$key.' read one row at a time; eager load it.');
+                }
+            });
+        }
+    }
+
+    /**
+     * `/up` checks the database, the cache, and in production the scheduler
+     * and the queue (HealthChecks): an uptime check on it sees any of them down.
+     */
+    private function checkHealthOnUp(): void
+    {
+        Event::listen(DiagnosingHealth::class, HealthChecks::class);
+    }
+
+    /**
+     * Every log line of a request says which page it was, whose menu and who
+     * was signed in, next to its trace id: a Grafana search goes straight to
+     * one restaurant's errors. A queued job carries it along.
+     */
+    private function nameTheRequestInLogs(): void
+    {
+        Event::listen(RouteMatched::class, function (RouteMatched $event): void {
+            Context::add('route', $event->route->getName() ?? $event->route->uri());
+
+            $restaurant = $event->route->parameter('restaurant');
+            if (is_string($restaurant)) {
+                Context::add('restaurant', $restaurant);
+            }
+        });
+
+        Event::listen(Authenticated::class, function (Authenticated $event): void {
+            Context::add('user_id', $event->user->getAuthIdentifier());
+        });
     }
 
     /**
@@ -218,6 +285,9 @@ class AppServiceProvider extends ServiceProvider
         // The menu batches what guests do, so one guest sends a handful of
         // these a visit. The ceiling is for a full room on one wifi.
         $this->defineRateLimiter('menu-events', fn (): Limit => Limit::perMinute(300), autoBan: false);
+        // A dashboard reports at most five errors a page load (reportError);
+        // more than this is a loop or a stranger, and is dropped, never banned.
+        $this->defineRateLimiter('client-errors', fn (): Limit => Limit::perMinute(10), autoBan: false);
 
         // Dashboard SPA endpoints. The SPA polls /api/user on every boot, so the
         // ceiling is generous; a 429 here is self-inflicted (one session), so it

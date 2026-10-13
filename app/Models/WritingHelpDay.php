@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class WritingHelpDay extends Model
 {
+    /** @use HasFactory<\Database\Factories\WritingHelpDayFactory> */
     use HasFactory;
 
     protected $fillable = [
@@ -47,6 +48,7 @@ class WritingHelpDay extends Model
         );
     }
 
+    /** @return BelongsTo<Restaurant, $this> */
     public function restaurant(): BelongsTo
     {
         return $this->belongsTo(Restaurant::class);

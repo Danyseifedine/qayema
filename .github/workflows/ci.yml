@@ -1,0 +1,59 @@
+# Every push and pull request to main: code style, static analysis, the
+# whole test suite at 99% coverage, and known holes in the packages. A red
+# run here means the commit is not deployed (docs/release-checklist.md).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Production runs PHP 8.4 (lsphp); pcov measures the coverage.
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: bcmath, exif, gd, intl, mbstring, pdo_sqlite, sqlite3, zip
+          coverage: pcov
+          tools: composer:v2
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install packages
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare the environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Known security holes in the packages
+        run: composer audit --locked
+
+      - name: Static analysis
+        run: composer analyse
+
+      # Pint, then every test with the 99% coverage gate.
+      - name: Style and tests
+        run: composer check

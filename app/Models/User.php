@@ -32,6 +32,16 @@ class User extends Authenticatable implements FilamentUser
         return $this->isMenuOwner();
     }
 
+    /**
+     * What a new row holds before it is read back (strict models,
+     * AppServiceProvider::keepModelsStrict()).
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'onboarding_completed_at' => null,
+    ];
+
     protected $fillable = [
         'name',
         'username',
@@ -104,17 +114,23 @@ class User extends Authenticatable implements FilamentUser
             : ['username' => self::normalizeUsername($login)];
     }
 
+    /** @return HasOne<Restaurant, $this> */
     public function restaurant(): HasOne
     {
         return $this->hasOne(Restaurant::class);
     }
 
+    /** @return HasMany<SocialAccount, $this> */
     public function socialAccounts(): HasMany
     {
         return $this->hasMany(SocialAccount::class);
     }
 
-    /** The phones this account gets notifications on (the admin app). */
+    /**
+     * The phones this account gets notifications on (the admin app).
+     *
+     * @return HasMany<DeviceToken, $this>
+     */
     public function deviceTokens(): HasMany
     {
         return $this->hasMany(DeviceToken::class);

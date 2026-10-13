@@ -24,7 +24,8 @@ class RemindPackagesEnding extends Command
         $ending = Restaurant::query()
             ->packageEndingWithin($days)
             ->orderBy('package_ends_at')
-            ->get(['id', 'name', 'package_ends_at']);
+            // The main language too: a name written only in Arabic reads in it.
+            ->get(['id', 'name', 'main_locale', 'package_ends_at']);
 
         $reached = $alerts->packagesEnding($ending);
 

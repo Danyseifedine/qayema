@@ -1,0 +1,799 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<\(int\|string\),Illuminate\\Database\\Eloquent\\Model\>\:\:each\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\|string\)\: mixed, Closure\(App\\Models\\Restaurant\)\: void given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Admin/Actions/ChangePackageAction.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\:\:active\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Admin/Resources/BlockedIps/Tables/BlockedIpsTable.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:forgetTranslation\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Admin/Resources/Categories/Pages/CreateCategory.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:getTranslations\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Filament/Admin/Resources/Categories/Pages/CreateCategory.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:forgetTranslation\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Admin/Resources/Categories/Pages/EditCategory.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:getTranslations\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Filament/Admin/Resources/Categories/Pages/EditCategory.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Illuminate\\Database\\Eloquent\\Model\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Admin/Resources/Categories/Pages/EditCategory.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:forgetTranslation\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Admin/Resources/Dishes/Pages/CreateDish.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:getTranslations\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Filament/Admin/Resources/Dishes/Pages/CreateDish.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:forgetTranslation\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Admin/Resources/Dishes/Pages/EditDish.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:getTranslations\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Filament/Admin/Resources/Dishes/Pages/EditDish.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Illuminate\\Database\\Eloquent\\Model\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Admin/Resources/Dishes/Pages/EditDish.php
+
+		-
+			message: '#^Method App\\Filament\\Admin\\Resources\\Dishes\\Schemas\\DishForm\:\:choiceName\(\) should return array\<int, Filament\\Forms\\Components\\TextInput\> but returns array\<int, Filament\\Forms\\Components\\Field\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Filament/Admin/Resources/Dishes/Schemas/DishForm.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Admin/Resources/Packages/PackageResource.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:forgetTranslation\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Admin/Resources/Packages/Pages/EditPackage.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:getTranslations\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Filament/Admin/Resources/Packages/Pages/EditPackage.php
+
+		-
+			message: '#^Parameter \#1 \$package of static method App\\Filament\\Admin\\Resources\\Packages\\PackageResource\:\:deleteWarning\(\) expects App\\Models\\Package, Illuminate\\Database\\Eloquent\\Model\|int\|string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Admin/Resources/Packages/Pages/EditPackage.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Illuminate\\Database\\Eloquent\\Model\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Admin/Resources/Packages/Pages/EditPackage.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:forgetTranslation\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Admin/Resources/Restaurants/Pages/CreateRestaurant.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:getTranslations\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Filament/Admin/Resources/Restaurants/Pages/CreateRestaurant.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:forgetTranslation\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Admin/Resources/Restaurants/Pages/EditRestaurant.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:getTranslations\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Filament/Admin/Resources/Restaurants/Pages/EditRestaurant.php
+
+		-
+			message: '#^Cannot access property \$packageChangeNote on Illuminate\\Database\\Eloquent\\Model\|int\|string\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Filament/Admin/Resources/Restaurants/Pages/EditRestaurant.php
+
+		-
+			message: '#^Cannot access property \$user_id on Illuminate\\Database\\Eloquent\\Model\|int\|string\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Filament/Admin/Resources/Restaurants/Pages/EditRestaurant.php
+
+		-
+			message: '#^Parameter \#1 \$restaurant of static method App\\Filament\\Admin\\Resources\\Restaurants\\Schemas\\PackageFields\:\:stateFor\(\) expects App\\Models\\Restaurant, Illuminate\\Database\\Eloquent\\Model\|int\|string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Admin/Resources/Restaurants/Pages/EditRestaurant.php
+
+		-
+			message: '#^Parameter \#1 \$restaurant of static method App\\Services\\Menu\\MenuLanguages\:\:withMain\(\) expects App\\Models\\Restaurant, Illuminate\\Database\\Eloquent\\Model\|int\|string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Admin/Resources/Restaurants/Pages/EditRestaurant.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Illuminate\\Database\\Eloquent\\Model\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Admin/Resources/Restaurants/Pages/EditRestaurant.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$feature\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Admin/Resources/Restaurants/RelationManagers/FeatureGrantsRelationManager.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Restaurant\:\:\$qr_scans\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Admin/Resources/Restaurants/Tables/RestaurantsTable.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Restaurant\:\:\$total_views\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Admin/Resources/Restaurants/Tables/RestaurantsTable.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Restaurant\:\:\$unique_visitors\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Admin/Resources/Restaurants/Tables/RestaurantsTable.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Restaurant\:\:\$writing_help_tokens\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Filament/Admin/Resources/Restaurants/Tables/RestaurantsTable.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Restaurant\:\:\$writing_help_uses\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Admin/Resources/Restaurants/Tables/RestaurantsTable.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\:\:onPackage\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Admin/Resources/Restaurants/Tables/RestaurantsTable.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\:\:packageActive\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Filament/Admin/Resources/Restaurants/Tables/RestaurantsTable.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\:\:packageEndingWithin\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Filament/Admin/Resources/Restaurants/Tables/RestaurantsTable.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\:\:packageExpired\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Admin/Resources/Restaurants/Tables/RestaurantsTable.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\:\:packageScheduled\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Admin/Resources/Restaurants/Tables/RestaurantsTable.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:forgetTranslation\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Admin/Resources/Templates/Pages/CreateTemplate.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:getTranslations\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Filament/Admin/Resources/Templates/Pages/CreateTemplate.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:forgetTranslation\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Admin/Resources/Templates/Pages/EditTemplate.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:getTranslations\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Filament/Admin/Resources/Templates/Pages/EditTemplate.php
+
+		-
+			message: '#^Parameter \#1 \$template of static method App\\Filament\\Admin\\Resources\\Templates\\Tables\\TemplatesTable\:\:deleteWarning\(\) expects App\\Models\\Template, Illuminate\\Database\\Eloquent\\Model\|int\|string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Admin/Resources/Templates/Pages/EditTemplate.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Illuminate\\Database\\Eloquent\\Model\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Admin/Resources/Templates/Pages/EditTemplate.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Restaurant\:\:\$available_dishes_count\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Admin/Resources/Users/Pages/ViewUser.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>available_dishes_count" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Admin/Resources/Users/Pages/ViewUser.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>categories_count" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Admin/Resources/Users/Pages/ViewUser.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>category_limit" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Admin/Resources/Users/Pages/ViewUser.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>dish_limit" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Admin/Resources/Users/Pages/ViewUser.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>dishes_count" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Admin/Resources/Users/Pages/ViewUser.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>social_link_limit" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Admin/Resources/Users/Pages/ViewUser.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>social_links_count" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Admin/Resources/Users/Pages/ViewUser.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>value" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Admin/Resources/Users/Pages/ViewUser.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>dishes_count" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Admin/Resources/Users/Tables/UsersTable.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>menu_sessions_count" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Admin/Resources/Users/Tables/UsersTable.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>email" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Admin/Widgets/PackagesEndingSoon.php
+
+		-
+			message: '#^Instanceof between Laravel\\Sanctum\\PersonalAccessToken and Laravel\\Sanctum\\PersonalAccessToken will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: app/Http/Controllers/Api/Admin/AuthController.php
+
+		-
+			message: '#^Instanceof between Laravel\\Sanctum\\PersonalAccessToken and Laravel\\Sanctum\\PersonalAccessToken will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: app/Http/Controllers/Api/AuthController.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: app/Http/Controllers/Api/AuthController.php
+
+		-
+			message: '#^Parameter \#1 \$relation of static method App\\Services\\Menu\\DisplayOrder\:\:apply\(\) expects Illuminate\\Database\\Eloquent\\Relations\\HasMany\<covariant Illuminate\\Database\\Eloquent\\Model, Illuminate\\Database\\Eloquent\\Model\>, Illuminate\\Database\\Eloquent\\Relations\\HasMany\<App\\Models\\Category, App\\Models\\Restaurant\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/CategoryController.php
+
+		-
+			message: '#^Parameter \#1 \$relation of static method App\\Services\\Menu\\DisplayOrder\:\:apply\(\) expects Illuminate\\Database\\Eloquent\\Relations\\HasMany\<covariant Illuminate\\Database\\Eloquent\\Model, Illuminate\\Database\\Eloquent\\Model\>, Illuminate\\Database\\Eloquent\\Relations\\HasMany\<App\\Models\\Dish, App\\Models\\Restaurant\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/DishController.php
+
+		-
+			message: '#^Access to an undefined property Laravel\\Socialite\\Contracts\\User\:\:\$expiresIn\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Auth/GoogleController.php
+
+		-
+			message: '#^Access to an undefined property Laravel\\Socialite\\Contracts\\User\:\:\$refreshToken\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Auth/GoogleController.php
+
+		-
+			message: '#^Access to an undefined property Laravel\\Socialite\\Contracts\\User\:\:\$token\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Auth/GoogleController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\Auth\\GoogleController\:\:redirect\(\) should return Illuminate\\Http\\RedirectResponse but returns Symfony\\Component\\HttpFoundation\\RedirectResponse\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Http/Controllers/Auth/GoogleController.php
+
+		-
+			message: '#^Method App\\Http\\Requests\\ContactRequest\:\:rules\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Http/Requests/ContactRequest.php
+
+		-
+			message: '#^Unable to resolve the template type TKey in call to function collect$#'
+			identifier: argument.templateType
+			count: 1
+			path: app/Http/Requests/EditOrderItemsRequest.php
+
+		-
+			message: '#^Unable to resolve the template type TValue in call to function collect$#'
+			identifier: argument.templateType
+			count: 1
+			path: app/Http/Requests/EditOrderItemsRequest.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Requests/StoreDishRequest.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Requests/StoreSocialLinkRequest.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Requests/UpdateDishRequest.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Requests/UpdateSocialLinkRequest.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AdminResource\:\:\$username\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AdminResource.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Carbon\\Carbon\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Resources/OrderResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UserResource\:\:\$username\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UserResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Contracts\\Auth\\Authenticatable\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UserResource.php
+
+		-
+			message: '#^Using nullsafe property access on non\-nullable type Illuminate\\Contracts\\Auth\\Authenticatable\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Resources/UserResource.php
+
+		-
+			message: '#^Method App\\Models\\BlockedIp\:\:prunable\(\) should return Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\BlockedIp\> but returns Illuminate\\Database\\Eloquent\\Builder\<static\(App\\Models\\BlockedIp\)\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Models/BlockedIp.php
+
+		-
+			message: '#^Class App\\Models\\Category uses generic trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory but does not specify its types\: TFactory$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/Category.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between int\<0, max\> and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Models/Concerns/ClearsMenuCache.php
+
+		-
+			message: '#^Call to an undefined method Spatie\\Image\\Drivers\\ImageDriver\:\:nonQueued\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Models/Dish.php
+
+		-
+			message: '#^Class App\\Models\\Dish uses generic trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory but does not specify its types\: TFactory$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/Dish.php
+
+		-
+			message: '#^Class App\\Models\\FeatureGrant uses generic trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory but does not specify its types\: TFactory$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/FeatureGrant.php
+
+		-
+			message: '#^Call to an undefined method Spatie\\Image\\Drivers\\ImageDriver\:\:nonQueued\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Models/Restaurant.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>value" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Models/Restaurant.php
+
+		-
+			message: '#^Class App\\Models\\RestaurantSocialLink uses generic trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory but does not specify its types\: TFactory$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/RestaurantSocialLink.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Models/Template.php
+
+		-
+			message: '#^Offset ''key'' on array\{key\: string, type\: ''boolean''\|''color''\|''select''\|''text'', default\: mixed, label\?\: array\<string, string\|null\>, contrast_with\?\: string\|null, options\?\: array\<int, string\>\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Models/Template.php
+
+		-
+			message: '#^Offset ''key'' on array\{key\: string, type\: string, default\: mixed, label\?\: array\<string, string\|null\>, contrast_with\?\: string\|null, options\?\: array\<int, string\>\} in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 2
+			path: app/Models/Template.php
+
+		-
+			message: '#^Offset ''type'' on array\{key\: string, type\: string, default\: mixed, label\?\: array\<string, string\|null\>, contrast_with\?\: string\|null, options\?\: array\<int, string\>\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Models/Template.php
+
+		-
+			message: '#^Method App\\Models\\User\:\:username\(\) return type with generic class Illuminate\\Database\\Eloquent\\Casts\\Attribute does not specify its types\: TGet, TSet$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: '#^Method App\\Models\\WritingHelpDay\:\:day\(\) return type with generic class Illuminate\\Database\\Eloquent\\Casts\\Attribute does not specify its types\: TGet, TSet$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/WritingHelpDay.php
+
+		-
+			message: '#^Instanceof between Illuminate\\Auth\\SessionGuard and Illuminate\\Auth\\SessionGuard will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: app/Providers/AppServiceProvider.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\WritingHelpDay\:\:\$day\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Ai/WritingHelpLog.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\WritingHelpDay\:\:\$restaurants\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/Ai/WritingHelpLog.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\WritingHelpDay\:\:\$tokens\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Ai/WritingHelpLog.php
+
+		-
+			message: '#^Method App\\Services\\Ai\\WritingHelpLog\:\:lastDaysOf\(\) return type with generic class Illuminate\\Database\\Eloquent\\Builder does not specify its types\: TModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Services/Ai/WritingHelpLog.php
+
+		-
+			message: '#^Method App\\Services\\Ai\\WritingHelpUses\:\:forDashboard\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Services/Ai/WritingHelpUses.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\MenuSession\:\:\$bucket\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Analytics/MenuStats.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\MenuSession\:\:\$qr_scans\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Analytics/MenuStats.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\MenuSession\:\:\$views\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Analytics/MenuStats.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$bucket\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Analytics/MenuStats.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$category_id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/Analytics/MenuStats.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$closed_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Analytics/MenuStats.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$currency\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Analytics/MenuStats.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$dish_id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/Analytics/MenuStats.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$fulfilment\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Analytics/MenuStats.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$guest_phone\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Analytics/MenuStats.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$placed_at\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/Analytics/MenuStats.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/Analytics/MenuStats.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$total\.$#'
+			identifier: property.notFound
+			count: 5
+			path: app/Services/Analytics/MenuStats.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$value\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Analytics/MenuStats.php
+
+		-
+			message: '#^Method App\\Services\\Analytics\\MenuStats\:\:breakdown\(\) has parameter \$visits with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany but does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Services/Analytics/MenuStats.php
+
+		-
+			message: '#^Method App\\Services\\Analytics\\MenuStats\:\:events\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Services/Analytics/MenuStats.php
+
+		-
+			message: '#^Method App\\Services\\Analytics\\MenuStats\:\:funnel\(\) has parameter \$visits with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany but does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Services/Analytics/MenuStats.php
+
+		-
+			message: '#^Method App\\Services\\Analytics\\MenuStats\:\:inRange\(\) has parameter \$query with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany but does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Services/Analytics/MenuStats.php
+
+		-
+			message: '#^Method App\\Services\\Analytics\\MenuStats\:\:inRange\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Services/Analytics/MenuStats.php
+
+		-
+			message: '#^Method App\\Services\\Analytics\\MenuStats\:\:inRange\(\) should return Illuminate\\Database\\Eloquent\\Relations\\HasMany but returns Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Services/Analytics/MenuStats.php
+
+		-
+			message: '#^Method App\\Services\\Analytics\\MenuStats\:\:menuOrdersInRange\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Services/Analytics/MenuStats.php
+
+		-
+			message: '#^Method App\\Services\\Analytics\\MenuStats\:\:ordersInRange\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Services/Analytics/MenuStats.php
+
+		-
+			message: '#^Method App\\Services\\Analytics\\MenuStats\:\:ordersInRange\(\) should return Illuminate\\Database\\Eloquent\\Relations\\HasMany but returns Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\Order\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Services/Analytics/MenuStats.php
+
+		-
+			message: '#^Method App\\Services\\Analytics\\MenuStats\:\:visitTotals\(\) has parameter \$visits with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany but does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Services/Analytics/MenuStats.php
+
+		-
+			message: '#^Method App\\Services\\Health\\HealthChecks\:\:database\(\) never returns string so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: app/Services/Health/HealthChecks.php
+
+		-
+			message: '#^Parameter \#1 \$image of method App\\Services\\Media\\MediaService\:\:saveCompressed\(\) expects Intervention\\Image\\Image, Intervention\\Image\\Interfaces\\ImageInterface given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Media/MediaService.php
+
+		-
+			message: '#^Parameter \#2 \$excludedMedia of method Spatie\\MediaLibrary\\HasMedia\:\:clearMediaCollectionExcept\(\) expects array\|Illuminate\\Support\\Collection, Spatie\\MediaLibrary\\MediaCollections\\Models\\Media given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Media/MediaService.php
+
+		-
+			message: '#^Method App\\Services\\Menu\\MenuDishOptions\:\:relations\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Services/Menu/MenuDishOptions.php
+
+		-
+			message: '#^Method App\\Services\\Menu\\MenuFonts\:\:css\(\) has parameter \$families with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Services/Menu/MenuFonts.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:forgetTranslation\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/Menu/MenuLanguages.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:getTranslations\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Services/Menu/MenuLanguages.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:setTranslation\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/Menu/MenuLanguages.php
+
+		-
+			message: '#^Method App\\Services\\Menu\\OpeningHours\:\:__construct\(\) has parameter \$week with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Services/Menu/OpeningHours.php
+
+		-
+			message: '#^Method App\\Services\\Menu\\OpeningHours\:\:normalise\(\) has parameter \$input with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Services/Menu/OpeningHours.php
+
+		-
+			message: '#^Property App\\Models\\Restaurant\:\:\$package_ends_at \(Carbon\\Carbon\|null\) does not accept Carbon\\CarbonImmutable\|null\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Services/Packages/PackageAssigner.php

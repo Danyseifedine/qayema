@@ -4,7 +4,8 @@ namespace App\Models;
 
 use App\Enums\Feature;
 use App\Models\Concerns\ClearsMenuCache;
-use App\Services\Packages\Entitlements;
+use App\Observers\FeatureGrantObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * One grant an admin stacked on top of the restaurant's package. Limits add their `value` to
  * the allowance; flags switch theirs on.
  */
+#[ObservedBy(FeatureGrantObserver::class)]
 class FeatureGrant extends Model
 {
     use ClearsMenuCache, HasFactory;
@@ -38,27 +40,12 @@ class FeatureGrant extends Model
     }
 
     /**
-     * What the restaurant had in reach before this grant was saved; never
-     * stored on the row.
+     * What the restaurant had in reach before this grant was saved
+     * (FeatureGrantObserver); never stored on the row.
      *
      * @var array<int, string>
      */
-    private array $inReachBeforeSave = [];
-
-    protected static function booted(): void
-    {
-        static::saving(function (self $grant): void {
-            $grant->inReachBeforeSave = $grant->restaurant->featuresInReach();
-        });
-
-        static::saved(function (self $grant): void {
-            Entitlements::flush($grant->restaurant_id);
-            // A flag it grants arrives switched on, as with a new package.
-            $grant->restaurant->switchOnWhatCameIntoReach($grant->inReachBeforeSave);
-        });
-
-        static::deleted(fn (self $grant) => Entitlements::flush($grant->restaurant_id));
-    }
+    public array $inReachBeforeSave = [];
 
     /**
      * @param  Builder<FeatureGrant>  $query
@@ -71,6 +58,7 @@ class FeatureGrant extends Model
         );
     }
 
+    /** @return BelongsTo<Restaurant, $this> */
     public function restaurant(): BelongsTo
     {
         return $this->belongsTo(Restaurant::class);

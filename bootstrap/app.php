@@ -33,6 +33,13 @@ $app = Application::configure(basePath: dirname(__DIR__))
         // group with the cookie/session/CSRF stack only for our own frontend.
         $middleware->statefulApi();
 
+        // Before anything else: a request that went around Cloudflare stops here.
+        $middleware->prepend(\App\Http\Middleware\OnlyThroughCloudflare::class);
+
+        // The dashboard's error reports and the browser's CSP reports come
+        // without a CSRF token (routes/api.php); they only write to the log.
+        $middleware->validateCsrfTokens(except: ['api/client-errors', 'api/csp-report']);
+
         // SecurityHeaders is prepended so it wraps every response. BlockAbusiveIps
         // is appended so it runs *after* the session starts; that's what lets its
         // admin bypass see the authenticated user (a prepended copy would run before

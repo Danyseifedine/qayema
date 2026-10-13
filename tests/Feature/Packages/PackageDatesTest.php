@@ -143,7 +143,7 @@ class PackageDatesTest extends TestCase
 
         $this->assigner()->assign($restaurant, Package::findBySlug('pro'), now(), now()->addMonth(), 'Paid by bank transfer.');
 
-        $history = $restaurant->packageChanges()->get();
+        $history = $restaurant->packageChanges()->with(['fromPackage', 'toPackage'])->get();
         $this->assertCount(2, $history, 'The creation and the change.');
 
         $change = $history->first();

@@ -2,17 +2,29 @@
 #
 # Deploys Qayema on the server, from the app's folder:
 #
-#     bash deploy.sh
+#     bash deploy.sh          only what this release needs
+#     bash deploy.sh --full   every step, whatever changed
 #
-# Guests see Laravel's "back in a moment" page while it runs (about half a
-# minute), instead of errors from code half pulled. It stops at the first
-# step that fails and puts the site back up either way; nothing it does
-# deletes data. Pulls fast-forward only, so a file edited on the server
-# stops it rather than being merged over.
+# It looks at what changed between the code on the server and origin/main
+# and runs only what that needs, so a release that only changes code is a
+# pull and a cache refresh, a few seconds with the site up:
 #
-# Config, routes, events and views are cached at the end. From then on, a
-# change to .env takes effect only after `php artisan optimize` (or
-# `php artisan config:cache`).
+#   always                          pull, `php artisan optimize`, a check of /up
+#   composer.json / composer.lock   maintenance mode while `composer install` runs
+#   a PHP file added or removed     the class map rebuilt (composer dump-autoload)
+#   a migration                     maintenance mode while `migrate` runs
+#   the menu page (views, its js
+#   and css, translations, menu
+#   services)                       every menu Cloudflare keeps is cleared
+#
+# The queue worker needs nothing: the scheduler starts it fresh every minute.
+# Nothing here deletes data. It pulls fast-forward only, so a file edited on
+# the server stops it rather than being merged over. A step that fails stops
+# it and prints FAILED; the site is never left in maintenance mode by a
+# failed step, except when the app no longer starts.
+#
+# A change to .env alone needs no deploy: `php artisan optimize`.
+# Deploy only a commit CI passed (docs/release-checklist.md).
 
 set -euo pipefail
 
@@ -20,15 +32,86 @@ cd "$(dirname "$0")"
 
 PHP="${PHP:-php}"
 COMPOSER="${COMPOSER:-composer}"
+FULL=false
+[ "${1:-}" = "--full" ] && FULL=true
 
-echo "Deploying $(git rev-parse --short HEAD) -> origin/main"
+git fetch --quiet origin main
+OLD="$(git rev-parse HEAD)"
+NEW="$(git rev-parse origin/main)"
 
-"$PHP" artisan down --retry=15
-trap '"$PHP" artisan up' EXIT
+if [ "$OLD" = "$NEW" ] && ! $FULL; then
+    echo "Already on $(git rev-parse --short HEAD): nothing to deploy."
+    exit 0
+fi
 
-git pull --ff-only origin main
-"$COMPOSER" install --no-dev --no-interaction --prefer-dist --optimize-autoloader
-"$PHP" artisan migrate --force
+# What changed, and which steps that calls for.
+changed() { [ -n "$(git diff --name-only "$OLD" "$NEW" -- "$@")" ]; }
+added_or_removed_php() { [ -n "$(git diff --name-only --diff-filter=ADR "$OLD" "$NEW" -- app database | grep '\.php$' || true)" ]; }
+
+PACKAGES=$FULL;   changed composer.json composer.lock && PACKAGES=true
+CLASSES=$FULL;    added_or_removed_php && CLASSES=true
+MIGRATIONS=$FULL; changed database/migrations && MIGRATIONS=true
+MENUS=$FULL;      changed resources/views/menu public/js public/css lang \
+                          app/Http/Controllers/PublicMenuController.php app/Services/Menu && MENUS=true
+
+DOWN=false
+if $PACKAGES || $MIGRATIONS; then DOWN=true; fi
+
+echo "Deploying $(git rev-parse --short "$OLD") -> $(git rev-parse --short "$NEW")" \
+    "(packages: $PACKAGES, new classes: $CLASSES, migrations: $MIGRATIONS, menus: $MENUS, maintenance mode: $DOWN)"
+
+if $DOWN; then
+    # While packages are swapped or the database changes, a request landing
+    # mid-way would fail: guests see "back in a moment" instead. Menus
+    # Cloudflare already holds keep being served.
+    "$PHP" artisan down --retry=15
+    trap '"$PHP" artisan up' EXIT
+fi
+
+git merge --ff-only --quiet "$NEW"
+
+# classmap-authoritative: classes load from the map alone, no file lookups;
+# so a new class is found only once the map is rebuilt.
+if $PACKAGES; then
+    "$COMPOSER" install --no-dev --no-interaction --prefer-dist --optimize-autoloader --classmap-authoritative
+elif $CLASSES; then
+    "$COMPOSER" dump-autoload --no-dev --optimize --classmap-authoritative
+fi
+
+if $MIGRATIONS; then
+    "$PHP" artisan migrate --force
+fi
+
+# Config, routes, events and views cached for the new code (about 120 ms of
+# every request without it).
 "$PHP" artisan optimize
 
-echo "Deployed $(git rev-parse --short HEAD)."
+# The app starts with the new code. If it does not, guests get the "back in
+# a moment" page rather than errors.
+if ! "$PHP" artisan about --only=environment > /dev/null; then
+    trap - EXIT
+    "$PHP" artisan down --retry=15 > /dev/null 2>&1 || true
+    echo "FAILED: the app does not start (php artisan about). The site is in maintenance mode; see storage/logs, fix, deploy again (or php artisan up)." >&2
+    exit 1
+fi
+
+if $MENUS; then
+    "$PHP" artisan menus:forget-all
+fi
+
+if $DOWN; then
+    "$PHP" artisan up
+    trap - EXIT
+fi
+
+# Asked from the server itself, over HTTPS to this machine (no secret header
+# needed from 127.0.0.1). Retried for a minute and a half: on the first
+# deploy with the scheduler check, its heartbeat appears within a minute.
+HOST="$(grep -E '^APP_URL=' .env | cut -d= -f2- | sed -E 's#^"?https?://(www\.)?##; s#[/"].*$##')"
+if ! curl -fsS -o /dev/null --max-time 10 --retry 6 --retry-delay 15 --retry-all-errors \
+    --resolve "$HOST:443:127.0.0.1" "https://$HOST/up"; then
+    echo "FAILED: https://$HOST/up does not answer 200. The site is up; see storage/logs (\"Health check failed\")." >&2
+    exit 1
+fi
+
+echo "Deployed $(git rev-parse --short HEAD); /up answers."

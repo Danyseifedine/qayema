@@ -5,6 +5,7 @@ namespace App\Services\Menu;
 use App\Jobs\PurgeMenuCache;
 use App\Models\Restaurant;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 use function Illuminate\Support\defer;
@@ -97,6 +98,8 @@ class MenuCache
     {
         foreach ($this->bodies() as $body) {
             if (! self::send($body)) {
+                // Seen at once in Grafana, before the retries run out.
+                Log::warning('Menu cache purge refused: trying again from the queue.', ['body' => $body]);
                 PurgeMenuCache::dispatch($body);
             }
         }

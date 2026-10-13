@@ -34,4 +34,18 @@ return [
 
     'trusted_proxies' => env('TRUSTED_PROXIES'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Origin secret
+    |--------------------------------------------------------------------------
+    |
+    | The value Cloudflare adds as the X-Origin-Secret header to every request
+    | it passes on (a Transform Rule): set, a request without it gets a 403
+    | (OnlyThroughCloudflare), so nobody reaches the server around Cloudflare.
+    | Empty: no check. Long and random, kept only here and in Cloudflare.
+    |
+    */
+
+    'origin_secret' => env('CLOUDFLARE_ORIGIN_SECRET'),
+
 ];

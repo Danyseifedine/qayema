@@ -33,6 +33,7 @@ class DishVariant extends Model
         ];
     }
 
+    /** @return HasMany<DishVariantOption, $this> */
     public function options(): HasMany
     {
         return $this->hasMany(DishVariantOption::class)->orderBy('display_order')->orderBy('id');

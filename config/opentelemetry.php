@@ -242,12 +242,15 @@ return [
 
         Instrumentation\CacheInstrumentation::class => filter_var(env('OTEL_INSTRUMENTATION_CACHE', true), FILTER_VALIDATE_BOOLEAN),
 
+        // Events and views are off unless asked for: a span for every event
+        // and every Blade view (Filament draws hundreds) costs each request
+        // time and says little the request and its queries do not.
         Instrumentation\EventInstrumentation::class => [
-            'enabled' => filter_var(env('OTEL_INSTRUMENTATION_EVENT', true), FILTER_VALIDATE_BOOLEAN),
+            'enabled' => filter_var(env('OTEL_INSTRUMENTATION_EVENT', false), FILTER_VALIDATE_BOOLEAN),
             'excluded' => [],
         ],
 
-        Instrumentation\ViewInstrumentation::class => filter_var(env('OTEL_INSTRUMENTATION_VIEW', true), FILTER_VALIDATE_BOOLEAN),
+        Instrumentation\ViewInstrumentation::class => filter_var(env('OTEL_INSTRUMENTATION_VIEW', false), FILTER_VALIDATE_BOOLEAN),
 
         Instrumentation\LivewireInstrumentation::class => filter_var(env('OTEL_INSTRUMENTATION_LIVEWIRE', true), FILTER_VALIDATE_BOOLEAN),
 

@@ -240,15 +240,17 @@ class MenuCacheTest extends TestCase
         $this->assertCount(1, $this->purges()[1]['prefixes']);
     }
 
-    public function test_a_refused_clearing_is_tried_again_from_the_queue(): void
+    public function test_a_refused_clearing_is_tried_again_from_the_queue_and_said_at_once(): void
     {
         $shop = $this->quietly(fn () => $this->owner(['slug' => 'olive']));
         $this->freshCloudflare(fn () => Http::response(['success' => false], 429));
+        Log::spy();
 
         Dish::factory()->for($shop)->create();
         $this->respond();
 
         Queue::assertPushed(PurgeMenuCache::class, fn (PurgeMenuCache $job) => $job->body === ['prefixes' => ['qayema.test/olive']] && $job->delay === 60);
+        Log::shouldHaveReceived('warning')->with('Menu cache purge refused: trying again from the queue.', ['body' => ['prefixes' => ['qayema.test/olive']]])->once();
     }
 
     public function test_no_answer_at_all_is_tried_again_too(): void

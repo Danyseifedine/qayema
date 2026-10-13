@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class PackageChange extends Model
 {
+    /** @use HasFactory<\Database\Factories\PackageChangeFactory> */
     use HasFactory;
 
     public const UPDATED_AT = null;
@@ -37,16 +38,19 @@ class PackageChange extends Model
         ];
     }
 
+    /** @return BelongsTo<Package, $this> */
     public function fromPackage(): BelongsTo
     {
         return $this->belongsTo(Package::class, 'from_package_id');
     }
 
+    /** @return BelongsTo<Package, $this> */
     public function toPackage(): BelongsTo
     {
         return $this->belongsTo(Package::class, 'to_package_id');
     }
 
+    /** @return BelongsTo<User, $this> */
     public function changedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'changed_by');

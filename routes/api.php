@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\AppearanceController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\ClientErrorController;
 use App\Http\Controllers\Api\DiningTableController;
 use App\Http\Controllers\Api\DishController;
 use App\Http\Controllers\Api\FeaturesController;
@@ -45,6 +46,15 @@ use Illuminate\Support\Facades\Route;
 Route::get('/csrf-token', [AuthController::class, 'csrfToken'])
     ->middleware('throttle:api')
     ->name('api.csrf-token');
+
+// What broke in an owner's dashboard (its error boundary, script errors)
+// and what its Content-Security-Policy blocked: logged, for Grafana. Public
+// (a page that broke may have lost its session) and outside CSRF
+// (bootstrap/app.php); a browser sends CSP reports with no token.
+Route::middleware('throttle:client-errors')->group(function () {
+    Route::post('/client-errors', [ClientErrorController::class, 'store'])->name('api.client-errors');
+    Route::post('/csp-report', [ClientErrorController::class, 'csp'])->name('api.csp-report');
+});
 
 // The owner phone app's sign-in: a token for this API (the lockout after five
 // wrong passwords is OwnerLoginRequest's). Signing out is `/logout` below.

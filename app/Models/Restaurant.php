@@ -7,24 +7,26 @@ use App\Enums\Feature;
 use App\Enums\Fulfilment;
 use App\Enums\OrderChannel;
 use App\Enums\PackageStatus;
-use App\Services\Menu\MenuCache;
+use App\Observers\RestaurantObserver;
 use App\Services\Menu\MenuLanguages;
 use App\Services\Orders\WhatsAppLink;
 use App\Services\Packages\Entitlements;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Str;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\Translatable\HasTranslations;
 
+#[ObservedBy(RestaurantObserver::class)]
 class Restaurant extends Model implements HasMedia
 {
+    /** @use HasFactory<\Database\Factories\RestaurantFactory> */
     use HasFactory, HasTranslations, InteractsWithMedia;
 
     /**
@@ -50,11 +52,13 @@ class Restaurant extends Model implements HasMedia
      * Where spatie's accessor ($restaurant->name, the admin's tables and
      * selects) looks when the language asked for is not written: the
      * menu's main language, the one its name is required in. Anything else
-     * falls back to whatever is written (AppServiceProvider).
+     * falls back to whatever is written (AppServiceProvider). A row read
+     * with only some columns (a select's options: id and name) has no main
+     * language to hand: English, then whatever is written.
      */
     public function getFallbackLocale(): string
     {
-        return MenuLanguages::validMain($this->main_locale);
+        return MenuLanguages::validMain($this->getAttributes()['main_locale'] ?? null);
     }
 
     /**
@@ -109,11 +113,24 @@ class Restaurant extends Model implements HasMedia
 
     /**
      * What the package put in reach before the package fields changed, read
-     * as the save starts; never stored on the row.
+     * as the save starts (RestaurantObserver); never stored on the row.
      *
      * @var array<int, string>
      */
-    private array $inReachBeforeSave = [];
+    public array $inReachBeforeSave = [];
+
+    /**
+     * What a new row holds before it is read back: the columns the database
+     * fills itself, so a restaurant just created reads them (strict models,
+     * AppServiceProvider::keepModelsStrict()).
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'main_locale' => 'en',
+        'package_started_at' => null,
+        'package_ends_at' => null,
+    ];
 
     protected $fillable = [
         'user_id',
@@ -163,154 +180,81 @@ class Restaurant extends Model implements HasMedia
         ];
     }
 
-    protected static function booted(): void
-    {
-        static::creating(function (self $restaurant) {
-            // Every restaurant is on a package from the moment it exists, so
-            // limits never have to cope with "no package yet".
-            $restaurant->package_id ??= Package::default()?->id;
-            $restaurant->package_started_at ??= now();
-
-            if (empty($restaurant->slug)) {
-                $base = Str::slug($restaurant->name);
-                $slug = $base !== '' ? $base : 'menu';
-                $count = 2;
-                while (static::where('slug', $slug)->exists()) {
-                    $slug = $base.'-'.$count;
-                    $count++;
-                }
-                $restaurant->slug = $slug;
-            }
-        });
-
-        // Every write to the package fields lands in the history, whichever
-        // path made it (PackageAssigner, the admin form, a console command).
-        // Dishes are deleted one by one rather than by the database's cascade,
-        // so each takes its photo out of storage; the restaurant's own logo
-        // and cover go with it through the media library.
-        static::deleting(function (self $restaurant): void {
-            $restaurant->dishes()->get()->each->delete();
-        });
-
-        // A restaurant and its owner's account go together: an owner without
-        // a restaurant has nothing to sign in to. An admin's account is never
-        // deleted this way.
-        static::deleted(function (self $restaurant): void {
-            if ($restaurant->ownerIsBeingDeleted) {
-                return;
-            }
-
-            $owner = User::query()->find($restaurant->user_id);
-
-            if ($owner !== null && ! $owner->isAdmin()) {
-                $owner->delete();
-            }
-        });
-
-        static::created(function (self $restaurant): void {
-            $restaurant->recordPackageChange(null);
-        });
-
-        static::updating(function (self $restaurant): void {
-            if ($restaurant->isDirty(self::PACKAGE_FIELDS)) {
-                // The row as it still is in the database, before this save.
-                $restaurant->inReachBeforeSave = $restaurant->newFromBuilder($restaurant->getRawOriginal())->featuresInReach();
-            }
-        });
-
-        // A new menu link: the old one keeps forwarding (printed QR codes,
-        // shared links), and taking back a former link frees it.
-        static::updated(function (self $restaurant): void {
-            if (! $restaurant->wasChanged('slug')) {
-                return;
-            }
-
-            $old = (string) $restaurant->getOriginal('slug');
-            if ($old !== '') {
-                PreviousSlug::query()->updateOrCreate(['slug' => $old], ['restaurant_id' => $restaurant->id]);
-            }
-            PreviousSlug::query()->where('slug', $restaurant->slug)->delete();
-        });
-
-        // What guests see changed: Cloudflare forgets the menu, under the link
-        // it just left too (MenuCache). Gone, it forgets the link it had.
-        static::saved(function (self $restaurant): void {
-            app(MenuCache::class)->forget($restaurant, (string) ($restaurant->wasChanged('slug') ? $restaurant->getOriginal('slug') : ''));
-        });
-
-        static::deleted(fn (self $restaurant) => app(MenuCache::class)->forget($restaurant, (string) $restaurant->slug));
-
-        static::saved(function (self $restaurant): void {
-            // Only an update carries changes; the insert is recorded above.
-            if (! $restaurant->wasChanged(self::PACKAGE_FIELDS)) {
-                return;
-            }
-
-            Entitlements::flush($restaurant->id);
-            $restaurant->recordPackageChange($restaurant->getOriginal('package_id'));
-            // The loaded package may be the one it just left.
-            $restaurant->unsetRelation('package');
-            $restaurant->switchOnWhatCameIntoReach($restaurant->inReachBeforeSave);
-        });
-    }
-
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /** @return BelongsTo<Template, $this> */
     public function template(): BelongsTo
     {
         return $this->belongsTo(Template::class);
     }
 
+    /** @return BelongsTo<Package, $this> */
     public function package(): BelongsTo
     {
         return $this->belongsTo(Package::class);
     }
 
+    /** @return HasMany<Category, $this> */
     public function categories(): HasMany
     {
         return $this->hasMany(Category::class)->orderBy('display_order');
     }
 
+    /** @return HasMany<Dish, $this> */
     public function dishes(): HasMany
     {
         return $this->hasMany(Dish::class)->orderBy('display_order');
     }
 
-    /** Links this menu had before, each still forwarding here. */
+    /**
+     * Links this menu had before, each still forwarding here.
+     *
+     * @return HasMany<PreviousSlug, $this>
+     */
     public function previousSlugs(): HasMany
     {
         return $this->hasMany(PreviousSlug::class);
     }
 
+    /** @return HasMany<RestaurantSocialLink, $this> */
     public function socialLinks(): HasMany
     {
         return $this->hasMany(RestaurantSocialLink::class);
     }
 
+    /** @return HasMany<MenuSession, $this> */
     public function menuSessions(): HasMany
     {
         return $this->hasMany(MenuSession::class);
     }
 
+    /** @return HasMany<MenuEvent, $this> */
     public function menuEvents(): HasMany
     {
         return $this->hasMany(MenuEvent::class);
     }
 
+    /** @return HasMany<Order, $this> */
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class)->latest('placed_at');
     }
 
-    /** The tables, each with its own QR code, in the owner's order. */
+    /**
+     * The tables, each with its own QR code, in the owner's order.
+     *
+     * @return HasMany<DiningTable, $this>
+     */
     public function diningTables(): HasMany
     {
         return $this->hasMany(DiningTable::class)->orderBy('sort_order')->orderBy('id');
     }
 
+    /** @return HasMany<FeatureGrant, $this> */
     public function featureGrants(): HasMany
     {
         return $this->hasMany(FeatureGrant::class);
@@ -417,7 +361,8 @@ class Restaurant extends Model implements HasMedia
         return Package::default();
     }
 
-    private function recordPackageChange(?int $fromPackageId): void
+    /** A row in the package history for the save just made (RestaurantObserver). */
+    public function recordPackageChange(?int $fromPackageId): void
     {
         $this->packageChanges()->create([
             'from_package_id' => $fromPackageId,

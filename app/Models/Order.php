@@ -73,17 +73,23 @@ class Order extends Model
         ];
     }
 
+    /** @return BelongsTo<Restaurant, $this> */
     public function restaurant(): BelongsTo
     {
         return $this->belongsTo(Restaurant::class);
     }
 
-    /** The table it was ordered to; null once that table is removed (`table_name` stays). */
+    /**
+     * The table it was ordered to; null once that table is removed (`table_name` stays).
+     *
+     * @return BelongsTo<DiningTable, $this>
+     */
     public function table(): BelongsTo
     {
         return $this->belongsTo(DiningTable::class, 'table_id');
     }
 
+    /** @return HasMany<OrderItem, $this> */
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class)->orderBy('id');

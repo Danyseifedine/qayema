@@ -3,14 +3,13 @@
 namespace App\Models;
 
 use App\Enums\Feature;
-use App\Services\Menu\MenuCache;
-use App\Services\Packages\Entitlements;
+use App\Observers\PackageObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Once;
 use Spatie\Translatable\HasTranslations;
 
 /**
@@ -22,12 +21,13 @@ use Spatie\Translatable\HasTranslations;
  * The rows are fixed (four, seeded by the migration); an admin edits what they
  * contain at /admin → Packages.
  */
+#[ObservedBy(PackageObserver::class)]
 class Package extends Model
 {
     /** @use HasFactory<\Database\Factories\PackageFactory> */
     use HasFactory, HasTranslations;
 
-    private const DEFAULT_CACHE_KEY = 'package:default';
+    public const DEFAULT_CACHE_KEY = 'package:default';
 
     /** @var string[] */
     public array $translatable = ['name', 'description'];
@@ -61,61 +61,6 @@ class Package extends Model
             'features' => 'array',
             'fair_use' => 'array',
         ];
-    }
-
-    protected static function booted(): void
-    {
-        // A package's numbers sit underneath every restaurant on it, and the
-        // default sits underneath every restaurant without one, so any write
-        // here has to invalidate all of them rather than guess which.
-        $flush = function (): void {
-            Cache::forget(self::DEFAULT_CACHE_KEY);
-            // default() keeps its answer for the request (once()).
-            Once::flush();
-            Entitlements::flushAll();
-            // What a package gives shows on its menus (ordering, designs).
-            app(MenuCache::class)->forgetAll();
-        };
-
-        static::saved($flush);
-        static::deleted($flush);
-
-        // Every restaurant falls back on the default package, so it is never
-        // deleted. Restaurants on any other one move to the default first,
-        // through the assigner, so their history says why.
-        static::deleting(function (self $package): bool {
-            if ($package->is_default) {
-                return false;
-            }
-
-            $default = self::default();
-            $assigner = app(\App\Services\Packages\PackageAssigner::class);
-
-            foreach ($default === null ? [] : $package->restaurants()->get() as $restaurant) {
-                $assigner->assign($restaurant, $default, note: "The {$package->name} package was deleted.");
-            }
-
-            return true;
-        });
-
-        // Every restaurant falls back on the default, so it is always on
-        // offer; a package taken off offer is no one's "Most popular".
-        static::saving(function (self $package): void {
-            if ($package->is_default) {
-                $package->is_active = true;
-            }
-
-            if (! $package->is_active) {
-                $package->is_featured = false;
-            }
-        });
-
-        // "Most popular" is one package: marking one takes it off the others.
-        static::saved(function (self $package): void {
-            if ($package->is_featured && ($package->wasRecentlyCreated || $package->wasChanged('is_featured'))) {
-                self::query()->whereKeyNot($package->getKey())->where('is_featured', true)->update(['is_featured' => false]);
-            }
-        });
     }
 
     /**
@@ -188,6 +133,7 @@ class Package extends Model
         return self::query()->firstWhere('slug', $slug);
     }
 
+    /** @return HasMany<Restaurant, $this> */
     public function restaurants(): HasMany
     {
         return $this->hasMany(Restaurant::class);

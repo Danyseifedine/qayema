@@ -490,97 +490,17 @@ Bilingual (ar/en) restaurant-menu SaaS. The codebases in this folder:
   Vite + TS, Sanctum **session-cookie** auth (no tokens), CSRF primed from
   `GET /api/csrf-token` (the body, because a cross-subdomain SPA can't read the
   cookie). It also holds the Playwright end-to-end suite for both apps (`e2e/`).
-- **`qayema-app/` (Flutter, Android and iOS)**: the owner's phone app, in
-  English and Arabic (`lib/l10n/*.arb`, Flutter's gen-l10n; the phone's
-  language unless the owner picks one with the language button, kept on the
-  phone). Three onboarding pages (once per phone), the sign-in, then four
-  tabs over the owner API, nothing of its own on the server:
-  Home (the menu's link to share or show as a QR code, the week's views
-  from `/api/analytics` or the teaser without analytics, orders waiting,
-  dishes and the package), Menu (dishes by category, the sold-out switch
-  through `/availability`, a dish's photo (`/api/uploads/temp`), names per
-  menu language, price, category; categories added, renamed, deleted; a
-  dish's variants and add-ons are left to the dashboard), Orders (in-menu
-  and table orders, the one next step, cancel; `/api/orders/pulse` every 20
-  seconds and on return to the app: a banner, a badge) and More
-  (restaurant name, logo, phone and opening hours, saved as the whole form
-  since `PATCH /api/restaurant` clears what is left out; the QR code;
-  language; sign out). Run against the e2e server to try it with test data:
-  `--dart-define=API_URL=http://10.0.2.2:8001`.
-  It signs in at `POST /api/login` (email or username + password,
-  `OwnerLoginRequest`, menu owners only: an admin gets the same "not
-  correct") and gets a **Sanctum bearer token** carrying the ability
-  `AuthController::TOKEN_ABILITY` (60 days, one per phone). The token opens
-  the owner API (`api/*`, the same endpoints the dashboard reaches with its
-  session; `/api/user` is who is signed in) while the account is still a
-  menu owner (checked on every call: an owner made an admin is shut out), and `POST /api/logout` ends
-  that phone's token only. The answers come in the app's language
-  (`Accept-Language`).
-- **`qayema-admin-app/` (Flutter, Android and iOS)**: the admin's phone app.
-  It signs in at `POST /api/admin/login` (email or username + password,
-  `AdminLoginRequest`, the website's lockout after five wrong tries, no
-  captcha) and gets a **Sanctum bearer token** (60 days, one per phone,
-  `personal_access_tokens`). Both apps' sign-ins share `AppLoginRequest`.
-  Each app's tokens open its own routes only
-  (`AppServiceProvider::keepTokensToTheirApp()`): an admin token opens
-  `api/admin/*` and counts as no sign-in on the owner API, and an owner
-  token the reverse; anywhere else a token is no sign-in. Every admin route also checks the account is
-  still an admin (`EnsureUserIsAdmin`). An owner's account, a wrong password
-  and a Google-only admin get the same "not correct" answer.
-  What it does (`Api\Admin\*` controllers, `AdminRestaurantResource`,
-  requests in `app/Http/Requests/Admin/`): list restaurants
-  (`GET /api/admin/restaurants`, search by name, link or owner, filter
-  `all|active|inactive|ending|ended`; ending = package in force with an end,
-  soonest first), one restaurant, open one with its owner
-  (`POST /api/admin/restaurants`: the owner's account and the restaurant
-  together, through `OnboardingService::openForOwner()`, which /admin →
-  Users → Create also uses), switch a menu on or off
-  (`PATCH …/{id}/active`), change its package from today
-  (`PUT …/{id}/package`) or add time (`POST …/{id}/package/extend`, 422 on a
-  package with no end), both through `PackageAssigner`, and
-  `GET /api/admin/packages`. Months are `PackageAssigner::DURATIONS`, any
-  from 1 to 12, added to today (or to the current end when extending); no
-  months means no end date. Also: the home screen's numbers
-  (`GET /api/admin/summary`, `SummaryController`: restaurants, new in 7
-  days (list filter `new`), menus off, ending in 7 days, ended, menu visits
-  today since midnight in Beirut, and `writing_help_today`: the AI writing
-  help's uses and tokens in and out today; three queries), what the AI
-  writing help spent (`GET /api/admin/writing-help?range=today|30d`,
-  `WritingHelpUsageController`: totals from `WritingHelpLog::totalsSince()`
-  and each restaurant, the most tokens first, `byRestaurantSince()`, at most
-  100; a day is Lebanon's, each restaurant's rows its own days), a restaurant's basics
-  (`PATCH /api/admin/restaurants/{id}`: English name with its other
-  languages kept, menu link through `AvailableSlug` (the former one keeps
-  forwarding), phone), and the owner's password
-  (`PUT …/{id}/owner/password`, never an admin's; it clears the
-  remember-me token, and the owner's open sessions end on their next
-  request). One restaurant (`AdminRestaurantResource::detail()`, every
-  answer about one restaurant) also carries its phone with its dial code and
-  its visits (`trafficTotals()`, `qrScans()`) and its writing help
-  (`stats.writing_help`, `WritingHelpLog::of()`: uses today, uses and tokens
-  over 30 days).
-- **Admin phone notifications** (Firebase Cloud Messaging, `kreait/laravel-firebase`,
-  Firebase project `qayema`). The app registers its phone after signing in
-  (`PUT /api/admin/devices`, table `device_tokens`, one row per phone; a
-  phone signed in by another admin moves to them) and removes it on sign-out
-  (`DELETE`). `App\Services\Push\PushSender` is the only sender: nothing
-  without `FIREBASE_CREDENTIALS` (the service-account JSON, kept in
-  git-ignored `storage/app/firebase-credentials.json`; empty in tests and
-  e2e), never throws, and deletes a phone Firebase no longer knows.
-  `App\Services\Push\AdminAlerts` says what goes out, always naming the
-  restaurant, never its owner's name or email: a package request
-  (opens the restaurant) or a contact message, from `ContactService` after
-  the response (`defer`); a restaurant an owner opens in onboarding
-  (`OnboardingService::saveIdentity()`, never one an admin opens); an owner
-  editing their menu (`TellAdminsAboutMenuEdits` on the owner API: a
-  successful write to `MENU_ROUTES`, not orders, the account or features,
-  not an admin signed in as the owner), once an hour at most per
-  restaurant (`Cache::add`, `MENU_EDITING_QUIET_MINUTES`); and
-  `packages:remind-ending` at 09:00 Beirut, the
-  packages ending in the next 3 days (opens Renewals; needs the scheduler's
-  cron). Android channel `admin_alerts` and status icon `ic_stat_qayema`
-  live in the app. iOS needs an APNs key and `GoogleService-Info.plist`
-  before it gets any.
+- **`qayema-app/` (Flutter)**: the owner's phone app, over the owner API with
+  a Sanctum bearer token (`POST /api/login`, ability
+  `AuthController::TOKEN_ABILITY`, 60 days, one per phone).
+- **`qayema-admin-app/` (Flutter)**: the admin's phone app, over `api/admin/*`
+  with tokens of its own (`POST /api/admin/login`); each app's tokens open
+  only its own routes (`AppServiceProvider::keepTokensToTheirApp()`).
+- **Admin phone notifications** (Firebase Cloud Messaging): `PushSender` is
+  the only sender and never throws; `AdminAlerts` says what goes out.
+
+  **Both apps, their endpoints and the notifications in full:
+  [docs/architecture/phone-apps.md](docs/architecture/phone-apps.md).**
 
 ## Packages
 
@@ -640,8 +560,8 @@ invented reviews (`tests/Feature/Portal/LandingContentTest`).
   (`Restaurants\Schemas\PackageFields`: package, starts, forever / N months /
   until a date, note).
 - **History:** `package_changes` (model `PackageChange`) gets a row for every
-  write to `Restaurant::PACKAGE_FIELDS`, from the model's own `created`/`saved`
-  hooks, so no path skips it: from → to, dates, `changed_by` (the signed-in
+  write to `Restaurant::PACKAGE_FIELDS`, from `RestaurantObserver`'s `created`/`saved`,
+  so no path skips it: from → to, dates, `changed_by` (the signed-in
   admin), and the note (`$restaurant->packageChangeNote`, set before the save).
   Read-only "Package history" relation manager on the restaurant.
 - **Offered or not** (`packages.is_active`, the "Offered" switch on the
@@ -651,8 +571,8 @@ invented reviews (`tests/Feature/Portal/LandingContentTest`).
   what is offered plus the owner's own package) and package requests (422).
   Restaurants already on it keep it until it ends; the admin can still
   assign it, labelled "(not offered)". The default package is always
-  offered, and switching one off takes its "Most popular" mark (model
-  `saving` hook). Written copy that names a package (`lang/*/portal.php`,
+  offered, and switching one off takes its "Most popular" mark
+  (`PackageObserver::saving`). Written copy that names a package (`lang/*/portal.php`,
   `pages.php`) is not touched: edit it by hand.
 - **Card lines** (`packages.highlights`, `{en: [...], ar: [...]}`, the
   admin's "Card lines" section): written, they replace the lines a package
@@ -702,7 +622,9 @@ date passing never leaves a stale answer, and no scheduler is needed.
   from it. A package that does not carry a new key reads it as its default,
   and the admin form fills it so a save never turns it unlimited.
 - Saving a package flushes **every** restaurant's cache (`Entitlements::flushAll()`
-  via the model's `saved` hook); changing one restaurant's package or expiry
+  from `PackageObserver`): one write however many restaurants, since it bumps
+  `entitlements:version`, which every answer's key carries (`cacheKey()`); the
+  old answers go unread until they expire. Changing one restaurant's package or expiry
   flushes only that one.
 - `feature_grants` = per-restaurant grants, managed on the restaurant's
   "Extra slots & add-ons" tab, with source `admin` or `purchase`, an optional
@@ -858,6 +780,31 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
 - **Analytics:** see the Analytics section below.
 - Rate limiters in `AppServiceProvider` (`api`/`mutations`/`uploads`/`auth`/
   `contact`); the high-volume ones feed the `AbuseGuard` auto-ban.
+- **Strict models** (`AppServiceProvider::keepModelsStrict()`): locally and
+  in the tests a lazy-loaded relation on a model that came with others
+  (N+1), an attribute dropped because it is not fillable, and a column read
+  that was not selected all throw; fix the query, never loosen the rule.
+  Production only logs a lazy load ("Lazy loading: Model::relation").
+  A nullable column the database fills itself goes in the model's
+  `$attributes`, so a row just created reads it (`Restaurant`, `User`).
+- **What saving a model sets off** lives in its observer, named on the
+  model (`#[ObservedBy]`): `app/Observers/RestaurantObserver` (first package
+  and link, package history, former links, the owner's account, the menu's
+  cache), `PackageObserver`, `FeatureGrantObserver`. Smaller hooks stay in
+  `booted()` (`BlockedIp`, `DiningTable`) or a trait (`ClearsMenuCache`).
+- **Only through Cloudflare** (`OnlyThroughCloudflare`, first of all
+  middleware): with `CLOUDFLARE_ORIGIN_SECRET` set, a request without
+  Cloudflare's `X-Origin-Secret` header gets a 403, so nobody reaches the
+  server around Cloudflare and `TRUSTED_PROXIES=*` cannot be abused;
+  127.0.0.1 needs none. Empty: off (local, tests, e2e).
+- **Every log line names its request** (Laravel's Context, set in
+  AppServiceProvider): `route`, `restaurant` (the slug in the address) and
+  `user_id`, next to the trace id; queued jobs carry it.
+- **The dashboard's errors reach the log**: `POST /api/client-errors` (its
+  error boundary, script errors, uncaught promises; `ClientErrorRequest`) and
+  `POST /api/csp-report` (its Content-Security-Policy), public, outside CSRF,
+  `throttle:client-errors` (10 a minute), logged as warnings
+  ("Dashboard error:", "Dashboard CSP blocked:").
 - Session lifetime is intentionally 1 year (the SPA rides it). So a
   stranger is not given one where none is needed: the web group's
   StartSession is `StartSessionForReturningVisitors` (bootstrap/app.php),
@@ -941,8 +888,9 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
   published to `public/vendor/filament-phone-input` (also on
   `composer update`); without them the flag is an empty box.
 - **Telemetry (Grafana Cloud).** `keepsuit/laravel-opentelemetry` sends
-  request traces (HTTP, queries with `?` placeholders, cache, queue, views,
-  Livewire) and logs (`otlp` channel, from `info` up, added to the log stack)
+  request traces (HTTP, queries with `?` placeholders, cache, queue,
+  Livewire; events and views only with `OTEL_INSTRUMENTATION_EVENT`/`_VIEW`,
+  a span each costs time) and logs (`otlp` channel, from `info` up, added to the log stack)
   to Grafana when `GRAFANA_OTLP_ENDPOINT` is set; `GRAFANA_AUTH_HEADER` is
   passed as a header map (the SDK does not URL-decode a "key=value" string).
   No metrics, no console traces. Tests and the e2e suite set
@@ -971,12 +919,12 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
   bulk, and every edit page one in its header; the confirmation says what
   goes with the record. Deletes go through the models, never a query
   delete, so images leave storage: `User::deleting` deletes the restaurant,
-  `Restaurant::deleting` deletes each dish (the media library removes every
+  `RestaurantObserver::deleting` deletes each dish (the media library removes every
   photo, logo and cover). A restaurant and its owner's account go together:
-  `Restaurant::deleted` deletes the owner (never an admin), and
+  `RestaurantObserver::deleted` deletes the owner (never an admin), and
   `ownerIsBeingDeleted` stops the two hooks deleting each other twice. A deleted category leaves its dishes uncategorised.
   The default package is never deleted (hidden button, and
-  `Package::deleting` refuses); restaurants on any other deleted package move
+  `PackageObserver::deleting` refuses); restaurants on any other deleted package move
   to the default through `PackageAssigner`, with a note in their history.
   Orders and the package history are read and deleted on the restaurant's
   page, never added or edited there.
@@ -1010,214 +958,11 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
 
 ## Ordering
 
-A guest builds a cart on the public menu and places an order. The restaurant
-takes orders **one way at a time** (`restaurants.order_mode`, chosen on the
-Features page, `PUT /api/features/ordering`), and every order records the way
-it came in (`orders.channel`, `App\Enums\OrderChannel`):
-
-- **WhatsApp** (`ordering` flag, Premium and Custom): the order is stored and
-  the guest is sent to WhatsApp with it written out (`WhatsAppLink`): in
-  WhatsApp's bold, no emoji, no order number, the table first when there is
-  one, each dish with its choices under it, the total, then the note; in the
-  menu's **main language** (labels and line names, `OrderPlacer` names a
-  WhatsApp order's lines in it), since the owner reads it, while anything the
-  guest is told stays in theirs. Before WhatsApp opens the cart can ask the
-  guest's name, phone and (delivery and pickup only) a delivery address, each
-  off, optional or required as the owner set it (`restaurants.whatsapp_fields`,
-  `Restaurant::whatsappAsks()`, `App\Enums\Ask`, `PUT /api/features/whatsapp-fields`;
-  table orders have their own name and phone pair). Asking the address also
-  asks delivery or pickup (`order_types`), the address only for a delivery;
-  what was given heads the message and is kept on the order (cleared after 90
-  days like the rest). All off by default. We never learn whether it was sent or served, so
-  these orders are **not** listed on the Orders page and analytics call them
-  "Sent to WhatsApp". It needs a usable number: without one the menu has no
-  cart.
-- **In the menu** (also needs the `menu_ordering` flag, Premium and Custom):
-  the guest gives their name, a phone number (country code from `config/countries.php`,
-  stored international through `App\Support\PhoneNumber`), Delivery or
-  Pickup (`restaurants.order_types`, null = both; `App\Enums\Fulfilment`),
-  a typed address for a delivery, optionally their location ("Use my
-  location": `latitude`/`longitude`, shown to the owner as a Google Maps
-  link), and a note. The menu shows a toast with the order number; the order
-  waits on the Orders page. Refused while the restaurant is closed by its
-  opening hours (no hours = always open). A page may ask for the location
-  only on the menu itself (`SecurityHeaders`: `geolocation=(self)` there,
-  `()` everywhere else).
-
-`Restaurant::orderChannel()` is the rule: null without ordering, Menu only
-while the package has `menu_ordering` (a downgrade falls back to WhatsApp),
-WhatsApp otherwise.
-
-**Orders at the table** (dine-in, a table's QR code, the `dine_in` flag and
-switch) have their own way in, apart from delivery and pickup:
-`restaurants.dine_in_mode` (`menu` | `whatsapp`, `PUT /api/features/dine-in`,
-`UpdateDineInRequest`: WhatsApp needs a number, 422 otherwise), read through
-`Restaurant::dineInChannel()`: null without dine-in, WhatsApp when chosen and
-the restaurant has a number WhatsApp can reach, Menu otherwise (a number
-removed later sends them back to the Table orders page). At a table the menu
-builds its cart for that channel (`PublicMenuController`); on WhatsApp the
-cart says "This order is for Table 5." and the message names the table, and
-the order is not listed on Table orders. Without dine-in, a table's code on a
-WhatsApp order only labels it. `/api/user` sends `ordering.dine_in` (the
-choice) and `ordering.whatsapp_number`.
-
-- `App\Services\Orders\OrderPlacer` is the only way an order is created. Every
-  dish is re-read scoped to the restaurant and every price comes from the
-  database; a price in the request body is ignored. It takes an
-  `OrderDetails` (channel, note, fulfilment, name, phone, address, location,
-  `client_token`): a token this restaurant already has returns that order, so
-  a double tap or a retry never orders twice.
-- Order lines carry **their own** `name` and `unit_price`. A dish renamed,
-  repriced or deleted later must not rewrite what was ordered, which is why
-  `order_items.dish_id` is `nullOnDelete`.
-- `POST /{slug}/order` is public, on the `web` group, limited
-  to 10/min per IP with **`autoBan: false`**: a dining room is one IP. Like
-  every guest route of the menu (the group in routes/web.php) it stores no
-  session for a guest and checks no CSRF token; the menu's own POST/PUT
-  requests carry the page's `X-Menu-Token` instead (`MenuToken`, signed with
-  the app key and the time, good for a day; `VerifyMenuToken` answers a
-  missing or stale one with 419 `menu_expired`, which the cart shows). A
-  test sends it with `Tests\Support\SendsMenuToken` (`freshMenuToken()`
-  after moving the clock). The page
-  sends `mode`, the way it was built for; a mismatch (the owner switched while
-  the guest had the menu open) is a 409 asking to refresh. A hidden `website`
-  box is a spam trap. `PlaceOrderRequest` sets the guest's menu language
-  before validating, so field errors come back in it.
-- "Use my current location" also fills the address box with the street, area
-  and town (`GET /{slug}/address`, `throttle:geocode` 10/min,
-  `App\Services\Orders\ReverseGeocoder`): our server asks OpenStreetMap's
-  Nominatim, with the app's name as User-Agent, and keeps each spot (~11 m)
-  for 30 days. It never overwrites what the guest typed. The e2e environment
-  fakes Nominatim (`E2eServiceProvider`).
-- The country code is a searchable list of our own (names in the menu's
-  language from PHP's `intl`, English too; digits; letters), not a select.
-  The cart's boxes use 14px text; an iPhone would zoom on focus below 16px,
-  so the menu's head adds `maximum-scale=1` on iPhones and iPads only (iOS
-  still allows pinch zoom; Android would not, so it never gets it).
-- The cart's details form (`public/js/menu-cart.js`) is built once per panel
-  and never redrawn, so typing survives cart changes. What the guest types is
-  kept in their browser (`qayema-guest-{slug}`) until the order goes, then the
-  form starts over, empty.
-- **Tracking.** An order placed in the menu gets a 40-character
-  `tracking_token`. The guest follows it in a sheet over the menu
-  (`#track-sheet`, `public/js/menu-order.js`), never on a page of its own:
-  `GET /{slug}/order/{token}` answers JSON (status, `closed`, `closed_at` and
-  `html`, drawn by `menu/partials/order-tracking.blade.php`); opened as a page
-  it redirects to the menu with `?track={token}`, which opens the sheet.
-  Steps: sent → accepted → on its way (delivery) or ready for pickup →
-  delivered or picked up, or cancelled, with the times (`accepted_at`,
-  `ready_at`, `closed_at`, set by `Order::moveTo()`); a skipped step shows as
-  passed with no time. Choices show as the guest picked them ("Large, + Extra
-  cheese", `OrderItem::picks()`); the owner and WhatsApp keep "Size: Large".
-  The short reference never opens it. The "Order sent" toast and a bar at the
-  top of the menu (`qayema-order-{slug}` in the guest's browser, live status)
-  open the sheet; the bar goes once the order is done, an hour after a
-  cancelled one, and after 12 hours anyway. `OrderStatus` is placed,
-  accepted, ready, done, cancelled: the dashboard's one button moves an
-  in-menu order on (Accept, then On its way or Ready, then Done), and Accept
-  is what tells the guest a person saw it. No SMS and no WhatsApp messages to
-  the guest.
-- **Live, through Pusher** (`config/broadcasting.php`, `pusher/pusher-php-server`;
-  keys `PUSHER_APP_*` in `.env`, never committed). `App\Services\Orders\OrderNews`
-  sends after the response (`defer`) and never throws (`rescue`): a guest's
-  new or changed order → `OrdersChanged` on `private-orders.{restaurant id}`
-  (the pulse: open, latest, changed; only that owner may join,
-  `routes/channels.php`, signed at `POST /api/broadcasting/auth` with the
-  Sanctum session); the owner moving it → also `OrderMoved` on
-  `order.{tracking token}` (public, the token is the secret). Both are
-  `ShouldBroadcastNow` (no queue worker on shared hosting). The menu loads
-  `public/js/pusher.min.js` (pusher-js 8.6, vendored) only when there is an
-  order to follow. Without keys (local, tests, e2e: `BROADCAST_CONNECTION=null`)
-  nothing is sent, and the sheet, the bar and the dashboard ask once a minute;
-  they do the same whenever Pusher cannot be heard.
-- **One order at a time** (per browser; guests have no accounts). While the
-  guest's order is going (menu-order.js tells the cart, `qayema:order-state`),
-  the cart **adds to it** ("Adding to your order #…", "Add to order": the
-  order's lines come back from `/cart`, the new ones are added, and the whole
-  goes as a change, with no details asked again). Once the restaurant has
-  accepted it, the cart waits ("One order at a time") until it is done or
-  cancelled.
-- **Changing an order.** Only while it waits to be accepted
-  (`OrderStatus::isOpenToGuest()`, placed), the guest may change an order
-  placed in the menu: the tracking sheet's "Change my order"
-  hands it to `menu-cart.js`, which loads
-  `GET /{slug}/order/{token}/cart` (lines with their choice ids, kept in the
-  `order_items.options` snapshot as `option_id` / `addon_id`, and the details,
-  the phone split back by `PhoneNumber::split()`) into the cart without
-  touching the guest's own cart or form in storage, and "Update order" sends
-  `PUT /{slug}/order/{token}` (`PlaceOrderRequest`, priced again by
-  `OrderPlacer::change()` on a locked row; a shared location stays unless a
-  new one comes, and a new address drops the old spot). Once accepted it answers 409 (`OrderLocked`).
-  A change carries `version` (the `guest_updates` its page read from `/cart`;
-  older is a 409, `OrderChanged`, so two phones never undo each other) and a
-  `client_token` of its own, kept in `orders.change_token`: the same change
-  sent twice (an answer lost on mobile data) is made once. Dishes marked
-  unavailable since are left out and named (`unavailable` in the answer,
-  `OrderPlacer::unavailable()`). Each change sets `guest_updated_at` and counts
-  `guest_updates`; the dashboard's pulse carries `changed` and chimes, and the
-  card says "Changed by the guest at 13:05" (amber while it waits to be
-  accepted). The
-  sheet's "Change my order" hands the token to the cart (`qayema:edit`).
-- The owner reads in-menu orders at `GET /api/orders` (only `channel = menu`;
-  only `status` is writable). `PATCH /api/orders/{order}` works on the locked
-  row and only moves an order on (`OrderStatus::canMoveTo()`: forward, a step
-  may be skipped, or cancelled while open; the same status again is a no-op);
-  anything else is a 409 `order_moved_on`. Taking on a new order sends the
-  `guest_updates` the card showed; a change made since is a 409
-  `order_changed` and the dashboard polls `GET /api/orders/pulse`
-  (`{open, latest, changed}`) only while Pusher cannot be heard; the same
-  pulse arrives live otherwise. Either way: a sound, a toast, the sidebar
-  count and the tab title.
-- `orders:forget-guests` (daily, 03:20) clears the name, phone, address and
-  location from orders older than 90 days; the order itself stays. Production
-  needs the scheduler's cron (`schedule:run` every minute) for it to run.
-- Analytics (`MenuStats`) count only the current channel's orders
-  (`order_channel` in the summary, `channel` in the funnel), and
-  `orders_done` for orders placed in the menu.
+Guests order from the menu one way at a time (`restaurants.order_mode`: WhatsApp, or in the menu with the `menu_ordering` flag; table orders have their own `dine_in_mode`). `App\Services\Orders\OrderPlacer` is the only way an order is created: every dish is re-read scoped to the restaurant and every price comes from the database. Guest routes store no session and take the page's `X-Menu-Token` instead of CSRF (`MenuToken`, `VerifyMenuToken`); orders are tracked by a 40-character token in a sheet over the menu, live through Pusher (`OrderNews`, after the response), and a guest may change an order until it is accepted. **Full rules: [docs/architecture/ordering.md](docs/architecture/ordering.md); read it before touching orders, the cart or tracking.**
 
 ## Variants and add-ons
 
-A dish can carry **variants** (owner-named choices such as Size or Spice
-level; the guest picks exactly one option of each) and **add-ons** (Extra
-cheese; the guest picks any). Every option and add-on has a `price` that is
-**added** to the dish's (0 for a choice that costs nothing more). Tables
-`dish_variants`, `dish_variant_options`, `dish_addons` (models `DishVariant`,
-`DishVariantOption`, `DishAddon`, names translatable like the dish's).
-
-- Package flags `variants` and `addons` (Pro, Premium, Custom), each with its
-  own switch on the Features page. Off, or not on the package: the rows stay
-  saved but leave the menu and orders, and dish saves leave them alone.
-- **Writing:** the dashboard's dish form sends each whole list in order
-  (`variants: [{id?, name, options: [{id?, name, price}]}]`, `addons: [{id?,
-  name, price}]`). `ValidatesDishOptions` (on Store/UpdateDishRequest) checks a
-  list only while it is shown, so a switched-off list never reaches
-  `validated()`. `App\Services\Menu\DishOptionsSync` writes it: an id of this
-  dish's row updates it (hidden languages kept), anything else is created, a
-  saved row left out is deleted. Validated nested input can come back with
-  its indexes shuffled; the sync orders rows by index. Caps per dish are
-  `config/menu.php` (5 variants, 10 options each, 20 add-ons).
-- **Price:** a dish may have no price of its own when it has variants: its
-  first variant's options are then full prices (a sandwich: Small $7, Large
-  $12), each one required, and everything else (other variants, add-ons)
-  still adds on top. Add-ons alone need a dish price. `MenuDishOptions` sends
-  `priced: false` so the sheet shows those options as "$7.00", not "+$7.00";
-  the card, the cart (`data-price="0.00"`) and `OrderPlacer` start from 0.
-- **Menu:** `App\Services\Menu\MenuDishOptions` builds each dish's choices in
-  the guest's language (a dish with a price or one variant to price it,
-  only variants with 2+
-  options), passed to the template as `$dish_options`. The card shows the
-  cheapest combination's price; one
-  `#dish-sheet` dialog is filled by `public/js/menu-dish.js` from the
-  `#dish-options` JSON. With ordering it hands `qayema:add` events to
-  `menu-cart.js` (a cart line is a dish plus its choice ids, so one dish can
-  sit in the cart twice); without ordering the sheet only shows the choices.
-- **Ordering:** `items.*.options` (option ids) and `items.*.addons`.
-  `OrderPlacer` requires one option of every variant ("Choose a Size for
-  Burger." in the guest's language), ignores ids that are not this dish's,
-  prices `unit_price` = dish + options + add-ons, merges identical lines and
-  snapshots `order_items.options` `{variants: [{name, choice, price}], addons:
-  [{name, price}]}`. `OrderItem::choices()` is the readable form used by the
-  WhatsApp message and the admin's orders list.
+A dish's variants (pick one option of each) and add-ons (pick any), each price added to the dish's; flags `variants` and `addons`, each with its own switch. Written whole by `DishOptionsSync`, shown by `MenuDishOptions`, priced by `OrderPlacer`, snapshotted on `order_items.options`. **Full rules: [docs/architecture/variants-and-addons.md](docs/architecture/variants-and-addons.md).**
 
 ## Queries
 
@@ -1253,26 +998,53 @@ cheese; the guest picks any). Every option and add-on has a `price` that is
 
 ## Deploying (the owner does it; never run from here)
 
-On the server, after the new code is in place:
+Only a commit CI passed is deployed (`.github/workflows/ci.yml` here and in
+the dashboard: style, Larastan, every test at 99% coverage, `composer audit`;
+the dashboard's checks, size budget, `dist/` and end-to-end suite). The
+steps are `docs/release-checklist.md`; on the server the backend is one
+command, `bash deploy.sh` in `~/qayema.com` (`--full` runs every step). It
+compares the server's commit with origin/main and runs only what the change
+needs, so a code-only release is a pull and `optimize`, with the site up:
 
-1. `composer install --no-dev --optimize-autoloader`
-2. `php artisan migrate --force`, when the release has migrations.
-3. `php artisan optimize`: caches config, routes, events and views. Production
-   ran without it until 2026-10, and starting Laravel and finding the route
-   took about 120 ms of every request's 170 ms (Grafana traces). Run it again
-   after every deploy and after any `.env` change (`php artisan
-   optimize:clear` undoes it).
-4. The dashboard: upload its `dist/`.
+- always: `git merge --ff-only`, `php artisan optimize` (config, routes,
+  events, views; without it about 120 ms of every request's 170 ms went to
+  starting Laravel), a boot check (`artisan about`; on failure the site goes
+  into maintenance mode), and `/up` asked from the server itself
+  (`--resolve` to 127.0.0.1, so no origin secret is needed);
+- `composer.json`/`.lock` changed: `composer install --no-dev
+  --optimize-autoloader --classmap-authoritative`, in maintenance mode
+  (2026-10-12: requests landing mid-install failed);
+- a PHP file added or removed under `app/` or `database/`: `composer
+  dump-autoload --classmap-authoritative`, since the class map is the only
+  place classes are looked up;
+- a migration: `migrate --force`, in maintenance mode;
+- the menu page (its views, `public/js`, `public/css`, `lang`,
+  `PublicMenuController`, `Services/Menu`): `menus:forget-all`.
+
+The queue worker needs no restart: the scheduler starts it fresh every
+minute. Any failed step prints FAILED and exits non-zero.
+
+The dashboard: upload its `dist/`.
 
 With config cached, `.env` is no longer read, so `env()` works only inside
-`config/*.php`; anywhere else it comes back empty. The trusted proxies
-(`TRUSTED_PROXIES`, Cloudflare's forwarded IP) are read in
-`config/security.php` and applied by AppServiceProvider for that reason
-(`tests/Feature/Security/TrustedProxiesTest`); read in bootstrap/app.php,
-every guest would become Cloudflare's IP to the rate limits and AbuseGuard.
+`config/*.php`; anywhere else it comes back empty (`tests/Unit/CodeRulesTest`
+fails on one). The trusted proxies (`TRUSTED_PROXIES`, Cloudflare's
+forwarded IP) are read in `config/security.php` and applied by
+AppServiceProvider for that reason (`tests/Feature/Security/TrustedProxiesTest`).
 
-After a deploy, from outside: a menu page sets no cookie (`curl -sI`), an
-order goes through, and visits keep arriving in the analytics.
+**In the background** (`routes/console.php`; production's only cron line is
+`schedule:run` every minute): the queue worker (`queue:work --max-time=55`,
+every minute, never two at once, so a job starts within seconds), the
+heartbeat `/up` checks, `menus:forget-ended` hourly, and nightly
+`stats:rollup`, `orders:forget-guests`, `queue:prune-failed`,
+`sanctum:prune-expired` and `model:prune` (ended `BlockedIp` rows).
+
+**Health:** `GET /up` answers 500 (and logs "Health check failed: ...")
+when the database or the cache fails, and in production also when the
+scheduler's heartbeat (`storage/framework/schedule-heartbeat`) is over 3
+minutes old, a job has waited over 5 minutes or a job failed in the last
+hour (`App\Services\Health\HealthChecks`). Uptime checks and alerts:
+`docs/grafana-alerts.md`.
 
 ## Menu speed
 
@@ -1311,9 +1083,13 @@ cookie (StartSessionForReturningVisitors), the visit counted by the phone
   if not", browser TTL "Respect origin"; and `CLOUDFLARE_ZONE_ID` +
   `CLOUDFLARE_API_TOKEN` (only Zone, Cache Purge) in `.env`. Without them
   nothing is cleared and a copy lives at most the hour.
-- Time-driven changes save nothing (a package or grant ending overnight):
-  those menus catch up within the hour; the server refuses what the package
-  no longer allows meanwhile (an order).
+- Time-driven changes save nothing (a package or grant starting or ending
+  overnight): `menus:forget-ended` (hourly, `ForgetEndedMenus`) clears those
+  menus; the server refuses what the package no longer allows meanwhile (an
+  order). A release that changes the menu page clears every menu
+  (`menus:forget-all`, run by `deploy.sh`).
+  A refused purge is logged as a warning at once ("Menu cache purge
+  refused"), and as an error once the queue gives up.
 
 The public menu is opened on a phone, often on mobile data, so it stays light
 (`tests/Feature/Menu/MenuSpeedTest`):
@@ -1342,276 +1118,27 @@ The public menu is opened on a phone, often on mobile data, so it stays light
 
 ## Maps
 
-`restaurants.google_maps_url` is the only thing stored; there are no lat/lng
-columns. `App\Services\Menu\MapPoint` reads the point back out of that URL
-(`?q=`, `?ll=`, `?query=`, `/@lat,lng,17z`) and builds a **keyless
-OpenStreetMap** embed: Google's needs an API key and a billing account, and
-this page is scanned all day. A shortened `maps.app.goo.gl` link hides its
-coordinates behind a redirect, so it gets the directions button but no map.
-
-It mirrors `parseMapCoordinates` / `mapEmbedUrlFor` in the dashboard
-(`src/features/settings/hooks/use-current-location.ts`); change one, change
-both.
-
-**The map frame must send a Referer.** OSM's tile policy requires one and
-forbids a restrictive referrer policy, so the iframe sets no `referrerpolicy`
-and uses `sandbox="allow-scripts allow-same-origin"`. A bare `allow-scripts`
-puts the frame in an opaque origin, the tile requests arrive anonymous, and
-every tile comes back **403 Access blocked**. `allow-same-origin` restores
-openstreetmap.org's own origin, not ours, so the frame still cannot reach the
-page. The dashboard's `location-field.tsx` carries the same pair.
+Only `restaurants.google_maps_url` is stored; `MapPoint` reads the point out of it and builds a keyless OpenStreetMap embed (mirrored in the dashboard). The map frame must send a Referer (`sandbox="allow-scripts allow-same-origin"`, no `referrerpolicy`) or every tile is a 403. **Details: [docs/architecture/maps.md](docs/architecture/maps.md).**
 
 ## QR studio
 
-The owner's QR code: a plain black-on-white code by default, customizable from
-the dashboard's QR page. The link it encodes (`/{slug}?qr=1`) **never changes
-with the design**, so a printed code keeps working whatever is saved.
-
-- Styling, the logo and the printable card are gated on `qr_studio` (Premium
-  and Custom); the scan counts follow `analytics`. Should one package ever get
-  only part of the studio, give each editor group (colours, shapes, logo, card)
-  its own flag then.
-- `restaurants.qr_settings` is a **flat design we own** (`dot_style`,
-  `dot_color`, `dot_gradient`, …), not the drawing library's option tree.
-  `Restaurant::qrDesign()` merges it over `qrDefaultDesign()` (the simple QR)
-  and drops any key the defaults no longer know.
-- `App\Services\Qr\QrStyle::options()` is the one place a design becomes
-  `qr-code-styling` options. The dashboard mirrors it in
-  `src/features/qr/utils/qr-options.ts`; both are tested against the same
-  cases (`tests/Unit/Services/Qr/QrStyleTest.php`); change one, change both.
-  Hex checks and the ink-on-a-colour rule live in `App\Support\Color`. The allowed shapes are QrStyle's constants, which
-  `QrSettingsRequest` validates against.
-- Drawn by `qr-code-styling` 1.9.2 everywhere: npm in the dashboard, and a
-  vendored copy at `public/js/qr-code-styling.js` for the printable card at
-  `/{slug}/qr` and the menu's own "Scan to open this menu" pop-up. The pop-up
-  fetches its options from `GET /{slug}/qr-options` on first open (the logo is
-  inlined, too heavy for every menu page): the studio design, or the plain
-  code without the studio, exactly as the dashboard shows it. Every code
-  encodes `Restaurant::qrUrl()` (`?qr=1`, which counts the visit as a scan).
-- The logo is sent **inline as a data URL** (`QrStyle::logoDataUrl()`), not as
-  its CDN link: a browser only draws a cross-origin image into a PNG when that
-  domain sends CORS headers, and R2 does not by default.
-- A logo raises error correction to H. Tested decoding showed red corner
-  centres (#EA4335, ~3.9:1 on white) stop a reader finding the code, so the
-  dashboard warns below **4.5:1** for every colour against the background.
+The QR code always encodes `/{slug}?qr=1`, whatever the design. `restaurants.qr_settings` is our own flat design; `QrStyle::options()` is the one place it becomes `qr-code-styling` options, twinned with the dashboard's `qr-options.ts` (change one, change both). Styling, the logo and the card need `qr_studio`. **Details: [docs/architecture/qr-studio.md](docs/architecture/qr-studio.md).**
 
 ## Analytics
 
-- **Visits:** the page reports its own visit (`public/js/menu-track.js`,
-  with its first batch to `POST /{slug}/events`, at most 4 s after opening
-  or as the guest leaves), so a crawler that runs no script is not counted
-  and a page served from a cache still is. A preview loads no tracker, and a
-  page reached from the same menu (a language switch) reports no visit.
-  `MenuVisitRecorder` writes the `menu_sessions` row with device, browser,
-  OS, the `locale` it opened in (one off the menu counts as its main
-  language) and `via_qr` from the `?qr=1` the QR codes encode.
-- **Who is one guest:** a random id the menu keeps in local storage
-  (`qayema-visitor`, stored as `<id>.<day made>` and made anew after 395
-  days, as audience counting is expected to), sent as `visitor` with every batch; without one, a
-  hash of the IP and user agent (`MenuEventsRequest::visitor()`). It is the
-  `session_id` of the visit and of its actions alike. The menu stores no
-  session for guests, so the session id is not it.
-- **Guest actions:** `public/js/menu-track.js` batches what guests do into
-  `POST /{slug}/events` (`throttle:menu-events`, never a ban, since a dining room
-  shares one IP) → `MenuEventRecorder` → `menu_events`. Types are
-  `App\Enums\MenuEventType`. Links opt in with `data-track="…"` (+
-  `data-track-value`); the cart and the menu navigation dispatch a
-  `qayema:track` DOM event rather than calling the tracker, so a menu without
-  it loses nothing. The recorder drops a dish/category that is not the
-  restaurant's, clears fields a type does not carry, and normalises search
-  terms. Events share the visit's `session_id` (the visitor id), which is what the funnel counts.
-  Recorded on **every** package, so moving up shows history at once. Owner
-  previews load no tracker.
-- **Reading:** `App\Services\Analytics\MenuStats`. `summary()` (`GET /api/analytics`)
-  needs `analytics` (Pro and up), ranges `7d`/`30d`; `advanced()` (`GET /api/analytics/advanced`)
-  and the `90d`/`all` ranges need `advanced_analytics` (Premium and up);
-  `teaser()` (`GET /api/analytics/teaser`, this week's views) is every package.
-  Tests about a feature itself put it on the default package with
-  `defaultPackageIncludes()` (`CreatesOwners`); which package has what is
-  tested in `tests/Feature/Packages`. Days and hours are the restaurant's `timezone` (UTC when
-  unset): rows are grouped by UTC hour with `SUBSTR(ts, 1, 13)` (portable
-  across MySQL and SQLite) and shifted in PHP. The funnel (visit → cart → order)
-  is null when the package does not take orders. Devices, browsers, systems
-  and order money are deliberately **not** reported: the owner decided they
-  do not help a restaurant. The
-  visit rows still record device/browser/OS.
-- `stats:rollup` prunes `menu_sessions` and `menu_events` after 6 months.
+The page reports its own visit and what guests do (`public/js/menu-track.js` to `POST /{slug}/events`, written after the 204 has gone), so a cached page still counts and a crawler does not; one guest is the id their browser keeps (`qayema-visitor`). Read by `MenuStats` (`analytics`, `advanced_analytics` flags), in the restaurant's timezone; raw rows pruned after 6 months. **Full rules: [docs/architecture/analytics.md](docs/architecture/analytics.md).**
 
 ## Menu languages
 
-Every menu is written in a **main language** (`restaurants.main_locale`,
-English by default) plus, optionally, **one second language**
-(`restaurants.second_locale`, null = none), both picked from
-`config('locales.menu')`: English, Arabic, French, Spanish, Turkish, German,
-Italian, Russian, Chinese, Hindi, Portuguese. Every package picks its main
-language (Free gets one language, any of them); a second one needs
-`multiple_languages`. Both are set on the dashboard's Features page
-(`GET/PUT /api/menu-languages`; a PUT without `main_locale` keeps it).
-`default_locale` is what the menu opens in: the main or the second language.
-`config('locales.supported')` is only the **portal's** UI list and has
-nothing to do with menus.
-
-- `App\Services\Menu\MenuLanguages` owns it: `main()`, `for()`
-  (`[main, second?]`, main only while the second is off or not on the
-  package), `written()`, `default()`, `withMain()` (a new main language:
-  choosing the second one swaps the two, nothing is copied since text is
-  stored per language code), `text()` (that language, else the `$main`
-  passed, else whatever was written, so a dish not yet written in a new
-  main language shows its old name; never spatie's accessor, which fell
-  back to the app locale and showed Arabic-only text blank),
-  `missingInMain()` (what still has no name in the main language), `map()`
-  for resources, `rules()` for requests (the required rule goes on the first
-  language, the main one), `requiredMessages()` ("required in your menu's
-  main language (Français)"), `input()` + `fill()` for writes.
-- **The main language is required** for every name (restaurant, category,
-  dish, variant, option, add-on); everything else is optional per language.
-- The API only reads and writes the menu's **active** languages and merges into
-  the stored JSON, so text in a language the owner switched away from stays,
-  hidden, and comes back if they switch back. A language sent blank clears
-  that language; a field sent as `null` clears all active ones; a field not
-  sent is untouched.
-- Public menu: `?lang=` accepts only the menu's own languages (anything else
-  opens the default), hreflang and the switcher list only those, and a
-  one-language menu (in any language) has no switcher. `dir` comes from the
-  catalogue; fonts come from the language's script (see Templates → fonts).
-- The admin forms (restaurant, category, dish and its choices) edit the
-  restaurant's main language: one input per language, only the main one
-  shown (`App\Filament\Admin\Schemas\Components\MenuTextInputs`). The
-  restaurant form has a "Main language" select (a swap when it picks the
-  second language, `EditRestaurant`), and Create User one for the new
-  restaurant. The admin phone app (`../qayema-admin-app`) does the same
-  through `/api/admin/restaurants`: each restaurant carries `main_locale`
-  (its name field is labelled with it), and a new one may send it; the
-  app's list of languages (`lib/core/menu_languages.dart`) mirrors
-  `config('locales.menu')`.
-- The menu's own words live in `lang/{code}.json` (same keys as `ar.json`).
-  The non-Arabic ones were written by Claude and still want a native read.
-- The cart sends the guest's language with an order; any error and the
-  line names of an order placed in the menu come back in it. A WhatsApp
-  message (labels and line names) is in the menu's main language: the
-  owner reads it.
-- Onboarding's first step asks "Your menu is written in" (suggested from the
-  page's language); the name typed there is saved in it, the menu opens in
-  it, and the second language starts as Arabic (English for an Arabic
-  menu), shown once the package has more than one language.
-
-A page reached from this same menu reports **no** visit (menu-track.js
-compares `document.referrer` with `QAYEMA_TRACK.menu`): a language switch is
-one visit continuing, not two.
+A main language (required for every name) plus one optional second language (`multiple_languages`), from `config('locales.menu')`; `config('locales.supported')` is only the portal's. `App\Services\Menu\MenuLanguages` owns it: read with `text()`/`map()`, never spatie's accessor; write only the active languages, merged into the stored JSON. **Full rules: [docs/architecture/menu-languages.md](docs/architecture/menu-languages.md).**
 
 ## Opening hours
 
-`restaurants.opening_hours` is a list of shifts per weekday (`null` =
-closed): `{mon: [{open: "12:00", close: "15:00"}, {open: "18:00", close:
-"23:00"}], ...}`, earliest first, at most `OpeningHours::MAX_SHIFTS` (3).
-`restaurants.timezone` is what makes "open now" mean anything.
-`App\Services\Menu\OpeningHours` owns the logic: a shift whose close is at
-or before its open runs past midnight, and only a day's last shift may;
-shifts never overlap (`problemWith()`, checked by `UpdateRestaurantRequest`
-in the owner's language). Hours saved before shifts (one `{open, close}` per
-day) read as one shift and take the new shape on the next save; a request in
-that shape (an app not yet updated) is taken as one shift too. The menu shows
-today's shifts ("12:00 - 15:00, 18:00 - 23:00") and is closed between them;
-the search data has one `OpeningHoursSpecification` per shift. The dashboard
-(`opening-hours-section.tsx`) and the owner app (`restaurant_screen.dart`)
-edit them the same way.
+`restaurants.opening_hours` holds up to three shifts a weekday (null = closed), in `restaurants.timezone`; `App\Services\Menu\OpeningHours` owns the rules (only a day's last shift may run past midnight, no overlaps), mirrored by `public/js/menu-hours.js` on the cached menu. **Details: [docs/architecture/opening-hours.md](docs/architecture/opening-hours.md).**
 
 ## Writing help (AI)
 
-The dashboard's AI buttons, through the official Laravel AI SDK
-(`laravel/ai`): **Translate** on every translatable field (either way, the
-open tab's text into the other language or the other's into an empty tab)
-and **Write with AI / Improve with AI** on a category's description and on
-the restaurant's. `POST /api/writing/translate` (`text`, `from`, `to`: menu
-languages, never the same; `max`, the field's limit; `fit`, `category` or
-`restaurant` for a description), `POST /api/writing/category-description`
-(`name`, `text` to improve or empty, `language`) and
-`POST /api/writing/restaurant-description` (`text`, `language`; the name and
-the saved menu, up to 12 categories with 6 dishes each, are read by the
-server; the menu only inspires the line, the kind of place and its mood, and
-is never listed back; an empty menu gets a welcome that suits any
-restaurant) answer `{data: {text, left}}`; nothing is saved there, the owner
-checks it in the form and saves as usual. `App\Services\Ai\WritingHelp`
-holds the calls (one instance a request, AppServiceProvider);
-`WritingHelpSetup` says whether they run and on what; the agents are
-`App\Ai\Agents\MenuTranslator`, `CategoryDescriptionWriter` and
-`RestaurantDescriptionWriter` (structured output, one `text`).
-
-- **Off until set up:** `config('services.writing_help')` reads `AI_PROVIDER`
-  (anthropic, openai, gemini...) and `AI_MODEL` (empty = the provider's
-  cheapest, `#[UseCheapestModel]`). It is on only while the provider is named
-  **and** its key is set in `config/ai.php` (`ANTHROPIC_API_KEY`...):
-  `WritingHelpSetup::isOn()`. For a restaurant it also needs uses on its
-  package: `isOnFor()`; the dashboard hears `restaurant.writing_help`. Off,
-  the endpoints 404 and no button shows.
-- **Uses a day per package:** the limit `Feature::WritingHelpLimit`
-  (`writing_help_limit`), set per package at /admin → Packages like dishes:
-  0 is no writing help, empty is no daily cap, grants add to it. A package
-  saved before it existed reads `defaultValue()` (30) until edited; the
-  seeded catalog has Free 10, Pro 100, Premium and Custom 200. Kept off the
-  landing page's pricing cards (`Feature::isOnPricing()`; the page claims no
-  AI, `LandingContentTest`); the dashboard's Package page lists it.
-- **Counting the uses:** `App\Services\Ai\WritingHelpUses`, a rate limiter
-  key per restaurant per day of its own (`localTimezone()`), so they all come
-  back at its midnight and "come back tomorrow" is true. `PaceWritingHelp`
-  checks it: none left is an instant 429 `writing_help_limit` with `left: 0`
-  and `retry_after` (seconds to that midnight); a use is taken only once the
-  request may run and given back when the answer is not a success (the
-  provider failed, a 422), so an owner only spends a use on text they got.
-  Every answer carries `left` (null for no cap) and the session sends
-  `writing_help: {limit, left}` (null when off); the dashboard shows it on
-  each AI button. It never bans.
-- **The usage log:** `writing_help_days`, a row per restaurant per day of
-  its own (`WritingHelpDay`, written by `App\Services\Ai\WritingHelpLog`
-  from PaceWritingHelp): the uses that gave the owner text, and the tokens
-  every call spent, a failure's and a retry's included
-  (`WritingHelp::takeTokens()`). The admin reads it in the Restaurants table
-  ("AI uses (30 days)", sortable, the tokens under it; one subquery with the
-  page, `WritingHelpLog::lastDaysOf()`), on each restaurant ("AI writing help
-  used: 3 today, 41 in the last 30 days (52,300 tokens)") and on the
-  dashboard (`WritingHelpUsage`, everyone's last 30 days).
-- **What an answer must keep, checked by the server** (models cannot count
-  or be trusted not to invent): a category's description is 60 to 70
-  characters (`WritingHelp::CATEGORY_LENGTH`), the restaurant's 100 to 110
-  (`RESTAURANT_LENGTH`); a description never has a dash (`withoutDashes()`:
-  between words a comma, inside a word a space) and never makes a claim
-  what it was written from does not make (`UNSAID`: an oven, fresh,
-  homemade, a chef, since, the best..., in English and Arabic; "Grills" may
-  say grilled, an owner's "homemade" stays). A translation is never longer
-  than its field (`max`); one of a description the writing help wrote
-  (`fit`, and the text of that length) keeps that length and loses its
-  dashes in the other language, the owner's own text keeps its dashes. A
-  miss is asked again with what was wrong, 3 tries, then the failure below;
-  never a broken rule. The writers pad with the moment, never the food, and
-  avoid stock phrases.
-- **Never starves the menus:** a call holds a PHP worker while it waits, so
-  `PaceWritingHelp` lets one run at a time per restaurant and at most
-  `AI_AT_ONCE` (10) on the server (cache locks, tried from a random one, 30 s
-  at most); past either, an instant 503 `writing_help_busy`, which costs no
-  use. Each call waits at most `WritingHelp::TRY_SECONDS` (10) and a whole
-  answer, every retry together, `TIME_BUDGET` (15).
-- **Failures:** a provider that is down, out of credit or refusing the key,
-  or an answer with no text or not in the shape asked, is one 503
-  `writing_help_failed` ("try again in a moment"); the cause is reported to
-  the log.
-- **Tests** need no key and make no calls. Most fake the agents
-  (`MenuTranslator::fake()`): `tests/Feature/Api/WritingHelpTest.php`,
-  `WritingHelpEdgeTest.php` (validation edges, PaceWritingHelp's order) and
-  `WritingHelpUsageLogTest.php`; `tests/Integration/Services/Ai` (the
-  service, the uses, the log), `tests/Integration/Ai` (the agents'
-  instructions; the good examples must keep the rules they teach),
-  `tests/Unit/Services/Ai` (dashes). `WritingHelpGeminiTest.php` runs the
-  real Gemini driver with only the HTTP faked (every way Gemini fails is a
-  503 that costs no use). Admin: `WritingHelpLimitAdminTest.php`; the
-  landing page: `tests/Feature/Portal/WritingHelpPricingTest.php`.
-- **E2E:** the e2e server (tests/E2e/E2eServiceProvider) answers as a
-  pretend Gemini (`geminiAnswer()`: "Translated: <text>", or a fixed line of
-  each description's length) and switches the writing help on only for a
-  request with the `X-E2E-Writing-Help` header (decided in `register()`,
-  before the rate limiter is made), so every other spec and baseline sees it
-  off. Those requests count in a file cache (`WRITING_HELP_CACHE`), so uses
-  carry from one request to the next, and a scenario can start with
-  `writing_help_used`.
+The dashboard's Translate and Write with AI buttons, through `laravel/ai` (`App\Services\Ai\WritingHelp`, agents in `app/Ai/Agents`). Off until a provider and its key are set; uses a day per package (`writing_help_limit`), counted by `WritingHelpUses`, logged by `WritingHelpLog`; the server checks every answer (lengths, no dashes, no invented claims); `PaceWritingHelp` keeps it from starving the menus. Tests never call a provider. **Full rules: [docs/architecture/writing-help.md](docs/architecture/writing-help.md).**
 
 ## Not yet built
 
@@ -1629,7 +1156,12 @@ holds the calls (one instance a request, AppServiceProvider);
 Three layers, and a change is done when all three are green:
 
 - **PHPUnit here** (`composer test`; `composer test:coverage` fails under the
-  coverage floor; needs the `pcov` extension). Tests never touch real storage:
+  coverage floor; needs the `pcov` extension). `composer check` is Pint,
+  then Larastan (`composer analyse`, level 6, `phpstan.neon`; its baseline
+  `phpstan-baseline.neon` only shrinks: fix an entry when touching its file
+  and regenerate, never add one), then the coverage run; CI runs it on every
+  push. `tests/Unit/CodeRulesTest` checks the source itself (no `env()`
+  outside config, no `dd`/`dump`, no HTTP in a model, every job queued). Tests never touch real storage:
   `tests/TestCase.php` fakes the `local` and `public` disks.
 - **Vitest** in the dashboard repo.
 - **Playwright end-to-end** in `../qayema-dashboard/e2e` (`npm run e2e` there),
@@ -1661,7 +1193,7 @@ Routes: `POST /__e2e/scenario` builds an owner with whatever a test needs
   (components, stylesheets), `Factories`, `Admin` (form helpers), `E2e`.
 - `tests/Feature/`: drives the app from outside: HTTP, Livewire/Filament
   pages, artisan. By area: `Api/` is every `/api/*` endpoint, then `Admin`,
-  `Auth`, `Console`, `E2e`, `Journeys`, `Mail`, `Media`, `Menu`, `Onboarding`,
+  `Auth`, `Console`, `E2e`, `Health` (`/up`, log context), `Journeys`, `Mail`, `Media`, `Menu`, `Onboarding`,
   `Orders` (public ordering), `Packages`, `Portal`, `Requests`, `Security`.
 
 A class with pure methods and app-bound ones has one test in each layer under

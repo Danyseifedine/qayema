@@ -6,9 +6,12 @@ use App\Enums\Feature;
 use App\Models\Category;
 use App\Models\Dish;
 use App\Models\MenuEvent;
+use App\Models\MenuSession;
 use App\Models\Restaurant;
 use App\Models\Template;
+use Illuminate\Foundation\Http\Events\RequestHandled;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Tests\Support\CreatesOwners;
 use Tests\Support\SendsMenuToken;
 use Tests\TestCase;
@@ -60,6 +63,24 @@ class MenuEventsTest extends TestCase
         );
         $this->assertDatabaseHas('menu_events', ['type' => 'dish_add', 'dish_id' => $dish->id, 'restaurant_id' => $restaurant->id]);
         $this->assertDatabaseHas('menu_events', ['type' => 'social', 'value' => 'instagram']);
+    }
+
+    public function test_the_guest_gets_the_answer_before_the_rows_are_written(): void
+    {
+        $restaurant = $this->published();
+        $rowsWhenAnswered = null;
+        Event::listen(RequestHandled::class, function () use (&$rowsWhenAnswered): void {
+            $rowsWhenAnswered = MenuEvent::query()->count() + MenuSession::query()->count();
+        });
+
+        $this->postJson(route('public.events', $restaurant->slug), [
+            'visit' => ['locale' => 'en', 'qr' => true],
+            'events' => [['type' => 'whatsapp']],
+        ])->assertNoContent();
+
+        $this->assertSame(0, $rowsWhenAnswered);
+        $this->assertSame(1, MenuEvent::query()->count());
+        $this->assertSame(1, MenuSession::query()->count());
     }
 
     public function test_another_restaurants_dish_is_dropped(): void

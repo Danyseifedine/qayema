@@ -12,6 +12,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Once;
 use Tests\Support\CreatesOwners;
 use Tests\TestCase;
@@ -160,7 +161,29 @@ class EntitlementsEdgeTest extends TestCase
 
         $this->assertSame(77, $this->dishLimit($first));
         $this->assertSame(77, $this->dishLimit($second));
-        $this->assertTrue(Cache::has('entitlements:'.$first->id));
+        $this->assertTrue(Cache::has(Entitlements::cacheKey($first->id)));
+    }
+
+    public function test_flushing_every_restaurant_is_one_write_however_many_there_are(): void
+    {
+        $restaurants = collect(range(1, 5))->map(fn () => $this->owner());
+        $restaurants->each(fn ($restaurant) => $this->dishLimit($restaurant));
+        $before = Entitlements::cacheKey($restaurants->first()->id);
+
+        $writes = 0;
+        Event::listen(\Illuminate\Cache\Events\KeyWritten::class, function () use (&$writes): void {
+            $writes++;
+        });
+        Event::listen(\Illuminate\Cache\Events\KeyForgotten::class, function () use (&$writes): void {
+            $writes++;
+        });
+
+        Entitlements::flushAll();
+
+        $this->assertLessThanOrEqual(1, $writes);
+        $this->assertNotSame($before, Entitlements::cacheKey($restaurants->first()->id));
+        Entitlements::flushAll();
+        $this->assertStringStartsWith('entitlements:2:', Entitlements::cacheKey($restaurants->first()->id));
     }
 
     public function test_one_instance_keeps_its_answer_for_its_own_lifetime(): void
@@ -181,7 +204,7 @@ class EntitlementsEdgeTest extends TestCase
         $restaurant = $this->owner();
         $cached = Entitlements::for($restaurant)->all();
         unset($cached[Feature::SocialLinkLimit->value], $cached[Feature::QrStudio->value]);
-        Cache::put('entitlements:'.$restaurant->id, $cached, 300);
+        Cache::put(Entitlements::cacheKey($restaurant->id), $cached, 300);
 
         $entitlements = Entitlements::for($restaurant->fresh());
 

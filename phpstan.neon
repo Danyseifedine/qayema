@@ -1,0 +1,18 @@
+# Static analysis (composer analyse; CI runs it on every push). Larastan
+# knows Laravel's magic (models, facades, the container). Level 6: types
+# are checked, and every method says what it takes and returns.
+includes:
+    - vendor/larastan/larastan/extension.neon
+    # What was already there when analysis began (October 2026), mostly
+    # Filament handing records around as a plain Model. New code adds
+    # nothing here: fix an entry when touching its file, then regenerate
+    # (vendor/bin/phpstan analyse --generate-baseline phpstan-baseline.neon).
+    - phpstan-baseline.neon
+
+parameters:
+    level: 6
+    paths:
+        - app/
+    tmpDir: storage/framework/cache/phpstan
+    # The models declare their casts in casts(); read them from its body.
+    parseModelCastsMethod: true

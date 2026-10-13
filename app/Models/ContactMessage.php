@@ -26,11 +26,13 @@ class ContactMessage extends Model
         ];
     }
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /** @return BelongsTo<Package, $this> */
     public function package(): BelongsTo
     {
         return $this->belongsTo(Package::class);
