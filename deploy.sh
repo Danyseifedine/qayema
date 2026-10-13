@@ -104,12 +104,14 @@ if $DOWN; then
     trap - EXIT
 fi
 
-# Asked from the server itself, over HTTPS to this machine (no secret header
-# needed from 127.0.0.1). Retried for a minute and a half: on the first
-# deploy with the scheduler check, its heartbeat appears within a minute.
+# Asked the way guests ask: the public address, through Cloudflare (which
+# adds the origin secret). Not 127.0.0.1: on shared hosting that answers with
+# the host's own certificate, not the site's. Retried for a minute and a
+# half: on the first deploy with the scheduler check, its heartbeat appears
+# within a minute.
 HOST="$(grep -E '^APP_URL=' .env | cut -d= -f2- | sed -E 's#^"?https?://(www\.)?##; s#[/"].*$##')"
 if ! curl -fsS -o /dev/null --max-time 10 --retry 6 --retry-delay 15 --retry-all-errors \
-    --resolve "$HOST:443:127.0.0.1" "https://$HOST/up"; then
+    "https://$HOST/up"; then
     echo "FAILED: https://$HOST/up does not answer 200. The site is up; see storage/logs (\"Health check failed\")." >&2
     exit 1
 fi

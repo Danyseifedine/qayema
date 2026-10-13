@@ -1009,8 +1009,8 @@ needs, so a code-only release is a pull and `optimize`, with the site up:
 - always: `git merge --ff-only`, `php artisan optimize` (config, routes,
   events, views; without it about 120 ms of every request's 170 ms went to
   starting Laravel), a boot check (`artisan about`; on failure the site goes
-  into maintenance mode), and `/up` asked from the server itself
-  (`--resolve` to 127.0.0.1, so no origin secret is needed);
+  into maintenance mode), and `/up` asked at the public address, through
+  Cloudflare (127.0.0.1 answers with the shared host's own certificate);
 - `composer.json`/`.lock` changed: `composer install --no-dev
   --optimize-autoloader --classmap-authoritative`, in maintenance mode
   (2026-10-12: requests landing mid-install failed);
