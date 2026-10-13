@@ -20,7 +20,7 @@ class PublicMenuEventController extends Controller
 {
     public function store(MenuEventsRequest $request, Restaurant $restaurant, MenuVisitRecorder $visits, MenuEventRecorder $events): Response
     {
-        abort_unless($restaurant->is_active, 404);
+        abort_unless($restaurant->menuOnline(), 404);
 
         $visitor = $request->visitor();
 

@@ -62,13 +62,13 @@ class PackagesTest extends TestCase
             ->assertJsonPath('meta.current', 'pro');
     }
 
-    public function test_an_expired_package_reports_as_the_default_one(): void
+    public function test_an_expired_package_is_still_the_current_one(): void
     {
-        $owner = $this->ownerOn('premium', ['package_ends_at' => now()->subDay()]);
+        $owner = $this->ownerOn('premium', ['package_ends_at' => now()->subDays(10)]);
 
         $this->actingAs($owner->user)->getJson(route('api.packages.index'))
             ->assertOk()
-            ->assertJsonPath('meta.current', 'free');
+            ->assertJsonPath('meta.current', 'premium');
     }
 
     public function test_a_user_without_a_restaurant_still_sees_the_catalog(): void

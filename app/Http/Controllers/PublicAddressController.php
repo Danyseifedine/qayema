@@ -17,7 +17,7 @@ class PublicAddressController extends Controller
 {
     public function show(LookUpAddressRequest $request, Restaurant $restaurant, ReverseGeocoder $geocoder): JsonResponse
     {
-        abort_unless($restaurant->is_active && $restaurant->orderChannel() === OrderChannel::Menu, 404);
+        abort_unless($restaurant->menuOnline() && $restaurant->orderChannel() === OrderChannel::Menu, 404);
 
         $locale = in_array($request->validated('locale'), $restaurant->menuLanguages(), true)
             ? (string) $request->validated('locale')

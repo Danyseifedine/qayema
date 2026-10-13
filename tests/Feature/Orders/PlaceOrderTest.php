@@ -280,6 +280,17 @@ class PlaceOrderTest extends TestCase
         ])->assertNotFound();
     }
 
+    public function test_a_restaurant_past_the_grace_days_of_its_package_takes_no_orders(): void
+    {
+        $shop = $this->shop();
+        $bowl = $this->dish($shop, 'House Bowl', '14.00');
+        $shop->update(['package_started_at' => now()->subYear(), 'package_ends_at' => now()->subDays(4)]);
+
+        $this->postJson(route('public.order', $shop->slug), [
+            'items' => [['dish_id' => $bowl->id, 'quantity' => 1]],
+        ])->assertNotFound();
+    }
+
     public function test_an_inactive_restaurant_takes_no_orders(): void
     {
         $shop = $this->shop();

@@ -543,14 +543,26 @@ invented reviews (`tests/Feature/Portal/LandingContentTest`).
   deleted there. `PackageSeeder` is `firstOrCreate`, so seeding a live database
   cannot overwrite an admin's edits.
 - **Dates:** the assigned package is in force from `package_started_at` (null =
-  always) until `package_ends_at` (null = forever): `Restaurant::packageStatus()`
-  (`PackageStatus` Active / Scheduled / Expired). Outside that window
-  `effectivePackage()` is the default package, and the assignment stays on the
-  row so an admin sees what is coming or what lapsed. `/api/user` sends the
-  package in force with `ends_at` and `days_left`, plus `lapsed` (with
-  `ended_at`) or `upcoming` (with `starts_at`) for the assigned one. Query scopes: `packageActive()`,
-  `packageScheduled()`, `packageExpired()`, `packageEndingWithin($days)`,
-  `onPackage($id)` (in force, including restaurants fallen back to the default).
+  always): `Restaurant::packageStatus()` (`PackageStatus` Active / Scheduled /
+  Expired). Before its start `effectivePackage()` is the default package.
+  **An ended package is never swapped for a smaller one** (the owner's rule,
+  2026-10-13): the restaurant keeps it, its menu stays online for
+  `package.grace_days` (3) past `package_ends_at`, then goes offline
+  (`Restaurant::offlineAt()`, `menuOnline()`: switched on and not past the
+  grace days; scope `menuOnline()`). Offline is a 404 on everything a guest
+  opens (the menu, ordering, tracking, events, the QR card and options, an
+  old link) and out of the sitemap, like the admin's switch; the owner may
+  still preview. Extending or assigning a package brings it back that
+  moment; no job flips anything (`menus:forget-ended` only clears the cached
+  menu). `/api/user` sends the package in force with `ends_at` and
+  `days_left`, plus `lapsed` (with `ended_at`, `offline_at`, `offline`) or
+  `upcoming` (with `starts_at`); the dashboard warns in the grace days and
+  shows a renew screen once offline. The admin API adds `menu_online` and
+  `package.offline_at`. Query scopes: `packageActive()`,
+  `packageScheduled()`, `packageExpired()` (ended, in grace or past it),
+  `packageEndingWithin($days)`, `onPackage($id)` (on it now: assigned and
+  started, ended included, or the default while the assigned one waits),
+  `menuOnline()`.
 - **`App\Services\Packages\PackageAssigner` is the one way an admin changes a
   package**: `assign()` (package, start, end|null, note), `extend()` (months
   added to the end, or to today once ended; null = forever), `reset()` (default,
@@ -612,7 +624,7 @@ invented reviews (`tests/Feature/Portal/LandingContentTest`).
 One rule: **effective value = the package's value + Σ active grants** (limits
 add, flags OR, unlimited stays unlimited). Resolved by
 `App\Services\Packages\Entitlements`, cached `entitlements:{id}` for 300 s or
-until the next start/end of the package or a grant, whichever is sooner. A
+until the package starts or a grant ends, whichever is sooner. A
 date passing never leaves a stale answer, and no scheduler is needed.
 
 - `App\Enums\Feature` is the registry: adding a limit or a flag is one enum
@@ -1087,9 +1099,9 @@ cookie (StartSessionForReturningVisitors), the visit counted by the phone
   if not", browser TTL "Respect origin"; and `CLOUDFLARE_ZONE_ID` +
   `CLOUDFLARE_API_TOKEN` (only Zone, Cache Purge) in `.env`. Without them
   nothing is cleared and a copy lives at most the hour.
-- Time-driven changes save nothing (a package or grant starting or ending
-  overnight): `menus:forget-ended` (hourly, `ForgetEndedMenus`) clears those
-  menus; the server refuses what the package no longer allows meanwhile (an
+- Time-driven changes save nothing (a package starting, a menu going
+  offline past its grace days, a grant ending, overnight):
+  `menus:forget-ended` (hourly, `ForgetEndedMenus`) clears those menus; the server refuses what the package no longer allows meanwhile (an
   order). A release that changes the menu page clears every menu
   (`menus:forget-all`, run by `deploy.sh`).
   A refused purge is logged as a warning at once ("Menu cache purge

@@ -152,8 +152,11 @@ class AdminRestaurantsTest extends TestCase
             ->assertJsonPath('data.0.id', $lately->id)
             ->assertJsonPath('data.0.package.status', 'expired')
             ->assertJsonPath('data.0.package.days_left', null)
-            ->assertJsonPath('data.0.package.in_force.id', Package::default()->id)
-            ->assertJsonPath('data.1.id', $longAgo->id);
+            ->assertJsonPath('data.0.package.in_force.id', $lately->package_id)
+            ->assertJsonPath('data.0.package.offline_at', $lately->package_ends_at->addDays(3)->toIso8601String())
+            ->assertJsonPath('data.0.menu_online', true)
+            ->assertJsonPath('data.1.id', $longAgo->id)
+            ->assertJsonPath('data.1.menu_online', false);
     }
 
     public function test_one_restaurant_also_counts_its_dishes_and_categories(): void

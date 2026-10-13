@@ -168,4 +168,18 @@ return [
 
     'cache_ttl' => 300,
 
+    /*
+    |--------------------------------------------------------------------------
+    | Grace
+    |--------------------------------------------------------------------------
+    |
+    | A package that ends is kept, never swapped for a smaller one: the
+    | restaurant stays on it and its menu stays online this many days past the
+    | end (time to renew), then the menu goes offline until an admin extends
+    | or assigns a package (Restaurant::menuOnline()).
+    |
+    */
+
+    'grace_days' => 3,
+
 ];

@@ -97,7 +97,7 @@ class PublicOrderTrackingController extends Controller
 
     private function order(Restaurant $restaurant, string $token): Order
     {
-        abort_unless($restaurant->is_active, 404);
+        abort_unless($restaurant->menuOnline(), 404);
 
         return $restaurant->orders()->where('tracking_token', $token)->firstOrFail();
     }

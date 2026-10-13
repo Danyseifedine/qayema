@@ -50,6 +50,9 @@ class AdminRestaurantResource extends JsonResource
             'main_locale' => MenuLanguages::main($this->resource),
             'slug' => $this->slug,
             'is_active' => (bool) $this->is_active,
+            // What guests get: on, and not past the grace days of an ended
+            // package (Restaurant::menuOnline()).
+            'menu_online' => $this->menuOnline(),
             'public_url' => rtrim((string) config('app.url'), '/').'/'.$this->slug,
             'logo_url' => MediaUrl::of($this->resource, 'logo'),
             'created_at' => $this->created_at?->toIso8601String(),
@@ -62,12 +65,14 @@ class AdminRestaurantResource extends JsonResource
             'package' => [
                 // What the admin assigned, and where it stands between its
                 // dates; `in_force` is what the limits come from now (the
-                // default package once it ended or before it starts).
+                // default package before it starts; an ended one is kept,
+                // and its menu goes offline at `offline_at`).
                 'id' => $this->package_id,
                 'name' => $this->package === null ? null : (string) $this->package->name,
                 'status' => $status->value,
                 'starts_at' => $this->package_started_at?->toIso8601String(),
                 'ends_at' => $this->package_ends_at?->toIso8601String(),
+                'offline_at' => $this->offlineAt()?->toIso8601String(),
                 // Whole days left, rounded up ("ends today" is 0), like the
                 // dashboard's; null when it runs forever or is not in force.
                 'days_left' => $status === PackageStatus::Active && $this->package_ends_at !== null

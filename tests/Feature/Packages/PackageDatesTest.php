@@ -51,18 +51,18 @@ class PackageDatesTest extends TestCase
         $this->assertSame(1000, $restaurant->fresh()->dish_limit);
     }
 
-    public function test_the_cached_answer_ends_when_the_package_does(): void
+    public function test_the_cached_answer_ends_when_the_package_starts(): void
     {
         $restaurant = $this->owner();
-        $this->assigner()->assign($restaurant, Package::findBySlug('pro'), now(), now()->addMinute());
+        $this->assigner()->assign($restaurant, Package::findBySlug('pro'), now()->addMinute(), null);
 
-        $this->assertSame(150, $restaurant->fresh()->dish_limit);
+        $this->assertSame(40, $restaurant->fresh()->dish_limit);
 
-        // No write, no flush: only the clock moves past the end.
+        // No write, no flush: only the clock moves past the start.
         $this->travel(2)->minutes();
         $this->newRequest();
 
-        $this->assertSame(40, $restaurant->fresh()->dish_limit);
+        $this->assertSame(150, $restaurant->fresh()->dish_limit);
     }
 
     public function test_the_cached_answer_ends_when_a_grant_does(): void
@@ -183,11 +183,12 @@ class PackageDatesTest extends TestCase
         $this->assigner()->assign($restaurant, Package::findBySlug('pro'), now()->subMonth(), now()->subDay());
 
         $this->actingAs($restaurant->user)->getJson(route('api.user'))
-            ->assertJsonPath('data.restaurant.package.slug', 'free')
+            ->assertJsonPath('data.restaurant.package.slug', 'pro')
             ->assertJsonPath('data.restaurant.package.ends_at', null)
             ->assertJsonPath('data.restaurant.package.days_left', null)
             ->assertJsonPath('data.restaurant.lapsed.slug', 'pro')
-            ->assertJsonPath('data.restaurant.lapsed.name.en', 'Pro');
+            ->assertJsonPath('data.restaurant.lapsed.name.en', 'Pro')
+            ->assertJsonPath('data.restaurant.lapsed.offline', false);
     }
 
     public function test_the_session_reports_a_package_still_to_come(): void

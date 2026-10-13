@@ -165,7 +165,7 @@ class UserResourceTest extends TestCase
         $this->assertSame(1, $data['package']['days_left']);
     }
 
-    public function test_an_ended_package_reports_the_default_and_what_lapsed(): void
+    public function test_an_ended_package_is_kept_and_says_when_the_menu_goes_offline(): void
     {
         $restaurant = $this->ownerOn('pro', [
             'package_started_at' => '2026-01-01 00:00:00',
@@ -174,16 +174,28 @@ class UserResourceTest extends TestCase
 
         $data = $this->resolve($restaurant->user->load('restaurant'))['restaurant'];
 
-        $this->assertSame('free', $data['package']['slug']);
+        $this->assertSame('pro', $data['package']['slug']);
         $this->assertNull($data['package']['ends_at']);
         $this->assertNull($data['package']['days_left']);
         $this->assertSame([
             'slug' => 'pro',
             'name' => ['en' => 'Pro', 'ar' => 'برو'],
             'ended_at' => '2026-06-01T00:00:00+00:00',
+            'offline_at' => '2026-06-04T00:00:00+00:00',
+            'offline' => true,
         ], $data['lapsed']);
         $this->assertNull($data['upcoming']);
-        $this->assertSame(40, $data['limits']['dishes']['limit']);
+        $this->assertSame(150, $data['limits']['dishes']['limit']);
+    }
+
+    public function test_in_its_grace_days_an_ended_package_says_the_menu_is_still_online(): void
+    {
+        $restaurant = $this->ownerOn('pro', ['package_ends_at' => now()->subDay()]);
+
+        $lapsed = $this->resolve($restaurant->user->load('restaurant'))['restaurant']['lapsed'];
+
+        $this->assertFalse($lapsed['offline']);
+        $this->assertSame(now()->addDays(2)->toIso8601String(), $lapsed['offline_at']);
     }
 
     public function test_a_package_still_to_start_is_upcoming(): void

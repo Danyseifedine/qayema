@@ -46,7 +46,7 @@ class EntitlementsTest extends TestCase
         $this->assertTrue($restaurant->fresh()->entitlements()->can(Feature::Appearance));
     }
 
-    public function test_an_expired_package_falls_back_to_the_default_one(): void
+    public function test_an_expired_package_is_kept_never_dropped_to_the_default(): void
     {
         $restaurant = Restaurant::factory()->create([
             'template_id' => null,
@@ -60,13 +60,8 @@ class EntitlementsTest extends TestCase
         $restaurant = $restaurant->fresh();
 
         $this->assertTrue($restaurant->packageExpired());
-        $this->assertSame('free', $restaurant->effectivePackage()->slug);
-        $this->assertSame(40, $restaurant->dish_limit);
-        $this->assertSame(
-            'premium',
-            $restaurant->package->slug,
-            'The assignment is kept so an admin can still see what expired.',
-        );
+        $this->assertSame('premium', $restaurant->effectivePackage()->slug);
+        $this->assertSame(1000, $restaurant->dish_limit);
     }
 
     public function test_an_unlimited_limit_is_never_reached_and_a_grant_cannot_shrink_it(): void

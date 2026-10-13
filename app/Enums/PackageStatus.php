@@ -3,8 +3,9 @@
 namespace App\Enums;
 
 /**
- * Where a restaurant's assigned package stands in its dates. Only an Active
- * package gives anything; before and after, the default package applies.
+ * Where a restaurant's assigned package stands in its dates. Before it
+ * starts the default package applies; once it ended the restaurant keeps it,
+ * and its menu goes offline after the grace days (Restaurant::menuOnline()).
  */
 enum PackageStatus: string
 {
@@ -14,6 +15,6 @@ enum PackageStatus: string
     /** Assigned with a start date still to come. */
     case Scheduled = 'scheduled';
 
-    /** Its end date has passed. */
+    /** Its end date has passed (the menu stays online for the grace days). */
     case Expired = 'expired';
 }

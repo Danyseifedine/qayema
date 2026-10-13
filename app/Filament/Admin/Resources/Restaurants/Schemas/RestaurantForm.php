@@ -151,7 +151,7 @@ class RestaurantForm
                             Toggle::make('is_active')
                                 ->label('Restaurant is active (visible to the public)')
                                 ->default(true)
-                                ->helperText('When off, the public menu link will not load for visitors.'),
+                                ->helperText('When off, the public menu link will not load for visitors. The menu also goes offline '.Restaurant::graceDays().' days after its package ends, until the package is extended or changed.'),
                         ]),
                 ])->columnSpan(['lg' => 1]),
             ]);
@@ -186,7 +186,7 @@ class RestaurantForm
 
         $status = match ($restaurant->packageStatus()) {
             PackageStatus::Scheduled => $restaurant->package?->name.' starts '.$restaurant->package_started_at->toFormattedDayDateString().'; until then '.$restaurant->effectivePackage()?->name,
-            PackageStatus::Expired => $restaurant->package?->name.' ended '.$restaurant->package_ends_at->toFormattedDayDateString().'; now '.$restaurant->effectivePackage()?->name,
+            PackageStatus::Expired => $restaurant->package?->name.' ended '.$restaurant->package_ends_at->toFormattedDayDateString().'; the menu '.($restaurant->offlineAt()->isPast() ? 'went' : 'goes').' offline '.$restaurant->offlineAt()->toFormattedDayDateString().' until it is extended or changed',
             default => $restaurant->package?->name.($restaurant->package_ends_at === null ? ', forever' : ' until '.$restaurant->package_ends_at->toFormattedDayDateString()),
         };
 

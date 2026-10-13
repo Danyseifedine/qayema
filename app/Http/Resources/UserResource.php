@@ -96,9 +96,10 @@ class UserResource extends JsonResource
             'template_id' => $restaurant->template_id,
             'public_url' => "{$base}/{$restaurant->slug}",
             // The package actually in force: an assignment that has not
-            // started or has ended reports as the default, because that is
-            // what the limits below came from. Its end is null when it runs
-            // forever.
+            // started reports as the default, because that is what the
+            // limits below came from; an ended one is kept (`lapsed` says
+            // when the menu goes offline). Its end is null when it runs
+            // forever or has passed.
             'package' => [
                 ...$this->packageSummary($package),
                 'is_contact_only' => (bool) $package?->is_contact_only,
@@ -108,11 +109,14 @@ class UserResource extends JsonResource
                     ? (int) max(0, ceil(now()->diffInSeconds($restaurant->package_ends_at) / 86400))
                     : null,
             ],
-            // The assigned package when it is not the one in force: ended
-            // ("your Pro ended on …") or still to start ("Pro starts on …").
+            // The assigned package once it ended ("your Pro ended on …"): the
+            // menu stays online for the grace days, then is offline until it
+            // is renewed. Or still to start ("Pro starts on …").
             'lapsed' => $status === PackageStatus::Expired && $restaurant->package !== null ? [
                 ...$this->packageSummary($restaurant->package),
                 'ended_at' => $restaurant->package_ends_at?->toIso8601String(),
+                'offline_at' => $restaurant->offlineAt()?->toIso8601String(),
+                'offline' => (bool) $restaurant->offlineAt()?->isPast(),
             ] : null,
             'upcoming' => $status === PackageStatus::Scheduled && $restaurant->package !== null ? [
                 ...$this->packageSummary($restaurant->package),

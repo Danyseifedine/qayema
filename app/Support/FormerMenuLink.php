@@ -30,7 +30,7 @@ final class FormerMenuLink
 
         $restaurant = PreviousSlug::query()->where('slug', $first)->with('restaurant')->first()?->restaurant;
 
-        if ($restaurant === null || ! $restaurant->is_active) {
+        if ($restaurant === null || ! $restaurant->menuOnline()) {
             return null;
         }
 

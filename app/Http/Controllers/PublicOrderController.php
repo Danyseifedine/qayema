@@ -35,7 +35,7 @@ class PublicOrderController extends Controller
         // Same gate as the menu itself, plus the package flag. A 404 rather
         // than a 403: a restaurant that does not take orders should not even
         // admit the endpoint exists.
-        abort_unless($restaurant->is_active, 404);
+        abort_unless($restaurant->menuOnline(), 404);
         // An order to the table goes the table's way, whichever way delivery
         // and pickup come in (if they come in at all). Without ordering at
         // the table, a table's code on a WhatsApp order only labels it.
@@ -80,7 +80,7 @@ class PublicOrderController extends Controller
      */
     public function update(PlaceOrderRequest $request, Restaurant $restaurant, string $token, OrderPlacer $placer): JsonResponse
     {
-        abort_unless($restaurant->is_active, 404);
+        abort_unless($restaurant->menuOnline(), 404);
         $order = $restaurant->orders()->where('tracking_token', $token)->firstOrFail();
 
         // Changed where it was placed: in the menu, while it still takes

@@ -189,13 +189,13 @@ class WritingHelpUsesTest extends TestCase
         $this->assertSame(25, $this->uses()->limit($owner->fresh()));
     }
 
-    public function test_a_package_that_ended_falls_back_to_the_default_packages_uses(): void
+    public function test_a_package_that_ended_keeps_its_uses(): void
     {
         $this->defaultPackageSets(Feature::WritingHelpLimit, 5);
         $owner = $this->ownerOn('premium');
         $owner->forceFill(['package_started_at' => now()->subMonths(2), 'package_ends_at' => now()->subDay()])->save();
 
-        $this->assertSame(5, $this->uses()->limit($owner->fresh()));
+        $this->assertSame(200, $this->uses()->limit($owner->fresh()));
     }
 
     public function test_a_package_saved_before_the_limit_existed_reads_thirty(): void

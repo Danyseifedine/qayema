@@ -57,7 +57,7 @@ class PackageAssigner
         $restaurant->packageChangeNote = $note;
 
         if ($restaurant->packageExpired()) {
-            // An ended package is back in force from today.
+            // An ended package runs again from today, its menu back online.
             $restaurant->package_started_at = now();
         }
 

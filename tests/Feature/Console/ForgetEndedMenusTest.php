@@ -54,13 +54,14 @@ class ForgetEndedMenusTest extends TestCase
         return Restaurant::factory()->create(['slug' => $slug, 'package_started_at' => now()->subMonth(), ...$attributes]);
     }
 
-    public function test_menus_whose_package_or_grant_changed_in_the_last_hour_are_cleared(): void
+    public function test_menus_whose_package_started_menu_went_offline_or_grant_ended_in_the_last_hour_are_cleared(): void
     {
-        $this->restaurant('ended', ['package_ends_at' => now()->subMinutes(30)]);
+        $this->restaurant('offline', ['package_ends_at' => now()->subDays(3)->subMinutes(30)]);
+        $this->restaurant('just-ended', ['package_ends_at' => now()->subMinutes(30)]);
         $this->restaurant('started', ['package_started_at' => now()->subMinutes(10)]);
         $granted = $this->restaurant('granted');
         FeatureGrant::query()->create(['restaurant_id' => $granted->id, 'feature' => Feature::Analytics, 'value' => 1, 'source' => 'admin', 'ends_at' => now()->subMinutes(5)]);
-        $this->restaurant('long-ago', ['package_ends_at' => now()->subHours(3)]);
+        $this->restaurant('long-ago', ['package_ends_at' => now()->subDays(3)->subHours(3)]);
         $this->restaurant('still-on', ['package_ends_at' => now()->addDay()]);
         Http::swap(new HttpFactory);
         Http::fake(fn () => Http::response(['success' => true]));
@@ -71,7 +72,7 @@ class ForgetEndedMenusTest extends TestCase
         $purges = $this->purged();
         $this->assertCount(1, $purges);
         $this->assertEqualsCanonicalizing(
-            ['qayema.test/ended', 'qayema.test/started', 'qayema.test/granted'],
+            ['qayema.test/offline', 'qayema.test/started', 'qayema.test/granted'],
             $purges[0]['prefixes'],
         );
     }
@@ -90,7 +91,7 @@ class ForgetEndedMenusTest extends TestCase
 
     public function test_a_wider_window_can_be_passed(): void
     {
-        $this->restaurant('yesterday', ['package_ends_at' => now()->subHours(20)]);
+        $this->restaurant('yesterday', ['package_ends_at' => now()->subDays(3)->subHours(20)]);
         $this->app->forgetScopedInstances();
         Http::swap(new HttpFactory);
         Http::fake(fn () => Http::response(['success' => true]));

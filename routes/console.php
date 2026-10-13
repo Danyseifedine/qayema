@@ -22,7 +22,8 @@ Schedule::command('queue:work --max-time=55 --sleep=3 --tries=3 --memory=128')
 // copies are cleared (ForgetEndedMenus).
 Schedule::command('menus:forget-ended')->hourly();
 
-// Nightly pruning of raw menu_sessions rows past the retention window.
+// Each night, the finished days added up into menu_days, then the raw visits
+// and events past 6 months deleted (never when adding up failed).
 Schedule::command('stats:rollup')->dailyAt('03:10');
 
 // What would otherwise grow for ever: failed jobs after 30 days, the phone

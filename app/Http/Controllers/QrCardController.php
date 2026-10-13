@@ -19,7 +19,7 @@ class QrCardController extends Controller
      */
     public function show(Restaurant $restaurant): View
     {
-        abort_unless($restaurant->is_active && $restaurant->hasQrStudio(), 404);
+        abort_unless($restaurant->menuOnline() && $restaurant->hasQrStudio(), 404);
 
         $base = rtrim((string) config('app.url'), '/');
         $host = (string) (parse_url($base, PHP_URL_HOST) ?: $base);
@@ -54,7 +54,7 @@ class QrCardController extends Controller
      */
     public function options(Restaurant $restaurant): JsonResponse
     {
-        abort_unless($restaurant->is_active, 404);
+        abort_unless($restaurant->menuOnline(), 404);
 
         $design = $restaurant->hasQrStudio() ? $restaurant->qrDesign() : $restaurant->qrDefaultDesign();
         $logo = $design['logo'] ? QrStyle::logoDataUrl($restaurant) : null;

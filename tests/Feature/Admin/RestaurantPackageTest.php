@@ -44,21 +44,22 @@ class RestaurantPackageTest extends TestCase
         $this->assertTrue($owner->entitlements()->can(Feature::QrStudio));
     }
 
-    public function test_an_expiry_in_the_past_drops_the_restaurant_back_to_free(): void
+    public function test_an_expiry_in_the_past_keeps_the_package_and_takes_the_menu_offline_after_the_grace_days(): void
     {
         $owner = $this->ownerOn('pro');
         $this->assertSame(150, $owner->dish_limit);
         $this->actingAs($this->admin());
 
         Livewire::test(EditRestaurant::class, ['record' => $owner->id])
-            ->fillForm(['package_started_at' => now()->subMonth(), 'duration' => 'until', 'package_ends_at' => now()->subDay()])
+            ->fillForm(['package_started_at' => now()->subMonth(), 'duration' => 'until', 'package_ends_at' => now()->subDays(4)])
             ->call('save')
             ->assertHasNoFormErrors();
 
         $owner = $owner->fresh();
         $this->assertTrue($owner->packageExpired());
-        $this->assertSame(40, $owner->dish_limit);
-        $this->assertFalse($owner->entitlements()->can(Feature::Appearance));
+        $this->assertSame(150, $owner->dish_limit, 'Never dropped to Free.');
+        $this->assertTrue($owner->entitlements()->can(Feature::Appearance));
+        $this->assertFalse($owner->menuOnline());
     }
 
     public function test_a_grant_stacks_on_top_of_the_package(): void

@@ -303,7 +303,8 @@ class Restaurant extends Model implements HasMedia
     }
 
     /**
-     * Restaurants whose assigned package has ended.
+     * Restaurants whose assigned package has ended (in its grace days or
+     * past them).
      *
      * @param  Builder<Restaurant>  $query
      * @return Builder<Restaurant>
@@ -311,6 +312,20 @@ class Restaurant extends Model implements HasMedia
     public function scopePackageExpired(Builder $query): Builder
     {
         return $query->where('package_ends_at', '<=', now());
+    }
+
+    /**
+     * Restaurants guests can open: switched on, and not past the grace days
+     * of an ended package (menuOnline()).
+     *
+     * @param  Builder<Restaurant>  $query
+     * @return Builder<Restaurant>
+     */
+    public function scopeMenuOnline(Builder $query): Builder
+    {
+        return $query
+            ->where('is_active', true)
+            ->where(fn (Builder $q) => $q->whereNull('package_ends_at')->orWhere('package_ends_at', '>', now()->subDays(self::graceDays())));
     }
 
     /**
@@ -325,8 +340,9 @@ class Restaurant extends Model implements HasMedia
     }
 
     /**
-     * Restaurants on a package right now, whether assigned and in force or
-     * fallen back to it because their own is not.
+     * Restaurants on a package right now (effectivePackage()): assigned and
+     * started, ended included, or on the default while their own has not
+     * started yet.
      *
      * @param  Builder<Restaurant>  $query
      * @return Builder<Restaurant>
@@ -334,10 +350,11 @@ class Restaurant extends Model implements HasMedia
     public function scopeOnPackage(Builder $query, int $packageId): Builder
     {
         return $query->where(function (Builder $q) use ($packageId): void {
-            $q->where(fn (Builder $assigned) => $assigned->where('package_id', $packageId)->packageActive());
+            $q->where(fn (Builder $assigned) => $assigned->where('package_id', $packageId)
+                ->where(fn (Builder $started) => $started->whereNull('package_started_at')->orWhere('package_started_at', '<=', now())));
 
             if ($packageId === Package::default()?->id) {
-                $q->orWhere(fn (Builder $fallen) => $fallen->whereNot(fn (Builder $active) => $active->packageActive()))
+                $q->orWhere(fn (Builder $waiting) => $waiting->packageScheduled())
                     ->orWhereNull('package_id');
             }
         });
@@ -359,14 +376,38 @@ class Restaurant extends Model implements HasMedia
         return $this->packageStatus() === PackageStatus::Expired;
     }
 
+    /** Days an ended package keeps the menu online (config/package.php). */
+    public static function graceDays(): int
+    {
+        return max(0, (int) config('package.grace_days', 3));
+    }
+
+    /** When the menu goes offline: the grace days past the package's end; null when it never ends. */
+    public function offlineAt(): ?CarbonImmutable
+    {
+        return $this->package_ends_at === null
+            ? null
+            : CarbonImmutable::instance($this->package_ends_at)->addDays(self::graceDays());
+    }
+
     /**
-     * The package the limits actually come from: the assigned one while it
-     * is in force, else the default. The assignment is left alone so an admin
-     * can still see what is coming or what lapsed.
+     * Whether guests can open the menu, order and see the QR card: switched
+     * on by the admin, and not past the grace days of an ended package.
+     * Extending or assigning a package brings it back that moment.
+     */
+    public function menuOnline(): bool
+    {
+        return (bool) $this->is_active && ! (bool) $this->offlineAt()?->isPast();
+    }
+
+    /**
+     * The package the limits actually come from: the assigned one, ended or
+     * not (an ended package takes the menu offline, it never downgrades), and
+     * the default only while the assigned one has not started.
      */
     public function effectivePackage(): ?Package
     {
-        if ($this->package_id !== null && $this->packageStatus() === PackageStatus::Active) {
+        if ($this->package_id !== null && $this->packageStatus() !== PackageStatus::Scheduled) {
             return $this->package;
         }
 

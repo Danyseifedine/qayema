@@ -28,8 +28,12 @@ Part of the Qayema backend's architecture notes; CLAUDE.md has the summary.
   Recorded on **every** package, so moving up shows history at once. Owner
   previews load no tracker.
 - **Reading:** `App\Services\Analytics\MenuStats`. `summary()` (`GET /api/analytics`)
-  needs `analytics` (Pro and up), ranges `7d`/`30d`; `advanced()` (`GET /api/analytics/advanced`)
-  and the `90d`/`all` ranges need `advanced_analytics` (Premium and up);
+  needs `analytics` (Pro and up), ranges `today`/`7d`/`30d` (no range sent
+  is `30d`, for the phone app; the dashboard opens on `today`);
+  `advanced()` (`GET /api/analytics/advanced`) and the `90d`/`all` ranges
+  need `advanced_analytics` (Premium and up). `today` runs from the
+  restaurant's midnight, charts one point an hour so far
+  (`2026-10-13T14:00`), and compares with yesterday up to the same time;
   `teaser()` (`GET /api/analytics/teaser`, this week's views) is every package.
   Tests about a feature itself put it on the default package with
   `defaultPackageIncludes()` (`CreatesOwners`); which package has what is

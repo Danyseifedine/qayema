@@ -89,7 +89,7 @@ class AnalyticsTest extends TestCase
         $this->defaultPackageSets(Feature::AdvancedAnalytics, 0);
         $restaurant = Restaurant::factory()->create();
 
-        foreach (['7d', '30d'] as $range) {
+        foreach (['today', '7d', '30d'] as $range) {
             $this->actingAs($restaurant->user)->getJson(route('api.analytics', ['range' => $range]))->assertOk();
         }
 
@@ -124,6 +124,31 @@ class AnalyticsTest extends TestCase
             ->getJson(route('api.analytics', ['range' => '1y']))
             ->assertStatus(422)
             ->assertJsonValidationErrors('range');
+    }
+
+    public function test_today_counts_since_the_restaurants_midnight_and_charts_by_hour(): void
+    {
+        $this->travelTo(now()->setTimezone('UTC')->setDate(2026, 7, 15)->setTime(11, 20));
+        $restaurant = Restaurant::factory()->create(['timezone' => 'Asia/Beirut']);
+        // Beirut is UTC+3 in July: 14:20 there now.
+        $at = fn (string $utc) => $restaurant->menuSessions()->create(['session_id' => $utc, 'viewed_at' => $utc, 'via_qr' => true]);
+        $at('2026-07-14 20:59:00'); // 23:59 yesterday in Beirut
+        $at('2026-07-14 21:05:00'); // 00:05 today
+        $at('2026-07-15 08:30:00'); // 11:30
+        $at('2026-07-15 08:45:00'); // 11:45
+
+        $data = $this->actingAs($restaurant->user)
+            ->getJson(route('api.analytics', ['range' => 'today']))
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame(3, $data['totals']['views']);
+        $this->assertSame(3, $data['totals']['views_today']);
+        // 00:00 to 14:00, one point an hour so far.
+        $this->assertCount(15, $data['series']);
+        $this->assertSame(['date' => '2026-07-15T00:00', 'views' => 1, 'qr_scans' => 1], $data['series'][0]);
+        $this->assertSame(['date' => '2026-07-15T11:00', 'views' => 2, 'qr_scans' => 2], $data['series'][11]);
+        $this->assertSame(['date' => '2026-07-15T14:00', 'views' => 0, 'qr_scans' => 0], $data['series'][14]);
     }
 
     public function test_the_series_has_one_point_per_day_with_zeros_filled_in(): void

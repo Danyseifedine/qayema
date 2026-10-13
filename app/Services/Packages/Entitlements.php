@@ -12,8 +12,8 @@ use Illuminate\Support\Facades\Cache;
  * The rule is one line: **effective value = the package's value + every active
  * grant**. Limits add up, flags switch on, and an unlimited limit stays
  * unlimited however many grants sit on it. Nothing else participates. The
- * package counts only between its start and end dates
- * (Restaurant::effectivePackage()).
+ * package counts from its start date, and still after it ended (the menu
+ * goes offline instead, Restaurant::effectivePackage()).
  */
 class Entitlements
 {
@@ -97,14 +97,14 @@ class Entitlements
 
     /**
      * How long the answer holds: the usual TTL, cut short by the next moment
-     * it changes on its own (the package starting or ending, a grant
-     * ending), so a date passing never leaves a stale answer behind.
+     * it changes on its own (the package starting, a grant ending), so a
+     * date passing never leaves a stale answer behind.
      */
     private function cacheSeconds(): int
     {
         $ttl = (int) config('package.cache_ttl', 300);
 
-        $boundaries = collect([$this->restaurant->package_started_at, $this->restaurant->package_ends_at])
+        $boundaries = collect([$this->restaurant->package_started_at])
             ->merge($this->activeGrants()->pluck('ends_at'))
             ->filter(fn ($moment): bool => $moment !== null && $moment->isFuture())
             ->map(fn ($moment): int => (int) ceil(now()->diffInSeconds($moment)));

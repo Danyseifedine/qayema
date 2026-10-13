@@ -94,7 +94,7 @@ class SeoController extends Controller
     private function liveMenus()
     {
         return Restaurant::query()
-            ->where('is_active', true)
+            ->menuOnline()
             ->whereHas('template', fn ($query) => $query->where('is_active', true))
             ->whereHas('dishes', fn ($query) => $query->where('is_available', true))
             ->orderBy('id')

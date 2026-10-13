@@ -97,19 +97,29 @@ class EntitlementsEdgeTest extends TestCase
         $this->assertSame(1000, $this->dishLimit($restaurant));
     }
 
-    public function test_a_package_ends_the_moment_it_ends(): void
+    public function test_a_package_starts_the_moment_it_starts(): void
+    {
+        $restaurant = $this->owner();
+        app(PackageAssigner::class)->assign($restaurant, Package::findBySlug('pro'), now()->addSeconds(45), null);
+
+        $this->assertSame(40, $this->dishLimit($restaurant));
+
+        $this->travel(44)->seconds();
+        $this->assertSame(40, $this->dishLimit($restaurant));
+
+        $this->travel(2)->seconds();
+        $this->assertSame(150, $this->dishLimit($restaurant));
+    }
+
+    public function test_a_package_that_ends_keeps_its_limits(): void
     {
         $restaurant = $this->owner();
         app(PackageAssigner::class)->assign($restaurant, Package::findBySlug('pro'), now()->subDay(), now()->addSeconds(45));
-
         $this->assertSame(150, $this->dishLimit($restaurant));
 
-        $this->travel(44)->seconds();
-        $this->assertSame(150, $this->dishLimit($restaurant));
+        $this->travel(10)->days();
 
-        $this->travel(2)->seconds();
-        $this->assertSame(40, $this->dishLimit($restaurant));
-        $this->assertSame('pro', $restaurant->fresh()->package->slug, 'The lapsed assignment stays on the row.');
+        $this->assertSame(150, $this->dishLimit($restaurant));
     }
 
     public function test_the_nearest_of_several_boundaries_wins(): void
@@ -248,21 +258,17 @@ class EntitlementsEdgeTest extends TestCase
         $this->assertSame(1, $entitlements->limit(Feature::Appearance), 'Pro already has it; a grant does not make it 2.');
     }
 
-    public function test_a_scheduled_or_expired_package_falls_back_with_grants_still_on_top(): void
+    public function test_a_scheduled_package_falls_back_with_grants_still_on_top(): void
     {
         $scheduled = $this->ownerOn('premium', ['package_started_at' => now()->addDay()]);
-        $expired = $this->ownerOn('premium', ['package_started_at' => now()->subMonth(), 'package_ends_at' => now()->subSecond()]);
+        FeatureGrant::factory()->for($scheduled)->forFeature(Feature::DishLimit, 3)->create();
+        FeatureGrant::factory()->for($scheduled)->forFeature(Feature::Ordering, 1)->create();
 
-        foreach ([$scheduled, $expired] as $restaurant) {
-            FeatureGrant::factory()->for($restaurant)->forFeature(Feature::DishLimit, 3)->create();
-            FeatureGrant::factory()->for($restaurant)->forFeature(Feature::Ordering, 1)->create();
+        $entitlements = Entitlements::for($scheduled->fresh());
 
-            $entitlements = Entitlements::for($restaurant->fresh());
-
-            $this->assertSame(43, $entitlements->limit(Feature::DishLimit));
-            $this->assertTrue($entitlements->can(Feature::Ordering));
-            $this->assertFalse($entitlements->can(Feature::QrStudio), 'Premium is not in force.');
-        }
+        $this->assertSame(43, $entitlements->limit(Feature::DishLimit));
+        $this->assertTrue($entitlements->can(Feature::Ordering));
+        $this->assertFalse($entitlements->can(Feature::QrStudio), 'Premium is not in force yet.');
     }
 
     public function test_with_no_package_at_all_every_feature_is_its_own_default(): void

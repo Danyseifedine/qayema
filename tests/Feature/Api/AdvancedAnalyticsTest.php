@@ -101,6 +101,19 @@ class AdvancedAnalyticsTest extends TestCase
         );
     }
 
+    public function test_today_compares_with_yesterday_up_to_this_time(): void
+    {
+        $this->travelTo(now()->setTimezone('UTC')->setTime(10, 0));
+        $restaurant = $this->restaurant();
+        $this->visit($restaurant, ['session_id' => 'today', 'viewed_at' => now()->subHour()]);
+        $this->visit($restaurant, ['session_id' => 'yesterday-morning', 'viewed_at' => now()->subDay()->subHours(2)]);
+        $this->visit($restaurant, ['session_id' => 'yesterday-evening', 'viewed_at' => now()->subDay()->addHours(8)]);
+
+        $data = $this->advanced($restaurant, 'today');
+
+        $this->assertSame(['views' => 1, 'unique_visitors' => 1, 'qr_scans' => 0, 'orders' => 0], $data['previous']);
+    }
+
     public function test_all_time_has_nothing_to_compare_with(): void
     {
         $this->assertNull($this->advanced($this->restaurant(), 'all')['previous']);

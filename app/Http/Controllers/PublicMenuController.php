@@ -40,9 +40,9 @@ class PublicMenuController extends Controller
     {
         $preview = $this->previewTemplate($request, $restaurant);
 
-        // A restaurant that is switched off has no menu to show, but its
-        // owner may still preview it while setting up.
-        abort_unless($restaurant->is_active || $preview !== null, 404);
+        // A restaurant that is switched off, or whose package ended past its
+        // grace days, has no menu to show, but its owner may still preview it.
+        abort_unless($restaurant->menuOnline() || $preview !== null, 404);
 
         $template = $preview ?? $restaurant->menuTemplate();
 

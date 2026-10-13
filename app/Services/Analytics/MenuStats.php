@@ -43,10 +43,10 @@ use Illuminate\Support\Arr;
 class MenuStats
 {
     /** Range key => days, null meaning everything still kept. */
-    public const RANGES = ['7d' => 7, '30d' => 30, '90d' => 90, 'all' => null];
+    public const RANGES = ['today' => 1, '7d' => 7, '30d' => 30, '90d' => 90, 'all' => null];
 
     /** The ranges every package gets; the others need advanced analytics. */
-    public const BASIC_RANGES = ['7d', '30d'];
+    public const BASIC_RANGES = ['today', '7d', '30d'];
 
     /** "All time" can be years: this caps the chart, not the totals. */
     private const MAX_SERIES_DAYS = 366;
@@ -161,12 +161,16 @@ class MenuStats
 
     /**
      * One point per local day for the range, zeros included, so the chart has
-     * no gaps.
+     * no gaps; for today, one per hour so far ("2026-10-13T14:00").
      *
      * @return array<int, array{date: string, views: int, qr_scans: int}>
      */
     private function series(): array
     {
+        if ($this->range === 'today') {
+            return $this->hoursOfToday();
+        }
+
         $start = $this->from ?? $this->firstVisitDay();
         $start = $start->max($this->today->subDays(self::MAX_SERIES_DAYS - 1));
 
@@ -197,6 +201,26 @@ class MenuStats
         return array_values($days);
     }
 
+    /** @return array<int, array{date: string, views: int, qr_scans: int}> */
+    private function hoursOfToday(): array
+    {
+        $day = $this->today->toDateString();
+        $hours = [];
+
+        for ($hour = 0; $hour <= CarbonImmutable::now($this->timezone)->hour; $hour++) {
+            $hours[$hour] = ['date' => sprintf('%sT%02d:00', $day, $hour), 'views' => 0, 'qr_scans' => 0];
+        }
+
+        foreach ($this->hourly($this->today) as $bucket) {
+            if ($bucket['day'] === $day && isset($hours[$bucket['hour']])) {
+                $hours[$bucket['hour']]['views'] += $bucket['views'];
+                $hours[$bucket['hour']]['qr_scans'] += $bucket['qr_scans'];
+            }
+        }
+
+        return array_values($hours);
+    }
+
     private function firstVisitDay(): CarbonImmutable
     {
         if ($this->historyUntil !== null) {
@@ -224,18 +248,32 @@ class MenuStats
             return null;
         }
 
-        $days = (int) self::RANGES[$this->range];
-        $start = $this->from->subDays($days);
+        [$start, $end] = $this->previousPeriod();
 
         $visits = $this->restaurant->menuSessions()
             ->where('viewed_at', '>=', $start->utc())
-            ->where('viewed_at', '<', $this->from->utc());
+            ->where('viewed_at', '<', $end->utc());
 
         return [
             // Today is not in the period before.
             ...Arr::except($this->visitTotals($visits), 'since'),
-            'orders' => $this->takesOrders() ? $this->orderCount($start, $this->from) : null,
+            'orders' => $this->takesOrders() ? $this->orderCount($start, $end) : null,
         ];
+    }
+
+    /**
+     * The period before this one: as many days before its start; for today,
+     * yesterday up to this time of day, so a morning is not set against a
+     * whole day.
+     *
+     * @return array{0: CarbonImmutable, 1: CarbonImmutable}
+     */
+    private function previousPeriod(): array
+    {
+        $days = (int) self::RANGES[$this->range];
+        $start = $this->from->subDays($days);
+
+        return [$start, $this->range === 'today' ? CarbonImmutable::now($this->timezone)->subDay() : $this->from];
     }
 
     /**
@@ -494,9 +532,9 @@ class MenuStats
     /** What the menu's orders came to in the period just before this one. */
     private function previousSales(string $currency): float
     {
-        $days = (int) self::RANGES[$this->range];
+        [$start, $end] = $this->previousPeriod();
 
-        $total = $this->menuOrdersInRange($this->from->subDays($days), $this->from)
+        $total = $this->menuOrdersInRange($start, $end)
             ->where('status', '!=', OrderStatus::Cancelled->value)
             ->where('currency', $currency)
             ->pluck('total')

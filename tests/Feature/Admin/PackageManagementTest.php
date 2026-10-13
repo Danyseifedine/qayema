@@ -145,27 +145,29 @@ class PackageManagementTest extends TestCase
         $ending = $this->ownerOn('pro', ['package_ends_at' => now()->addDays(3)]);
         $forever = $this->ownerOn('pro');
         $lapsed = $this->ownerOn('pro', ['package_started_at' => now()->subYear(), 'package_ends_at' => now()->subDay()]);
+        $waiting = $this->ownerOn('pro', ['package_started_at' => now()->addWeek()]);
         $this->actingAs($this->admin());
 
+        // An ended package is kept; one not started yet leaves the default.
         Livewire::test(ListRestaurants::class)
             ->filterTable('package', $this->pro()->id)
-            ->assertCanSeeTableRecords([$ending, $forever])
-            ->assertCanNotSeeTableRecords([$lapsed]);
+            ->assertCanSeeTableRecords([$ending, $forever, $lapsed])
+            ->assertCanNotSeeTableRecords([$waiting]);
 
         Livewire::test(ListRestaurants::class)
             ->filterTable('package', Package::default()->id)
-            ->assertCanSeeTableRecords([$lapsed])
-            ->assertCanNotSeeTableRecords([$ending, $forever]);
+            ->assertCanSeeTableRecords([$waiting])
+            ->assertCanNotSeeTableRecords([$ending, $forever, $lapsed]);
 
         Livewire::test(ListRestaurants::class)
             ->filterTable('package_status', 'ending_7')
             ->assertCanSeeTableRecords([$ending])
-            ->assertCanNotSeeTableRecords([$forever, $lapsed]);
+            ->assertCanNotSeeTableRecords([$forever, $lapsed, $waiting]);
 
         Livewire::test(ListRestaurants::class)
             ->filterTable('package_status', 'expired')
             ->assertCanSeeTableRecords([$lapsed])
-            ->assertCanNotSeeTableRecords([$ending, $forever]);
+            ->assertCanNotSeeTableRecords([$ending, $forever, $waiting]);
     }
 
     public function test_the_form_turns_months_into_an_end_date_and_keeps_the_note(): void
