@@ -8,9 +8,11 @@ use App\Enums\Fulfilment;
 use App\Enums\OrderChannel;
 use App\Enums\PackageStatus;
 use App\Observers\RestaurantObserver;
+use App\Services\Analytics\MenuDays;
 use App\Services\Menu\MenuLanguages;
 use App\Services\Orders\WhatsAppLink;
 use App\Services\Packages\Entitlements;
+use App\Support\HyperLogLog;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
@@ -236,6 +238,16 @@ class Restaurant extends Model implements HasMedia
     public function menuEvents(): HasMany
     {
         return $this->hasMany(MenuEvent::class);
+    }
+
+    /**
+     * The analytics of each past day, added up from the raw rows (MenuDays).
+     *
+     * @return HasMany<MenuDay, $this>
+     */
+    public function menuDays(): HasMany
+    {
+        return $this->hasMany(MenuDay::class);
     }
 
     /** @return HasMany<Order, $this> */
@@ -756,19 +768,35 @@ class Restaurant extends Model implements HasMedia
     public function trafficTotals(): array
     {
         $today = CarbonImmutable::now($this->localTimezone())->startOfDay()->utc()->toDateTimeString();
+        $history = $this->historyBeforeRawRows();
+        $from = $history->isEmpty() ? null : MenuDays::boundary($this)->utc()->toDateTimeString();
+
+        // With history the visitors come from sketches below: no distinct count here.
+        $visitorsSql = $from === null ? 'count(distinct session_id)' : '0';
 
         $totals = $this->menuSessions()
+            ->when($from, fn ($query, string $from) => $query->where('viewed_at', '>=', $from))
             ->toBase()
             ->selectRaw(
-                'count(*) as views, count(distinct session_id) as visitors, sum(case when via_qr then 1 else 0 end) as scans, sum(case when viewed_at >= ? then 1 else 0 end) as today, max(viewed_at) as last',
+                "count(*) as views, {$visitorsSql} as visitors, sum(case when via_qr then 1 else 0 end) as scans, sum(case when viewed_at >= ? then 1 else 0 end) as today, max(viewed_at) as last",
                 [$today],
             )
             ->first();
 
+        $visitors = (int) ($totals->visitors ?? 0);
+
+        // Days added up before the raw rows (MenuDays): their visitors and
+        // the raw ones counted together, a returning guest once.
+        if ($history->isNotEmpty()) {
+            $visitors = HyperLogLog::of($this->menuSessions()->where('viewed_at', '>=', $from)->distinct()->pluck('session_id'))
+                ->merge(MenuDays::mergedSketch($this, MenuDays::boundary($this), 'visitorSketch'))
+                ->count();
+        }
+
         return [
-            'views' => (int) ($totals->views ?? 0),
-            'visitors' => (int) ($totals->visitors ?? 0),
-            'scans' => (int) ($totals->scans ?? 0),
+            'views' => (int) ($totals->views ?? 0) + $history->sum('views'),
+            'visitors' => $visitors,
+            'scans' => (int) ($totals->scans ?? 0) + $history->sum('qr_scans'),
             'today' => (int) ($totals->today ?? 0),
             'last' => $totals->last ?? null,
         ];
@@ -777,7 +805,8 @@ class Restaurant extends Model implements HasMedia
     /**
      * Visits that came from the QR code: today, this week, this month (the
      * restaurant's own days, like the analytics) and ever. One pass over
-     * plain ranges, so the (restaurant_id, viewed_at) index does the work.
+     * plain ranges, so the (restaurant_id, viewed_at) index does the work;
+     * "ever" adds the days added up before the raw rows (MenuDays).
      *
      * @return array{today: int, week: int, month: int, total: int}
      */
@@ -785,9 +814,11 @@ class Restaurant extends Model implements HasMedia
     {
         $now = CarbonImmutable::now($this->localTimezone());
         $since = fn (CarbonImmutable $start): string => $start->utc()->toDateTimeString();
+        $history = $this->historyBeforeRawRows();
 
         $counts = $this->menuSessions()
             ->where('via_qr', true)
+            ->when($history->isNotEmpty(), fn ($query) => $query->where('viewed_at', '>=', $since(MenuDays::boundary($this))))
             ->selectRaw(
                 'count(*) as total,
                 sum(case when viewed_at >= ? then 1 else 0 end) as today,
@@ -802,8 +833,19 @@ class Restaurant extends Model implements HasMedia
             'today' => (int) ($counts->today ?? 0),
             'week' => (int) ($counts->week ?? 0),
             'month' => (int) ($counts->month ?? 0),
-            'total' => (int) ($counts->total ?? 0),
+            'total' => (int) ($counts->total ?? 0) + $history->sum('qr_scans'),
         ];
+    }
+
+    /**
+     * The days added up before the raw rows take over (MenuDays::boundary()),
+     * oldest first; none while every visit is still a raw row.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, MenuDay>
+     */
+    private function historyBeforeRawRows(): \Illuminate\Database\Eloquent\Collection
+    {
+        return $this->menuDays()->where('day', '<', MenuDays::boundary($this)->toDateString())->orderBy('day')->get(['id', 'day', 'views', 'qr_scans']);
     }
 
     /** The restaurant's timezone, UTC when unset or not a real one. */

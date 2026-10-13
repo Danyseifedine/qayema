@@ -40,4 +40,21 @@ Part of the Qayema backend's architecture notes; CLAUDE.md has the summary.
   and order money are deliberately **not** reported: the owner decided they
   do not help a restaurant. The
   visit rows still record device/browser/OS.
-- `stats:rollup` prunes `menu_sessions` and `menu_events` after 6 months.
+- **History** (`menu_days`, model `MenuDay`, `App\Services\Analytics\MenuDays`):
+  `stats:rollup` (nightly, 03:10) first adds up every finished day of every
+  menu into one row per day of its own (its timezone then): views, QR scans,
+  views per local hour, languages, devices, browsers, systems, every action
+  count, dishes added and categories opened by id, searches and missed
+  searches, and visitors and carted visitors as HyperLogLog sketches
+  (`App\Support\HyperLogLog`, 4,096 registers, about 1% off, compressed to
+  well under 2 KB). Then it deletes raw `menu_sessions` and `menu_events`
+  older than 6 months; if adding up throws, nothing is deleted. A day is
+  added up once, never again.
+- "All time" (`MenuStats`, with `trafficTotals()` and `qrScans()` on the
+  restaurant) reads `menu_days` for the days before `MenuDays::boundary()`
+  (180 days back, inside the raw window) and the raw rows from then on, so
+  no day counts twice; visitors over both merge the sketches. With no day
+  added up before the boundary it reads only the raw rows, exactly. The
+  shorter ranges (90 days and its comparison included) only ever read raw
+  rows. A new number on the Analytics page that comes from raw rows needs
+  its field in `menu_days` too, or "All time" loses it past 6 months.

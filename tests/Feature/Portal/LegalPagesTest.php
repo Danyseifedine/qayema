@@ -77,6 +77,21 @@ class LegalPagesTest extends TestCase
             ->assertSee('ولا يُعطى ضيوف القائمة العامة ملفًا منه');
     }
 
+    public function test_the_privacy_policy_says_guest_details_stay_with_the_order(): void
+    {
+        // Nothing clears them on a schedule (orders:forget-guests was removed
+        // on 2026-10-13): the policy must not promise a deadline.
+        $this->get('/privacy-policy')
+            ->assertOk()
+            ->assertSee('stay on the order as part of the restaurant\'s records for as long as the order exists', false)
+            ->assertDontSee('90 days');
+
+        $this->get('/ar/privacy-policy')
+            ->assertOk()
+            ->assertSee('على الطلب ضمن سجلات المطعم ما دام الطلب موجودًا')
+            ->assertDontSee('90 يومًا');
+    }
+
     #[DataProvider('pages')]
     public function test_an_unsupported_remembered_locale_changes_nothing(string $path, string $route, string $title, string $section): void
     {

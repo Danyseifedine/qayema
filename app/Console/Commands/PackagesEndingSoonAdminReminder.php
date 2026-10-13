@@ -10,9 +10,9 @@ use Illuminate\Console\Command;
  * Each morning, the admins' phones list the packages that end in the next
  * few days, so a renewal is asked for before the menu falls back to Free.
  */
-class RemindPackagesEnding extends Command
+class PackagesEndingSoonAdminReminder extends Command
 {
-    protected $signature = 'packages:remind-ending
+    protected $signature = 'packages:ending-soon-admin-reminder
                             {--days=3 : Remind about packages that end within this many days}';
 
     protected $description = "Tell the admins' phones which packages end soon";

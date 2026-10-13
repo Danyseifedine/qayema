@@ -19,8 +19,8 @@ it came in (`orders.channel`, `App\Enums\OrderChannel`):
   `Restaurant::whatsappAsks()`, `App\Enums\Ask`, `PUT /api/features/whatsapp-fields`;
   table orders have their own name and phone pair). Asking the address also
   asks delivery or pickup (`order_types`), the address only for a delivery;
-  what was given heads the message and is kept on the order (cleared after 90
-  days like the rest). All off by default. We never learn whether it was sent or served, so
+  what was given heads the message and is kept on the order, like the rest.
+  All off by default. We never learn whether it was sent or served, so
   these orders are **not** listed on the Orders page and analytics call them
   "Sent to WhatsApp". It needs a usable number: without one the menu has no
   cart.
@@ -160,9 +160,9 @@ choice) and `ordering.whatsapp_number`.
   (`{open, latest, changed}`) only while Pusher cannot be heard; the same
   pulse arrives live otherwise. Either way: a sound, a toast, the sidebar
   count and the tab title.
-- `orders:forget-guests` (daily, 03:20) clears the name, phone, address and
-  location from orders older than 90 days; the order itself stays. Production
-  needs the scheduler's cron (`schedule:run` every minute) for it to run.
+- A guest's name, phone, address and location stay on the order for as long
+  as it exists (until the owner deletes it, or the restaurant goes); the
+  Privacy Policy says so.
 - Analytics (`MenuStats`) count only the current channel's orders
   (`order_channel` in the summary, `channel` in the funnel), and
   `orders_done` for orders placed in the menu.

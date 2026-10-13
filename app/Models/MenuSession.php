@@ -8,7 +8,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * One guest's visit to a menu: what the Analytics page and the admin panel
- * count. Rows older than the configured window are pruned by `stats:rollup`.
+ * count. `stats:rollup` adds each finished day up into `menu_days`, then
+ * deletes the rows older than 6 months.
  */
 class MenuSession extends Model
 {

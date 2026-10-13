@@ -3,6 +3,7 @@
 namespace Tests\Feature\Console;
 
 use App\Models\Restaurant;
+use App\Services\Analytics\MenuDays;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -58,5 +59,39 @@ class ScheduledTasksTest extends TestCase
     public function test_rollup_on_an_empty_table_is_fine(): void
     {
         $this->artisan('stats:rollup')->assertSuccessful()->expectsOutputToContain('Pruned 0');
+    }
+
+    public function test_every_finished_day_is_added_up_before_its_raw_rows_go(): void
+    {
+        $restaurant = Restaurant::factory()->create(['timezone' => 'UTC']);
+        $restaurant->menuSessions()->create(['session_id' => 'old', 'viewed_at' => now()->subMonths(7), 'via_qr' => true]);
+        $restaurant->menuEvents()->create(['session_id' => 'old', 'type' => 'whatsapp', 'occurred_at' => now()->subMonths(7)]);
+        $restaurant->menuSessions()->create(['session_id' => 'new', 'viewed_at' => now()->subDay()]);
+
+        $this->artisan('stats:rollup')->assertSuccessful()->expectsOutputToContain('Added up 2 days.')->expectsOutputToContain('Pruned 1');
+
+        $this->assertDatabaseMissing('menu_sessions', ['session_id' => 'old']);
+        $this->assertDatabaseCount('menu_events', 0);
+        $old = $restaurant->menuDays()->orderBy('day')->first();
+        $this->assertSame(now()->subMonths(7)->toDateString(), $old->day->toDateString());
+        $this->assertSame(1, $old->views);
+        $this->assertSame(1, $old->qr_scans);
+        $this->assertSame(['whatsapp' => 1], $old->actions);
+    }
+
+    public function test_if_adding_up_fails_nothing_is_deleted(): void
+    {
+        $restaurant = Restaurant::factory()->create();
+        $restaurant->menuSessions()->create(['session_id' => 'old', 'viewed_at' => now()->subMonths(7)]);
+        $this->mock(MenuDays::class)->shouldReceive('addUpMissing')->andThrow(new \RuntimeException('Database went away'));
+
+        try {
+            $this->artisan('stats:rollup');
+            $this->fail('The rollup carried on past a failure.');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('Database went away', $exception->getMessage());
+        }
+
+        $this->assertDatabaseHas('menu_sessions', ['session_id' => 'old']);
     }
 }

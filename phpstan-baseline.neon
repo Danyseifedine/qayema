@@ -589,36 +589,6 @@ parameters:
 			path: app/Services/Ai/WritingHelpUses.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\MenuSession\:\:\$bucket\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/Analytics/MenuStats.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\MenuSession\:\:\$qr_scans\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/Analytics/MenuStats.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\MenuSession\:\:\$views\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/Analytics/MenuStats.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$bucket\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/Analytics/MenuStats.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$category_id\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Services/Analytics/MenuStats.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$closed_at\.$#'
 			identifier: property.notFound
 			count: 1
@@ -628,12 +598,6 @@ parameters:
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$currency\.$#'
 			identifier: property.notFound
 			count: 1
-			path: app/Services/Analytics/MenuStats.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$dish_id\.$#'
-			identifier: property.notFound
-			count: 2
 			path: app/Services/Analytics/MenuStats.php
 
 		-
@@ -662,12 +626,6 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$total\.$#'
-			identifier: property.notFound
-			count: 5
-			path: app/Services/Analytics/MenuStats.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$value\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Services/Analytics/MenuStats.php

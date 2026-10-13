@@ -88,7 +88,7 @@ Part of the Qayema backend's architecture notes; CLAUDE.md has the summary.
   successful write to `MENU_ROUTES`, not orders, the account or features,
   not an admin signed in as the owner), once an hour at most per
   restaurant (`Cache::add`, `MENU_EDITING_QUIET_MINUTES`); and
-  `packages:remind-ending` at 09:00 Beirut, the
+  `packages:ending-soon-admin-reminder` at 09:00 Beirut, the
   packages ending in the next 3 days (opens Renewals; needs the scheduler's
   cron). Android channel `admin_alerts` and status icon `ic_stat_qayema`
   live in the app. iOS needs an APNs key and `GoogleService-Info.plist`

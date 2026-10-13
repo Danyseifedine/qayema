@@ -7,10 +7,15 @@ use App\Enums\OrderChannel;
 use App\Enums\OrderStatus;
 use App\Models\Category;
 use App\Models\Dish;
+use App\Models\MenuDay;
 use App\Models\OrderItem;
 use App\Models\Restaurant;
 use App\Services\Menu\MenuLanguages;
+use App\Support\HyperLogLog;
 use Carbon\CarbonImmutable;
+use DateTimeImmutable;
+use DateTimeZone;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Arr;
 
@@ -27,6 +32,13 @@ use Illuminate\Support\Arr;
  * by UTC hour in SQL (portable between MySQL and SQLite, and at most 24 rows a
  * day), then moved into the restaurant's timezone here. A timezone with a
  * half-hour offset lands each hour in the one it starts in.
+ *
+ * "All time" reaches past the raw rows, which `stats:rollup` deletes after 6
+ * months: the days before MenuDays::boundary() come from `menu_days` (one
+ * row a day, added up before the raw rows went), the rest from the raw rows,
+ * so no day is counted twice. Visitors over both come from HyperLogLog
+ * sketches; with no days added up yet before the boundary, everything is
+ * read from the raw rows as before, exactly.
  */
 class MenuStats
 {
@@ -36,7 +48,7 @@ class MenuStats
     /** The ranges every package gets; the others need advanced analytics. */
     public const BASIC_RANGES = ['7d', '30d'];
 
-    /** "All time" is whatever `stats:rollup` has not pruned; this caps the chart. */
+    /** "All time" can be years: this caps the chart, not the totals. */
     private const MAX_SERIES_DAYS = 366;
 
     private const TOP = 5;
@@ -50,6 +62,15 @@ class MenuStats
     /** Start of the range, in the restaurant's timezone; null for "all". */
     private readonly ?CarbonImmutable $from;
 
+    /**
+     * For "all" with days added up before MenuDays::boundary(): the boundary,
+     * where the raw rows take over from `menu_days`. Null otherwise.
+     */
+    private readonly ?CarbonImmutable $historyUntil;
+
+    /** @var Collection<int, MenuDay>|null the days before, read once */
+    private ?Collection $history = null;
+
     public function __construct(private readonly Restaurant $restaurant, private readonly string $range)
     {
         $this->timezone = $restaurant->localTimezone();
@@ -57,6 +78,12 @@ class MenuStats
 
         $days = self::RANGES[$range] ?? null;
         $this->from = $days === null ? null : $this->today->subDays($days - 1);
+
+        $boundary = MenuDays::boundary($restaurant);
+        $this->historyUntil = $this->from === null
+            && $restaurant->menuDays()->where('day', '<', $boundary->toDateString())->exists()
+            ? $boundary
+            : null;
     }
 
     public static function isBasicRange(string $range): bool
@@ -71,14 +98,16 @@ class MenuStats
     {
         // Every range ends now, so today's views are a part of it: counted
         // in the same pass. The orders and those done, likewise, in one.
-        $visits = $this->visitTotals($this->inRange($this->restaurant->menuSessions(), 'viewed_at'), $this->today);
+        $visits = $this->visitTotals($this->inRange($this->restaurant->menuSessions(), 'viewed_at'), $this->today, countVisitors: $this->historyUntil === null);
         $orders = $this->takesOrders() ? $this->orderTotals($this->from) : null;
 
         return [
             'totals' => [
-                'views' => $visits['views'],
-                'unique_visitors' => $visits['unique_visitors'],
-                'qr_scans' => $visits['qr_scans'],
+                'views' => $visits['views'] + $this->history()->sum('views'),
+                'unique_visitors' => $this->historyUntil === null
+                    ? $visits['unique_visitors']
+                    : $this->visitorsWithHistory($this->inRange($this->restaurant->menuSessions(), 'viewed_at')->distinct()->pluck('session_id'), 'visitorSketch'),
+                'qr_scans' => $visits['qr_scans'] + $this->history()->sum('qr_scans'),
                 'views_today' => $visits['since'],
                 'orders' => $orders['kept'] ?? null,
                 // Only an order placed in the menu can be marked done; a
@@ -147,12 +176,21 @@ class MenuStats
             $days[$date->toDateString()] = ['date' => $date->toDateString(), 'views' => 0, 'qr_scans' => 0];
         }
 
-        foreach ($this->hourly($start) as $bucket) {
-            $day = $bucket['at']->toDateString();
+        foreach ($this->hourly($this->historyUntil?->max($start) ?? $start) as $bucket) {
+            $day = $bucket['day'];
 
             if (isset($days[$day])) {
                 $days[$day]['views'] += $bucket['views'];
                 $days[$day]['qr_scans'] += $bucket['qr_scans'];
+            }
+        }
+
+        foreach ($this->history() as $past) {
+            $day = $past->day->toDateString();
+
+            if (isset($days[$day])) {
+                $days[$day]['views'] += $past->views;
+                $days[$day]['qr_scans'] += $past->qr_scans;
             }
         }
 
@@ -161,6 +199,10 @@ class MenuStats
 
     private function firstVisitDay(): CarbonImmutable
     {
+        if ($this->historyUntil !== null) {
+            return CarbonImmutable::parse($this->history()->min('day'), $this->timezone)->startOfDay();
+        }
+
         $first = $this->restaurant->menuSessions()->min('viewed_at');
 
         return $first === null
@@ -206,9 +248,16 @@ class MenuStats
         $hours = array_fill(0, 24, 0);
         $weekdays = array_fill(0, 7, 0);
 
-        foreach ($this->hourly($this->from) as $bucket) {
-            $hours[$bucket['at']->hour] += $bucket['views'];
-            $weekdays[$bucket['at']->dayOfWeekIso - 1] += $bucket['views'];
+        foreach ($this->hourly($this->rawFrom()) as $bucket) {
+            $hours[$bucket['hour']] += $bucket['views'];
+            $weekdays[$bucket['weekday'] - 1] += $bucket['views'];
+        }
+
+        foreach ($this->history() as $past) {
+            foreach ($past->hours as $hour => $views) {
+                $hours[(int) $hour] += (int) $views;
+            }
+            $weekdays[$past->day->dayOfWeekIso - 1] += $past->views;
         }
 
         return ['hours' => $hours, 'weekdays' => $weekdays];
@@ -219,14 +268,16 @@ class MenuStats
      */
     private function breakdown(HasMany $visits, string $column): array
     {
-        return (clone $visits)
+        $counts = (clone $visits)
             ->selectRaw("COALESCE({$column}, 'unknown') as bucket, COUNT(*) as total")
             ->groupBy('bucket')
-            ->orderByDesc('total')
-            ->orderBy('bucket')
-            ->get()
-            ->map(fn ($row) => ['key' => (string) $row->bucket, 'count' => (int) $row->total])
+            ->pluck('total', 'bucket')
+            ->map(fn ($total): int => (int) $total)
             ->all();
+
+        $counts = $this->withHistory($counts, 'languages');
+
+        return array_map(fn ($key, int $count): array => ['key' => (string) $key, 'count' => $count], array_keys($counts), $counts);
     }
 
     /**
@@ -247,6 +298,14 @@ class MenuStats
             $actions[$type->value] = (int) ($counts[$type->value] ?? 0);
         }
 
+        foreach ($this->history() as $past) {
+            foreach ($past->actions as $type => $count) {
+                if (isset($actions[$type])) {
+                    $actions[$type] += (int) $count;
+                }
+            }
+        }
+
         return $actions;
     }
 
@@ -255,23 +314,7 @@ class MenuStats
      */
     private function topDishesAdded(): array
     {
-        $rows = $this->events()
-            ->where('type', MenuEventType::DishAdd->value)
-            ->whereNotNull('dish_id')
-            ->selectRaw('dish_id, COUNT(*) as total')
-            ->groupBy('dish_id')
-            ->orderByDesc('total')
-            ->orderBy('dish_id')
-            ->limit(self::TOP)
-            ->get();
-
-        $names = $this->names(Dish::class, $rows->pluck('dish_id'));
-
-        return $rows
-            ->filter(fn ($row) => isset($names[$row->dish_id]))
-            ->map(fn ($row) => ['name' => $names[$row->dish_id], 'count' => (int) $row->total])
-            ->values()
-            ->all();
+        return $this->topNamed(MenuEventType::DishAdd, 'dish_id', 'dishes_added', Dish::class);
     }
 
     /**
@@ -279,23 +322,40 @@ class MenuStats
      */
     private function topCategories(): array
     {
-        $rows = $this->events()
-            ->where('type', MenuEventType::CategoryOpen->value)
-            ->whereNotNull('category_id')
-            ->selectRaw('category_id, COUNT(*) as total')
-            ->groupBy('category_id')
-            ->orderByDesc('total')
-            ->orderBy('category_id')
-            ->limit(self::TOP)
-            ->get();
+        return $this->topNamed(MenuEventType::CategoryOpen, 'category_id', 'categories_opened', Category::class);
+    }
 
-        $names = $this->names(Category::class, $rows->pluck('category_id'));
+    /**
+     * The dishes or categories guests went for most, under today's names; one
+     * deleted since is left out. With history, the counts of every id are
+     * added up first, so a dish popular a year ago still ranks.
+     *
+     * @param  'dish_id'|'category_id'  $column
+     * @param  'dishes_added'|'categories_opened'  $field
+     * @param  class-string<Dish|Category>  $model
+     * @return array<int, array{name: string, count: int}>
+     */
+    private function topNamed(MenuEventType $type, string $column, string $field, string $model): array
+    {
+        $query = $this->events()
+            ->where('type', $type->value)
+            ->whereNotNull($column)
+            ->selectRaw("{$column} as id, COUNT(*) as total")
+            ->groupBy($column);
 
-        return $rows
-            ->filter(fn ($row) => isset($names[$row->category_id]))
-            ->map(fn ($row) => ['name' => $names[$row->category_id], 'count' => (int) $row->total])
-            ->values()
+        $counts = ($this->historyUntil === null ? $query->orderByDesc('total')->orderBy($column)->limit(self::TOP) : $query)
+            ->pluck('total', 'id')
+            ->map(fn ($total): int => (int) $total)
             ->all();
+
+        $top = array_slice($this->withHistory($counts, $field), 0, self::TOP, true);
+        $names = $this->names($model, array_keys($top));
+
+        return array_values(array_filter(array_map(
+            fn ($id, int $count): ?array => isset($names[$id]) ? ['name' => $names[$id], 'count' => $count] : null,
+            array_keys($top),
+            $top,
+        )));
     }
 
     /**
@@ -304,17 +364,24 @@ class MenuStats
      */
     private function searches(array $types): array
     {
-        return $this->events()
+        $query = $this->events()
             ->whereIn('type', array_map(fn (MenuEventType $type) => $type->value, $types))
             ->whereNotNull('value')
             ->selectRaw('value, COUNT(*) as total')
-            ->groupBy('value')
-            ->orderByDesc('total')
-            ->orderBy('value')
-            ->limit(self::TOP_SEARCHES)
-            ->get()
-            ->map(fn ($row) => ['term' => (string) $row->value, 'count' => (int) $row->total])
+            ->groupBy('value');
+
+        $counts = ($this->historyUntil === null ? $query->orderByDesc('total')->orderBy('value')->limit(self::TOP_SEARCHES) : $query)
+            ->pluck('total', 'value')
+            ->map(fn ($total): int => (int) $total)
             ->all();
+
+        $counts = $this->withHistory($counts, in_array(MenuEventType::Search, $types, true) ? 'searches' : 'missed_searches');
+
+        return array_map(
+            fn ($term, int $count): array => ['term' => (string) $term, 'count' => $count],
+            array_keys(array_slice($counts, 0, self::TOP_SEARCHES, true)),
+            array_slice($counts, 0, self::TOP_SEARCHES, true),
+        );
     }
 
     /**
@@ -326,12 +393,15 @@ class MenuStats
      */
     private function funnel(HasMany $visits): array
     {
+        $carted = $this->events()->where('type', MenuEventType::DishAdd->value);
+
         return [
-            'visitors' => (clone $visits)->distinct('session_id')->count('session_id'),
-            'carted' => $this->events()
-                ->where('type', MenuEventType::DishAdd->value)
-                ->distinct('session_id')
-                ->count('session_id'),
+            'visitors' => $this->historyUntil === null
+                ? (clone $visits)->distinct('session_id')->count('session_id')
+                : $this->visitorsWithHistory((clone $visits)->distinct()->pluck('session_id'), 'visitorSketch'),
+            'carted' => $this->historyUntil === null
+                ? $carted->distinct('session_id')->count('session_id')
+                : $this->visitorsWithHistory($carted->distinct()->pluck('session_id'), 'cartedSketch'),
             'ordered' => $this->orderCount($this->from, null),
             'channel' => $this->channel()->value,
         ];
@@ -499,22 +569,27 @@ class MenuStats
 
     /**
      * Views per UTC hour since `$from`, each moved into the restaurant's
-     * timezone.
+     * timezone: its local day, hour and weekday (1 Monday to 7 Sunday).
+     * Plain DateTime, not Carbon: six months is some 4,000 buckets.
      *
-     * @return array<int, array{at: CarbonImmutable, views: int, qr_scans: int}>
+     * @return array<int, array{day: string, hour: int, weekday: int, views: int, qr_scans: int}>
      */
     private function hourly(?CarbonImmutable $from): array
     {
+        $utc = new DateTimeZone('UTC');
+        $local = new DateTimeZone($this->timezone);
+
         return $this->restaurant->menuSessions()
             ->when($from, fn ($query) => $query->where('viewed_at', '>=', $from->utc()))
             ->selectRaw('SUBSTR(viewed_at, 1, 13) as bucket, COUNT(*) as views, SUM(CASE WHEN via_qr THEN 1 ELSE 0 END) as qr_scans')
             ->groupBy('bucket')
+            ->toBase()
             ->get()
-            ->map(fn ($row) => [
-                'at' => CarbonImmutable::createFromFormat('Y-m-d H', (string) $row->bucket, 'UTC')->setTimezone($this->timezone),
-                'views' => (int) $row->views,
-                'qr_scans' => (int) $row->qr_scans,
-            ])
+            ->map(function ($row) use ($utc, $local): array {
+                [$day, $hour, $weekday] = explode(' ', (new DateTimeImmutable($row->bucket.':00:00', $utc))->setTimezone($local)->format('Y-m-d G N'));
+
+                return ['day' => $day, 'hour' => (int) $hour, 'weekday' => (int) $weekday, 'views' => (int) $row->views, 'qr_scans' => (int) $row->qr_scans];
+            })
             ->all();
     }
 
@@ -525,11 +600,15 @@ class MenuStats
      *
      * @return array{views: int, unique_visitors: int, qr_scans: int, since: int}
      */
-    private function visitTotals(HasMany $visits, ?CarbonImmutable $since = null): array
+    private function visitTotals(HasMany $visits, ?CarbonImmutable $since = null, bool $countVisitors = true): array
     {
+        // Without the distinct count when the caller counts visitors with
+        // sketches: the costliest part of the pass, for a number unused.
+        $visitors = $countVisitors ? 'count(distinct session_id)' : '0';
+
         $totals = $visits->toBase()
             ->selectRaw(
-                'count(*) as views, count(distinct session_id) as visitors, sum(case when via_qr then 1 else 0 end) as scans, sum(case when viewed_at >= ? then 1 else 0 end) as since',
+                "count(*) as views, {$visitors} as visitors, sum(case when via_qr then 1 else 0 end) as scans, sum(case when viewed_at >= ? then 1 else 0 end) as since",
                 [($since ?? $this->today)->utc()->toDateTimeString()],
             )
             ->first();
@@ -564,7 +643,61 @@ class MenuStats
 
     private function inRange(HasMany $query, string $column): HasMany
     {
-        return $query->when($this->from, fn ($query) => $query->where($column, '>=', $this->from->utc()));
+        return $query->when($this->rawFrom(), fn ($query, CarbonImmutable $from) => $query->where($column, '>=', $from->utc()));
+    }
+
+    /** Where the raw rows start counting: the range's start, or for "all" with history, the boundary. */
+    private function rawFrom(): ?CarbonImmutable
+    {
+        return $this->from ?? $this->historyUntil;
+    }
+
+    /**
+     * The days added up before the boundary, for "all"; none otherwise.
+     *
+     * @return Collection<int, MenuDay>
+     */
+    private function history(): Collection
+    {
+        return $this->history ??= $this->historyUntil === null
+            ? new Collection
+            // Everything but the sketches, which come merged (MenuDays::mergedSketch()).
+            : $this->restaurant->menuDays()
+                ->where('day', '<', $this->historyUntil->toDateString())
+                ->orderBy('day')
+                ->get(['id', 'day', 'views', 'qr_scans', 'hours', 'languages', 'actions', 'dishes_added', 'categories_opened', 'searches', 'missed_searches']);
+    }
+
+    /**
+     * Raw counts with the history's counts of the same field added, most first
+     * (then by key, as the raw queries sort).
+     *
+     * @param  array<int|string, int>  $counts
+     * @return array<int|string, int>
+     */
+    private function withHistory(array $counts, string $field): array
+    {
+        foreach ($this->history() as $past) {
+            foreach ($past->{$field} as $key => $count) {
+                $counts[$key] = ($counts[$key] ?? 0) + (int) $count;
+            }
+        }
+
+        uksort($counts, fn ($a, $b): int => [$counts[$b], (string) $a] <=> [$counts[$a], (string) $b]);
+
+        return $counts;
+    }
+
+    /**
+     * Distinct visitors over the raw rows and the history together: the raw
+     * ids into a sketch, merged with each day's.
+     *
+     * @param  iterable<string>  $rawIds
+     * @param  'visitorSketch'|'cartedSketch'  $sketch
+     */
+    private function visitorsWithHistory(iterable $rawIds, string $sketch): int
+    {
+        return HyperLogLog::of($rawIds)->merge(MenuDays::mergedSketch($this->restaurant, $this->historyUntil, $sketch))->count();
     }
 
     private function events(): HasMany

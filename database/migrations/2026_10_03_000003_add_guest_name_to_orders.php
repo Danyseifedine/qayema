@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Who to ask for: the name a guest gives when they order in the menu. Like
- * their phone and address, it is cleared after 90 days (orders:forget-guests).
+ * their phone and address, it stays with the order.
  */
 return new class extends Migration
 {

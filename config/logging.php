@@ -69,6 +69,8 @@ return [
             'driver' => 'monolog',
             'handler' => \Keepsuit\LaravelOpenTelemetry\Support\OpenTelemetryMonologHandler::class,
             'level' => env('OTEL_LOG_LEVEL', 'info'),
+            // The request's route, restaurant and user on every line in Grafana.
+            'tap' => [\App\Services\Health\SendLogContextToGrafana::class],
         ],
 
         'single' => [

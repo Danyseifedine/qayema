@@ -9,7 +9,7 @@ use Tests\Support\CreatesOwners;
 use Tests\Support\FakesFirebase;
 use Tests\TestCase;
 
-class RemindPackagesEndingTest extends TestCase
+class PackagesEndingSoonAdminReminderTest extends TestCase
 {
     use CreatesOwners, FakesFirebase, RefreshDatabase;
 
@@ -22,7 +22,7 @@ class RemindPackagesEndingTest extends TestCase
         $this->ownerOn('pro', ['name' => ['en' => 'Ended'], 'package_ends_at' => now()->subDay()]);
         $this->ownerOn('pro', ['name' => ['en' => 'Forever'], 'package_ends_at' => null]);
 
-        $this->artisan('packages:remind-ending')
+        $this->artisan('packages:ending-soon-admin-reminder')
             ->assertSuccessful()
             ->expectsOutputToContain('1 packages end within 3 days; told 1 phones.');
 
@@ -35,13 +35,13 @@ class RemindPackagesEndingTest extends TestCase
         $this->fakeFirebase();
         DeviceToken::factory()->for($this->admin())->create();
 
-        $this->artisan('packages:remind-ending')->assertSuccessful()->expectsOutputToContain('0 packages end');
+        $this->artisan('packages:ending-soon-admin-reminder')->assertSuccessful()->expectsOutputToContain('0 packages end');
         $this->assertSame([], $this->pushes);
     }
 
     public function test_it_runs_each_morning_in_beirut(): void
     {
-        $event = collect(app(Schedule::class)->events())->first(fn ($event) => str_contains($event->command, 'packages:remind-ending'));
+        $event = collect(app(Schedule::class)->events())->first(fn ($event) => str_contains($event->command, 'packages:ending-soon-admin-reminder'));
 
         $this->assertNotNull($event);
         $this->assertSame('0 9 * * *', $event->expression);

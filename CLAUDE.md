@@ -799,7 +799,10 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
   127.0.0.1 needs none. Empty: off (local, tests, e2e).
 - **Every log line names its request** (Laravel's Context, set in
   AppServiceProvider): `route`, `restaurant` (the slug in the address) and
-  `user_id`, next to the trace id; queued jobs carry it.
+  `user_id`, next to the trace id; queued jobs carry it. Context lands in a
+  record's `extra`, which the OpenTelemetry handler does not send, so the
+  `otlp` channel's tap (`Services/Health/SendLogContextToGrafana`) hands it
+  over as `context`.
 - **The dashboard's errors reach the log**: `POST /api/client-errors` (its
   error boundary, script errors, uncaught promises; `ClientErrorRequest`) and
   `POST /api/csp-report` (its Content-Security-Policy), public, outside CSRF,
@@ -1036,7 +1039,8 @@ AppServiceProvider for that reason (`tests/Feature/Security/TrustedProxiesTest`)
 `schedule:run` every minute): the queue worker (`queue:work --max-time=55`,
 every minute, never two at once, so a job starts within seconds), the
 heartbeat `/up` checks, `menus:forget-ended` hourly, and nightly
-`stats:rollup`, `orders:forget-guests`, `queue:prune-failed`,
+`stats:rollup` (adds each finished day of analytics up into `menu_days`,
+then deletes raw visits older than 6 months), `queue:prune-failed`,
 `sanctum:prune-expired` and `model:prune` (ended `BlockedIp` rows).
 
 **Health:** `GET /up` answers 500 (and logs "Health check failed: ...")
@@ -1126,7 +1130,7 @@ The QR code always encodes `/{slug}?qr=1`, whatever the design. `restaurants.qr_
 
 ## Analytics
 
-The page reports its own visit and what guests do (`public/js/menu-track.js` to `POST /{slug}/events`, written after the 204 has gone), so a cached page still counts and a crawler does not; one guest is the id their browser keeps (`qayema-visitor`). Read by `MenuStats` (`analytics`, `advanced_analytics` flags), in the restaurant's timezone; raw rows pruned after 6 months. **Full rules: [docs/architecture/analytics.md](docs/architecture/analytics.md).**
+The page reports its own visit and what guests do (`public/js/menu-track.js` to `POST /{slug}/events`, written after the 204 has gone), so a cached page still counts and a crawler does not; one guest is the id their browser keeps (`qayema-visitor`). Read by `MenuStats` (`analytics`, `advanced_analytics` flags), in the restaurant's timezone; raw rows are deleted after 6 months, once each day is added up into `menu_days`, which "All time" reads for older days. **Full rules: [docs/architecture/analytics.md](docs/architecture/analytics.md).**
 
 ## Menu languages
 
