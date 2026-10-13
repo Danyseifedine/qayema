@@ -5,9 +5,12 @@
 #     bash deploy.sh          only what this release needs
 #     bash deploy.sh --full   every step, whatever changed
 #
-# It looks at what changed between the code on the server and origin/main
-# and runs only what that needs, so a release that only changes code is a
-# pull and a cache refresh, a few seconds with the site up:
+# It looks at what changed between the last commit it deployed (kept in
+# storage/framework/deployed-commit) and origin/main, and runs only what that
+# needs, so a release that only changes code is a pull and a cache refresh, a
+# few seconds with the site up. A `git pull` by hand deploys nothing: this
+# still sees those commits as not deployed. Without a record of the last
+# deploy (the first run), every step runs:
 #
 #   always                          pull, `php artisan optimize`, a check of /up
 #   composer.json / composer.lock   maintenance mode while `composer install` runs
@@ -35,12 +38,18 @@ COMPOSER="${COMPOSER:-composer}"
 FULL=false
 [ "${1:-}" = "--full" ] && FULL=true
 
-git fetch --quiet origin main
-OLD="$(git rev-parse HEAD)"
-NEW="$(git rev-parse origin/main)"
+DEPLOYED=storage/framework/deployed-commit
 
-if [ "$OLD" = "$NEW" ] && ! $FULL; then
-    echo "Already on $(git rev-parse --short HEAD): nothing to deploy."
+git fetch --quiet origin main
+NEW="$(git rev-parse origin/main)"
+OLD="$(cat "$DEPLOYED" 2>/dev/null || true)"
+if ! git cat-file -e "${OLD:-none}^{commit}" 2>/dev/null; then
+    OLD="$(git rev-parse HEAD)"
+    FULL=true
+fi
+
+if [ "$OLD" = "$NEW" ] && [ "$(git rev-parse HEAD)" = "$NEW" ] && ! $FULL; then
+    echo "Already deployed $(git rev-parse --short HEAD): nothing to deploy."
     exit 0
 fi
 
@@ -103,6 +112,8 @@ if $DOWN; then
     "$PHP" artisan up
     trap - EXIT
 fi
+
+git rev-parse HEAD > "$DEPLOYED"
 
 # Asked the way guests ask: the public address, through Cloudflare (which
 # adds the origin secret). Not 127.0.0.1: on shared hosting that answers with
