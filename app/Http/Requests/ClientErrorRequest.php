@@ -7,7 +7,8 @@ use Illuminate\Validation\Rule;
 
 /**
  * An error an owner's dashboard hit (its `reportError`): what it said, where,
- * and in which release. The dashboard keeps it short; anything longer is
+ * and in which release; `network` is requests that got no answer (blocked
+ * on the way, or the phone offline), sent once one gets through. The dashboard keeps it short; anything longer is
  * refused rather than logged.
  */
 class ClientErrorRequest extends FormRequest
@@ -26,7 +27,7 @@ class ClientErrorRequest extends FormRequest
         return [
             'message' => ['required', 'string', 'max:1000'],
             'stack' => ['nullable', 'string', 'max:4000'],
-            'source' => ['required', 'string', Rule::in(['render', 'error', 'rejection'])],
+            'source' => ['required', 'string', Rule::in(['render', 'error', 'rejection', 'network'])],
             'page' => ['nullable', 'string', 'max:300'],
             'release' => ['nullable', 'string', 'max:40'],
         ];

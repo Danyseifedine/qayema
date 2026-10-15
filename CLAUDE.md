@@ -816,7 +816,9 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
   `otlp` channel's tap (`Services/Health/SendLogContextToGrafana`) hands it
   over as `context`.
 - **The dashboard's errors reach the log**: `POST /api/client-errors` (its
-  error boundary, script errors, uncaught promises; `ClientErrorRequest`) and
+  error boundary, script errors, uncaught promises, and requests that got
+  no answer, `source: network`, "blocked" when the host's bot protection
+  refused them; `ClientErrorRequest`) and
   `POST /api/csp-report` (its Content-Security-Policy), public, outside CSRF,
   `throttle:client-errors` (10 a minute), logged as warnings
   ("Dashboard error:", "Dashboard CSP blocked:").

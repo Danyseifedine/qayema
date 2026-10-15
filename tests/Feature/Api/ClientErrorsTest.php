@@ -49,6 +49,23 @@ class ClientErrorsTest extends TestCase
         );
     }
 
+    public function test_requests_that_got_no_answer_are_logged_once_one_gets_through(): void
+    {
+        Log::spy();
+
+        $this->postJson(route('api.client-errors'), $this->report([
+            'message' => 'Unanswered requests: 3 blocked, 0 offline',
+            'stack' => '2026-10-15T00:30:00.000Z blocked /api/user',
+            'source' => 'network',
+        ]))->assertNoContent();
+
+        Log::shouldHaveReceived('warning')->once()->with(
+            'Dashboard error: Unanswered requests: 3 blocked, 0 offline',
+            Mockery::on(fn (array $context): bool => $context['source'] === 'network'
+                && str_contains($context['stack'], 'blocked /api/user')),
+        );
+    }
+
     public function test_only_the_message_and_source_are_needed(): void
     {
         Log::spy();
