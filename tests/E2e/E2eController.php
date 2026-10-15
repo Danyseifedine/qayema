@@ -146,7 +146,9 @@ class E2eController extends Controller
                 'status' => OrderStatus::Placed,
                 'currency' => $restaurant->currency,
                 'total' => '12.50',
-                'placed_at' => now()->subMinutes(10 * ($i + 1)),
+                // Seconds apart, newest first: still today just after midnight,
+                // when the analytics open on Today.
+                'placed_at' => now()->subSeconds(10 * ($i + 1)),
             ]);
             $order->items()->create([
                 'name' => 'Kafta',
@@ -164,7 +166,7 @@ class E2eController extends Controller
         for ($i = 0; $i < $visits; $i++) {
             $restaurant->menuSessions()->create([
                 'session_id' => 'e2e-'.$i,
-                'viewed_at' => now()->subHours($i),
+                'viewed_at' => now()->subSeconds($i),
                 'via_qr' => $i < $scans,
                 'locale' => 'en',
             ]);

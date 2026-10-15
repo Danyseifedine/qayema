@@ -117,6 +117,9 @@ class MenuStats
             // Which orders "orders" counts: taps that opened WhatsApp, or
             // orders placed in the menu. Null when the restaurant takes none.
             'order_channel' => $this->channel()?->value,
+            // The same totals for the period before, for "up 12%" (today:
+            // yesterday up to this time). Null for "All time".
+            'previous' => $this->previous(),
             'series' => $this->series(),
         ];
     }
