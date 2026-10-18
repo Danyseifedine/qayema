@@ -8,6 +8,7 @@ use App\Models\Dish;
 use App\Models\Restaurant;
 use App\Models\RestaurantSocialLink;
 use App\Services\Menu\MenuToken;
+use App\Support\MenuIcons;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\CreatesOwners;
 use Tests\Support\SendsMenuToken;
@@ -171,6 +172,25 @@ class MenuOrderingTest extends TestCase
         // Named the way the network spells itself, not ucfirst's "Tiktok".
         $this->assertStringContainsString('TikTok', $popup);
         $this->assertStringNotContainsString('>Tiktok<', $html);
+    }
+
+    public function test_every_platform_shows_with_its_own_name_and_mark(): void
+    {
+        $shop = $this->shop(true);
+        foreach (RestaurantSocialLink::platforms() as $platform) {
+            RestaurantSocialLink::create(['restaurant_id' => $shop->id, 'platform' => $platform, 'url' => "https://{$platform}.test/olive"]);
+        }
+
+        $html = $this->get(route('public.menu', $shop->slug))->assertOk()->getContent();
+        $start = strpos($html, 'id="pop-contact"');
+        $popup = substr($html, $start, strpos($html, '</dialog>', $start) - $start);
+
+        foreach (RestaurantSocialLink::LABELS as $platform => $label) {
+            $this->assertStringContainsString("pop-item is-{$platform}", $popup);
+            $this->assertStringContainsString("<span>{$label}</span>", $popup);
+        }
+        // Each has a mark of its own: none falls back to the heart.
+        $this->assertStringNotContainsString(MenuIcons::all()['heart'], $popup);
     }
 
     public function test_the_page_ends_with_the_menu(): void

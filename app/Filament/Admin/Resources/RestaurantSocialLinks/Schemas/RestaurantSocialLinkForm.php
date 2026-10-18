@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\RestaurantSocialLinks\Schemas;
 
+use App\Models\RestaurantSocialLink;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
@@ -25,12 +26,7 @@ class RestaurantSocialLinkForm
                             ->required()
                             ->helperText('The restaurant this link belongs to.'),
                         Select::make('platform')
-                            ->options([
-                                'instagram' => 'Instagram',
-                                'x' => 'X (Twitter)',
-                                'facebook' => 'Facebook',
-                                'tiktok' => 'TikTok',
-                            ])
+                            ->options(self::platformOptions())
                             ->required()
                             ->searchable()
                             ->helperText('Platform determines the icon shown on the menu.'),
@@ -44,5 +40,16 @@ class RestaurantSocialLinkForm
                             ->columnSpanFull(),
                     ]),
             ]);
+    }
+
+    /**
+     * Every platform the menu renders, by the name the menu shows; X is
+     * named with its old name too, so an admin finds it either way.
+     *
+     * @return array<string, string>
+     */
+    public static function platformOptions(): array
+    {
+        return array_merge(RestaurantSocialLink::LABELS, ['x' => 'X (Twitter)']);
     }
 }

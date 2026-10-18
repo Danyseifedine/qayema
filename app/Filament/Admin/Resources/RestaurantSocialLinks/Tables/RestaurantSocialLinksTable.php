@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\RestaurantSocialLinks\Tables;
 
+use App\Filament\Admin\Resources\RestaurantSocialLinks\Schemas\RestaurantSocialLinkForm;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -30,16 +31,13 @@ class RestaurantSocialLinksTable
                         'instagram' => 'pink',
                         'x' => 'sky',
                         'facebook' => 'blue',
-                        'tiktok' => 'gray',
+                        'youtube', 'pinterest' => 'danger',
+                        'snapchat' => 'warning',
+                        'telegram' => 'info',
+                        'tripadvisor' => 'success',
                         default => 'gray',
                     })
-                    ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'instagram' => 'Instagram',
-                        'x' => 'X (Twitter)',
-                        'facebook' => 'Facebook',
-                        'tiktok' => 'TikTok',
-                        default => ucfirst($state),
-                    })
+                    ->formatStateUsing(fn (string $state): string => RestaurantSocialLinkForm::platformOptions()[$state] ?? ucfirst($state))
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('url')
@@ -55,12 +53,7 @@ class RestaurantSocialLinksTable
             ])
             ->filters([
                 SelectFilter::make('platform')
-                    ->options([
-                        'instagram' => 'Instagram',
-                        'x' => 'X (Twitter)',
-                        'facebook' => 'Facebook',
-                        'tiktok' => 'TikTok',
-                    ]),
+                    ->options(RestaurantSocialLinkForm::platformOptions()),
                 SelectFilter::make('restaurant_id')
                     ->label('Restaurant')
                     ->relationship('restaurant', 'name')

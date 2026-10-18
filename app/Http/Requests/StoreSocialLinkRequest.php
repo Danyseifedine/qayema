@@ -28,7 +28,7 @@ class StoreSocialLinkRequest extends FormRequest
             'platform' => [
                 'required',
                 'string',
-                Rule::in(RestaurantSocialLink::PLATFORMS),
+                Rule::in(RestaurantSocialLink::platforms()),
                 // One link per platform per restaurant.
                 Rule::unique('restaurant_social_links', 'platform')->where('restaurant_id', $restaurantId),
             ],

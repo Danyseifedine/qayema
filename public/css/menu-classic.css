@@ -628,10 +628,15 @@ dialog.pop[open]::backdrop { animation: fade-in .2s ease; }
     color: var(--muted);
 }
 .pop-subhead + .pop-list { margin-top: 10px; }
-/* Each network in its own colour; X and TikTok are black-on-white brands. */
+/* Each network in its own colour; X, TikTok, Threads and Snapchat's mark
+   (white on yellow, unreadable as yellow on a page) take the text colour. */
 .pop-item.is-instagram .icon { color: #E1306C; }
 .pop-item.is-facebook .icon { color: #1877F2; }
-.pop-item.is-x .icon, .pop-item.is-tiktok .icon { color: var(--text); }
+.pop-item.is-youtube .icon { color: #FF0000; }
+.pop-item.is-telegram .icon { color: #229ED9; }
+.pop-item.is-pinterest .icon { color: #E60023; }
+.pop-item.is-tripadvisor .icon { color: #00AF87; }
+.pop-item.is-x .icon, .pop-item.is-tiktok .icon, .pop-item.is-threads .icon, .pop-item.is-snapchat .icon { color: var(--text); }
 .pop-item[aria-current="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--bg)); font-weight: 600; }
 
 /* A dish's full photo, as large as the screen allows, in its own shape. */
