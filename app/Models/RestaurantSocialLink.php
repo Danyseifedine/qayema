@@ -11,8 +11,29 @@ class RestaurantSocialLink extends Model
 {
     use ClearsMenuCache, HasFactory;
 
-    /** Platforms whose icon the menu can render. */
-    public const PLATFORMS = ['instagram', 'x', 'facebook', 'tiktok'];
+    /**
+     * The platforms the menu can render an icon for, with the name it shows.
+     * Mirrored by the dashboard's `SOCIAL_PLATFORMS`; each needs an icon in
+     * `MenuIcons` and a colour in the menu's stylesheet.
+     */
+    public const LABELS = [
+        'instagram' => 'Instagram',
+        'x' => 'X',
+        'facebook' => 'Facebook',
+        'tiktok' => 'TikTok',
+        'youtube' => 'YouTube',
+        'snapchat' => 'Snapchat',
+        'threads' => 'Threads',
+        'telegram' => 'Telegram',
+        'pinterest' => 'Pinterest',
+        'tripadvisor' => 'Tripadvisor',
+    ];
+
+    /** @return list<string> */
+    public static function platforms(): array
+    {
+        return array_keys(self::LABELS);
+    }
 
     protected $fillable = [
         'restaurant_id',

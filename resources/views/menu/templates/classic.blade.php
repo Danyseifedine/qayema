@@ -109,7 +109,7 @@
     // The info card under the name shows the hours (the header row has the rest).
     $hoursFact = collect($facts)->firstWhere('icon', 'clock');
 
-    $platforms = ['instagram' => 'Instagram', 'x' => 'X', 'facebook' => 'Facebook', 'tiktok' => 'TikTok'];
+    $platforms = \App\Models\RestaurantSocialLink::LABELS;
     $hasContact = $whatsapp_url || $restaurant->socialLinks->isNotEmpty();
 
     $visible = $restaurant->categories->filter(fn ($category) => $category->dishes->isNotEmpty());

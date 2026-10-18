@@ -20,7 +20,7 @@ class RestaurantSocialLinkFactory extends Factory
     {
         return [
             'restaurant_id' => Restaurant::factory(),
-            'platform' => fake()->randomElement(['instagram', 'x', 'facebook', 'tiktok']),
+            'platform' => fake()->randomElement(RestaurantSocialLink::platforms()),
             'url' => fake()->url(),
         ];
     }

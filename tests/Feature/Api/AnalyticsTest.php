@@ -149,6 +149,8 @@ class AnalyticsTest extends TestCase
         $this->assertSame(['date' => '2026-07-15T00:00', 'views' => 1, 'qr_scans' => 1], $data['series'][0]);
         $this->assertSame(['date' => '2026-07-15T11:00', 'views' => 2, 'qr_scans' => 2], $data['series'][11]);
         $this->assertSame(['date' => '2026-07-15T14:00', 'views' => 0, 'qr_scans' => 0], $data['series'][14]);
+        // Yesterday up to 14:20: the visit at 23:59 came later in the day.
+        $this->assertSame(0, $data['previous']['views']);
     }
 
     public function test_the_series_has_one_point_per_day_with_zeros_filled_in(): void
@@ -199,6 +201,20 @@ class AnalyticsTest extends TestCase
         $this->actingAs($restaurant->user)
             ->getJson(route('api.analytics'))
             ->assertJsonPath('data.totals.orders', 1);
+    }
+
+    public function test_the_period_before_is_sent_for_the_change(): void
+    {
+        $restaurant = Restaurant::factory()->create();
+        $this->visit($restaurant, 0, true);
+        $this->visit($restaurant, 8, true);
+        $this->visit($restaurant, 9, false);
+
+        $this->actingAs($restaurant->user)
+            ->getJson(route('api.analytics', ['range' => '7d']))
+            ->assertJsonPath('data.previous.views', 2)
+            ->assertJsonPath('data.previous.qr_scans', 1)
+            ->assertJsonPath('data.previous.orders', null);
     }
 
     public function test_orders_are_null_when_the_package_does_not_take_them(): void

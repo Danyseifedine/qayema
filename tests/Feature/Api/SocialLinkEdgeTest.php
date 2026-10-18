@@ -37,7 +37,7 @@ class SocialLinkEdgeTest extends TestCase
         $this->defaultPackageSets(Feature::SocialLinkLimit, 10);
         $owner = $this->owner();
 
-        foreach (RestaurantSocialLink::PLATFORMS as $platform) {
+        foreach (RestaurantSocialLink::platforms() as $platform) {
             $this->actingAs($owner->user)
                 ->postJson(route('api.social-links.store'), ['platform' => $platform, 'url' => "https://{$platform}.test/me"])
                 ->assertCreated();

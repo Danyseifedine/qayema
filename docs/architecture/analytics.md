@@ -33,7 +33,9 @@ Part of the Qayema backend's architecture notes; CLAUDE.md has the summary.
   `advanced()` (`GET /api/analytics/advanced`) and the `90d`/`all` ranges
   need `advanced_analytics` (Premium and up). `today` runs from the
   restaurant's midnight, charts one point an hour so far
-  (`2026-10-13T14:00`), and compares with yesterday up to the same time;
+  (`2026-10-13T14:00`), and compares with yesterday up to the same time.
+  The summary sends `previous` (the same totals for the period before,
+  null for `all`), for Home's "vs. yesterday";
   `teaser()` (`GET /api/analytics/teaser`, this week's views) is every package.
   Tests about a feature itself put it on the default package with
   `defaultPackageIncludes()` (`CreatesOwners`); which package has what is

@@ -15,6 +15,7 @@ class MenuIconsTest extends TestCase
         $this->assertSame([
             'clock', 'pin', 'table', 'phone', 'search', 'cart', 'back', 'plus', 'close', 'check', 'chevron', 'minus', 'language',
             'qr', 'whatsapp', 'top', 'heart', 'instagram', 'facebook', 'x', 'tiktok',
+            'youtube', 'snapchat', 'threads', 'telegram', 'pinterest', 'tripadvisor',
         ], array_keys(MenuIcons::all()));
     }
 
@@ -63,7 +64,7 @@ class MenuIconsTest extends TestCase
 
     public function test_every_social_platform_has_its_own_icon(): void
     {
-        foreach (RestaurantSocialLink::PLATFORMS as $platform) {
+        foreach (RestaurantSocialLink::platforms() as $platform) {
             $this->assertArrayHasKey($platform, MenuIcons::all(), "[{$platform}] falls back to the heart.");
         }
     }
