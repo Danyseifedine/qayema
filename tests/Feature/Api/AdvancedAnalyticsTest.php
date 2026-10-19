@@ -55,6 +55,19 @@ class AdvancedAnalyticsTest extends TestCase
             ->json('data');
     }
 
+    /**
+     * The summary, which carries the period before ("up 12%").
+     *
+     * @return array<string, mixed>
+     */
+    private function summary(Restaurant $restaurant, string $range): array
+    {
+        return $this->actingAs($restaurant->user)
+            ->getJson(route('api.analytics', ['range' => $range]))
+            ->assertOk()
+            ->json('data');
+    }
+
     public function test_it_needs_the_package_flag(): void
     {
         $this->defaultPackageSets(Feature::AdvancedAnalytics, 0);
@@ -97,7 +110,7 @@ class AdvancedAnalyticsTest extends TestCase
 
         $this->assertSame(
             ['views' => 2, 'unique_visitors' => 1, 'qr_scans' => 0, 'orders' => 0],
-            $this->advanced($restaurant, '7d')['previous'],
+            $this->summary($restaurant, '7d')['previous'],
         );
     }
 
@@ -109,14 +122,14 @@ class AdvancedAnalyticsTest extends TestCase
         $this->visit($restaurant, ['session_id' => 'yesterday-morning', 'viewed_at' => now()->subDay()->subHours(2)]);
         $this->visit($restaurant, ['session_id' => 'yesterday-evening', 'viewed_at' => now()->subDay()->addHours(8)]);
 
-        $data = $this->advanced($restaurant, 'today');
+        $data = $this->summary($restaurant, 'today');
 
         $this->assertSame(['views' => 1, 'unique_visitors' => 1, 'qr_scans' => 0, 'orders' => 0], $data['previous']);
     }
 
     public function test_all_time_has_nothing_to_compare_with(): void
     {
-        $this->assertNull($this->advanced($this->restaurant(), 'all')['previous']);
+        $this->assertNull($this->summary($this->restaurant(), 'all')['previous']);
     }
 
     public function test_busy_hours_and_days_are_in_the_restaurants_timezone(): void
