@@ -107,9 +107,11 @@ class MenuStatsTest extends TestCase
 
     public function test_an_empty_restaurant_has_every_advanced_key_empty(): void
     {
-        $advanced = (new MenuStats($this->restaurant(), '30d'))->advanced();
+        $stats = new MenuStats($this->restaurant(), '30d');
+        $advanced = $stats->advanced();
 
-        $this->assertSame(['views' => 0, 'unique_visitors' => 0, 'qr_scans' => 0, 'orders' => null], $advanced['previous']);
+        $this->assertSame(['views' => 0, 'unique_visitors' => 0, 'qr_scans' => 0, 'orders' => null], $stats->summary()['previous']);
+        $this->assertArrayNotHasKey('previous', $advanced);
         $this->assertSame(array_fill(0, 24, 0), $advanced['hours']);
         $this->assertSame(array_fill(0, 7, 0), $advanced['weekdays']);
         $this->assertSame([], $advanced['languages']);
@@ -340,7 +342,7 @@ class MenuStatsTest extends TestCase
         $stats = new MenuStats($restaurant, '7d');
 
         $this->assertNull($stats->summary()['totals']['orders']);
-        $this->assertNull($stats->advanced()['previous']['orders']);
+        $this->assertNull($stats->summary()['previous']['orders']);
         $this->assertNull($stats->advanced()['funnel']);
     }
 
@@ -359,9 +361,9 @@ class MenuStatsTest extends TestCase
 
         $this->assertSame(
             ['views' => 2, 'unique_visitors' => 1, 'qr_scans' => 1, 'orders' => 1],
-            (new MenuStats($restaurant, '7d'))->advanced()['previous'],
+            (new MenuStats($restaurant, '7d'))->summary()['previous'],
         );
-        $this->assertNull((new MenuStats($restaurant, 'all'))->advanced()['previous']);
+        $this->assertNull((new MenuStats($restaurant, 'all'))->summary()['previous']);
     }
 
     public function test_busy_times_follow_the_range(): void

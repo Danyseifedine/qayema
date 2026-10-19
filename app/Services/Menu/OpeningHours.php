@@ -51,13 +51,19 @@ class OpeningHours
     }
 
     /**
-     * Today's shifts in the restaurant's own timezone, none when closed.
+     * The shifts the menu shows now, in the restaurant's own timezone: today's,
+     * none when closed today, or yesterday's while its last shift, run past
+     * midnight, is still going. At 00:30 after a 13:00 to 01:00 night the
+     * guest is told "13:00 - 01:00", not tomorrow's hours beside "Open now".
      *
      * @return list<array{open: string, close: string}>
      */
-    public function todayShifts(): array
+    public function currentShifts(): array
     {
-        return $this->week[$this->dayKey($this->now())] ?? [];
+        $now = $this->now();
+        $yesterday = $now->copy()->subDay();
+
+        return $this->week[$this->dayKey($this->hasShiftAt($yesterday, $now) ? $yesterday : $now)] ?? [];
     }
 
     public function isOpenNow(): bool
@@ -66,17 +72,7 @@ class OpeningHours
 
         // A shift that runs past midnight belongs to yesterday as much as to
         // today, so both have to be asked.
-        foreach ([$now, $now->copy()->subDay()] as $day) {
-            foreach ($this->week[$this->dayKey($day)] ?? [] as $shift) {
-                [$opens, $closes] = $this->boundsFor($day, $shift);
-
-                if ($now->betweenIncluded($opens, $closes)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        return $this->hasShiftAt($now, $now) || $this->hasShiftAt($now->copy()->subDay(), $now);
     }
 
     /**
@@ -169,9 +165,27 @@ class OpeningHours
         return $value;
     }
 
+    /**
+     * To the minute, as menu-hours.js judges it on the guest's phone: a
+     * kitchen that shuts at 01:00 is open until 01:00 has passed, on both.
+     */
     private function now(): Carbon
     {
-        return Carbon::now($this->timezone);
+        return Carbon::now($this->timezone)->startOfMinute();
+    }
+
+    /** Whether one of a day's shifts, run past midnight or not, covers the moment. */
+    private function hasShiftAt(Carbon $day, Carbon $moment): bool
+    {
+        foreach ($this->week[$this->dayKey($day)] ?? [] as $shift) {
+            [$opens, $closes] = $this->boundsFor($day, $shift);
+
+            if ($moment->betweenIncluded($opens, $closes)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function dayKey(Carbon $moment): string

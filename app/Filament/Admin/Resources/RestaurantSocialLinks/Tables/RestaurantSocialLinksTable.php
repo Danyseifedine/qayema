@@ -16,6 +16,8 @@ class RestaurantSocialLinksTable
 {
     public static function configure(Table $table): Table
     {
+        $platforms = RestaurantSocialLinkForm::platformOptions();
+
         return $table
             ->columns([
                 TextColumn::make('restaurant.name')
@@ -37,7 +39,7 @@ class RestaurantSocialLinksTable
                         'tripadvisor' => 'success',
                         default => 'gray',
                     })
-                    ->formatStateUsing(fn (string $state): string => RestaurantSocialLinkForm::platformOptions()[$state] ?? ucfirst($state))
+                    ->formatStateUsing(fn (string $state): string => $platforms[$state] ?? ucfirst($state))
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('url')
@@ -53,7 +55,7 @@ class RestaurantSocialLinksTable
             ])
             ->filters([
                 SelectFilter::make('platform')
-                    ->options(RestaurantSocialLinkForm::platformOptions()),
+                    ->options($platforms),
                 SelectFilter::make('restaurant_id')
                     ->label('Restaurant')
                     ->relationship('restaurant', 'name')

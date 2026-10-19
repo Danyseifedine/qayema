@@ -98,9 +98,10 @@ class AnalyticsHistoryTest extends TestCase
         $this->restaurant->menuEvents()->create(['session_id' => 'regular', 'type' => MenuEventType::DishAdd, 'dish_id' => $this->dish->id, 'occurred_at' => now()]);
         $this->restaurant->menuEvents()->create(['session_id' => 'regular', 'type' => MenuEventType::SearchMiss, 'value' => 'sushi', 'occurred_at' => now()]);
 
+        $this->assertNull($this->stats('api.analytics')['previous']);
+
         $data = $this->stats('api.analytics.advanced');
 
-        $this->assertNull($data['previous']);
         $this->assertSame(3, $data['hours'][13]);
         $this->assertSame(1, $data['hours'][12]);
         // Monday a year ago, Wednesday today.

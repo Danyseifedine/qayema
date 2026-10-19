@@ -145,7 +145,6 @@ class MenuStats
         $visits = $this->inRange($this->restaurant->menuSessions(), 'viewed_at');
 
         return [
-            'previous' => $this->previous(),
             ...$this->busyTimes(),
             'languages' => $this->breakdown($visits, 'locale'),
             'actions' => $this->actions(),
@@ -237,8 +236,6 @@ class MenuStats
             : CarbonImmutable::parse($first, 'UTC')->setTimezone($this->timezone)->startOfDay();
     }
 
-    // ---- Advanced ------------------------------------------------------
-
     /**
      * The same totals for the period just before this one, for "up 12%".
      * "All" has nothing before it.
@@ -278,6 +275,8 @@ class MenuStats
 
         return [$start, $this->range === 'today' ? CarbonImmutable::now($this->timezone)->subDay() : $this->from];
     }
+
+    // ---- Advanced ------------------------------------------------------
 
     /**
      * Views by local hour of day (0 to 23) and by weekday (Monday first).

@@ -12,6 +12,7 @@
     `php artisan make:menu-template <slug>` to add a design: it copies this
     file and the stylesheet, and the slug must match the template row's.
 --}}
+@use('App\Models\RestaurantSocialLink')
 @use('App\Models\Template')
 @use('App\Services\Menu\MenuLanguages')
 @use('App\Support\Color')
@@ -35,8 +36,6 @@
     $currency = config("currencies.{$restaurant->currency}.symbol", $restaurant->currency);
     $name = $text($restaurant, 'name');
     $description = $text($restaurant, 'description');
-    // Every shift today, lunch then dinner: "12:00 - 15:00, 18:00 - 23:00".
-    $todayHours = collect($hours->todayShifts())->map(fn (array $shift): string => $shift['open'].' - '.$shift['close'])->implode(', ');
 
     $accent = $settings['primary_color'] ?? Template::DEFAULT_PRIMARY_COLOR;
     $background = $settings['background_color'] ?? '#FFFFFF';
@@ -71,12 +70,18 @@
         ];
     }
 
+    // Asked once: the header and the cart below both need it. Null without hours.
+    $open = null;
+
     if (! $hours->isEmpty()) {
         $open = $hours->isOpenNow();
+        // Every shift today, lunch then dinner: "12:00 - 15:00, 18:00 - 23:00";
+        // just after midnight, last night's while it is still open.
+        $shownHours = collect($hours->currentShifts())->map(fn (array $shift): string => $shift['open'].' - '.$shift['close'])->implode(', ');
         $facts[] = [
             'icon' => 'clock',
             'label' => $open ? __('Open now') : __('Closed now'),
-            'value' => $todayHours !== '' ? $todayHours : __('Closed today'),
+            'value' => $shownHours !== '' ? $shownHours : __('Closed today'),
             'href' => null,
             'tone' => $open ? 'open' : 'shut',
             'ltr' => true,
@@ -109,7 +114,7 @@
     // The info card under the name shows the hours (the header row has the rest).
     $hoursFact = collect($facts)->firstWhere('icon', 'clock');
 
-    $platforms = \App\Models\RestaurantSocialLink::LABELS;
+    $platforms = RestaurantSocialLink::LABELS;
     $hasContact = $whatsapp_url || $restaurant->socialLinks->isNotEmpty();
 
     $visible = $restaurant->categories->filter(fn ($category) => $category->dishes->isNotEmpty());
@@ -627,7 +632,7 @@
             dineIn: @js($dine_in ?? false),
             // An order placed in the menu waits for someone to read it, so
             // outside the hours the cart only shows what was picked.
-            closed: @js(! $hours->isEmpty() && ! $hours->isOpenNow()),
+            closed: @js($open === false),
             @else
             // What this WhatsApp cart asks for: each off, optional or required.
             asks: @js($whatsapp_asks ?? null),

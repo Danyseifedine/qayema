@@ -13,6 +13,9 @@ in the owner's language). Hours saved before shifts (one `{open, close}` per
 day) read as one shift and take the new shape on the next save; a request in
 that shape (an app not yet updated) is taken as one shift too. The menu shows
 today's shifts ("12:00 - 15:00, 18:00 - 23:00") and is closed between them;
+just after midnight, while last night's shift is still going, it shows that
+night's shifts instead (`currentShifts()`, twinned in `public/js/menu-hours.js`),
+so "Open now" never sits beside the next day's hours or "Closed today";
 the search data has one `OpeningHoursSpecification` per shift. The dashboard
 (`opening-hours-section.tsx`) and the owner app (`restaurant_screen.dart`)
 edit them the same way.

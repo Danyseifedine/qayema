@@ -48,6 +48,10 @@ class AdminPanelProvider extends PanelProvider
             ->login()
             ->colors([
                 'primary' => Color::Amber,
+                // The social links' badges, in their networks' own colours.
+                'pink' => Color::Pink,
+                'sky' => Color::Sky,
+                'blue' => Color::Blue,
             ])
             ->resources([
                 UserResource::class,

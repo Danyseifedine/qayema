@@ -34,7 +34,7 @@ class SocialLinkEdgeTest extends TestCase
 
     public function test_every_supported_platform_is_accepted_and_others_are_not(): void
     {
-        $this->defaultPackageSets(Feature::SocialLinkLimit, 10);
+        $this->defaultPackageSets(Feature::SocialLinkLimit, count(RestaurantSocialLink::platforms()));
         $owner = $this->owner();
 
         foreach (RestaurantSocialLink::platforms() as $platform) {

@@ -59,7 +59,7 @@ class OpeningHoursTest extends TestCase
 
         $this->atUtc('2026-01-07 10:00');
         $this->assertFalse($hours->isOpenNow());
-        $this->assertSame([], $hours->todayShifts());
+        $this->assertSame([], $hours->currentShifts());
     }
 
     public function test_a_kitchen_that_shuts_after_midnight_is_still_open_at_one(): void
@@ -84,7 +84,77 @@ class OpeningHoursTest extends TestCase
         ]);
 
         $this->atUtc('2026-01-07 08:00');
-        $this->assertSame([['open' => '09:00', 'close' => '17:00']], $hours->todayShifts());
+        $this->assertSame([['open' => '09:00', 'close' => '17:00']], $hours->currentShifts());
+    }
+
+    public function test_just_after_midnight_the_night_still_running_is_the_one_shown(): void
+    {
+        // Monday 13:00 to 01:00, Tuesday closed. 2026-01-05 is a Monday.
+        $hours = $this->hours(['mon' => [['open' => '13:00', 'close' => '01:00']], 'tue' => null]);
+
+        // Tuesday 00:30 Beirut: open, and Monday's night is what is shown,
+        // never "Closed today" beside "Open now".
+        $this->atUtc('2026-01-05 22:30');
+        $this->assertTrue($hours->isOpenNow());
+        $this->assertSame([['open' => '13:00', 'close' => '01:00']], $hours->currentShifts());
+
+        // Tuesday 01:30 Beirut: the night is over, so it is Tuesday's (none).
+        $this->atUtc('2026-01-05 23:30');
+        $this->assertFalse($hours->isOpenNow());
+        $this->assertSame([], $hours->currentShifts());
+    }
+
+    public function test_once_the_night_is_over_the_days_own_shifts_are_shown(): void
+    {
+        $hours = $this->hours([
+            'mon' => [['open' => '13:00', 'close' => '01:00']],
+            'tue' => [['open' => '12:00', 'close' => '15:00']],
+        ]);
+
+        // Tuesday 00:30 Beirut: still Monday's night.
+        $this->atUtc('2026-01-05 22:30');
+        $this->assertSame([['open' => '13:00', 'close' => '01:00']], $hours->currentShifts());
+
+        // Tuesday 09:00 Beirut: Tuesday's lunch.
+        $this->atUtc('2026-01-06 07:00');
+        $this->assertSame([['open' => '12:00', 'close' => '15:00']], $hours->currentShifts());
+    }
+
+    public function test_after_midnight_a_split_night_shows_both_its_shifts(): void
+    {
+        $hours = $this->hours(['mon' => [['open' => '12:00', 'close' => '15:00'], ['open' => '19:00', 'close' => '01:00']], 'tue' => null]);
+
+        // Tuesday 00:30 Beirut.
+        $this->atUtc('2026-01-05 22:30');
+        $this->assertSame([['open' => '12:00', 'close' => '15:00'], ['open' => '19:00', 'close' => '01:00']], $hours->currentShifts());
+    }
+
+    public function test_a_close_at_midnight_ends_with_the_day(): void
+    {
+        $hours = $this->hours(['mon' => [['open' => '18:00', 'close' => '00:00']], 'tue' => [['open' => '12:00', 'close' => '15:00']]]);
+
+        // Tuesday 00:00 Beirut: the closing minute itself, still Monday's.
+        $this->atUtc('2026-01-05 22:00');
+        $this->assertTrue($hours->isOpenNow());
+        $this->assertSame([['open' => '18:00', 'close' => '00:00']], $hours->currentShifts());
+
+        // Tuesday 00:01: closed, and Tuesday's lunch is shown.
+        $this->atUtc('2026-01-05 22:01');
+        $this->assertFalse($hours->isOpenNow());
+        $this->assertSame([['open' => '12:00', 'close' => '15:00']], $hours->currentShifts());
+    }
+
+    public function test_the_closing_minute_counts_as_open_to_its_last_second(): void
+    {
+        // As the guest's phone judges it (menu-hours.js, to the minute), so
+        // the cart and the server never disagree at 01:00:30.
+        $hours = $this->hours(['mon' => [['open' => '13:00', 'close' => '01:00']]]);
+
+        $this->atUtc('2026-01-05 23:00:30');
+        $this->assertTrue($hours->isOpenNow());
+
+        $this->atUtc('2026-01-05 23:01:00');
+        $this->assertFalse($hours->isOpenNow());
     }
 
     public function test_rubbish_is_dropped_rather_than_stored(): void
@@ -176,7 +246,7 @@ class OpeningHoursTest extends TestCase
 
         $this->atUtc('2026-01-07 20:00');
         $this->assertTrue($hours->isOpenNow());
-        $this->assertSame([['open' => '12:00', 'close' => '15:00'], ['open' => '18:00', 'close' => '23:00']], $hours->todayShifts());
+        $this->assertSame([['open' => '12:00', 'close' => '15:00'], ['open' => '18:00', 'close' => '23:00']], $hours->currentShifts());
     }
 
     public function test_a_late_last_shift_runs_into_the_next_morning(): void

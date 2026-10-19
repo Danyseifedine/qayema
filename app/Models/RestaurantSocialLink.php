@@ -14,7 +14,8 @@ class RestaurantSocialLink extends Model
     /**
      * The platforms the menu can render an icon for, with the name it shows.
      * Mirrored by the dashboard's `SOCIAL_PLATFORMS`; each needs an icon in
-     * `MenuIcons` and a colour in the menu's stylesheet.
+     * `MenuIcons`, and a colour in the menu's stylesheet unless its mark keeps
+     * the text colour (X, TikTok, Threads, Snapchat).
      */
     public const LABELS = [
         'instagram' => 'Instagram',

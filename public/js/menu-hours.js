@@ -52,28 +52,45 @@
         return config.week[DAYS[(day + 7) % 7]] || [];
     }
 
-    /**
-     * Within a shift, both ends included. One whose close is at or before its
-     * open runs past midnight, so yesterday's last shift can still be open.
-     */
-    function isOpen() {
-        var at = now();
-
-        return shiftsOn(at.day).some(function (shift) {
-            var opens = minutesOf(shift.open);
-            var closes = minutesOf(shift.close);
-
-            return closes <= opens ? at.minutes >= opens : at.minutes >= opens && at.minutes <= closes;
-        }) || shiftsOn(at.day - 1).some(function (shift) {
+    /** Yesterday's last shift ran past midnight and has not closed yet. */
+    function nightStillOpen(at) {
+        return shiftsOn(at.day - 1).some(function (shift) {
             var closes = minutesOf(shift.close);
 
             return closes <= minutesOf(shift.open) && at.minutes <= closes;
         });
     }
 
+    /**
+     * Within a shift, both ends included. One whose close is at or before its
+     * open runs past midnight, so yesterday's last shift can still be open.
+     * The cart calls it with no clock of its own.
+     */
+    function isOpen(at) {
+        at = at || now();
+
+        return shiftsOn(at.day).some(function (shift) {
+            var opens = minutesOf(shift.open);
+            var closes = minutesOf(shift.close);
+
+            return closes <= opens ? at.minutes >= opens : at.minutes >= opens && at.minutes <= closes;
+        }) || nightStillOpen(at);
+    }
+
+    /**
+     * The shifts to show: today's, or yesterday's while its last shift, run
+     * past midnight, is still going (OpeningHours::currentShifts()), so
+     * "Open now" is never beside tomorrow's hours or "Closed today".
+     */
+    function currentShifts(at) {
+        return nightStillOpen(at) ? shiftsOn(at.day - 1) : shiftsOn(at.day);
+    }
+
     function paint() {
-        var open = isOpen();
-        var today = shiftsOn(now().day).map(function (shift) {
+        // One reading of the clock, so the label and the hours agree.
+        var at = now();
+        var open = isOpen(at);
+        var shown = currentShifts(at).map(function (shift) {
             return shift.open + ' - ' + shift.close;
         }).join(', ');
 
@@ -84,7 +101,7 @@
         });
 
         document.querySelectorAll('[data-hours-value]').forEach(function (value) {
-            value.textContent = today || config.labels.closedToday;
+            value.textContent = shown || config.labels.closedToday;
         });
     }
 

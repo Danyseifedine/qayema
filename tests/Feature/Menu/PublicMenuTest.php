@@ -9,6 +9,7 @@ use App\Models\Restaurant;
 use App\Models\Template;
 use App\Services\Menu\OpeningHours;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\Support\CreatesOwners;
 use Tests\TestCase;
 
@@ -139,6 +140,28 @@ class PublicMenuTest extends TestCase
 
         $this->travelTo(now('UTC')->setTime(19, 0));
         $this->assertStringContainsString('Open now', $this->get(route('public.menu', $restaurant->slug))->getContent());
+    }
+
+    public function test_just_after_midnight_the_menu_shows_the_night_still_running(): void
+    {
+        // Monday 13:00 to 01:00, Tuesday closed. 2026-01-06 is a Tuesday.
+        $restaurant = $this->published([
+            'opening_hours' => ['mon' => [['open' => '13:00', 'close' => '01:00']], 'tue' => null],
+            'timezone' => 'UTC',
+        ]);
+
+        $this->travelTo(Carbon::parse('2026-01-06 00:30', 'UTC'));
+        $html = $this->get(route('public.menu', $restaurant->slug))->assertOk()->getContent();
+
+        $this->assertStringContainsString('Open now', $html);
+        $this->assertStringContainsString('data-hours-value>13:00 - 01:00<', $html);
+        $this->assertStringNotContainsString('data-hours-value>Closed today<', $html);
+
+        $this->travelTo(Carbon::parse('2026-01-06 01:30', 'UTC'));
+        $html = $this->get(route('public.menu', $restaurant->slug))->assertOk()->getContent();
+
+        $this->assertStringContainsString('Closed now', $html);
+        $this->assertStringContainsString('data-hours-value>Closed today<', $html);
     }
 
     public function test_the_category_filter_opens_on_all(): void
