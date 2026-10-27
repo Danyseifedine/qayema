@@ -8,7 +8,6 @@ use App\Services\Ai\WritingHelp;
 use App\Services\Ai\WritingHelpCredits;
 use App\Services\Ai\WritingHelpLog;
 use App\Services\Ai\WritingHelpSetup;
-use App\Services\Ai\WritingHelpUses;
 use Closure;
 use Illuminate\Contracts\Cache\Lock;
 use Illuminate\Http\JsonResponse;
@@ -19,28 +18,26 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * The way into the writing help, in this order:
  *
- * 1. The day's uses (WritingHelpUses): none left is a 429 at once.
- * 2. A request waits on the AI provider for seconds while it holds a PHP
+ * 1. A request waits on the AI provider for seconds while it holds a PHP
  *    worker, the same workers the public menus need. So one runs at a time
  *    per restaurant (a double click or a second tab waits its turn), and at
  *    most config('services.writing_help.at_once') across the server. Past
  *    either, an instant "busy, try again" keeps workers free for guests.
- * 3. The month's credits (WritingHelpCredits), checked in the
+ * 2. The month's credits (WritingHelpCredits), checked in the
  *    restaurant's turn so two requests cannot both take the last ones: the
  *    action's credits must be left, and the most it could cost must fit in
  *    what they are worth. Either missing is a 429 that names credits only
  *    (creditsSpent()).
- * 4. Then the use is taken, and given back when the answer is not a
- *    success (the provider failed, the request was refused): an owner only
- *    spends a use or credits on text they got. A busy answer never took one.
- * 5. The request goes in the usage log (WritingHelpLog) with its credits
+ * 3. An owner only spends credits on text they got: an answer that is not
+ *    a success (the provider failed, the request was refused) costs none,
+ *    and a busy answer never took any.
+ * 4. The request goes in the usage log (WritingHelpLog) with its credits
  *    and the tokens its calls spent, a failure's included, and the answer
  *    says the credits left.
  */
 class PaceWritingHelp
 {
     public function __construct(
-        private readonly WritingHelpUses $uses,
         private readonly WritingHelpLog $log,
         private readonly WritingHelp $help,
         private readonly WritingHelpCredits $credits,
@@ -60,10 +57,6 @@ class PaceWritingHelp
         // nothing to count or wait for.
         if ($restaurant === null || ! WritingHelpSetup::isOnFor($restaurant)) {
             return $next($request);
-        }
-
-        if ($this->uses->left($restaurant) === 0) {
-            return $this->spent($restaurant);
         }
 
         $turn = Cache::lock("writing-help:restaurant:{$restaurant->id}", self::HOLD_SECONDS);
@@ -89,13 +82,8 @@ class PaceWritingHelp
                     return $this->creditsSpent($restaurant, $refusal);
                 }
 
-                $this->uses->take($restaurant);
                 $response = $next($request);
                 $used = $response->isSuccessful();
-
-                if (! $used) {
-                    $this->uses->giveBack($restaurant);
-                }
 
                 [$inputTokens, $outputTokens] = $this->help->takeTokens();
                 $this->log->record($restaurant, $used, $inputTokens, $outputTokens, $action, $action->credits());
@@ -129,19 +117,6 @@ class PaceWritingHelp
         }
 
         return null;
-    }
-
-    /** Every use today is spent; `left` is 0 so the dashboard can say so. */
-    private function spent(Restaurant $restaurant): Response
-    {
-        $wait = $this->uses->backIn($restaurant);
-
-        return response()->json([
-            'message' => __('You have used today\'s writing help. It comes back tomorrow.'),
-            'code' => 'writing_help_limit',
-            'retry_after' => $wait,
-            'left' => 0,
-        ], 429, ['Retry-After' => $wait]);
     }
 
     /**

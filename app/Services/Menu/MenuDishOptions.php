@@ -2,7 +2,6 @@
 
 namespace App\Services\Menu;
 
-use App\Enums\BuildShape;
 use App\Models\Dish;
 use App\Models\DishAddon;
 use App\Models\DishVariant;
@@ -39,7 +38,7 @@ class MenuDishOptions
      * @return array<int, array{
      *     variants: array<int, array{id: int, name: string, options: array<int, array{id: int, name: string, price: string}>}>,
      *     addons: array<int, array{id: int, name: string, price: string}>,
-     *     builds: array<int, array{id: int, name: string, shape: string, parts: list<int>, choices: list<array{key: string, name: string, price: string, part_prices: array<array-key, mixed>}>}>,
+     *     builds: array<int, array{id: int, name: string, shape: string, parts: list<int>, sizes: list<array{key: string, name: string}>, choices: list<array{key: string, name: string, price: string|null, part_prices: array<array-key, mixed>, sizes: array<string, string>}>}>,
      *     lowest: string,
      *     priced: bool,
      * }> dish id => its choices; `priced` false means the first variant's
@@ -62,7 +61,7 @@ class MenuDishOptions
                 ? $dish->variants->filter(fn (DishVariant $variant): bool => $variant->options->count() >= 2)->values()
                 : collect();
             $addons = $showsAddons ? $dish->addons : collect();
-            $builds = $showsBuilds ? self::builds($dish, $byCategory, $name) : [];
+            $builds = $showsBuilds ? self::builds($dish, $byCategory, $name, MenuLanguages::main($restaurant)) : [];
 
             if ($variants->isEmpty() && $builds === [] && ($addons->isEmpty() || $dish->price === null)) {
                 continue;
@@ -78,7 +77,7 @@ class MenuDishOptions
             }
 
             foreach ($builds as $build) {
-                $lowest = bcadd($lowest, BuildPrice::cheapest(BuildShape::from($build['shape']), $build['parts'], $build['choices']), 2);
+                $lowest = bcadd($lowest, $build['cheapest'], 2);
             }
 
             $choices[$dish->id] = [
@@ -96,7 +95,7 @@ class MenuDishOptions
                     'name' => $name($addon),
                     'price' => (string) $addon->price,
                 ])->values()->all(),
-                'builds' => $builds,
+                'builds' => array_map(fn (array $build): array => array_diff_key($build, ['cheapest' => true]), $builds),
                 'lowest' => $lowest,
                 // Its builds price a dish with no price of its own; its
                 // variants are then extras too.
@@ -108,21 +107,38 @@ class MenuDishOptions
     }
 
     /**
-     * A dish's builds with two choices or more, in the guest's language.
+     * A dish's builds guests are offered (BuildChoices::offered()), in the
+     * guest's language: its sizes, when its choices are priced by size, and
+     * each choice with its price, or its price at each size. `cheapest` is
+     * the least it adds, at its cheapest size (taken off before the page).
      *
      * @param  Collection<int|string, Collection<int, Dish>>  $byCategory  the menu's dishes by category
      * @param  \Closure(\Illuminate\Database\Eloquent\Model): string  $name
-     * @return list<array{id: int, name: string, shape: string, parts: list<int>, choices: list<array{key: string, name: string, price: string, part_prices: array<array-key, mixed>}>}>
+     * @return list<array{id: int, name: string, shape: string, parts: list<int>, sizes: list<array{key: string, name: string}>, choices: list<array{key: string, name: string, price: string|null, part_prices: array<array-key, mixed>, sizes: array<string, string>}>, cheapest: string}>
      */
-    private static function builds(Dish $dish, Collection $byCategory, \Closure $name): array
+    private static function builds(Dish $dish, Collection $byCategory, \Closure $name, string $main): array
     {
         $builds = [];
 
         foreach ($dish->builds as $build) {
-            $choices = BuildChoices::of($build, $dish, $byCategory->get($build->category_id ?? '', collect()));
+            $choices = BuildChoices::of($build, $dish, $byCategory->get($build->category_id ?? '', collect()), $main);
 
-            if ($choices->count() < 2) {
+            if (! BuildChoices::offered($choices)) {
                 continue;
+            }
+
+            $sizes = BuildChoices::sizes($choices);
+            $cheapest = null;
+
+            foreach ($sizes === [] ? [null] : array_keys($sizes) as $size) {
+                $at = BuildChoices::forSize($choices, $size === null ? null : (string) $size);
+
+                if ($at->count() < 2) {
+                    continue;
+                }
+
+                $price = BuildPrice::cheapest($build->shape, $build->partCounts(), $at->values()->all());
+                $cheapest = $cheapest === null || bccomp($price, $cheapest, 2) < 0 ? $price : $cheapest;
             }
 
             $builds[] = [
@@ -130,13 +146,21 @@ class MenuDishOptions
                 'name' => $name($build),
                 'shape' => $build->shape->value,
                 'parts' => $build->partCounts(),
+                'sizes' => array_map(
+                    fn (string $key, DishVariantOption $option): array => ['key' => $key, 'name' => $name($option)],
+                    array_map('strval', array_keys($sizes)),
+                    array_values($sizes),
+                ),
                 'choices' => $choices->map(fn (array $choice): array => [
                     'key' => $choice['key'],
                     'name' => $name($choice['model']),
                     'price' => $choice['price'],
                     // An object for the sheet, empty or not.
                     'part_prices' => (array) ($choice['part_prices'] ?? []),
+                    // Its price at each size, for a dish priced by size.
+                    'sizes' => array_map(fn (array $size): string => $size['price'], $choice['sizes']),
                 ])->values()->all(),
+                'cheapest' => $cheapest ?? '0.00',
             ];
         }
 

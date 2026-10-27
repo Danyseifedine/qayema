@@ -8,9 +8,7 @@ use App\Ai\Agents\RestaurantDescriptionWriter;
 use App\Enums\Feature;
 use App\Models\Category;
 use App\Models\Dish;
-use App\Models\FeatureGrant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Testing\TestResponse;
 use Laravel\Ai\Exceptions\ProviderOverloadedException;
@@ -63,7 +61,7 @@ class WritingHelpTest extends TestCase
         $this->actingAs($owner->user)
             ->translate(['text' => 'Fattoush salad', 'from' => 'en', 'to' => 'ar'])
             ->assertOk()
-            ->assertExactJson(['data' => ['text' => 'سلطة الفتوش', 'left' => 9, 'credits_left' => 499]]);
+            ->assertExactJson(['data' => ['text' => 'سلطة الفتوش', 'credits_left' => 499]]);
 
         MenuTranslator::assertPrompted(fn (AgentPrompt $prompt): bool => $prompt->prompt === 'Fattoush salad'
             && $prompt->timeout === 10
@@ -318,9 +316,8 @@ class WritingHelpTest extends TestCase
         $this->actingAs($owner->user)->describeRestaurant(['language' => 'en'])->assertOk();
     }
 
-    public function test_a_busy_answer_costs_none_of_the_days_uses(): void
+    public function test_a_busy_answer_costs_no_credits(): void
     {
-        $this->defaultPackageSets(Feature::WritingHelpLimit, 1);
         CategoryDescriptionWriter::fake(fn (): array => ['text' => 'Warm bowls of soup to start your meal or share across the table.']);
         $owner = $this->owner();
         $running = Cache::lock("writing-help:restaurant:{$owner->id}", 30);
@@ -329,8 +326,8 @@ class WritingHelpTest extends TestCase
         $this->actingAs($owner->user)->describe(['name' => 'Soups', 'language' => 'en'])->assertStatus(503);
 
         $running->release();
-        $this->actingAs($owner->user)->describe(['name' => 'Soups', 'language' => 'en'])->assertOk();
-        $this->actingAs($owner->user)->describe(['name' => 'Soups', 'language' => 'en'])->assertTooManyRequests();
+        // Only the description that was written took its three credits.
+        $this->actingAs($owner->user)->describe(['name' => 'Soups', 'language' => 'en'])->assertOk()->assertJsonPath('data.credits_left', 497);
     }
 
     public function test_the_model_is_the_configured_one_or_else_the_providers_cheapest(): void
@@ -364,7 +361,7 @@ class WritingHelpTest extends TestCase
         $this->actingAs($owner->user)->describeRestaurant(['language' => 'en'])->assertNotFound();
 
         config(['services.writing_help.provider' => 'anthropic']);
-        $this->actingAs($owner->user)->getJson(route('api.user'))->assertJsonPath('data.restaurant.writing_help.limit', 10)->assertJsonPath('data.restaurant.writing_help.left', 10);
+        $this->actingAs($owner->user)->getJson(route('api.user'))->assertJsonPath('data.restaurant.writing_help.credits.left', 500);
 
         MenuTranslator::assertNeverPrompted();
     }
@@ -394,88 +391,23 @@ class WritingHelpTest extends TestCase
             ->assertJsonPath('code', 'writing_help_failed');
     }
 
-    public function test_a_package_with_no_daily_uses_has_no_writing_help(): void
+    public function test_there_is_no_daily_cap_only_the_months_credits(): void
     {
-        $this->defaultPackageSets(Feature::WritingHelpLimit, 0);
-        CategoryDescriptionWriter::fake();
-        $owner = $this->owner();
-
-        $this->actingAs($owner->user)->getJson(route('api.user'))->assertJsonPath('data.restaurant.writing_help', null);
-        $this->actingAs($owner->user)->describe(['name' => 'Soups', 'language' => 'en'])->assertNotFound();
-        $this->actingAs($owner->user)->describeRestaurant(['language' => 'en'])->assertNotFound();
-
-        CategoryDescriptionWriter::assertNeverPrompted();
-    }
-
-    public function test_an_unlimited_package_has_no_daily_cap(): void
-    {
-        $this->defaultPackageSets(Feature::WritingHelpLimit, null);
         CategoryDescriptionWriter::fake(fn (): array => ['text' => 'Warm bowls of soup to start your meal or share across the table.']);
         $owner = $this->owner();
 
-        foreach (range(1, 5) as $use) {
+        // Ten descriptions in one day: each only takes its three credits.
+        foreach (range(1, 10) as $use) {
             $this->actingAs($owner->user)->describe(['name' => 'Soups', 'language' => 'en'])->assertOk();
         }
-        $this->actingAs($owner->user)->getJson(route('api.user'))->assertJsonPath('data.restaurant.writing_help.limit', null)->assertJsonPath('data.restaurant.writing_help.left', null);
-        $this->actingAs($owner->user)->describe(['name' => 'Soups', 'language' => 'en'])->assertJsonPath('data.left', null);
-    }
-
-    public function test_a_grant_raises_one_restaurants_daily_uses(): void
-    {
-        $this->defaultPackageSets(Feature::WritingHelpLimit, 1);
-        CategoryDescriptionWriter::fake(fn (): array => ['text' => 'Warm bowls of soup to start your meal or share across the table.']);
-        $owner = $this->owner();
-        FeatureGrant::factory()->create([
-            'restaurant_id' => $owner->id,
-            'feature' => Feature::WritingHelpLimit->value,
-            'value' => 2,
-        ]);
-
-        // A grant adds to the package's number: 1 + 2.
-        foreach (range(1, 3) as $use) {
-            $this->actingAs($owner->user)->describe(['name' => 'Soups', 'language' => 'en'])->assertOk();
-        }
-        $this->actingAs($owner->user)->describe(['name' => 'Soups', 'language' => 'en'])->assertTooManyRequests();
-    }
-
-    public function test_each_answer_and_the_session_say_what_is_left(): void
-    {
-        $this->defaultPackageSets(Feature::WritingHelpLimit, 3);
-        CategoryDescriptionWriter::fake(fn (): array => ['text' => 'Warm bowls of soup to start your meal or share across the table.']);
-        $owner = $this->owner();
-
-        $this->actingAs($owner->user)->describe(['name' => 'Soups', 'language' => 'en'])->assertJsonPath('data.left', 2);
-        $this->actingAs($owner->user)->describe(['name' => 'Soups', 'language' => 'en'])->assertJsonPath('data.left', 1);
         $this->actingAs($owner->user)->getJson(route('api.user'))
-            ->assertJsonPath('data.restaurant.writing_help.limit', 3)->assertJsonPath('data.restaurant.writing_help.left', 1);
+            ->assertJsonPath('data.restaurant.writing_help.credits.left', 470)
+            ->assertJsonMissingPath('data.restaurant.writing_help.limit')
+            ->assertJsonMissingPath('data.restaurant.writing_help.left');
     }
 
-    public function test_once_spent_the_answer_says_none_left_and_when_they_come_back(): void
+    public function test_a_use_that_came_to_nothing_takes_no_credits(): void
     {
-        $this->defaultPackageSets(Feature::WritingHelpLimit, 1);
-        CategoryDescriptionWriter::fake(fn (): array => ['text' => 'Warm bowls of soup to start your meal or share across the table.']);
-        $owner = $this->owner(['timezone' => 'Asia/Tokyo']);
-        $this->travelTo(Carbon::parse('2026-10-11 21:00', 'Asia/Tokyo'));
-
-        $this->actingAs($owner->user)->describe(['name' => 'Soups', 'language' => 'en'])->assertJsonPath('data.left', 0);
-        $this->travel(1)->hours();
-
-        // Back at the restaurant's midnight, two hours away.
-        $this->actingAs($owner->user)
-            ->describe(['name' => 'Soups', 'language' => 'en'])
-            ->assertTooManyRequests()
-            ->assertJsonPath('code', 'writing_help_limit')
-            ->assertJsonPath('left', 0)
-            ->assertJsonPath('retry_after', 2 * 3600)
-            ->assertHeader('Retry-After', (string) (2 * 3600));
-
-        $this->travel(2)->hours();
-        $this->actingAs($owner->user)->describe(['name' => 'Soups', 'language' => 'en'])->assertOk();
-    }
-
-    public function test_a_use_that_came_to_nothing_is_given_back(): void
-    {
-        $this->defaultPackageSets(Feature::WritingHelpLimit, 2);
         MenuTranslator::fake(fn () => throw ProviderOverloadedException::forProvider('anthropic'));
         $owner = $this->owner(['second_locale' => 'ar']);
 
@@ -483,26 +415,17 @@ class WritingHelpTest extends TestCase
         $this->actingAs($owner->user)->translate(['text' => 'Soup', 'from' => 'en', 'to' => 'ar'])->assertStatus(503);
         $this->actingAs($owner->user)->translate(['text' => 'Soup', 'from' => 'en', 'to' => 'fr'])->assertUnprocessable();
 
-        $this->actingAs($owner->user)->getJson(route('api.user'))
-            ->assertJsonPath('data.restaurant.writing_help.limit', 2)->assertJsonPath('data.restaurant.writing_help.left', 2);
+        $this->actingAs($owner->user)->getJson(route('api.user'))->assertJsonPath('data.restaurant.writing_help.credits.left', 500);
     }
 
-    public function test_each_restaurant_has_its_own_daily_allowance(): void
+    public function test_each_restaurant_spends_its_own_credits(): void
     {
-        $this->defaultPackageSets(Feature::WritingHelpLimit, 2);
         CategoryDescriptionWriter::fake(fn (): array => ['text' => 'Warm bowls of soup to start your meal or share across the table.']);
         $owner = $this->owner();
         $other = $this->owner();
 
-        $this->actingAs($owner->user)->describe(['name' => 'Soups', 'language' => 'en'])->assertOk();
-        $this->actingAs($owner->user)->describe(['name' => 'Soups', 'language' => 'en'])->assertOk();
-        $this->actingAs($owner->user)
-            ->describe(['name' => 'Soups', 'language' => 'en'])
-            ->assertTooManyRequests()
-            ->assertJsonPath('code', 'writing_help_limit')
-            ->assertJsonPath('message', 'You have used today\'s writing help. It comes back tomorrow.');
-
-        $this->actingAs($other->user)->describe(['name' => 'Soups', 'language' => 'en'])->assertOk();
+        $this->actingAs($owner->user)->describe(['name' => 'Soups', 'language' => 'en'])->assertJsonPath('data.credits_left', 497);
+        $this->actingAs($other->user)->getJson(route('api.user'))->assertJsonPath('data.restaurant.writing_help.credits.left', 500);
     }
 
     public function test_only_a_signed_in_owner_with_a_restaurant(): void

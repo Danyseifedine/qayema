@@ -37,6 +37,28 @@ grill of two meats and "pick two sides" are others.
   - **Its own list:** `dish_build_choices` without a dish, keyed
     `c<choiceId>`, each named and priced, 2 to 30.
   - A build left with fewer than two choices is not offered.
+- **Sizes** (a pizza priced by size): while variants are on, a category dish
+  with no price of its own is offered too when its first variant's options
+  are full prices (Small $8, Large $12).
+  - A size's key is its option name in the menu's main language, trimmed and
+    lower case (`BuildChoices::sizes()`), so "Large" on Margherita and
+    " LARGE " on Pepperoni are one size. The build's sizes are every key its
+    choices have, in the order first met.
+  - The guest picks the size first (pills in the sheet, only with more than
+    one size); `BuildChoices::forSize()` then gives each sized dish its price
+    at that size, shares only (its part prices are ignored), leaves out one
+    not made in that size, and keeps a dish with its own price as it is at
+    every size.
+  - A build with sizes is offered when some size has 2 choices or more
+    (`offered()`); the sheet starts at the first such size.
+  - A cart line's build carries `size` (the key); without it, or with one the
+    build lacks, the order is refused like an unfilled build. The snapshot
+    adds `size` (its name) and `size_key`, and the words end "(Large)".
+  - The dashboard twins this in `features/orders/utils/order-edit.ts`
+    (`choicesAt()`, `firstSize()`, a size dropdown in `BuildPicker`); the
+    Build your own editor lists a sized dish with its sizes ("Small $8.00 ·
+    Large $12.00"), asks no part prices for it, and counts it at its
+    cheapest size in "From".
 - **Price** (`App\Services\Menu\BuildPrice`, in whole cents; twinned by
   `public/js/menu-build.js`: change one, change both):
   - **split:** a part pays the price its choice sets for that part size
@@ -76,8 +98,10 @@ grill of two meats and "pick two sides" are others.
   its name and "Make it your way", never a price, opening its sheet like
   any dish with choices. Only a dish whose builds can be filled is drawn.
 - **Menu:** `MenuDishOptions` adds `builds: [{id, name, shape, parts,
-  choices: [{key, name, price, part_prices}]}]` to `#dish-options`.
+  sizes: [{key, name}], choices: [{key, name, price, part_prices, sizes:
+  {key: price}}]}]` to `#dish-options` (`price` null for a sized dish).
   `menu-dish.js` draws each build in the dish sheet:
+  - the sizes as pills, when there is more than one;
   - the part counts as pills;
   - a picker per part (`partPicker()`: a button with the choice and its
     price opening a listbox of every choice, never the browser's dropdown;
@@ -85,7 +109,7 @@ grill of two meats and "pick two sides" are others.
   - the price updating live.
 
   The cart (`menu-cart.js`) keeps a line's `builds: [{build, parts:
-  [keys]}]`, prices and words it through `QAYEMA_BUILD.priced()`, sends it
+  [keys], size?}]`, prices and words it through `QAYEMA_BUILD.priced()`, sends it
   with the order and drops a line the menu no longer allows. The words and
   the "Part :number" labels are translated in every menu language.
 - **Ordering:** `items.*.builds` (`PlaceOrderRequest`, `EditOrderItemsRequest`).
@@ -95,7 +119,7 @@ grill of two meats and "pick two sides" are others.
   - It prices the line with `BuildPrice` and merges identical lines (a build's
     parts keep their order).
   - It snapshots `order_items.options.builds: [{name, shape, parts: [{choice,
-    share}], price, build_id, keys}]`. `builds` appears only on lines that
+    share}], price, build_id, keys, size?, size_key?}]`. `builds` appears only on lines that
     have them, so older snapshots read the same.
   - `OrderItem::built()` words it: "½ Margherita + ½ Pepperoni", "2 ×
     Vanilla, Chocolate". `choices()` gives "Your pizza: …" for WhatsApp, the

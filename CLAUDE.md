@@ -522,7 +522,6 @@ the admin owns the numbers after install):
 |---|---|---|---|---|
 | price a month | free | $7.99 | $10 | talk to us |
 | dishes / categories / social links | 40 / 8 / 1 | 150 / 15 / 2 | 1,000 / 1,000 (fair use, shown as unlimited) / 10 | unlimited |
-| `writing_help_limit` (AI uses a day) | 10 | 100 | 200 | 200 |
 | AI budget a month (`ai_budget_cents`; credits at 0.01¢ each) | $0.05 (500) | $0.75 (7,500) | $1.50 (15,000) | $1.50 (15,000) |
 | `multiple_languages`, `variants`, `addons`, `appearance`, `analytics` | - | ✓ | ✓ | ✓ |
 | `premium_designs`, `qr_studio`, `ordering`, `menu_ordering`, `advanced_analytics`, `offers` | - | - | ✓ | ✓ |
@@ -1105,7 +1104,7 @@ A dish's variants (pick one option of each) and add-ons (pick any), each price a
 
 ## Build your own
 
-A dish built from parts (`build_your_own` flag, on no package: an admin switches it on per restaurant): up to three builds (`DishBuild`), each a part count the guest picks (`split`, a pizza half and half; `pieces`, three scoops) and a choice per part, from a category's dishes or the build's own list (`BuildChoices`), priced by `BuildPrice` (a part pays its set price for that size, else its share; twinned by `public/js/menu-build.js`), charged by `OrderPlacer`, worded "½ Margherita + ½ Pepperoni" (`OrderItem::built()`). A build's dish is a name and an icon in no category, drawn in a row above the menu's search with no price (`menu.partials.builds`). A restaurant may have `build_limit` of them (3 unless an admin sets another). **Full rules: [docs/architecture/build-your-own.md](docs/architecture/build-your-own.md).**
+A dish built from parts (`build_your_own` flag, on no package: an admin switches it on per restaurant): up to three builds (`DishBuild`), each a part count the guest picks (`split`, a pizza half and half; `pieces`, three scoops) and a choice per part, from a category's dishes or the build's own list (`BuildChoices`; a pizza with no price, priced by its first variant's sizes, is offered too: the guest picks the size first and each part takes its share of that size's price), priced by `BuildPrice` (a part pays its set price for that size, else its share; twinned by `public/js/menu-build.js`), charged by `OrderPlacer`, worded "½ Margherita + ½ Pepperoni" (`OrderItem::built()`). A build's dish is a name and an icon in no category, drawn in a row above the menu's search with no price (`menu.partials.builds`). A restaurant may have `build_limit` of them (3 unless an admin sets another). **Full rules: [docs/architecture/build-your-own.md](docs/architecture/build-your-own.md).**
 
 ## Offers
 
@@ -1330,7 +1329,7 @@ A main language (required for every name) plus one optional second language (`mu
 
 ## Writing help (AI)
 
-The dashboard's Translate and Write with AI buttons, through `laravel/ai` (`App\Services\Ai\WritingHelp`, agents in `app/Ai/Agents`). Off until a provider and its key are set; uses a day per package (`writing_help_limit`), counted by `WritingHelpUses`, logged by `WritingHelpLog`; credits a month (`WritingHelpCredits`: a package's AI budget in dollars at what a credit is worth, set at /admin → Settings → AI credits with each action's price; one restaurant's own number is a grant), checked before every call so the real cost never passes what they are worth, and owners only ever see credits; the server checks every answer (lengths, no dashes, no invented claims); `PaceWritingHelp` keeps it from starving the menus. Tests never call a provider. **Full rules: [docs/architecture/writing-help.md](docs/architecture/writing-help.md).**
+The dashboard's Translate and Write with AI buttons, through `laravel/ai` (`App\Services\Ai\WritingHelp`, agents in `app/Ai/Agents`). Off until a provider and its key are set; held to its credits a month alone (no uses a day), logged by `WritingHelpLog`; credits a month (`WritingHelpCredits`: a package's AI budget in dollars at what a credit is worth, set at /admin → Settings → AI credits with each action's price; one restaurant's own number is a grant), checked before every call so the real cost never passes what they are worth, and owners only ever see credits; the server checks every answer (lengths, no dashes, no invented claims); `PaceWritingHelp` keeps it from starving the menus. Tests never call a provider. **Full rules: [docs/architecture/writing-help.md](docs/architecture/writing-help.md).**
 
 ## Not yet built
 

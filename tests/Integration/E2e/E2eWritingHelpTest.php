@@ -7,11 +7,8 @@ use App\Models\Restaurant;
 use App\Services\Ai\WritingHelp;
 use App\Services\Ai\WritingHelpCredits;
 use App\Services\Ai\WritingHelpSetup;
-use App\Services\Ai\WritingHelpUses;
-use Illuminate\Cache\RateLimiter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Tests\E2e\E2eController;
 use Tests\E2e\E2eServiceProvider;
@@ -138,23 +135,6 @@ class E2eWritingHelpTest extends TestCase
         $this->boot(asking: false);
 
         $this->assertSame($default, config('cache.default'));
-    }
-
-    public function test_a_scenario_can_start_with_uses_already_spent_today(): void
-    {
-        $this->boot(asking: false);
-        $store = Cache::store(E2eServiceProvider::WRITING_HELP_CACHE);
-
-        try {
-            $response = app(E2eController::class)->scenario(Request::create('/__e2e/scenario', 'POST', ['package' => 'pro', 'template' => null, 'writing_help_used' => 3]));
-            $restaurant = Restaurant::query()->findOrFail($response->getData(true)['restaurant']['id']);
-
-            $uses = new WritingHelpUses(new RateLimiter($store));
-            $this->assertSame(100, $uses->limit($restaurant));
-            $this->assertSame(97, $uses->left($restaurant));
-        } finally {
-            $store->flush();
-        }
     }
 
     public function test_a_scenario_can_start_with_credits_already_spent_this_month(): void

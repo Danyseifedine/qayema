@@ -64,9 +64,11 @@ class MenuDishBuildsTest extends TestCase
             'name' => 'Your pizza',
             'shape' => 'split',
             'parts' => [2],
+            // Every pizza has a price of its own: no sizes to pick.
+            'sizes' => [],
             'choices' => [
-                ['key' => 'd'.$this->margherita->id, 'name' => 'Margherita', 'price' => '12.00', 'part_prices' => ['2' => '7.00']],
-                ['key' => 'd'.$this->pepperoni->id, 'name' => 'Pepperoni', 'price' => '16.00', 'part_prices' => []],
+                ['key' => 'd'.$this->margherita->id, 'name' => 'Margherita', 'price' => '12.00', 'part_prices' => ['2' => '7.00'], 'sizes' => []],
+                ['key' => 'd'.$this->pepperoni->id, 'name' => 'Pepperoni', 'price' => '16.00', 'part_prices' => [], 'sizes' => []],
             ],
         ]], $sheet['builds']);
         // Two of Margherita's $7 halves: the least it costs.

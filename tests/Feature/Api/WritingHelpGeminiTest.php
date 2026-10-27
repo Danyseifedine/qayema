@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api;
 
 use App\Enums\Feature;
+use App\Models\Package;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -27,7 +28,6 @@ class WritingHelpGeminiTest extends TestCase
         parent::setUp();
 
         $this->defaultPackageIncludes(Feature::MultipleLanguages);
-        $this->defaultPackageSets(Feature::WritingHelpLimit, 5);
         config([
             'services.writing_help.provider' => 'gemini',
             'services.writing_help.model' => null,
@@ -50,9 +50,9 @@ class WritingHelpGeminiTest extends TestCase
         return $this->postJson(route('api.writing.translate'), ['text' => 'Lentil soup', 'from' => 'en', 'to' => 'ar']);
     }
 
-    private function leftToday($owner): ?int
+    private function creditsLeft($owner): ?int
     {
-        return $this->actingAs($owner->user)->getJson(route('api.user'))->json('data.restaurant.writing_help.left');
+        return $this->actingAs($owner->user)->getJson(route('api.user'))->json('data.restaurant.writing_help.credits.left');
     }
 
     public function test_a_translation_is_one_interaction_with_the_key_the_cheapest_model_and_the_text(): void
@@ -62,7 +62,7 @@ class WritingHelpGeminiTest extends TestCase
 
         $this->actingAs($owner->user)->translate()
             ->assertOk()
-            ->assertExactJson(['data' => ['text' => 'شوربة عدس', 'left' => 4, 'credits_left' => 499]]);
+            ->assertExactJson(['data' => ['text' => 'شوربة عدس', 'credits_left' => 499]]);
 
         Http::assertSentCount(1);
         Http::assertSent(fn (Request $request): bool => $request->url() === self::INTERACTIONS
@@ -117,7 +117,7 @@ class WritingHelpGeminiTest extends TestCase
 
     /** @param  \Closure(): mixed  $failure */
     #[\PHPUnit\Framework\Attributes\DataProvider('geminiFailures')]
-    public function test_every_way_gemini_fails_is_try_again_and_costs_no_use(\Closure $failure): void
+    public function test_every_way_gemini_fails_is_try_again_and_costs_no_credits(\Closure $failure): void
     {
         Http::fake([self::INTERACTIONS => $failure()]);
         $owner = $this->owner(['second_locale' => 'ar']);
@@ -129,7 +129,7 @@ class WritingHelpGeminiTest extends TestCase
                 'code' => 'writing_help_failed',
             ]);
 
-        $this->assertSame(5, $this->leftToday($owner));
+        $this->assertSame(500, $this->creditsLeft($owner));
     }
 
     public function test_an_answer_that_is_not_the_asked_shape_is_try_again(): void
@@ -144,13 +144,13 @@ class WritingHelpGeminiTest extends TestCase
             ->assertStatus(503)
             ->assertJsonPath('code', 'writing_help_failed');
 
-        $this->assertSame(5, $this->leftToday($owner));
+        $this->assertSame(500, $this->creditsLeft($owner));
     }
 
     public function test_no_request_leaves_the_server_while_the_writing_help_is_off(): void
     {
         Http::fake();
-        $this->defaultPackageSets(Feature::WritingHelpLimit, 0);
+        Package::default()->update(['ai_budget_cents' => 0]);
         $owner = $this->owner(['second_locale' => 'ar']);
 
         $this->actingAs($owner->user)->translate()->assertNotFound();

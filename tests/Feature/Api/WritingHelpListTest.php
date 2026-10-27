@@ -29,7 +29,6 @@ class WritingHelpListTest extends TestCase
         parent::setUp();
 
         $this->defaultPackageIncludes(Feature::MultipleLanguages);
-        $this->defaultPackageSets(Feature::WritingHelpLimit, 30);
         config([
             'services.writing_help.provider' => 'anthropic',
             'services.writing_help.at_once' => 10,
@@ -59,7 +58,7 @@ class WritingHelpListTest extends TestCase
                 ['text' => 'Small', 'from' => 'en', 'to' => 'ar'],
             ])
             ->assertOk()
-            ->assertExactJson(['data' => ['texts' => ['كباب', 'Lamb, rice', 'كبير', 'صغير'], 'left' => 29, 'credits_left' => 499]]);
+            ->assertExactJson(['data' => ['texts' => ['كباب', 'Lamb, rice', 'كبير', 'صغير'], 'credits_left' => 499]]);
 
         // One call each way, the texts as a JSON list, its cap their limits together.
         MenuListTranslator::assertPrompted(fn (AgentPrompt $prompt): bool => $prompt->prompt === '["Kebab","Large","Small"]'
@@ -122,7 +121,8 @@ class WritingHelpListTest extends TestCase
             ->translateMany([['text' => 'Kebab', 'from' => 'en', 'to' => 'ar']])
             ->assertStatus(503)
             ->assertJsonPath('code', 'writing_help_failed');
-        $this->actingAs($owner->user)->getJson('/api/user')->assertJsonPath('data.restaurant.writing_help.left', 30);
+        // Nothing was given, so no credit was taken.
+        $this->actingAs($owner->user)->getJson('/api/user')->assertJsonPath('data.restaurant.writing_help.credits.left', 500);
     }
 
     public function test_a_provider_that_fails_is_one_clear_answer_to_try_again(): void

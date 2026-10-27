@@ -14,15 +14,12 @@ use App\Models\Restaurant;
 use App\Models\Template;
 use App\Models\User;
 use App\Models\WritingHelpDay;
-use App\Services\Ai\WritingHelpUses;
 use App\Services\Packages\PackageAssigner;
 use Carbon\CarbonImmutable;
-use Illuminate\Cache\RateLimiter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 
@@ -54,9 +51,7 @@ class E2eController extends Controller
      * visits (count), qr_scans (count), settings {key: value} for the
      * design, qr_settings {…}, logo (bool), writing_help_days [{days_ago,
      * uses, input_tokens, output_tokens, cost, credits}] (logged AI use, its
-     * credits counting against the month's), writing_help_used (count: the AI
-     * uses already spent today, in the store the writing help's requests
-     * count in, E2eServiceProvider::WRITING_HELP_CACHE), overrides
+     * credits counting against the month's), overrides
      * [{feature, value}] (an admin's set grant: a limit, null unlimited, or a
      * flag 0 off / 1 on), price_cents (the restaurant's own price), offers
      * [{title, description, placements, action, action_url, show_again,
@@ -200,11 +195,6 @@ class E2eController extends Controller
                 'cost' => (string) ($row['cost'] ?? '0'),
                 'credits' => (int) ($row['credits'] ?? 0),
             ]);
-        }
-
-        $uses = new WritingHelpUses(new RateLimiter(Cache::store(E2eServiceProvider::WRITING_HELP_CACHE)));
-        for ($i = 0; $i < (int) ($input['writing_help_used'] ?? 0); $i++) {
-            $uses->take($restaurant);
         }
 
         for ($i = 0; $i < (int) ($input['orders'] ?? 0); $i++) {

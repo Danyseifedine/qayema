@@ -6,6 +6,7 @@ use App\Ai\Agents\CategoryDescriptionWriter;
 use App\Ai\Agents\MenuTranslator;
 use App\Ai\Agents\RestaurantDescriptionWriter;
 use App\Enums\Feature;
+use App\Models\Package;
 use App\Support\MenuTextLimits;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -31,7 +32,6 @@ class WritingHelpEdgeTest extends TestCase
         parent::setUp();
 
         $this->defaultPackageIncludes(Feature::MultipleLanguages);
-        $this->defaultPackageSets(Feature::WritingHelpLimit, 30);
         config([
             'services.writing_help.provider' => 'anthropic',
             'services.writing_help.at_once' => 10,
@@ -142,22 +142,10 @@ class WritingHelpEdgeTest extends TestCase
 
     // ---- PaceWritingHelp's order -----------------------------------------
 
-    public function test_a_spent_day_is_said_before_busy(): void
-    {
-        $this->defaultPackageSets(Feature::WritingHelpLimit, 1);
-        $owner = $this->owner();
-        $this->actingAs($owner->user)->postJson(route('api.writing.category-description'), ['name' => 'Soups', 'language' => 'en'])->assertOk();
-        Cache::lock("writing-help:restaurant:{$owner->id}", 30)->get();
-
-        $this->actingAs($owner->user)
-            ->postJson(route('api.writing.category-description'), ['name' => 'Soups', 'language' => 'en'])
-            ->assertTooManyRequests()
-            ->assertJsonPath('code', 'writing_help_limit');
-    }
-
     public function test_writing_help_that_is_off_is_off_even_when_busy(): void
     {
-        $this->defaultPackageSets(Feature::WritingHelpLimit, 0);
+        // No AI budget is no credits, so no writing help at all.
+        Package::default()->update(['ai_budget_cents' => 0]);
         $owner = $this->owner();
         Cache::lock("writing-help:restaurant:{$owner->id}", 30)->get();
 
@@ -207,7 +195,8 @@ class WritingHelpEdgeTest extends TestCase
         $this->actingAs($owner->user)->postJson(route('api.writing.translate'), ['text' => 'Soup', 'from' => 'en', 'to' => 'fr'])->assertStatus(503);
         $this->actingAs($owner->user)->postJson(route('api.writing.translate'), ['text' => 'Soup', 'from' => 'en', 'to' => 'fr'])
             ->assertOk()
-            ->assertJsonPath('data.left', 29);
+            // The failure took none of the credits: one is gone, the translation's.
+            ->assertJsonPath('data.credits_left', 499);
     }
 
     public function test_a_busy_restaurant_does_not_hold_up_another(): void
@@ -231,18 +220,5 @@ class WritingHelpEdgeTest extends TestCase
             ->postJson(route('api.writing.category-description'), ['name' => 'Soups', 'language' => 'en'])
             ->assertStatus(503)
             ->assertJsonPath('message', 'المساعدة في الكتابة مشغولة الآن. حاول مرة أخرى بعد قليل.');
-    }
-
-    public function test_the_spent_answer_speaks_arabic_to_an_arabic_dashboard(): void
-    {
-        $this->defaultPackageSets(Feature::WritingHelpLimit, 1);
-        $owner = $this->owner();
-        $this->actingAs($owner->user)->postJson(route('api.writing.category-description'), ['name' => 'Soups', 'language' => 'en']);
-
-        $this->actingAs($owner->user)
-            ->withHeader('Accept-Language', 'ar')
-            ->postJson(route('api.writing.category-description'), ['name' => 'Soups', 'language' => 'en'])
-            ->assertTooManyRequests()
-            ->assertJsonPath('message', 'استخدمت المساعدة في الكتابة المتاحة لليوم. تعود غدًا.');
     }
 }

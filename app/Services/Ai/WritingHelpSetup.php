@@ -11,8 +11,8 @@ use Laravel\Ai\AiManager;
  * switching it on, or to another provider or model, is an .env edit. On only
  * while config('services.writing_help.provider') names a provider whose key
  * is set (a server with no key simply has no AI buttons), and for a
- * restaurant whose package gives it uses (Feature::WritingHelpLimit, 0 for
- * none). The calls themselves are WritingHelp's.
+ * restaurant whose package gives it credits a month (Feature::WritingHelpCredits,
+ * 0 for none). The calls themselves are WritingHelp's.
  */
 class WritingHelpSetup
 {
@@ -23,14 +23,10 @@ class WritingHelpSetup
         return $provider !== null && filled(config("ai.providers.{$provider}.key"));
     }
 
-    /** On for this restaurant: on at all, and neither 0 uses a day nor 0 credits a month. */
+    /** On for this restaurant: on at all, and not 0 credits a month. */
     public static function isOnFor(Restaurant $restaurant): bool
     {
-        $entitlements = $restaurant->entitlements();
-
-        return self::isOn()
-            && $entitlements->limit(Feature::WritingHelpLimit) !== 0
-            && $entitlements->limit(Feature::WritingHelpCredits) !== 0;
+        return self::isOn() && $restaurant->entitlements()->limit(Feature::WritingHelpCredits) !== 0;
     }
 
     public static function provider(): ?string

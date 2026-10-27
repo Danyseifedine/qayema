@@ -24,7 +24,7 @@ final class FeatureFields
     /** Every feature, once, in the groups the section shows. */
     public const GROUPS = [
         'Menu' => [
-            Feature::DishLimit, Feature::CategoryLimit, Feature::SocialLinkLimit, Feature::WritingHelpLimit,
+            Feature::DishLimit, Feature::CategoryLimit, Feature::SocialLinkLimit,
             Feature::WritingHelpCredits, Feature::MultipleLanguages, Feature::Variants, Feature::Addons, Feature::BuildYourOwn,
             Feature::BuildLimit,
         ],

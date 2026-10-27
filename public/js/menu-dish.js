@@ -92,10 +92,15 @@
         return total;
     }
 
+    /** A build's choices at the size picked (all of them for a build with no sizes). */
+    function offeredOf(build) {
+        return window.QAYEMA_BUILD.forSize(build, state.builds[build.id].size);
+    }
+
     /** The choices picked for a build's parts, in order. */
     function chosenOf(build) {
         return state.builds[build.id].parts.map(function (key) {
-            return build.choices.filter(function (choice) {
+            return offeredOf(build).filter(function (choice) {
                 return choice.key === key;
             })[0];
         });
@@ -223,9 +228,10 @@
     }
 
     /**
-     * A build: how many parts (when it allows more than one count), the
+     * A build: its size (when its choices are priced by size and it has more
+     * than one), how many parts (when it allows more than one count), the
      * pizza cut that way for a split one, and a choice for each part with
-     * what that part costs. No heading of its own: the sheet's title is the
+     * what that part costs at that size. No heading of its own: the sheet's title is the
      * dish's name, which the build shares; the group is named for a screen
      * reader. Drawn again when the count changes.
      */
@@ -233,6 +239,35 @@
         var set = element('fieldset', 'choice-group build-group');
         var picked = state.builds[build.id];
         set.setAttribute('aria-label', build.name);
+
+        if ((build.sizes || []).length > 1) {
+            var sizes = element('div', 'choice-pills build-sizes');
+            sizes.setAttribute('role', 'radiogroup');
+            sizes.setAttribute('aria-label', strings.size);
+            build.sizes.forEach(function (size) {
+                var label = element('label', 'choice-pill');
+                var input = document.createElement('input');
+                input.type = 'radio';
+                input.name = 'build-size-' + build.id;
+                input.value = size.key;
+                input.checked = picked.size === size.key;
+                input.addEventListener('change', function () {
+                    picked.size = size.key;
+                    // Parts made in this size stay; the rest start on its first choice.
+                    var offered = offeredOf(build);
+                    picked.parts = picked.parts.map(function (key) {
+                        var kept = offered.some(function (choice) { return choice.key === key; });
+                        return kept || offered.length === 0 ? key : offered[0].key;
+                    });
+                    set.replaceWith(buildGroup(build));
+                    refresh();
+                });
+                label.appendChild(input);
+                label.appendChild(element('span', 'choice-name', size.name));
+                sizes.appendChild(label);
+            });
+            set.appendChild(sizes);
+        }
 
         if (build.parts.length > 1) {
             var counts = element('div', 'choice-pills');
@@ -247,7 +282,7 @@
                     // Parts already picked stay; new ones start on the first choice.
                     var parts = picked.parts.slice(0, count);
                     while (parts.length < count) {
-                        parts.push(build.choices[0].key);
+                        parts.push(offeredOf(build)[0].key);
                     }
                     picked.parts = parts;
                     set.replaceWith(buildGroup(build));
@@ -326,7 +361,9 @@
         list.setAttribute('aria-label', label);
         list.hidden = true;
 
-        var options = build.choices.map(function (choice) {
+        // The choices at the size picked, each at its price there.
+        var offered = offeredOf(build);
+        var options = offered.map(function (choice) {
             var option = element('li', 'build-pick-option');
             option.setAttribute('role', 'option');
             option.tabIndex = -1;
@@ -343,7 +380,7 @@
 
         function show() {
             var key = picked.parts[index];
-            var choice = build.choices.filter(function (each) { return each.key === key; })[0] || build.choices[0];
+            var choice = offered.filter(function (each) { return each.key === key; })[0] || offered[0];
             shownName.textContent = choice.name;
             shownPrice.textContent = partPriceLabel(build, choice, count);
             button.setAttribute('aria-label', label + ': ' + choice.name + ', ' + shownPrice.textContent);
@@ -502,9 +539,13 @@
             state.picked[variant.id] = variant.options[0].id;
         });
         (data.builds || []).forEach(function (build) {
+            // At its first size with two choices, for a build priced by size.
+            var size = window.QAYEMA_BUILD.firstSize(build);
+            var first = window.QAYEMA_BUILD.forSize(build, size)[0];
             state.builds[build.id] = {
+                size: size,
                 parts: Array.apply(null, Array(build.parts[0])).map(function () {
-                    return build.choices[0].key;
+                    return first.key;
                 }),
             };
         });
@@ -569,7 +610,12 @@
         });
 
         var builds = (state.data.builds || []).map(function (build) {
-            return { build: build.id, parts: state.builds[build.id].parts.slice() };
+            var picked = state.builds[build.id];
+            var line = { build: build.id, parts: picked.parts.slice() };
+            if (picked.size) {
+                line.size = picked.size;
+            }
+            return line;
         });
 
         document.dispatchEvent(new CustomEvent('qayema:add', {

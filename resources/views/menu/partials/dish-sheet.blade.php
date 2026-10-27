@@ -44,6 +44,7 @@
             parts: @js(__(':count parts')),
             pieces: @js(__(':count pieces')),
             part: @js(__('Part :number')),
+            size: @js(__('Size')),
         },
     };
 </script>

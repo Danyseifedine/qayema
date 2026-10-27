@@ -305,7 +305,7 @@ class OrderPlacer
             }
 
             $variants = $variantsOn ? $this->variantChoices($dish, $line['options'], $name, $say) : [];
-            $builds = $buildsOn ? $this->buildChoices($dish, $line['builds'], $byCategory, $name, $say) : [];
+            $builds = $buildsOn ? $this->buildChoices($dish, $line['builds'], $byCategory, $name, $say, MenuLanguages::main($restaurant)) : [];
 
             // No price of its own: its variants or its builds price it (a
             // sandwich by size, a pizza by its halves), and without one to
@@ -447,41 +447,47 @@ class OrderPlacer
     {
         $categories = $dishes->flatMap(fn (Dish $dish) => $dish->builds->pluck('category_id'))->filter()->unique()->values();
 
+        // Their sizes price a pizza with no price of its own, while variants are on.
         return $categories->isEmpty() ? collect() : Dish::query()
             ->where('restaurant_id', $restaurant->id)
             ->whereIn('category_id', $categories->all())
+            ->with($restaurant->showsVariants() ? ['variants.options'] : [])
             ->get()
             ->groupBy('category_id');
     }
 
     /**
      * What the guest built for each of the dish's builds, priced by
-     * BuildPrice: a part count the build allows and, for each part, a choice
-     * it offers. A build left out, an odd count or a choice no longer on
-     * offer is refused, so the guest picks again rather than pays for
-     * something else.
+     * BuildPrice: a size it has (for a build priced by size), a part count
+     * it allows and, for each part, a choice it offers at that size. A build
+     * left out, an odd count or size, or a choice no longer on offer is
+     * refused, so the guest picks again rather than pays for something else.
      *
-     * @param  array<int, array{build: int, parts: array<int, string>}>  $chosen
+     * @param  array<int, array{build: int, parts: array<int, string>, size?: string|null}>  $chosen
      * @param  Collection<int|string, Collection<int, Dish>>  $byCategory
      * @param  Closure(Model): string  $name  a name as the line keeps it
      * @param  Closure(Model): string  $say  a name in the guest's language, for what they are told
-     * @return list<array{name: string, shape: string, parts: list<array{choice: string, share: int}>, price: string, build_id: int, keys: list<string>}>
+     * @param  string  $main  the menu's main language, which names a size
+     * @return list<array{name: string, shape: string, parts: list<array{choice: string, share: int}>, price: string, build_id: int, keys: list<string>, size?: string, size_key?: string}>
      *
      * @throws ValidationException when a build is not filled as it allows
      */
-    private function buildChoices(Dish $dish, array $chosen, Collection $byCategory, Closure $name, Closure $say): array
+    private function buildChoices(Dish $dish, array $chosen, Collection $byCategory, Closure $name, Closure $say, string $main): array
     {
         $picked = collect($chosen)->keyBy('build');
         $builds = [];
 
         foreach ($dish->builds as $build) {
-            $choices = BuildChoices::of($build, $dish, $byCategory->get($build->category_id ?? '', collect()));
+            $offered = BuildChoices::of($build, $dish, $byCategory->get($build->category_id ?? '', collect()), $main);
 
-            // As on the menu (MenuDishOptions): fewer than two choices leave nothing to build.
-            if ($choices->count() < 2) {
+            // As on the menu (MenuDishOptions): too few choices leave nothing to build.
+            if (! BuildChoices::offered($offered)) {
                 continue;
             }
 
+            $sizes = BuildChoices::sizes($offered);
+            $size = $picked->get($build->id)['size'] ?? null;
+            $choices = BuildChoices::forSize($offered, is_string($size) ? $size : null);
             $keys = array_values((array) ($picked->get($build->id)['parts'] ?? []));
             $parts = array_map(fn (string $key): ?array => $choices->get($key), $keys);
 
@@ -500,6 +506,8 @@ class OrderPlacer
                 // So the guest's cart can be built again to change it.
                 'build_id' => $build->id,
                 'keys' => $keys,
+                // The size it was built in, for a build priced by size.
+                ...($sizes === [] ? [] : ['size' => $name($sizes[$size]), 'size_key' => (string) $size]),
             ];
         }
 
@@ -512,8 +520,8 @@ class OrderPlacer
      * with other choices stays a line of its own. A build's parts keep their
      * order: half Margherita, half Pepperoni is the guest's to name.
      *
-     * @param  array<int, array{dish_id: int, quantity: int, options?: array<int, int>, addons?: array<int, int>, builds?: array<int, array{build: int, parts: array<int, string>}>}>  $lines
-     * @return array<string, array{dish_id: int, quantity: int, options: array<int, int>, addons: array<int, int>, builds: array<int, array{build: int, parts: array<int, string>}>}>
+     * @param  array<int, array{dish_id: int, quantity: int, options?: array<int, int>, addons?: array<int, int>, builds?: array<int, array{build: int, parts: array<int, string>, size?: string|null}>}>  $lines
+     * @return array<string, array{dish_id: int, quantity: int, options: array<int, int>, addons: array<int, int>, builds: array<int, array{build: int, parts: array<int, string>, size?: string}>}>
      */
     private function merge(array $lines, bool $variantsOn, bool $addonsOn, bool $buildsOn): array
     {
@@ -524,7 +532,11 @@ class OrderPlacer
             $options = $variantsOn ? $this->ids($line['options'] ?? []) : [];
             $addons = $addonsOn ? $this->ids($line['addons'] ?? []) : [];
             $builds = $buildsOn ? collect($line['builds'] ?? [])
-                ->map(fn (array $build): array => ['build' => (int) $build['build'], 'parts' => array_values(array_map('strval', (array) $build['parts']))])
+                ->map(fn (array $build): array => [
+                    'build' => (int) $build['build'],
+                    'parts' => array_values(array_map('strval', (array) $build['parts'])),
+                    ...(filled($build['size'] ?? null) ? ['size' => (string) $build['size']] : []),
+                ])
                 ->sortBy('build')->values()->all() : [];
             $key = $id.'|'.implode(',', $options).'|'.implode(',', $addons).'|'.json_encode($builds);
 

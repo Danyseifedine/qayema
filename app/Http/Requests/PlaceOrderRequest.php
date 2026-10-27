@@ -80,6 +80,8 @@ class PlaceOrderRequest extends FormRequest
             'items.*.builds.*.build' => ['required', 'integer', 'min:1'],
             'items.*.builds.*.parts' => ['required', 'array', 'min:1', 'max:'.config('menu.dish_builds.parts')],
             'items.*.builds.*.parts.*' => ['string', 'regex:/^[cd][0-9]{1,10}$/'],
+            // The size, for a build priced by size (BuildChoices::sizes()).
+            'items.*.builds.*.size' => ['nullable', 'string', 'max:100'],
             'note' => ['nullable', 'string', 'max:500'],
             // The language the guest was reading (guestLocale()).
             'locale' => ['nullable', 'string', 'size:2'],

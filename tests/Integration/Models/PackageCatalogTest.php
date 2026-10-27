@@ -28,7 +28,7 @@ class PackageCatalogTest extends TestCase
     public function test_free_is_a_plain_english_menu(): void
     {
         $this->assertSame([
-            'dish_limit' => 40, 'category_limit' => 8, 'social_link_limit' => 1, 'writing_help_limit' => 10, 'writing_help_credits' => 500,
+            'dish_limit' => 40, 'category_limit' => 8, 'social_link_limit' => 1, 'writing_help_credits' => 500,
             'multiple_languages' => 0, 'variants' => 0, 'addons' => 0, 'appearance' => 0, 'premium_designs' => 0,
             'qr_studio' => 0, 'ordering' => 0, 'menu_ordering' => 0, 'dine_in' => 0, 'analytics' => 0, 'advanced_analytics' => 0,
             'offers' => 0,
@@ -42,7 +42,7 @@ class PackageCatalogTest extends TestCase
     public function test_pro_adds_its_own_look_two_languages_dish_choices_and_the_numbers(): void
     {
         $this->assertSame([
-            'dish_limit' => 150, 'category_limit' => 15, 'social_link_limit' => 2, 'writing_help_limit' => 100, 'writing_help_credits' => 7500,
+            'dish_limit' => 150, 'category_limit' => 15, 'social_link_limit' => 2, 'writing_help_credits' => 7500,
             'multiple_languages' => 1, 'variants' => 1, 'addons' => 1, 'appearance' => 1, 'premium_designs' => 0,
             'qr_studio' => 0, 'ordering' => 0, 'menu_ordering' => 0, 'dine_in' => 0, 'analytics' => 1, 'advanced_analytics' => 0,
             'offers' => 0,
@@ -55,7 +55,7 @@ class PackageCatalogTest extends TestCase
     public function test_premium_has_everything(): void
     {
         $this->assertSame([
-            'dish_limit' => 1000, 'category_limit' => 1000, 'social_link_limit' => 10, 'writing_help_limit' => 200, 'writing_help_credits' => 15000,
+            'dish_limit' => 1000, 'category_limit' => 1000, 'social_link_limit' => 10, 'writing_help_credits' => 15000,
             'multiple_languages' => 1, 'variants' => 1, 'addons' => 1, 'appearance' => 1, 'premium_designs' => 1,
             'qr_studio' => 1, 'ordering' => 1, 'menu_ordering' => 1, 'dine_in' => 1, 'analytics' => 1, 'advanced_analytics' => 1,
             'offers' => 1,
@@ -80,7 +80,6 @@ class PackageCatalogTest extends TestCase
         $this->assertNull($shipped['category_limit']);
         $this->assertNull($shipped['social_link_limit']);
         // Never unlimited: every use is a paid call.
-        $this->assertSame(200, $shipped['writing_help_limit']);
         $this->assertSame(15000, $shipped['writing_help_credits']);
         foreach (Feature::flags() as $flag) {
             // On no package: an admin switches it on for a restaurant.

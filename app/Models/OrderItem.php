@@ -99,9 +99,19 @@ class OrderItem extends Model
      * A build's parts as read aloud: "½ Margherita + ½ Pepperoni" for a pizza
      * split in two, "Margherita" whole, "2 × Vanilla, Chocolate" for scoops.
      *
-     * @param  array{parts?: array<int, array{choice: string, share: int}>}  $build
+     * Built in a size, the size follows: "½ Margherita + ½ Pepperoni (Large)".
+     *
+     * @param  array{parts?: array<int, array{choice: string, share: int}>, size?: string}  $build
      */
     public static function built(array $build): string
+    {
+        $words = self::builtParts($build);
+
+        return filled($build['size'] ?? null) ? $words.' ('.$build['size'].')' : $words;
+    }
+
+    /** @param  array{parts?: array<int, array{choice: string, share: int}>, size?: string}  $build */
+    private static function builtParts(array $build): string
     {
         $parts = array_values((array) ($build['parts'] ?? []));
         $share = (int) ($parts[0]['share'] ?? 1);

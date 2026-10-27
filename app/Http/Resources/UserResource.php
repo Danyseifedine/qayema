@@ -7,7 +7,8 @@ use App\Enums\PackageStatus;
 use App\Enums\PackageTier;
 use App\Models\Package;
 use App\Models\Restaurant;
-use App\Services\Ai\WritingHelpUses;
+use App\Services\Ai\WritingHelpCredits;
+use App\Services\Ai\WritingHelpSetup;
 use App\Services\Menu\MenuLanguages;
 use App\Services\Orders\WhatsAppLink;
 use Illuminate\Http\Request;
@@ -169,10 +170,11 @@ class UserResource extends JsonResource
             // package that may already include them.
             'turned_off' => $entitlements->turnedOff(),
             // The AI buttons (translate, write a description), while the
-            // server has a provider set up and the package gives uses: how
-            // many a day (null for no cap) and how many are left, and the
-            // month's credits (never what they cost). Null is off.
-            'writing_help' => app(WritingHelpUses::class)->forDashboard($restaurant),
+            // server has a provider set up and the package gives credits:
+            // the month's credits (never what they cost). Null is off.
+            'writing_help' => WritingHelpSetup::isOnFor($restaurant)
+                ? ['credits' => app(WritingHelpCredits::class)->forDashboard($restaurant)]
+                : null,
         ];
     }
 

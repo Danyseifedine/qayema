@@ -5,7 +5,6 @@ namespace Tests\Integration\Services\Ai;
 use App\Ai\Agents\CategoryDescriptionWriter;
 use App\Ai\Agents\MenuTranslator;
 use App\Ai\Agents\RestaurantDescriptionWriter;
-use App\Enums\Feature;
 use App\Models\Category;
 use App\Models\Dish;
 use App\Services\Ai\WritingHelp;
@@ -92,28 +91,27 @@ class WritingHelpTest extends TestCase
         $this->assertSame('gemini-3.5-flash-lite', WritingHelpSetup::model());
     }
 
-    /** @return array<string, array{0: int|null, 1: bool}> */
-    public static function packageUses(): array
+    /** @return array<string, array{0: float|null, 1: bool}> */
+    public static function packageBudgets(): array
     {
         return [
-            'none a day' => [0, false],
-            'one a day' => [1, true],
-            'a hundred a day' => [100, true],
-            'no daily cap' => [null, true],
+            'no AI budget, so no credits' => [0, false],
+            'a few cents a month' => [0.05, true],
+            'no cap on its AI' => [null, true],
         ];
     }
 
-    #[DataProvider('packageUses')]
-    public function test_for_a_restaurant_it_also_needs_uses_on_the_package(?int $uses, bool $on): void
+    #[DataProvider('packageBudgets')]
+    public function test_for_a_restaurant_it_also_needs_credits_on_the_package(?float $cents, bool $on): void
     {
-        $this->defaultPackageSets(Feature::WritingHelpLimit, $uses);
+        $this->defaultPackageAiBudget($cents);
 
         $this->assertSame($on, WritingHelpSetup::isOnFor($this->owner()));
     }
 
     public function test_no_package_brings_it_back_on_a_server_without_a_key(): void
     {
-        $this->defaultPackageSets(Feature::WritingHelpLimit, null);
+        $this->defaultPackageAiBudget(null);
         config(['ai.providers.anthropic.key' => null]);
 
         $this->assertFalse(WritingHelpSetup::isOnFor($this->owner()));

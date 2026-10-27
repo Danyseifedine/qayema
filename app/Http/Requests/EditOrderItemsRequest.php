@@ -40,6 +40,7 @@ class EditOrderItemsRequest extends FormRequest
             'add.*.builds.*.build' => ['required', 'integer', 'min:1'],
             'add.*.builds.*.parts' => ['required', 'array', 'min:1', 'max:'.config('menu.dish_builds.parts')],
             'add.*.builds.*.parts.*' => ['string', 'regex:/^[cd][0-9]{1,10}$/'],
+            'add.*.builds.*.size' => ['nullable', 'string', 'max:100'],
             // As with a status change: the version the owner's screen showed.
             'guest_updates' => ['nullable', 'integer', 'min:0'],
         ];

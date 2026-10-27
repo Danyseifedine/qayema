@@ -14,7 +14,6 @@ enum Feature: string
     case DishLimit = 'dish_limit';
     case CategoryLimit = 'category_limit';
     case SocialLinkLimit = 'social_link_limit';
-    case WritingHelpLimit = 'writing_help_limit';
 
     /**
      * AI credits a month (App\Services\Ai\WritingHelpCredits). A package's
@@ -75,7 +74,7 @@ enum Feature: string
     public function kind(): FeatureKind
     {
         return match ($this) {
-            self::DishLimit, self::CategoryLimit, self::SocialLinkLimit, self::WritingHelpLimit, self::WritingHelpCredits,
+            self::DishLimit, self::CategoryLimit, self::SocialLinkLimit, self::WritingHelpCredits,
             self::OfferBannerLimit, self::OfferPopupLimit, self::OfferAdLimit, self::BuildLimit => FeatureKind::Limit,
             self::MultipleLanguages, self::Variants, self::Addons, self::Appearance, self::PremiumDesigns,
             self::QrStudio, self::Ordering, self::MenuOrdering, self::DineIn, self::Analytics, self::AdvancedAnalytics,
@@ -90,7 +89,7 @@ enum Feature: string
     }
 
     /**
-     * Listed on the landing page's pricing cards. The AI's uses and credits
+     * Listed on the landing page's pricing cards. The AI's credits
      * are a dashboard detail, kept off the public page (which claims no AI); the
      * parts of offers and ordering an admin may sell apart are told by their
      * Offers and ordering rows.
@@ -98,7 +97,7 @@ enum Feature: string
     public function isOnPricing(): bool
     {
         return ! in_array($this, [
-            self::WritingHelpLimit, self::WritingHelpCredits, self::OfferBannerLimit, self::OfferPopupLimit, self::OfferAdLimit,
+            self::WritingHelpCredits, self::OfferBannerLimit, self::OfferPopupLimit, self::OfferAdLimit,
             self::DineInWhatsApp, self::OrderTracking, self::OfferSchedules, self::OfferDiscounts, self::BuildYourOwn,
             self::BuildLimit,
         ], true);
@@ -127,9 +126,6 @@ enum Feature: string
             self::DishLimit => 40,
             self::CategoryLimit => 8,
             self::SocialLinkLimit => 1,
-            // Uses of the dashboard's AI a day (App\Services\Ai\WritingHelp);
-            // 0 turns it off for the package.
-            self::WritingHelpLimit => 30,
             // No package at all has no AI budget, so no credits.
             self::WritingHelpCredits => 0,
             // Used only where offers are on (the `offers` flag).

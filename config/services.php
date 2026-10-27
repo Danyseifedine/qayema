@@ -40,7 +40,7 @@ return [
     // and writing a category's description. Off until a provider is named
     // here and its key is set in config/ai.php's providers (ANTHROPIC_API_KEY,
     // OPENAI_API_KEY...). With no model, the provider's cheapest one is used.
-    // Uses a day are set per package at /admin (Feature::WritingHelpLimit);
+    // Credits a month are set per package at /admin (Feature::WritingHelpCredits);
     // the server runs at most `at_once` at the same time
     // (App\Http\Middleware\PaceWritingHelp), so they never take every worker.
     'writing_help' => [

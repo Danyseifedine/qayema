@@ -210,10 +210,17 @@
         });
     }
 
-    /** A dish's builds in one order, so the same pizza is the same line. */
+    /**
+     * A dish's builds in one order, so the same pizza is the same line; the
+     * size it was built in, for a build priced by size, makes it another.
+     */
     function builtOf(builds) {
         return (builds || []).map(function (entry) {
-            return { build: Number(entry.build), parts: (entry.parts || []).map(String) };
+            var built = { build: Number(entry.build), parts: (entry.parts || []).map(String) };
+            if (typeof entry.size === 'string' && entry.size !== '') {
+                built.size = entry.size;
+            }
+            return built;
         }).sort(function (a, b) {
             return a.build - b.build;
         });

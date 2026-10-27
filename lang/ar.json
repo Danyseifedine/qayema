@@ -198,7 +198,6 @@
     "Appearance is not on your package.": "تخصيص المظهر غير متوفر في باقتك.",
     "A second menu language is not on your package.": "اللغة الثانية للقائمة غير متوفرة في باقتك.",
     "Writing help is not available right now. Try again in a moment.": "المساعدة في الكتابة غير متاحة الآن. حاول مرة أخرى بعد قليل.",
-    "You have used today's writing help. It comes back tomorrow.": "استخدمت المساعدة في الكتابة المتاحة لليوم. تعود غدًا.",
     "You have used this month's AI credits. They come back on :date.": "استخدمت أرصدة الذكاء الاصطناعي لهذا الشهر. تعود في :date.",
     "Not enough AI credits left this month for this. They come back on :date.": "لا تكفي أرصدة الذكاء الاصطناعي المتبقية هذا الشهر لهذا. تعود في :date.",
     "Writing help is busy right now. Try again in a moment.": "المساعدة في الكتابة مشغولة الآن. حاول مرة أخرى بعد قليل.",
@@ -282,5 +281,6 @@
     "Make it your way": "اصنعه على ذوقك",
     "Build yours": "اصنعها بنفسك",
     "You can have up to :limit dishes guests build. Delete one to add another.": "يمكنك إضافة :limit أطباق يصنعها الضيوف كحد أقصى. احذف واحدًا لتضيف غيره.",
-    "Offer: :offer": "العرض: :offer"
+    "Offer: :offer": "العرض: :offer",
+    "Size": "الحجم"
 }

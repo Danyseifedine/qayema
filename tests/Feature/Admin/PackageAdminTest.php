@@ -45,7 +45,6 @@ class PackageAdminTest extends TestCase
         Livewire::test(CreatePackage::class)
             ->assertFormSet([
                 'features.dish_limit' => 40,
-                'features.writing_help_limit' => 10,
                 'features.analytics' => false,
                 'ai_budget_cents' => 0.05,
                 'tier' => 'bronze',

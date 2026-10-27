@@ -57,26 +57,22 @@ one language only, the category form for its name and description, and the
   (anthropic, openai, gemini...) and `AI_MODEL` (empty = the provider's
   cheapest, `#[UseCheapestModel]`). It is on only while the provider is named
   **and** its key is set in `config/ai.php` (`ANTHROPIC_API_KEY`...):
-  `WritingHelpSetup::isOn()`. For a restaurant it also needs uses on its
+  `WritingHelpSetup::isOn()`. For a restaurant it also needs credits on its
   package: `isOnFor()`; the dashboard hears `restaurant.writing_help`. Off,
   the endpoints 404 and no button shows.
-- **Uses a day per package:** the limit `Feature::WritingHelpLimit`
-  (`writing_help_limit`), set per package at /admin → Packages like dishes:
-  0 is no writing help, empty is no daily cap, grants add to it. A package
-  saved before it existed reads `defaultValue()` (30) until edited; the
-  seeded catalog has Free 10, Pro 100, Premium and Custom 200. Kept off the
-  landing page's pricing cards (`Feature::isOnPricing()`; the page claims no
-  AI, `LandingContentTest`); the dashboard's Package page lists it.
-- **Counting the uses:** `App\Services\Ai\WritingHelpUses`, a rate limiter
-  key per restaurant per day of its own (`localTimezone()`), so they all come
-  back at its midnight and "come back tomorrow" is true. `PaceWritingHelp`
-  checks it: none left is an instant 429 `writing_help_limit` with `left: 0`
-  and `retry_after` (seconds to that midnight); a use is taken only once the
-  request may run and given back when the answer is not a success (the
-  provider failed, a 422), so an owner only spends a use on text they got.
-  Every answer carries `left` (null for no cap) and the session sends
-  `writing_help: {limit, left}` (null when off); the dashboard shows it on
-  each AI button. It never bans.
+- **Credits are the only limit:** there is no count of uses a day (the old
+  `writing_help_limit` is gone, migration `drop_the_daily_writing_help_limit`);
+  an owner presses the buttons as often as the month's credits allow, and
+  once they are spent the buttons stop until they come back on the 1st.
+  Kept off the landing page's pricing cards (`Feature::isOnPricing()`; the
+  page claims no AI, `LandingContentTest`); the dashboard's Package page
+  lists the credits.
+- **Counting:** `PaceWritingHelp` runs one request at a time per restaurant
+  and checks the credits in that turn; an answer that is not a success (the
+  provider failed, a 422) costs none, so an owner only spends credits on
+  text they got. Every answer carries `credits_left` (null for no cap) and
+  the session sends `writing_help: {credits}` (null when off); the
+  dashboard shows it on each AI button. It never bans.
 - **Credits a month** (`App\Services\Ai\WritingHelpCredits`): the hard
   cap on what a restaurant's AI costs, without ever showing the owner money
   or the model.
@@ -99,7 +95,7 @@ one language only, the category form for its name and description, and the
     put when the package or a credit's worth changes.
   - The month runs from the 1st in the restaurant's timezone; credits
     taken are summed from `writing_help_days.credits`. `PaceWritingHelp`
-    checks them in the restaurant's turn, after the day's uses: the action's
+    checks them in the restaurant's turn: the action's
     credits must be left **and** this month's real cost plus the most the
     request could cost (`WritingHelp::mostItCouldCost()`: every try at its
     answer's cap, read from what it sends) must stay within the credits
@@ -188,7 +184,6 @@ one language only, the category form for its name and description, and the
   each description's length) and switches the writing help on only for a
   request with the `X-E2E-Writing-Help` header (decided in `register()`,
   before the rate limiter is made), so every other spec and baseline sees it
-  off. Those requests count in a file cache (`WRITING_HELP_CACHE`), so uses
-  carry from one request to the next, and a scenario can start with
-  `writing_help_used`, or with credits taken this month
-  (`writing_help_days: [{credits}]`).
+  off. Those requests count in a file cache (`WRITING_HELP_CACHE`), so a
+  request's place and turn carry from one to the next, and a scenario can
+  start with credits taken this month (`writing_help_days: [{credits}]`).

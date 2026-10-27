@@ -23,7 +23,7 @@ class FeatureTest extends TestCase
         $this->assertTrue(Feature::DishLimit->isLimit());
         $this->assertTrue(Feature::CategoryLimit->isLimit());
         $this->assertTrue(Feature::SocialLinkLimit->isLimit());
-        $this->assertTrue(Feature::WritingHelpLimit->isLimit());
+        $this->assertTrue(Feature::WritingHelpCredits->isLimit());
         $this->assertFalse(Feature::QrStudio->isLimit());
         $this->assertSame(FeatureKind::Flag, Feature::QrStudio->kind());
     }
@@ -57,17 +57,17 @@ class FeatureTest extends TestCase
     public function test_the_registry_is_exactly_these_slugs(): void
     {
         $this->assertSame([
-            'dish_limit', 'category_limit', 'social_link_limit', 'writing_help_limit', 'writing_help_credits', 'multiple_languages', 'variants', 'addons',
+            'dish_limit', 'category_limit', 'social_link_limit', 'writing_help_credits', 'multiple_languages', 'variants', 'addons',
             'appearance', 'premium_designs', 'qr_studio', 'ordering', 'menu_ordering', 'dine_in', 'analytics', 'advanced_analytics', 'offers',
             'offer_banner_limit', 'offer_popup_limit', 'offer_ad_limit',
             'dine_in_whatsapp', 'order_tracking', 'offer_schedules', 'offer_discounts', 'build_your_own', 'build_limit',
         ], array_map(fn (Feature $feature): string => $feature->value, Feature::cases()));
     }
 
-    public function test_the_nine_limits_and_the_seventeen_flags(): void
+    public function test_the_eight_limits_and_the_seventeen_flags(): void
     {
         $this->assertSame([
-            Feature::DishLimit, Feature::CategoryLimit, Feature::SocialLinkLimit, Feature::WritingHelpLimit, Feature::WritingHelpCredits,
+            Feature::DishLimit, Feature::CategoryLimit, Feature::SocialLinkLimit, Feature::WritingHelpCredits,
             Feature::OfferBannerLimit, Feature::OfferPopupLimit, Feature::OfferAdLimit, Feature::BuildLimit,
         ], Feature::limits());
         $this->assertSame([
@@ -81,7 +81,7 @@ class FeatureTest extends TestCase
     {
         $this->assertSame(
             [
-                Feature::WritingHelpLimit, Feature::WritingHelpCredits, Feature::OfferBannerLimit, Feature::OfferPopupLimit, Feature::OfferAdLimit,
+                Feature::WritingHelpCredits, Feature::OfferBannerLimit, Feature::OfferPopupLimit, Feature::OfferAdLimit,
                 Feature::DineInWhatsApp, Feature::OrderTracking, Feature::OfferSchedules, Feature::OfferDiscounts, Feature::BuildYourOwn,
                 Feature::BuildLimit,
             ],
@@ -109,8 +109,6 @@ class FeatureTest extends TestCase
         $this->assertSame(40, Feature::DishLimit->defaultValue());
         $this->assertSame(8, Feature::CategoryLimit->defaultValue());
         $this->assertSame(1, Feature::SocialLinkLimit->defaultValue());
-        // The AI's uses a day: on for every package until an admin sets them.
-        $this->assertSame(30, Feature::WritingHelpLimit->defaultValue());
         // A package's credits come from its AI budget; no package has none.
         $this->assertSame(0, Feature::WritingHelpCredits->defaultValue());
         // Offers in each place switched on at once, where offers are on.
@@ -156,7 +154,6 @@ class FeatureTest extends TestCase
             'dish_limit' => 'Dishes',
             'category_limit' => 'Categories',
             'social_link_limit' => 'Social links',
-            'writing_help_limit' => 'AI writing help a day',
             'writing_help_credits' => 'AI credits a month',
             'multiple_languages' => 'Second menu language',
             'variants' => 'Variants',

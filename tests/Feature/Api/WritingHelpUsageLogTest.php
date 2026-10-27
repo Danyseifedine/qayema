@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use App\Ai\Agents\CategoryDescriptionWriter;
 use App\Ai\Agents\MenuTranslator;
 use App\Enums\Feature;
+use App\Models\Package;
 use App\Models\WritingHelpDay;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -29,7 +30,6 @@ class WritingHelpUsageLogTest extends TestCase
         parent::setUp();
 
         $this->defaultPackageIncludes(Feature::MultipleLanguages);
-        $this->defaultPackageSets(Feature::WritingHelpLimit, 5);
         config([
             'services.writing_help.provider' => 'anthropic',
             'ai.providers.anthropic.key' => 'test-key',
@@ -117,7 +117,7 @@ class WritingHelpUsageLogTest extends TestCase
         $this->describe($owner)->assertStatus(503);
         $lock->release();
 
-        $this->defaultPackageSets(Feature::WritingHelpLimit, 0);
+        Package::default()->update(['ai_budget_cents' => 0]);
         $this->describe($owner->fresh())->assertNotFound();
 
         $this->assertSame(0, WritingHelpDay::query()->count());

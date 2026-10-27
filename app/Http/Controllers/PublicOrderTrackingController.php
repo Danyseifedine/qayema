@@ -80,7 +80,11 @@ class PublicOrderTrackingController extends Controller
                     'dish' => (string) $item->dish_id,
                     'options' => array_values(array_filter(array_column((array) ($item->options['variants'] ?? []), 'option_id'))),
                     'addons' => array_values(array_filter(array_column((array) ($item->options['addons'] ?? []), 'addon_id'))),
-                    'builds' => array_map(fn (array $build): array => ['build' => $build['build_id'], 'parts' => $build['keys']], (array) ($item->options['builds'] ?? [])),
+                    'builds' => array_map(fn (array $build): array => [
+                        'build' => $build['build_id'],
+                        'parts' => $build['keys'],
+                        ...(isset($build['size_key']) ? ['size' => $build['size_key']] : []),
+                    ], (array) ($item->options['builds'] ?? [])),
                     'qty' => $item->quantity,
                 ])->values()->all(),
             'details' => [

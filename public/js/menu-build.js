@@ -4,7 +4,10 @@
  * App\Services\Menu\BuildPrice and OrderItem::built(): change one, change
  * both. The server prices every order itself; this is the preview.
  *
- * A choice is {key, name, price, part_prices}; a build is {shape, parts}.
+ * A choice is {key, name, price, part_prices, sizes}; a build is {shape,
+ * parts, sizes}. A build whose choices are priced by size (pizzas with no
+ * price of their own: `sizes` {large: "12.00"}) is built at one of its
+ * `sizes` [{key, name}], as BuildChoices::forSize() prices it.
  */
 (function () {
     'use strict';
@@ -61,6 +64,45 @@
         return (own === null ? Math.round(cents(choice.price) / count) : own) / 100;
     }
 
+    /** Whether a choice is priced by size rather than by a price of its own. */
+    function bySize(choice) {
+        return Boolean(choice.sizes) && Object.keys(choice.sizes).length > 0;
+    }
+
+    /**
+     * A build's choices as priced at `size`: one priced by size at that
+     * size's price (its share only), one with a price of its own as it is,
+     * one without the size left out. A build with no sizes takes none; one
+     * with sizes offers nothing at a size it does not have.
+     */
+    function forSize(build, size) {
+        var sizes = build.sizes || [];
+        if (sizes.length === 0) {
+            return build.choices;
+        }
+        if (!sizes.some(function (each) { return each.key === size; })) {
+            return [];
+        }
+        return build.choices.filter(function (choice) {
+            return !bySize(choice) || choice.sizes[size] !== undefined;
+        }).map(function (choice) {
+            return bySize(choice)
+                ? { key: choice.key, name: choice.name, price: choice.sizes[size], part_prices: null }
+                : choice;
+        });
+    }
+
+    /** The size a build starts at: the first with two choices to build from. */
+    function firstSize(build) {
+        var sizes = build.sizes || [];
+        for (var i = 0; i < sizes.length; i++) {
+            if (forSize(build, sizes[i].key).length >= 2) {
+                return sizes[i].key;
+            }
+        }
+        return sizes.length > 0 ? sizes[0].key : null;
+    }
+
     /** "½ Margherita + ½ Pepperoni", "Margherita", "2 × Vanilla, Chocolate". */
     function text(shape, names) {
         if (shape === 'split' && names.length > 1) {
@@ -90,7 +132,7 @@
      * as it allows (the owner changed it since the guest picked).
      *
      * @param {Array} builds  the dish's builds, from #dish-options
-     * @param {Array} picked  the line's [{build, parts: [keys]}]
+     * @param {Array} picked  the line's [{build, parts: [keys], size}]
      */
     function priced(builds, picked) {
         var extra = 0;
@@ -105,9 +147,10 @@
                 return null;
             }
 
+            var offered = forSize(build, line.size);
             var chosen = [];
             for (var p = 0; p < line.parts.length; p++) {
-                var choice = build.choices.filter(function (option) {
+                var choice = offered.filter(function (option) {
                     return option.key === line.parts[p];
                 })[0];
                 if (!choice) {
@@ -117,9 +160,14 @@
             }
 
             extra += price(build.shape, chosen);
-            labels.push(text(build.shape, chosen.map(function (choice) {
+            var words = text(build.shape, chosen.map(function (choice) {
                 return choice.name;
-            })));
+            }));
+            // Built in a size, as OrderItem::built(): "… (Large)".
+            var size = (build.sizes || []).filter(function (each) {
+                return each.key === line.size;
+            })[0];
+            labels.push(size ? words + ' (' + size.name + ')' : words);
         }
 
         if ((picked || []).length !== builds.length) {
@@ -129,5 +177,12 @@
         return { extra: extra, labels: labels };
     }
 
-    window.QAYEMA_BUILD = { price: price, partPrice: partPrice, text: text, priced: priced };
+    window.QAYEMA_BUILD = {
+        price: price,
+        partPrice: partPrice,
+        text: text,
+        priced: priced,
+        forSize: forSize,
+        firstSize: firstSize,
+    };
 })();
