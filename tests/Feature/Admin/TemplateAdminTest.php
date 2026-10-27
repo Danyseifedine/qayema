@@ -110,6 +110,21 @@ class TemplateAdminTest extends TestCase
         $this->assertSame('paper', $rows['ink']['contrast_with']);
     }
 
+    public function test_a_design_is_made_for_one_restaurant_and_the_list_says_for_whom(): void
+    {
+        $olive = $this->owner(['name' => ['en' => 'Olive House']]);
+        $template = Template::factory()->create(['slug' => 'olive-gold']);
+
+        Livewire::test(EditTemplate::class, ['record' => $template->id])
+            ->fillForm(['restaurant_id' => $olive->id])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame($olive->id, $template->fresh()->restaurant_id);
+        Livewire::test(ListTemplates::class)
+            ->assertTableColumnStateSet('madeFor.name', 'Olive House', $template);
+    }
+
     public function test_a_design_may_keep_its_own_slug_but_not_take_another(): void
     {
         Template::factory()->create(['slug' => 'taken']);

@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources\Users\Tables;
 
 use App\Enums\UserRole;
 use App\Models\User;
+use App\Services\Analytics\MenuTraffic;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -22,9 +23,10 @@ class UsersTable
     {
         return $table
             // The restaurant and its two counts come with the page, not one
-            // query per row each.
+            // query per row each; its views with the days added up in
+            // `menu_days` (MenuTraffic).
             ->modifyQueryUsing(fn (Builder $query): Builder => $query
-                ->with(['restaurant' => fn ($restaurant) => $restaurant->withCount(['dishes', 'menuSessions'])]))
+                ->with(['restaurant' => fn ($restaurant) => MenuTraffic::withTotals($restaurant->withCount('dishes')->getQuery())]))
             ->columns([
                 TextColumn::make('name')
                     ->placeholder('N/A')
@@ -89,7 +91,7 @@ class UsersTable
 
                 TextColumn::make('views_count')
                     ->label('Total Views')
-                    ->getStateUsing(fn (User $record): string => (string) ($record->restaurant?->menu_sessions_count ?? '-'))
+                    ->getStateUsing(fn (User $record): string => (string) ($record->restaurant->total_views ?? '-'))
                     ->placeholder('-')
                     ->badge()
                     ->color('info')

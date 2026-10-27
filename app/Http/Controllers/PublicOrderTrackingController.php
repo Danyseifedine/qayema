@@ -80,6 +80,7 @@ class PublicOrderTrackingController extends Controller
                     'dish' => (string) $item->dish_id,
                     'options' => array_values(array_filter(array_column((array) ($item->options['variants'] ?? []), 'option_id'))),
                     'addons' => array_values(array_filter(array_column((array) ($item->options['addons'] ?? []), 'addon_id'))),
+                    'builds' => array_map(fn (array $build): array => ['build' => $build['build_id'], 'parts' => $build['keys']], (array) ($item->options['builds'] ?? [])),
                     'qty' => $item->quantity,
                 ])->values()->all(),
             'details' => [
@@ -95,9 +96,10 @@ class PublicOrderTrackingController extends Controller
         ]]);
     }
 
+    /** The order by its token, while the menu is online and the package tracks orders. */
     private function order(Restaurant $restaurant, string $token): Order
     {
-        abort_unless($restaurant->menuOnline(), 404);
+        abort_unless($restaurant->menuOnline() && $restaurant->tracksOrders(), 404);
 
         return $restaurant->orders()->where('tracking_token', $token)->firstOrFail();
     }

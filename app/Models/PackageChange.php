@@ -22,6 +22,7 @@ class PackageChange extends Model
         'to_package_id',
         'starts_at',
         'ends_at',
+        'price_cents',
         'changed_by',
         'note',
     ];
@@ -33,6 +34,7 @@ class PackageChange extends Model
             'from_package_id' => 'integer',
             'to_package_id' => 'integer',
             'changed_by' => 'integer',
+            'price_cents' => 'integer',
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
         ];

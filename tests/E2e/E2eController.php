@@ -2,15 +2,18 @@
 
 namespace Tests\E2e;
 
+use App\Enums\GrantMode;
 use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Dish;
+use App\Models\Offer;
 use App\Models\Order;
 use App\Models\Package;
 use App\Models\Restaurant;
 use App\Models\Template;
 use App\Models\User;
+use App\Models\WritingHelpDay;
 use App\Services\Ai\WritingHelpUses;
 use App\Services\Packages\PackageAssigner;
 use Carbon\CarbonImmutable;
@@ -37,17 +40,32 @@ class E2eController extends Controller
      * package_ends_at, template (classic|midnight|null), onboarded, restaurant
      * (false for a user mid-onboarding), has_password, name, description,
      * slug, main_locale, second_locale, is_active, switched_off, phone, google_maps_url,
-     * opening_hours, categories [{name, description, dishes: [{name, price,
+     * opening_hours, categories [{name, description, icon, dishes: [{name, price,
      * ingredients, is_available, variants: [{name, options: [{name, price}]}],
-     * addons: [{name, price}]}]}], social_links [{platform, url}], order_mode
+     * addons: [{name, price}], builds: [{name, shape, parts, category (a
+     * scenario category's English name, its dishes the choices; dishes:
+     * [English dish name] for only those of them), choices:
+     * [{name, price, part_prices}] (else its own list), part_prices:
+     * {English dish name: {count: price}}}]}]}], social_links [{platform, url}], order_mode
      * (whatsapp|menu), order_types ([delivery, pickup]), orders (count),
      * order_channel (menu, the default: placed in the menu with a phone and
      * an address | whatsapp), order_choices (bool: their line carries a
      * size and an add-on),
      * visits (count), qr_scans (count), settings {key: value} for the
-     * design, qr_settings {…}, logo (bool), writing_help_used (count: the AI
+     * design, qr_settings {…}, logo (bool), writing_help_days [{days_ago,
+     * uses, input_tokens, output_tokens, cost, credits}] (logged AI use, its
+     * credits counting against the month's), writing_help_used (count: the AI
      * uses already spent today, in the store the writing help's requests
-     * count in, E2eServiceProvider::WRITING_HELP_CACHE).
+     * count in, E2eServiceProvider::WRITING_HELP_CACHE), overrides
+     * [{feature, value}] (an admin's set grant: a limit, null unlimited, or a
+     * flag 0 off / 1 on), price_cents (the restaurant's own price), offers
+     * [{title, description, placements, action, action_url, show_again,
+     * delay_seconds, ad_seconds, discount_type, discount_value, dishes
+     * (English names of the scenario's dishes), starts_at, ends_at (UTC),
+     * repeat, weekdays, month_days, time_windows, is_active, image (bool: a
+     * wide picture), deal {name, price, category (a scenario category's
+     * English name), ingredients?} (the offer's own dish, its one dish)}];
+     * each offer comes back as {id, deal_id}.
      */
     public function scenario(Request $request): JsonResponse
     {
@@ -81,7 +99,9 @@ class E2eController extends Controller
             'is_active' => $input['is_active'] ?? true,
             'country_code' => 'LB',
             'phone' => $input['phone'] ?? '+96170123456',
-            'currency' => 'USD',
+            'currency' => $input['currency'] ?? 'USD',
+            'second_currency' => $input['second_currency'] ?? null,
+            'exchange_rate' => $input['exchange_rate'] ?? null,
             'timezone' => 'Asia/Beirut',
             'google_maps_url' => $input['google_maps_url'] ?? null,
             'opening_hours' => $input['opening_hours'] ?? null,
@@ -104,11 +124,14 @@ class E2eController extends Controller
         }
 
         $categories = [];
+        // Built from a category that may come later: made once every one is.
+        $builds = [];
         foreach (array_values($input['categories'] ?? []) as $position => $row) {
             $category = Category::query()->create([
                 'restaurant_id' => $restaurant->id,
                 'name' => $row['name'],
                 'description' => $row['description'] ?? null,
+                'icon' => $row['icon'] ?? null,
                 'display_order' => $position,
             ]);
 
@@ -120,18 +143,63 @@ class E2eController extends Controller
                     'name' => $dish['name'],
                     'ingredients' => $dish['ingredients'] ?? null,
                     'price' => array_key_exists('price', $dish) ? $dish['price'] : 10,
+                    'currency' => $dish['currency'] ?? null,
                     'is_available' => $dish['is_available'] ?? true,
                     'display_order' => $order,
                 ]);
                 $this->dishOptions($created, $dish);
+                $builds[] = [$created, $dish['builds'] ?? []];
                 $dishes[] = $created->only(['id']);
             }
 
             $categories[] = ['id' => $category->id, 'dishes' => $dishes];
         }
 
+        foreach ($builds as [$dish, $rows]) {
+            $this->dishBuilds($restaurant, $dish, $rows);
+        }
+
         foreach ($input['social_links'] ?? [] as $link) {
             $restaurant->socialLinks()->create($link);
+        }
+
+        foreach ($input['overrides'] ?? [] as $override) {
+            $restaurant->featureGrants()->create([
+                'feature' => $override['feature'],
+                'mode' => GrantMode::Set,
+                'value' => $override['value'],
+            ]);
+        }
+
+        $offers = [];
+        foreach (array_values($input['offers'] ?? []) as $order => $row) {
+            $offer = Offer::query()->create([
+                'restaurant_id' => $restaurant->id,
+                'display_order' => $order,
+                ...collect($row)->except(['dishes', 'image', 'deal'])->all(),
+            ]);
+            if ($row['image'] ?? false) {
+                // Its size kept, as a real upload's is (MediaService::store()).
+                $offer->addMediaFromString($this->photo())->usingFileName('offer.jpg')->withCustomProperties(['width' => 1200, 'height' => 800])->toMediaCollection('image');
+            }
+            $named = $restaurant->dishes()->get()->filter(fn (Dish $dish): bool => in_array($dish->getTranslation('name', 'en', false), $row['dishes'] ?? [], true));
+            $offer->dishes()->sync($named->pluck('id')->all());
+            $deal = isset($row['deal']) ? $this->dealDish($restaurant, $offer, $row['deal']) : null;
+            $offers[] = ['id' => $offer->id, 'deal_id' => $deal?->id];
+        }
+
+        // Logged AI use with its cost, as WritingHelpLog writes it, for the
+        // admin's spending figures: [{days_ago, uses, input_tokens, output_tokens, cost}].
+        foreach ($input['writing_help_days'] ?? [] as $row) {
+            WritingHelpDay::query()->create([
+                'restaurant_id' => $restaurant->id,
+                'day' => now($restaurant->localTimezone())->subDays((int) ($row['days_ago'] ?? 0)),
+                'uses' => (int) ($row['uses'] ?? 0),
+                'input_tokens' => (int) ($row['input_tokens'] ?? 0),
+                'output_tokens' => (int) ($row['output_tokens'] ?? 0),
+                'cost' => (string) ($row['cost'] ?? '0'),
+                'credits' => (int) ($row['credits'] ?? 0),
+            ]);
         }
 
         $uses = new WritingHelpUses(new RateLimiter(Cache::store(E2eServiceProvider::WRITING_HELP_CACHE)));
@@ -180,6 +248,7 @@ class E2eController extends Controller
                 'public_url' => url($restaurant->slug),
             ],
             'categories' => $categories,
+            'offers' => $offers,
         ], 201);
     }
 
@@ -226,6 +295,53 @@ class E2eController extends Controller
             isset($input['package_starts_at']) ? CarbonImmutable::parse($input['package_starts_at']) : now()->subDay(),
             isset($input['package_ends_at']) ? CarbonImmutable::parse($input['package_ends_at']) : null,
         );
+
+        // After the package: a new package clears a price agreed for the old one.
+        if (isset($input['price_cents'])) {
+            $restaurant->update(['price_cents' => (int) $input['price_cents']]);
+        }
+    }
+
+    /**
+     * The offer's own dish, as the offer API leaves it: in the named
+     * category, last there, and the offer's one dish.
+     *
+     * @param  array{name: array<string, string>, price: float|int|string, category: string, ingredients?: array<string, string>|null}  $row
+     */
+    private function dealDish(Restaurant $restaurant, Offer $offer, array $row): Dish
+    {
+        $category = $restaurant->categories()->get()->first(fn (Category $category): bool => $category->getTranslation('name', 'en', false) === $row['category']);
+
+        $deal = new Dish([
+            'name' => $row['name'],
+            'ingredients' => $row['ingredients'] ?? null,
+            'price' => $row['price'],
+            'category_id' => $category?->id,
+            'is_available' => true,
+            'display_order' => (int) $restaurant->dishes()->where('category_id', $category?->id)->max('display_order') + 1,
+        ]);
+        $deal->restaurant()->associate($restaurant);
+        $deal->offer()->associate($offer);
+        $deal->save();
+        $offer->dishes()->sync([$deal->id]);
+
+        return $deal;
+    }
+
+    /** A wide picture with some depth to it, like a food photo, for an offer. */
+    private function photo(): string
+    {
+        $image = imagecreatetruecolor(1200, 800);
+        for ($y = 0; $y < 800; $y++) {
+            $shade = (int) (60 + $y / 800 * 120);
+            imageline($image, 0, $y, 1199, $y, (int) imagecolorallocate($image, $shade + 60, (int) ($shade * 0.7), 40));
+        }
+        imagefilledellipse($image, 780, 420, 520, 420, (int) imagecolorallocate($image, 236, 196, 120));
+        imagefilledellipse($image, 700, 380, 180, 140, (int) imagecolorallocate($image, 150, 60, 30));
+        ob_start();
+        imagejpeg($image, null, 85);
+
+        return (string) ob_get_clean();
     }
 
     /** A small square logo, so no fixture file is needed. */
@@ -237,6 +353,42 @@ class E2eController extends Controller
         imagepng($image);
 
         return (string) ob_get_clean();
+    }
+
+    /**
+     * A scenario dish's builds: from a category named in English (only the
+     * dishes named, when some are), with part prices for its dishes by
+     * English name, or with a list of its own.
+     *
+     * @param  array<int, array<string, mixed>>  $rows
+     */
+    private function dishBuilds(Restaurant $restaurant, Dish $dish, array $rows): void
+    {
+        foreach (array_values($rows) as $position => $row) {
+            $category = isset($row['category'])
+                ? $restaurant->categories()->get()->first(fn (Category $category): bool => $category->getTranslation('name', 'en') === $row['category'])
+                : null;
+            $only = isset($row['dishes'])
+                ? $restaurant->dishes()->get()->filter(fn (Dish $choice): bool => in_array($choice->getTranslation('name', 'en'), (array) $row['dishes'], true))->pluck('id')->values()->all()
+                : null;
+            $build = $dish->builds()->create([
+                'name' => $row['name'],
+                'shape' => $row['shape'] ?? 'split',
+                'parts' => $row['parts'] ?? [1, 2],
+                'category_id' => $category?->id,
+                'dish_ids' => $only,
+                'display_order' => $position,
+            ]);
+
+            foreach (array_values($row['choices'] ?? []) as $place => $choice) {
+                $build->choices()->create(['name' => $choice['name'], 'price' => $choice['price'] ?? 0, 'part_prices' => $choice['part_prices'] ?? null, 'display_order' => $place]);
+            }
+
+            foreach ((array) ($row['part_prices'] ?? []) as $name => $prices) {
+                $priced = $restaurant->dishes()->get()->first(fn (Dish $choice): bool => $choice->getTranslation('name', 'en') === $name);
+                $build->choices()->create(['dish_id' => $priced?->id, 'part_prices' => $prices]);
+            }
+        }
     }
 
     /**

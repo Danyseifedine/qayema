@@ -11,6 +11,7 @@ use App\Http\Controllers\QrCardController;
 use App\Http\Controllers\SeoController;
 use App\Http\Controllers\TempUploadController;
 use App\Http\Middleware\CacheMenuForGuests;
+use App\Http\Middleware\DropUnknownMenuQuery;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\SetPortalLocale;
 use App\Http\Middleware\StartSessionForReturningVisitors;
@@ -157,7 +158,7 @@ Route::group([
     // would otherwise swallow every other path, and constrained to the shape a slug
     // can actually take so reserved prefixes can never be captured.
     Route::get('/{restaurant:slug}', [PublicMenuController::class, 'show'])
-        ->middleware(CacheMenuForGuests::class)
+        ->middleware([DropUnknownMenuQuery::class, CacheMenuForGuests::class])
         ->where('restaurant', '(?!(?:'.implode('|', array_map('preg_quote', \App\Models\Restaurant::RESERVED_SLUGS)).')$)[a-z0-9][a-z0-9-]*')
         ->name('public.menu');
 });

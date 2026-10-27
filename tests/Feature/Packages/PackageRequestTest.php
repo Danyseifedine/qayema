@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Packages;
 
+use App\Enums\Feature;
 use App\Filament\Admin\Resources\Restaurants\RestaurantResource;
 use App\Mail\ContactMessageReceived;
 use App\Models\ContactMessage;
@@ -59,7 +60,7 @@ class PackageRequestTest extends TestCase
         $this->actingAs($owner->user)->postJson(route('api.packages.request'), ['package' => 'premium'])->assertCreated();
 
         $this->assertSame('free', $owner->fresh()->effectivePackage()->slug);
-        $this->assertSame(40, $owner->fresh()->dish_limit);
+        $this->assertSame(40, $owner->fresh()->limitOf(Feature::DishLimit));
     }
 
     public function test_the_admin_recipient_is_emailed_with_the_package(): void

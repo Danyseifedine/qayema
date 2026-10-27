@@ -15,6 +15,14 @@ enum Feature: string
     case CategoryLimit = 'category_limit';
     case SocialLinkLimit = 'social_link_limit';
     case WritingHelpLimit = 'writing_help_limit';
+
+    /**
+     * AI credits a month (App\Services\Ai\WritingHelpCredits). A package's
+     * comes from its AI budget in dollars (Package::featureValue()); grants
+     * give one restaurant its own number or extra.
+     */
+    case WritingHelpCredits = 'writing_help_credits';
+
     case MultipleLanguages = 'multiple_languages';
     case Variants = 'variants';
     case Addons = 'addons';
@@ -26,6 +34,39 @@ enum Feature: string
     case DineIn = 'dine_in';
     case Analytics = 'analytics';
     case AdvancedAnalytics = 'advanced_analytics';
+    case Offers = 'offers';
+
+    /** Offers in each place switched on at once (OfferPlacement::limit()). */
+    case OfferBannerLimit = 'offer_banner_limit';
+
+    case OfferPopupLimit = 'offer_popup_limit';
+
+    case OfferAdLimit = 'offer_ad_limit';
+
+    /** Orders at the table sent on WhatsApp (DineIn is the in-menu way). */
+    case DineInWhatsApp = 'dine_in_whatsapp';
+
+    /** A guest follows an order placed in the menu, and may change it until accepted. */
+    case OrderTracking = 'order_tracking';
+
+    /** An offer may run on dates, weekdays, days of the month or hours. */
+    case OfferSchedules = 'offer_schedules';
+
+    /** An offer may take a discount off its dishes. */
+    case OfferDiscounts = 'offer_discounts';
+
+    /**
+     * "Build your own" on a dish: half and half pizzas, three scoops
+     * (App\Models\DishBuild). On no package: an admin switches it on for a
+     * restaurant.
+     */
+    case BuildYourOwn = 'build_your_own';
+
+    /**
+     * How many dishes guests build (dishes with a build) a restaurant may
+     * have, while BuildYourOwn is on. 3 unless an admin sets another.
+     */
+    case BuildLimit = 'build_limit';
 
     /**
      * Every case is listed, with no default arm: a new case without a kind
@@ -34,9 +75,12 @@ enum Feature: string
     public function kind(): FeatureKind
     {
         return match ($this) {
-            self::DishLimit, self::CategoryLimit, self::SocialLinkLimit, self::WritingHelpLimit => FeatureKind::Limit,
+            self::DishLimit, self::CategoryLimit, self::SocialLinkLimit, self::WritingHelpLimit, self::WritingHelpCredits,
+            self::OfferBannerLimit, self::OfferPopupLimit, self::OfferAdLimit, self::BuildLimit => FeatureKind::Limit,
             self::MultipleLanguages, self::Variants, self::Addons, self::Appearance, self::PremiumDesigns,
-            self::QrStudio, self::Ordering, self::MenuOrdering, self::DineIn, self::Analytics, self::AdvancedAnalytics => FeatureKind::Flag,
+            self::QrStudio, self::Ordering, self::MenuOrdering, self::DineIn, self::Analytics, self::AdvancedAnalytics,
+            self::Offers, self::DineInWhatsApp, self::OrderTracking, self::OfferSchedules, self::OfferDiscounts,
+            self::BuildYourOwn => FeatureKind::Flag,
         };
     }
 
@@ -46,12 +90,18 @@ enum Feature: string
     }
 
     /**
-     * Listed on the landing page's pricing cards. The AI's daily uses are a
-     * dashboard detail, kept off the public page (which claims no AI).
+     * Listed on the landing page's pricing cards. The AI's uses and credits
+     * are a dashboard detail, kept off the public page (which claims no AI); the
+     * parts of offers and ordering an admin may sell apart are told by their
+     * Offers and ordering rows.
      */
     public function isOnPricing(): bool
     {
-        return $this !== self::WritingHelpLimit;
+        return ! in_array($this, [
+            self::WritingHelpLimit, self::WritingHelpCredits, self::OfferBannerLimit, self::OfferPopupLimit, self::OfferAdLimit,
+            self::DineInWhatsApp, self::OrderTracking, self::OfferSchedules, self::OfferDiscounts, self::BuildYourOwn,
+            self::BuildLimit,
+        ], true);
     }
 
     /** @return array<int, self> */
@@ -80,8 +130,17 @@ enum Feature: string
             // Uses of the dashboard's AI a day (App\Services\Ai\WritingHelp);
             // 0 turns it off for the package.
             self::WritingHelpLimit => 30,
+            // No package at all has no AI budget, so no credits.
+            self::WritingHelpCredits => 0,
+            // Used only where offers are on (the `offers` flag).
+            self::OfferBannerLimit => 3,
+            self::OfferPopupLimit, self::OfferAdLimit => 1,
+            // Used only where an admin switched Build your own on.
+            self::BuildLimit => 3,
             self::MultipleLanguages, self::Variants, self::Addons, self::Appearance, self::PremiumDesigns,
-            self::QrStudio, self::Ordering, self::MenuOrdering, self::DineIn, self::Analytics, self::AdvancedAnalytics => 0,
+            self::QrStudio, self::Ordering, self::MenuOrdering, self::DineIn, self::Analytics, self::AdvancedAnalytics,
+            self::Offers, self::DineInWhatsApp, self::OrderTracking, self::OfferSchedules, self::OfferDiscounts,
+            self::BuildYourOwn => 0,
         };
     }
 

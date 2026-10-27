@@ -2,8 +2,10 @@
 
 namespace App\Filament\Admin\Resources\Users\Pages;
 
+use App\Enums\Feature;
 use App\Filament\Admin\Resources\Users\UserResource;
 use App\Models\User;
+use App\Services\Analytics\MenuTraffic;
 use Filament\Actions\EditAction;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Pages\ViewRecord;
@@ -26,7 +28,7 @@ class ViewUser extends ViewRecord
         $restaurant = $user->restaurant;
         // Read once each when the page draws, not a query per figure: the
         // visits in one pass, the content in one count.
-        $traffic = $restaurant?->trafficTotals();
+        $traffic = $restaurant === null ? null : (new MenuTraffic($restaurant))->totals();
         $restaurant?->loadCount([
             'dishes',
             'categories',
@@ -181,13 +183,13 @@ class ViewUser extends ViewRecord
                 ->schema([
                     TextEntry::make('content_dishes')
                         ->label('Dishes')
-                        ->getStateUsing(fn () => ($restaurant?->dishes_count ?? 0).' / '.($restaurant?->dish_limit ?? '-'))
+                        ->getStateUsing(fn () => ($restaurant?->dishes_count ?? 0).' / '.($restaurant?->limitOf(Feature::DishLimit) ?? '-'))
                         ->badge()
                         ->color('primary'),
 
                     TextEntry::make('content_categories')
                         ->label('Categories')
-                        ->getStateUsing(fn () => ($restaurant?->categories_count ?? 0).' / '.($restaurant?->category_limit ?? '-'))
+                        ->getStateUsing(fn () => ($restaurant?->categories_count ?? 0).' / '.($restaurant?->limitOf(Feature::CategoryLimit) ?? '-'))
                         ->badge()
                         ->color('warning'),
 
@@ -199,7 +201,7 @@ class ViewUser extends ViewRecord
 
                     TextEntry::make('content_social_links')
                         ->label('Social Links')
-                        ->getStateUsing(fn () => ($restaurant?->social_links_count ?? 0).' / '.($restaurant?->social_link_limit ?? '-'))
+                        ->getStateUsing(fn () => ($restaurant?->social_links_count ?? 0).' / '.($restaurant?->limitOf(Feature::SocialLinkLimit) ?? '-'))
                         ->badge()
                         ->color('info'),
                 ]),

@@ -50,6 +50,7 @@ class RestaurantController extends Controller
                 ->orderBy('package_ends_at')->orderBy('id'),
             IndexRestaurantsRequest::ENDED => $query->packageExpired()
                 ->orderByDesc('package_ends_at')->orderByDesc('id'),
+            IndexRestaurantsRequest::PAYING => $query->paying()->latest('id'),
             default => $query->latest('id'),
         };
 

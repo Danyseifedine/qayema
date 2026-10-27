@@ -18,6 +18,7 @@ use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Exceptions;
 use Laravel\Ai\Exceptions\AiException;
 use Laravel\Ai\Exceptions\InsufficientCreditsException;
+use Laravel\Ai\Exceptions\ProviderConnectionException;
 use Laravel\Ai\Exceptions\RateLimitedException;
 use Laravel\Ai\Prompts\AgentPrompt;
 use Laravel\Ai\Responses\Data\Meta;
@@ -369,7 +370,8 @@ class WritingHelpTest extends TestCase
 
         $this->assertSame('Soupe aux lentilles', $this->help()->translate('Red lentil soup', 'en', 'fr', max: 20));
 
-        MenuTranslator::assertPrompted(fn (AgentPrompt $prompt): bool => $prompt->prompt === 'Red lentil soup');
+        // The answer's cap follows the field.
+        MenuTranslator::assertPrompted(fn (AgentPrompt $prompt): bool => $prompt->prompt === 'Red lentil soup' && $prompt->agent->characters === 20);
         MenuTranslator::assertPrompted(fn (AgentPrompt $prompt): bool => $prompt->prompt === "Translate this text again:\nRed lentil soup\n\nYour last answer, \"Soupe de lentilles rouges au cumin\", was 34 characters. Translate it again in at most 20 characters.");
     }
 
@@ -379,6 +381,7 @@ class WritingHelpTest extends TestCase
         MenuTranslator::fake([['text' => $long]]);
 
         $this->assertSame($long, $this->help()->translate('Soup', 'en', 'fr'));
+        MenuTranslator::assertPrompted(fn (AgentPrompt $prompt): bool => $prompt->agent->characters === WritingHelp::LONGEST_TEXT);
     }
 
     public function test_a_written_description_keeps_its_length_and_loses_its_dashes_in_the_other_language(): void
@@ -502,6 +505,26 @@ class WritingHelpTest extends TestCase
         }
 
         Exceptions::assertReported($cause::class);
+    }
+
+    public function test_a_call_cut_off_on_its_way_counts_as_the_most_it_could_cost(): void
+    {
+        Exceptions::fake();
+        $cause = ProviderConnectionException::forProvider('anthropic');
+        MenuTranslator::fake(fn () => throw $cause);
+        // The provider's cheapest, Haiku: an answer for a 60-character field is 220 tokens at most.
+        $this->help()->takeTokens();
+
+        try {
+            $this->help()->translate('Soup', 'en', 'fr', max: 60);
+            $this->fail('A cut-off call is a WritingHelpFailed.');
+        } catch (WritingHelpFailed $failed) {
+            $this->assertSame($cause, $failed->getPrevious());
+        }
+
+        // It may have been billed, so the credits' cap never takes it as free.
+        $this->assertSame([1500, 220], $this->help()->takeTokens());
+        Exceptions::assertReported(ProviderConnectionException::class);
     }
 
     public function test_a_bug_in_the_app_is_not_dressed_up_as_a_provider_failure(): void

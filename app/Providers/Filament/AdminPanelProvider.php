@@ -2,16 +2,19 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Admin\Pages\AiCredits;
 use App\Filament\Admin\Pages\Dashboard;
 use App\Filament\Admin\Resources\BlockedIps\BlockedIpResource;
 use App\Filament\Admin\Resources\Categories\CategoryResource;
 use App\Filament\Admin\Resources\ContactMessages\ContactMessageResource;
 use App\Filament\Admin\Resources\Dishes\DishResource;
+use App\Filament\Admin\Resources\Offers\OfferResource;
 use App\Filament\Admin\Resources\Packages\PackageResource;
 use App\Filament\Admin\Resources\Restaurants\RestaurantResource;
 use App\Filament\Admin\Resources\RestaurantSocialLinks\RestaurantSocialLinkResource;
 use App\Filament\Admin\Resources\Templates\TemplateResource;
 use App\Filament\Admin\Resources\Users\UserResource;
+use App\Filament\Admin\Widgets\Overview;
 use App\Filament\Admin\Widgets\PackagesEndingSoon;
 use App\Filament\Admin\Widgets\WritingHelpUsage;
 use App\Http\Middleware\EnsureUserIsAdmin;
@@ -22,6 +25,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Schemas\Components\Section;
@@ -60,14 +64,26 @@ class AdminPanelProvider extends PanelProvider
                 CategoryResource::class,
                 DishResource::class,
                 RestaurantSocialLinkResource::class,
+                OfferResource::class,
                 ContactMessageResource::class,
                 PackageResource::class,
                 BlockedIpResource::class,
             ])
             ->pages([
                 Dashboard::class,
+                AiCredits::class,
             ])
+            // The day-to-day at the top (Dashboard, Restaurants, Inbox,
+            // Users), then each restaurant's menu across all of them, then
+            // what is set once and rarely touched.
+            ->navigationGroups([
+                NavigationGroup::make('Menu content'),
+                NavigationGroup::make('Settings'),
+            ])
+            ->globalSearchKeyBindings(['command+k', 'ctrl+k'])
+            ->globalSearchFieldSuffix(fn (): string => 'Ctrl K')
             ->widgets([
+                Overview::class,
                 PackagesEndingSoon::class,
                 WritingHelpUsage::class,
             ])

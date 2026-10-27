@@ -3,6 +3,8 @@
 namespace App\Filament\Admin\Resources\Categories\Schemas;
 
 use App\Filament\Admin\Schemas\Components\MenuTextInputs;
+use App\Support\CategoryIcons;
+use App\Support\MenuTextLimits;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -34,15 +36,21 @@ class CategoryForm
                             ->label("Name ({$language})")
                             ->placeholder('e.g. Starters, Mains, Desserts')
                             ->required()
-                            ->maxLength(255)
+                            ->maxLength(MenuTextLimits::CATEGORY_NAME)
                             ->helperText('Displayed as a section heading on the public menu.'), MenuTextInputs::ofChosenRestaurant()),
                         ...MenuTextInputs::make(fn (string $code, string $language): Textarea => Textarea::make("description.{$code}")
                             ->label("Description ({$language})")
                             ->placeholder('e.g. Served from noon until close')
                             ->rows(2)
-                            ->maxLength(300)
+                            ->maxLength(MenuTextLimits::CATEGORY_DESCRIPTION)
                             ->helperText('Optional. One line under the heading on the public menu.')
                             ->columnSpanFull(), MenuTextInputs::ofChosenRestaurant()),
+                        Select::make('icon')
+                            ->label('Icon')
+                            ->options(CategoryIcons::labels())
+                            ->searchable()
+                            ->placeholder('No icon')
+                            ->helperText('Optional. Shown before the category\'s name in the menu\'s tabs.'),
                         TextInput::make('display_order')
                             ->label('Display Order')
                             ->numeric()

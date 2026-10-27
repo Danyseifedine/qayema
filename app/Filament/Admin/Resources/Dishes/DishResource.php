@@ -13,6 +13,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class DishResource extends Resource
 {
@@ -24,7 +25,9 @@ class DishResource extends Resource
 
     protected static ?string $navigationLabel = 'Dishes';
 
-    protected static ?int $navigationSort = 4;
+    protected static UnitEnum|string|null $navigationGroup = 'Menu content';
+
+    protected static ?int $navigationSort = 1;
 
     public static function form(Schema $schema): Schema
     {

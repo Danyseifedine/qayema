@@ -39,7 +39,8 @@ final class OrderNews
             if ($owner) {
                 rescue(fn () => event(new OrdersChanged($order->restaurant)));
             }
-            if ($guest) {
+            // The guest hears it only while the package tracks orders.
+            if ($guest && $order->restaurant->tracksOrders()) {
                 rescue(fn () => event(new OrderMoved($order)));
             }
         });

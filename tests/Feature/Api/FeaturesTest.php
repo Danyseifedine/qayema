@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api;
 
 use App\Enums\Feature;
+use App\Services\Qr\QrDesign;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\CreatesOwners;
 use Tests\Support\SendsMenuToken;
@@ -109,7 +110,7 @@ class FeaturesTest extends TestCase
             ->assertJsonPath('data.card_url', null);
 
         $this->actingAs($owner->user)
-            ->putJson(route('api.qr.update'), $owner->qrDefaultDesign())
+            ->putJson(route('api.qr.update'), QrDesign::defaults($owner))
             ->assertForbidden();
 
         // The saved design is kept for when the studio comes back.

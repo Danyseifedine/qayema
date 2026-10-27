@@ -20,6 +20,14 @@ class AbuseGuard
     // trips it instantly. The per-request 429 limit throttles everyone regardless.
     private const STRIKE_THRESHOLD = 20;
 
+    /** Every active block, ip => when it ends (null: never), kept as one entry for BLOCK_CACHE_TTL. */
+    public const BLOCKS_CACHE_KEY = 'abuse_guard:blocked';
+
+    /**
+     * Read from the one cached list of active blocks, not a query per
+     * address: with every guest a new address, a cache per address missed on
+     * nearly every request. A block that ends meanwhile stops at its end.
+     */
     public function isBlocked(string $ip): bool
     {
         if ($this->isTrusted($ip)) {
@@ -27,10 +35,12 @@ class AbuseGuard
         }
 
         try {
-            return Cache::remember(
-                $this->blockCacheKey($ip),
+            $blocks = Cache::remember(
+                self::BLOCKS_CACHE_KEY,
                 self::BLOCK_CACHE_TTL,
-                fn (): bool => BlockedIp::query()->active()->where('ip', $ip)->exists(),
+                fn (): array => BlockedIp::query()->active()->get(['ip', 'expires_at'])
+                    ->mapWithKeys(fn (BlockedIp $block): array => [$block->ip => $block->expires_at?->getTimestamp()])
+                    ->all(),
             );
         } catch (QueryException $exception) {
             Log::warning('AbuseGuard block lookup failed; failing open.', [
@@ -40,6 +50,8 @@ class AbuseGuard
 
             return false;
         }
+
+        return array_key_exists($ip, $blocks) && ($blocks[$ip] === null || $blocks[$ip] > now()->getTimestamp());
     }
 
     public function block(string $ip, ?string $reason = null, ?DateTimeInterface $expiresAt = null): void
@@ -77,18 +89,13 @@ class AbuseGuard
     }
 
     /**
-     * Drop the cached answer for an IP. The BlockedIp model calls this on
+     * Drop the cached list of blocks. The BlockedIp model calls this on
      * every write and delete, so an admin's "Unblock" (or a new expiry) takes
      * effect on the next request rather than when the cache runs out.
      */
-    public function forgetBlockCache(string $ip): void
+    public function forgetBlockCache(): void
     {
-        Cache::forget($this->blockCacheKey($ip));
-    }
-
-    private function blockCacheKey(string $ip): string
-    {
-        return 'abuse_guard:blocked:'.$ip;
+        Cache::forget(self::BLOCKS_CACHE_KEY);
     }
 
     private function strikeCacheKey(string $ip): string

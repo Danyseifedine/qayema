@@ -15,7 +15,29 @@ use Illuminate\Contracts\Validation\ValidationRule;
  */
 class AvailableSlug implements ValidationRule
 {
+    public const MAX_LENGTH = 100;
+
+    /** Letters, numbers and dashes, starting and ending with a letter or number. */
+    public const FORMAT = '/^[a-z0-9][a-z0-9-]*[a-z0-9]$/';
+
     public function __construct(private readonly ?int $restaurantId = null) {}
+
+    /**
+     * Every rule a menu link must pass, the one list behind onboarding, the
+     * owner's API, the admin API and the admin panel, so none of them takes a
+     * link another refuses.
+     *
+     * @param  int|null  $restaurantId  the restaurant the link is for, which may keep or take back its own
+     * @return array<int, mixed>
+     */
+    public static function rules(?int $restaurantId = null): array
+    {
+        return [
+            'required', 'string', 'min:2', 'max:'.self::MAX_LENGTH,
+            'regex:'.self::FORMAT,
+            new self($restaurantId),
+        ];
+    }
 
     /**
      * @param  \Closure(string, ?string=): \Illuminate\Translation\PotentiallyTranslatedString  $fail

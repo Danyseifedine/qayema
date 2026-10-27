@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Schemas\Components;
 
 use App\Models\Restaurant;
 use App\Services\Menu\MenuLanguages;
+use App\Support\PerRequest;
 use Closure;
 use Filament\Forms\Components\Field;
 use Filament\Schemas\Components\Utilities\Get;
@@ -45,25 +46,36 @@ final class MenuTextInputs
         return fn (Get $get, mixed $livewire): ?string => self::mainOf($livewire->data['restaurant_id'] ?? null);
     }
 
-    /**
-     * Read once per restaurant and request: every input of the form asks
-     * (eleven per text field), so only the one column, kept on the request
-     * (never in the cache, where it would outlive a change of language).
-     */
     private static function mainOf(mixed $restaurantId): ?string
+    {
+        $main = self::columnOf($restaurantId, 'main_locale');
+
+        return $main === null ? null : MenuLanguages::validMain($main);
+    }
+
+    /** The chosen restaurant's currency, for a price field's prefix. */
+    public static function currencyOf(mixed $restaurantId): ?string
+    {
+        return self::columnOf($restaurantId, 'currency');
+    }
+
+    /** The second currency a dish of the chosen restaurant may be priced in, if it has one. */
+    public static function secondCurrencyOf(mixed $restaurantId): ?string
+    {
+        return self::columnOf($restaurantId, 'second_currency');
+    }
+
+    /**
+     * Read once per restaurant, column and request: every input of the form
+     * asks (eleven per text field), so only the one column, kept on the
+     * request (never in the cache, where it would outlive a change).
+     */
+    private static function columnOf(mixed $restaurantId, string $column): ?string
     {
         if (! is_numeric($restaurantId)) {
             return null;
         }
 
-        $memo = request()->attributes;
-        $key = "admin-menu-main:{$restaurantId}";
-
-        if (! $memo->has($key)) {
-            $main = Restaurant::query()->whereKey((int) $restaurantId)->value('main_locale');
-            $memo->set($key, $main === null ? null : MenuLanguages::validMain($main));
-        }
-
-        return $memo->get($key);
+        return PerRequest::remember("admin-restaurant:{$restaurantId}:{$column}", fn (): ?string => Restaurant::query()->whereKey((int) $restaurantId)->value($column));
     }
 }

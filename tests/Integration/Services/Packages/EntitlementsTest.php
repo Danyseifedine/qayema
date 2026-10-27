@@ -18,9 +18,9 @@ class EntitlementsTest extends TestCase
     {
         $restaurant = Restaurant::factory()->create(['template_id' => null]);
 
-        $this->assertSame(40, $restaurant->dish_limit);
-        $this->assertSame(8, $restaurant->category_limit);
-        $this->assertSame(1, $restaurant->social_link_limit);
+        $this->assertSame(40, $restaurant->limitOf(Feature::DishLimit));
+        $this->assertSame(8, $restaurant->limitOf(Feature::CategoryLimit));
+        $this->assertSame(1, $restaurant->limitOf(Feature::SocialLinkLimit));
         $this->assertFalse($restaurant->entitlements()->can(Feature::QrStudio));
     }
 
@@ -31,18 +31,18 @@ class EntitlementsTest extends TestCase
         // No manual flush: saving a package invalidates every restaurant on it.
         $this->defaultPackageSets(Feature::CategoryLimit, 25);
 
-        $this->assertSame(25, $restaurant->category_limit);
-        $this->assertSame(40, $restaurant->dish_limit, 'Untouched features keep their seeded value.');
+        $this->assertSame(25, $restaurant->limitOf(Feature::CategoryLimit));
+        $this->assertSame(40, $restaurant->limitOf(Feature::DishLimit), 'Untouched features keep their seeded value.');
     }
 
     public function test_assigning_a_package_changes_the_limits(): void
     {
         $restaurant = Restaurant::factory()->create(['template_id' => null]);
-        $this->assertSame(40, $restaurant->dish_limit);
+        $this->assertSame(40, $restaurant->limitOf(Feature::DishLimit));
 
         $restaurant->update(['package_id' => Package::findBySlug('pro')->id]);
 
-        $this->assertSame(150, $restaurant->fresh()->dish_limit);
+        $this->assertSame(150, $restaurant->fresh()->limitOf(Feature::DishLimit));
         $this->assertTrue($restaurant->fresh()->entitlements()->can(Feature::Appearance));
     }
 
@@ -54,14 +54,14 @@ class EntitlementsTest extends TestCase
             'package_ends_at' => now()->addDay(),
         ]);
 
-        $this->assertSame(1000, $restaurant->dish_limit);
+        $this->assertSame(1000, $restaurant->limitOf(Feature::DishLimit));
 
         $restaurant->update(['package_ends_at' => now()->subDay()]);
         $restaurant = $restaurant->fresh();
 
         $this->assertTrue($restaurant->packageExpired());
         $this->assertSame('premium', $restaurant->effectivePackage()->slug);
-        $this->assertSame(1000, $restaurant->dish_limit);
+        $this->assertSame(1000, $restaurant->limitOf(Feature::DishLimit));
     }
 
     public function test_an_unlimited_limit_is_never_reached_and_a_grant_cannot_shrink_it(): void
@@ -71,15 +71,66 @@ class EntitlementsTest extends TestCase
             'package_id' => Package::findBySlug('custom')->id,
         ]);
 
-        $this->assertNull($restaurant->dish_limit);
-        $this->assertFalse($restaurant->hasReachedDishLimit());
+        $this->assertNull($restaurant->limitOf(Feature::DishLimit));
+        $this->assertFalse($restaurant->hasReached(Feature::DishLimit));
 
         FeatureGrant::factory()
             ->for($restaurant)
             ->forFeature(Feature::DishLimit, 50)
             ->create();
 
-        $this->assertNull($restaurant->fresh()->dish_limit, 'Unlimited plus a grant is still unlimited.');
+        $this->assertNull($restaurant->fresh()->limitOf(Feature::DishLimit), 'Unlimited plus a grant is still unlimited.');
+    }
+
+    public function test_a_set_limit_overrides_the_package_lower_or_higher_or_unlimited(): void
+    {
+        $restaurant = Restaurant::factory()->create(['template_id' => null]);
+        FeatureGrant::factory()->for($restaurant)->forFeature(Feature::DishLimit, 50)->create();
+
+        $lower = FeatureGrant::factory()->for($restaurant)->setTo(Feature::DishLimit, 20)->create();
+        $this->assertSame(20, $restaurant->fresh()->limitOf(Feature::DishLimit), 'Set wins over the package and the added 50.');
+
+        $lower->update(['value' => 500]);
+        $this->assertSame(500, $restaurant->fresh()->limitOf(Feature::DishLimit));
+
+        $lower->update(['value' => null]);
+        $this->assertNull($restaurant->fresh()->limitOf(Feature::DishLimit), 'Set to unlimited.');
+
+        $lower->delete();
+        $this->assertSame(90, $restaurant->fresh()->limitOf(Feature::DishLimit), 'Back to the package plus what was added.');
+    }
+
+    public function test_an_on_off_feature_can_be_turned_off_or_on_whatever_the_package(): void
+    {
+        $premium = Restaurant::factory()->create(['template_id' => null, 'package_id' => Package::findBySlug('premium')->id]);
+        FeatureGrant::factory()->for($premium)->setTo(Feature::Ordering, 0)->create();
+
+        $this->assertFalse($premium->fresh()->entitlements()->can(Feature::Ordering));
+        $this->assertSame(['ordering'], $premium->fresh()->entitlements()->turnedOff());
+
+        $free = Restaurant::factory()->create(['template_id' => null]);
+        FeatureGrant::factory()->for($free)->setTo(Feature::QrStudio, 1)->create();
+
+        $this->assertTrue($free->fresh()->entitlements()->can(Feature::QrStudio));
+        $this->assertSame([], $free->fresh()->entitlements()->turnedOff());
+    }
+
+    public function test_the_newest_set_value_wins_and_an_ended_one_stops(): void
+    {
+        $restaurant = Restaurant::factory()->create(['template_id' => null, 'package_id' => Package::findBySlug('premium')->id]);
+        FeatureGrant::factory()->for($restaurant)->setTo(Feature::Analytics, 0)->create();
+        $on = FeatureGrant::factory()->for($restaurant)->setTo(Feature::Analytics, 1)->create();
+
+        $this->assertTrue($restaurant->fresh()->entitlements()->can(Feature::Analytics));
+        $this->assertSame([], $restaurant->fresh()->entitlements()->turnedOff());
+
+        $on->delete();
+        $paused = FeatureGrant::factory()->for($restaurant)->setTo(Feature::QrStudio, 0)->create(['ends_at' => now()->addDay()]);
+        $this->assertSame(['analytics', 'qr_studio'], $restaurant->fresh()->entitlements()->turnedOff());
+
+        $this->travelTo(now()->addDays(2));
+        $this->assertTrue($restaurant->fresh()->entitlements()->can(Feature::QrStudio), 'The pause ended on its own.');
+        $this->assertModelExists($paused);
     }
 
     public function test_a_grant_stacks_on_top_of_the_default(): void
@@ -91,7 +142,7 @@ class EntitlementsTest extends TestCase
             ->forFeature(Feature::DishLimit, 50)
             ->create();
 
-        $this->assertSame(90, $restaurant->dish_limit, '40 default + 50 granted.');
+        $this->assertSame(90, $restaurant->limitOf(Feature::DishLimit), '40 default + 50 granted.');
     }
 
     public function test_several_grants_of_the_same_feature_add_up(): void
@@ -103,7 +154,7 @@ class EntitlementsTest extends TestCase
         FeatureGrant::factory()->for($restaurant)
             ->forFeature(Feature::DishLimit, 50)->create();
 
-        $this->assertSame(140, $restaurant->dish_limit, '40 default + 50 + 50.');
+        $this->assertSame(140, $restaurant->limitOf(Feature::DishLimit), '40 default + 50 + 50.');
     }
 
     public function test_a_flag_grant_unlocks_the_feature(): void
@@ -131,7 +182,7 @@ class EntitlementsTest extends TestCase
             ->create();
 
         $this->assertFalse($restaurant->entitlements()->can(Feature::QrStudio));
-        $this->assertSame(40, $restaurant->dish_limit);
+        $this->assertSame(40, $restaurant->limitOf(Feature::DishLimit));
     }
 
     public function test_deleting_a_grant_takes_the_allowance_away_again(): void
@@ -143,11 +194,11 @@ class EntitlementsTest extends TestCase
             ->forFeature(Feature::DishLimit, 50)
             ->create();
 
-        $this->assertSame(90, $restaurant->dish_limit);
+        $this->assertSame(90, $restaurant->limitOf(Feature::DishLimit));
 
         $grant->delete();
 
-        $this->assertSame(40, $restaurant->fresh()->dish_limit, 'The cache is flushed on delete.');
+        $this->assertSame(40, $restaurant->fresh()->limitOf(Feature::DishLimit), 'The cache is flushed on delete.');
     }
 
     public function test_a_feature_missing_from_a_package_falls_back_to_its_own_default(): void
@@ -161,8 +212,8 @@ class EntitlementsTest extends TestCase
             'package_id' => $package->id,
         ]);
 
-        $this->assertSame(500, $restaurant->dish_limit);
-        $this->assertSame(8, $restaurant->category_limit, 'Feature::defaultValue() fills the gap.');
+        $this->assertSame(500, $restaurant->limitOf(Feature::DishLimit));
+        $this->assertSame(8, $restaurant->limitOf(Feature::CategoryLimit), 'Feature::defaultValue() fills the gap.');
         $this->assertFalse($restaurant->entitlements()->can(Feature::QrStudio));
     }
 
@@ -170,7 +221,7 @@ class EntitlementsTest extends TestCase
     {
         $restaurant = Restaurant::factory()->create();
 
-        $this->assertSame(40, $restaurant->dish_limit);
+        $this->assertSame(40, $restaurant->limitOf(Feature::DishLimit));
         $this->assertFalse($restaurant->entitlements()->can(Feature::QrStudio));
     }
 

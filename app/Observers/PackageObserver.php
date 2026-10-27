@@ -34,11 +34,20 @@ class PackageObserver
 
     public function saved(Package $package): void
     {
+        // A save that changed nothing (Save pressed on an untouched form)
+        // spends no Cloudflare purge and flushes nothing.
+        if (! $package->wasRecentlyCreated && ! $package->wasChanged()) {
+            return;
+        }
+
         $this->forgetWhatItGives();
 
-        // "Most popular" is one package: marking one takes it off the others.
-        if ($package->is_featured && ($package->wasRecentlyCreated || $package->wasChanged('is_featured'))) {
-            Package::query()->whereKeyNot($package->getKey())->where('is_featured', true)->update(['is_featured' => false]);
+        // "Most popular" is one package, and so is the default: marking one
+        // takes it off the others.
+        foreach (['is_featured', 'is_default'] as $one) {
+            if ($package->{$one} && ($package->wasRecentlyCreated || $package->wasChanged($one))) {
+                Package::query()->whereKeyNot($package->getKey())->where($one, true)->update([$one => false]);
+            }
         }
     }
 

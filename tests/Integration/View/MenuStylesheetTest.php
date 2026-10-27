@@ -80,4 +80,35 @@ class MenuStylesheetTest extends TestCase
         }
 
     }
+
+    /**
+     * On a wide screen a banner is a strip as wide as the cover: not its
+     * phone shape left alone beside empty space. Its picture keeps its own
+     * proportions on the far side, mirrored on an Arabic menu, and the ad
+     * sits in the menu's corner rather than over the dishes.
+     */
+    public function test_a_banner_is_a_full_width_strip_on_a_wide_screen(): void
+    {
+        $css = (string) file_get_contents(public_path('css/menu-classic.css'));
+        $wide = (string) preg_replace('/^.*?\/\* On a wide screen a banner/s', '', $css);
+
+        $this->assertMatchesRegularExpression('/\.offer-banner\s*\{[^}]*flex-basis:\s*100%;[^}]*aspect-ratio:\s*auto;[^}]*height:\s*var\(--strip\)/', $wide);
+        $this->assertMatchesRegularExpression('/\.offer-banner:not\(\.offer-picture-only\) \.offer-photo\s*\{[^}]*width:\s*min\(calc\(var\(--strip\) \* var\(--ratio\)\)/', $wide);
+        $this->assertStringContainsString('[dir="rtl"] .offer-banner:not(.offer-picture-only) .offer-photo', $wide);
+        $this->assertMatchesRegularExpression('/\.offer-ad-wrap\s*\{[^}]*inset-inline:\s*32px auto;/', $wide);
+    }
+
+    /**
+     * A dish's discount sits on its photo's corner, over the picture, so the
+     * card keeps its height; without a photo it is beside the price.
+     */
+    public function test_a_dish_discount_takes_no_room_on_its_card(): void
+    {
+        $css = (string) file_get_contents(public_path('css/menu-classic.css'));
+        $js = (string) file_get_contents(public_path('js/menu-offers.js'));
+
+        $this->assertMatchesRegularExpression('/\.dish-photo-slot\s*\{\s*position:\s*relative;/', $css);
+        $this->assertMatchesRegularExpression('/\.dish-photo-slot \.dish-badge\s*\{[^}]*position:\s*absolute;[^}]*inset-inline-start:/', $css);
+        $this->assertStringContainsString("(dish.querySelector('.dish-photo-slot') || group || dish).appendChild(badge)", $js);
+    }
 }

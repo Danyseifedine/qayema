@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\Feature;
 use App\Http\Controllers\Concerns\ResolvesRestaurant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreSocialLinkRequest;
@@ -13,7 +14,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 
 /**
  * Social link CRUD for the dashboard SPA. Every action is scoped to the
@@ -34,7 +34,7 @@ class SocialLinkController extends Controller
         return SocialLinkResource::collection($links)->additional([
             'meta' => [
                 'used' => $links->count(),
-                'limit' => $restaurant->social_link_limit,
+                'limit' => $restaurant->limitOf(Feature::SocialLinkLimit),
             ],
         ]);
     }
@@ -49,11 +49,7 @@ class SocialLinkController extends Controller
         $link = DB::transaction(function () use ($request, $restaurant): RestaurantSocialLink {
             $locked = Restaurant::query()->whereKey($restaurant->id)->lockForUpdate()->firstOrFail();
 
-            if ($locked->hasReachedSocialLinkLimit()) {
-                throw ValidationException::withMessages([
-                    'platform' => __('You have reached your plan limit of :limit social links.', ['limit' => $locked->social_link_limit]),
-                ]);
-            }
+            $locked->ensureRoomFor(Feature::SocialLinkLimit, 'platform', 'You have reached your plan limit of :limit social links.');
 
             $link = new RestaurantSocialLink($request->validated());
             $link->restaurant()->associate($locked);

@@ -19,12 +19,19 @@ return [
     'presets' => [
         // 400px + WebP keeps the mark crisp on retina headers and preserves alpha.
         'logo' => ['fit' => 'contain', 'width' => 400, 'height' => 400, 'max_kb' => 50],
-        'cover_image' => ['fit' => 'cover', 'width' => 1920, 'height' => 600, 'quality' => 80],
+        // Kept whole, never cropped or enlarged: the menu shows the band each
+        // screen has room for (object-fit), so a phone, a tablet and a wide
+        // screen each get the best of it, and a small photo stays sharp.
+        'cover_image' => ['fit' => 'contain', 'width' => 1920, 'height' => 1280, 'quality' => 80],
         // Dishes are the hero content: a larger box + higher ceiling keeps food
         // photography sharp when a QR menu is viewed full-width on a phone.
         // Never cropped: a long sub sandwich keeps both ends, only shrunk.
         'dish' => ['fit' => 'contain', 'width' => 1200, 'height' => 1200, 'max_kb' => 150],
         'generic' => ['fit' => 'contain', 'width' => 1200, 'height' => 1200, 'max_kb' => 200],
+        // An offer fills a phone's width, or more in a pop-up, and may carry
+        // words drawn into it: a bigger box and ceiling keep those sharp on
+        // a 3x screen. Never cropped here; the menu fits it to its shape.
+        'offer' => ['fit' => 'contain', 'width' => 2000, 'height' => 2000, 'max_kb' => 500],
     ],
 
 ];

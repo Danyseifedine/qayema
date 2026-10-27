@@ -47,6 +47,10 @@ return [
         'provider' => env('AI_PROVIDER'),
         'model' => env('AI_MODEL'),
         'at_once' => (int) env('AI_AT_ONCE', 10),
+        // Dollars per million tokens, in and out, for a model the admin's cost
+        // figures do not know (App\Services\Ai\WritingHelpPrice).
+        'price_input' => env('AI_PRICE_INPUT'),
+        'price_output' => env('AI_PRICE_OUTPUT'),
     ],
 
     'recaptcha' => [

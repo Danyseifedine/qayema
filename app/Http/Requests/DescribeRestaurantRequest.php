@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Services\Menu\MenuLanguages;
+use App\Support\MenuTextLimits;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -24,7 +25,7 @@ class DescribeRestaurantRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'text' => ['nullable', 'string', 'max:2000'],
+            'text' => ['nullable', 'string', 'max:'.MenuTextLimits::RESTAURANT_DESCRIPTION],
             'language' => ['required', 'string', Rule::in(MenuLanguages::forOwner($this->user()))],
         ];
     }

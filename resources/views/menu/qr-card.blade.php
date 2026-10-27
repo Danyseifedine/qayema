@@ -107,7 +107,7 @@
 
     <button type="button" class="print" onclick="window.print()">{{ __('Print') }}</button>
 
-    <script src="{{ asset('js/qr-code-styling.js') }}?v={{ filemtime(public_path('js/qr-code-styling.js')) }}"></script>
+    <script src="{{ \App\Support\Asset::versioned('js/qr-code-styling.js') }}"></script>
     <script>
         (function () {
             // The same library and the same options the dashboard previews

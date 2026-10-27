@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\Media\MediaService;
 use App\Services\Menu\MenuLanguages;
 use App\Services\Push\AdminAlerts;
+use App\Support\Price;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Mail;
 
@@ -107,14 +108,51 @@ class OnboardingService
         return $restaurant;
     }
 
-    /** Step 2: country code, phone and currency. */
-    public function saveContact(Restaurant $restaurant, ?string $countryCode, string $phone, string $currency): void
+    /**
+     * Step 2: country code, phone and currency, and the timezone the menu's
+     * hours are read in (the owner's browser's, else the country's), unless
+     * one is already set.
+     */
+    public function saveContact(Restaurant $restaurant, ?string $countryCode, string $phone, string $currency, ?string $timezone = null): void
     {
         $restaurant->update([
             'country_code' => $countryCode,
             'phone' => $phone,
             'currency' => $currency,
+            'timezone' => $restaurant->timezone ?? Restaurant::likelyTimezone($timezone, $countryCode),
         ]);
+    }
+
+    /**
+     * Step 2 too: the second currency some dishes may be priced in, and its
+     * rate as the owner wrote it: the dollar is the 1 (1 USD = 89,000 LBP),
+     * else one of the second is so many of the main. Stored as how many of
+     * the main currency one of the second is worth (Restaurant::rateOf()).
+     */
+    public function saveSecondCurrency(Restaurant $restaurant, ?string $second, ?string $written): void
+    {
+        $restaurant->update([
+            'second_currency' => $second,
+            'exchange_rate' => $second === null || $written === null
+                ? null
+                // Turned over (1 USD = 89,000 LBP is 0.000011235955 USD a pound),
+                // to the twelve places the column keeps, the last one rounded.
+                : ($restaurant->currency === 'USD' ? bcadd(bcdiv('1', $written, 16), '0.0000000000005', 12) : $written),
+        ]);
+    }
+
+    /** The saved rate as the owner wrote it (saveSecondCurrency()), to eight significant figures. */
+    public static function writtenRate(Restaurant $restaurant): ?string
+    {
+        if ($restaurant->second_currency === null || $restaurant->exchange_rate === null) {
+            return null;
+        }
+
+        $rate = (float) $restaurant->exchange_rate;
+        $written = $restaurant->currency === 'USD' ? 1 / $rate : $rate;
+        $places = max(0, 7 - (int) floor(log10($written)));
+
+        return Price::rate(number_format($written, $places, '.', ''));
     }
 
     /** Step 3: move the deferred logo/cover temp uploads into the media library. */

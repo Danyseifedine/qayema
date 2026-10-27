@@ -47,6 +47,21 @@ class MakeMenuTemplateTest extends TestCase
         $this->assertDatabaseHas('templates', ['slug' => 'midnight', 'is_active' => true]);
     }
 
+    public function test_the_copy_is_the_layout_and_shares_what_the_menu_does(): void
+    {
+        $path = $this->viewPath('midnight');
+
+        $this->artisan('make:menu-template', ['slug' => 'midnight'])->assertSuccessful();
+
+        $view = (string) file_get_contents($path);
+        $this->assertStringContainsString("@include('menu.partials.scripts')", $view);
+        $this->assertStringNotContainsString('QAYEMA_MENU', $view, 'The cart is not copied into each design.');
+        $this->assertStringNotContainsString('dish-options', $view);
+        // Offers are shared too: the design places the banner.
+        $this->assertStringContainsString("@include('menu.partials.offers-banner')", $view);
+        $this->assertStringNotContainsString('QAYEMA_OFFERS', $view);
+    }
+
     public function test_the_scaffolded_template_renders_a_real_menu(): void
     {
         $this->viewPath('midnight');

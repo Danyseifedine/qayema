@@ -45,7 +45,15 @@ class RestaurantController extends Controller
             'country_code' => $request->validated('country_code'),
             'phone' => $request->validated('phone'),
             'currency' => $request->validated('currency'),
+            // Only from a client that sends it, so an older one keeps what is set.
+            ...($request->has('second_currency') ? [
+                'second_currency' => $request->validated('second_currency'),
+                'exchange_rate' => $request->validated('second_currency') === null ? null : $request->validated('exchange_rate'),
+            ] : []),
         ])->save();
+
+        // A dish priced in what is now the main currency simply is in it.
+        $restaurant->dishes()->where('currency', $restaurant->currency)->update(['currency' => null]);
 
         // The logo can be replaced but never cleared (mandatory), so there is no delete flag.
         $this->media->sync($restaurant, $request->input('logo_key'), false, 'logo', 'logo');

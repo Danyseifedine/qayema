@@ -214,7 +214,11 @@ class WritingHelpUsesTest extends TestCase
         $owner = $this->owner();
         $this->uses()->take($owner);
 
-        $this->assertSame(['limit' => 4, 'left' => 3], $this->uses()->forDashboard($owner));
+        $dashboard = $this->uses()->forDashboard($owner);
+        $this->assertSame(4, $dashboard['limit']);
+        $this->assertSame(3, $dashboard['left']);
+        // And the month's credits beside them (WritingHelpCreditsTest).
+        $this->assertSame(500, $dashboard['credits']['limit']);
 
         config(['services.writing_help.provider' => null]);
         $this->assertNull($this->uses()->forDashboard($owner));

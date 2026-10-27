@@ -7,6 +7,7 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -26,7 +27,9 @@ class CategoriesTable
                     ->label('Restaurant')
                     ->placeholder('N/A')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    // The restaurant's own page lists only its rows.
+                    ->hidden(fn (mixed $livewire): bool => $livewire instanceof RelationManager),
                 TextColumn::make('dishes_count')
                     ->label('Dishes')
                     ->placeholder('N/A')
@@ -47,7 +50,9 @@ class CategoriesTable
                     ->label('Restaurant')
                     ->relationship('restaurant', 'name')
                     ->searchable()
-                    ->preload(),
+                    ->preload()
+                    // The restaurant's own page lists only its rows.
+                    ->hidden(fn (mixed $livewire): bool => $livewire instanceof RelationManager),
             ])
             ->recordActions([
                 ViewAction::make(),

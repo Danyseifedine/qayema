@@ -41,6 +41,7 @@ class TemplateResourceTest extends TestCase
             'description' => ['en' => 'Light and airy', 'ar' => null],
             'thumbnail_url' => null,
             'is_premium' => false,
+            'made_for_you' => false,
             'locked' => false,
         ], $this->resolve($template, $this->owner()->user));
     }

@@ -51,7 +51,7 @@ class PricingCardsTest extends TestCase
         $this->assertTrue($premium['featured']);
         $this->assertSame('Pro', $premium['base']);
         $this->assertSame(
-            ['Unlimited dishes*', 'Unlimited categories*', '10 social links', 'Premium designs', 'QR studio', 'Orders on WhatsApp', 'Orders in your menu', 'Orders at the table', 'Advanced analytics'],
+            ['Unlimited dishes*', 'Unlimited categories*', '10 social links', 'Premium designs', 'QR studio', 'Orders on WhatsApp', 'Orders in your menu', 'Orders at the table', 'Advanced analytics', 'Offers on your menu'],
             $premium['lines'],
         );
 
@@ -80,6 +80,11 @@ class PricingCardsTest extends TestCase
             'dine_in' => 'Premium',
             'analytics' => 'Pro',
             'advanced_analytics' => 'Premium',
+            'offers' => 'Premium',
+            'dine_in_whatsapp' => 'Premium',
+            'order_tracking' => 'Premium',
+            'offer_schedules' => 'Premium',
+            'offer_discounts' => 'Premium',
         ], app(PricingCards::class)->unlockedBy());
 
         // A feature Free has needs no chip.

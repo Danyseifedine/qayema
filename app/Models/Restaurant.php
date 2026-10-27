@@ -2,20 +2,14 @@
 
 namespace App\Models;
 
-use App\Enums\Ask;
 use App\Enums\Feature;
-use App\Enums\Fulfilment;
-use App\Enums\OrderChannel;
-use App\Enums\PackageStatus;
+use App\Models\Concerns\HasPackage;
+use App\Models\Concerns\TakesOrders;
 use App\Observers\RestaurantObserver;
-use App\Services\Analytics\MenuDays;
 use App\Services\Menu\MenuLanguages;
-use App\Services\Orders\WhatsAppLink;
 use App\Services\Packages\Entitlements;
-use App\Support\HyperLogLog;
-use Carbon\CarbonImmutable;
+use DateTimeZone;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -29,7 +23,7 @@ use Spatie\Translatable\HasTranslations;
 class Restaurant extends Model implements HasMedia
 {
     /** @use HasFactory<\Database\Factories\RestaurantFactory> */
-    use HasFactory, HasTranslations, InteractsWithMedia;
+    use HasFactory, HasPackage, HasTranslations, InteractsWithMedia, TakesOrders;
 
     /**
      * Slugs that would shadow a real route. The public menu route excludes
@@ -63,6 +57,12 @@ class Restaurant extends Model implements HasMedia
         return MenuLanguages::validMain($this->getAttributes()['main_locale'] ?? null);
     }
 
+    /** What a WhatsApp order can ask the guest for, per way in (whatsappAsks()). */
+    public const WHATSAPP_ASKS = [
+        'away' => ['name', 'phone', 'address'],
+        'table' => ['name', 'phone'],
+    ];
+
     /**
      * Features an owner may switch off on the dashboard's Features page,
      * stored in `switched_off`:
@@ -82,27 +82,24 @@ class Restaurant extends Model implements HasMedia
      *
      * @var array<int, string>
      */
-    /** What a WhatsApp order can ask the guest for, per way in (whatsappAsks()). */
-    public const WHATSAPP_ASKS = [
-        'away' => ['name', 'phone', 'address'],
-        'table' => ['name', 'phone'],
-    ];
-
     public const OPTIONAL_FEATURES = ['orders', 'dine_in', 'qr', 'analytics', 'languages', 'variants', 'addons'];
 
-    /** The package flag each optional feature needs before it can be on. */
+    /** The package flags each optional feature needs one of before it can be on. */
     private const FLAG_OF = [
-        'orders' => Feature::Ordering,
-        'dine_in' => Feature::DineIn,
-        'qr' => Feature::QrStudio,
-        'analytics' => Feature::Analytics,
-        'languages' => Feature::MultipleLanguages,
-        'variants' => Feature::Variants,
-        'addons' => Feature::Addons,
+        'orders' => [Feature::Ordering, Feature::MenuOrdering],
+        'dine_in' => [Feature::DineIn, Feature::DineInWhatsApp],
+        'qr' => [Feature::QrStudio],
+        'analytics' => [Feature::Analytics],
+        'languages' => [Feature::MultipleLanguages],
+        'variants' => [Feature::Variants],
+        'addons' => [Feature::Addons],
     ];
 
     /** The columns that say which package applies and when. */
     public const PACKAGE_FIELDS = ['package_id', 'package_started_at', 'package_ends_at'];
+
+    /** Columns no guest sees: saving only these leaves the cached menu alone. */
+    public const ADMIN_ONLY_FIELDS = ['price_cents', 'pays_with_whish', 'updated_at'];
 
     /**
      * Why the package is changing, written into the history with the next
@@ -132,6 +129,10 @@ class Restaurant extends Model implements HasMedia
         'main_locale' => 'en',
         'package_started_at' => null,
         'package_ends_at' => null,
+        'price_cents' => null,
+        'pays_with_whish' => false,
+        'second_currency' => null,
+        'exchange_rate' => null,
     ];
 
     protected $fillable = [
@@ -140,6 +141,8 @@ class Restaurant extends Model implements HasMedia
         'package_id',
         'package_started_at',
         'package_ends_at',
+        'price_cents',
+        'pays_with_whish',
         'name',
         'description',
         'slug',
@@ -149,6 +152,8 @@ class Restaurant extends Model implements HasMedia
         'opening_hours',
         'timezone',
         'currency',
+        'second_currency',
+        'exchange_rate',
         'main_locale',
         'default_locale',
         'second_locale',
@@ -173,6 +178,9 @@ class Restaurant extends Model implements HasMedia
             'opening_hours' => 'array',
             'package_started_at' => 'datetime',
             'package_ends_at' => 'datetime',
+            'price_cents' => 'integer',
+            'pays_with_whish' => 'boolean',
+            'exchange_rate' => 'decimal:12',
             'template_settings' => 'array',
             'qr_settings' => 'array',
             'switched_off' => 'array',
@@ -180,6 +188,29 @@ class Restaurant extends Model implements HasMedia
             'whatsapp_fields' => 'array',
             'menu_fonts' => 'array',
         ];
+    }
+
+    /** The currency a dish is priced in: the second one when it has it, else the main one. */
+    public function currencyOf(Dish $dish): string
+    {
+        return $dish->currency ?? $this->currency;
+    }
+
+    /**
+     * What a dish's price turns into the main currency at: the rate when it
+     * is priced in the second currency, null when it is in the main one.
+     */
+    public function rateOf(Dish $dish): ?string
+    {
+        return $dish->currency !== null && $dish->currency === $this->second_currency && $this->exchange_rate !== null
+            ? (string) $this->exchange_rate
+            : null;
+    }
+
+    /** A dish's currency as stored: null for the main one (validated to be the main or the second). */
+    public function ownCurrency(?string $currency): ?string
+    {
+        return $currency === null || $currency === $this->currency ? null : $currency;
     }
 
     /** @return BelongsTo<User, $this> */
@@ -192,6 +223,12 @@ class Restaurant extends Model implements HasMedia
     public function template(): BelongsTo
     {
         return $this->belongsTo(Template::class);
+    }
+
+    /** @return HasMany<Template, $this> the designs made for this restaurant alone */
+    public function ownDesigns(): HasMany
+    {
+        return $this->hasMany(Template::class);
     }
 
     /** @return BelongsTo<Package, $this> */
@@ -212,20 +249,16 @@ class Restaurant extends Model implements HasMedia
         return $this->hasMany(Dish::class)->orderBy('display_order');
     }
 
-    /**
-     * Links this menu had before, each still forwarding here.
-     *
-     * @return HasMany<PreviousSlug, $this>
-     */
-    public function previousSlugs(): HasMany
-    {
-        return $this->hasMany(PreviousSlug::class);
-    }
-
     /** @return HasMany<RestaurantSocialLink, $this> */
     public function socialLinks(): HasMany
     {
         return $this->hasMany(RestaurantSocialLink::class);
+    }
+
+    /** @return HasMany<Offer, $this> */
+    public function offers(): HasMany
+    {
+        return $this->hasMany(Offer::class)->orderBy('display_order')->orderBy('id');
     }
 
     /** @return HasMany<MenuSession, $this> */
@@ -272,161 +305,21 @@ class Restaurant extends Model implements HasMedia
         return $this->hasMany(FeatureGrant::class);
     }
 
+    /**
+     * The grants in force, for a list to load with its page: Entitlements
+     * reads them from here when loaded, rather than once per row.
+     *
+     * @return HasMany<FeatureGrant, $this>
+     */
+    public function activeFeatureGrants(): HasMany
+    {
+        return $this->featureGrants()->active();
+    }
+
     /** @return HasMany<PackageChange, $this> */
     public function packageChanges(): HasMany
     {
         return $this->hasMany(PackageChange::class)->latest('created_at')->latest('id');
-    }
-
-    /**
-     * Restaurants whose assigned package is in force now.
-     *
-     * @param  Builder<Restaurant>  $query
-     * @return Builder<Restaurant>
-     */
-    public function scopePackageActive(Builder $query): Builder
-    {
-        return $query
-            ->where(fn (Builder $q) => $q->whereNull('package_started_at')->orWhere('package_started_at', '<=', now()))
-            ->where(fn (Builder $q) => $q->whereNull('package_ends_at')->orWhere('package_ends_at', '>', now()));
-    }
-
-    /**
-     * Restaurants whose assigned package has a start still to come.
-     *
-     * @param  Builder<Restaurant>  $query
-     * @return Builder<Restaurant>
-     */
-    public function scopePackageScheduled(Builder $query): Builder
-    {
-        return $query->where('package_started_at', '>', now());
-    }
-
-    /**
-     * Restaurants whose assigned package has ended (in its grace days or
-     * past them).
-     *
-     * @param  Builder<Restaurant>  $query
-     * @return Builder<Restaurant>
-     */
-    public function scopePackageExpired(Builder $query): Builder
-    {
-        return $query->where('package_ends_at', '<=', now());
-    }
-
-    /**
-     * Restaurants guests can open: switched on, and not past the grace days
-     * of an ended package (menuOnline()).
-     *
-     * @param  Builder<Restaurant>  $query
-     * @return Builder<Restaurant>
-     */
-    public function scopeMenuOnline(Builder $query): Builder
-    {
-        return $query
-            ->where('is_active', true)
-            ->where(fn (Builder $q) => $q->whereNull('package_ends_at')->orWhere('package_ends_at', '>', now()->subDays(self::graceDays())));
-    }
-
-    /**
-     * Restaurants whose package is in force and ends within the given days.
-     *
-     * @param  Builder<Restaurant>  $query
-     * @return Builder<Restaurant>
-     */
-    public function scopePackageEndingWithin(Builder $query, int $days): Builder
-    {
-        return $query->packageActive()->whereBetween('package_ends_at', [now(), now()->addDays($days)]);
-    }
-
-    /**
-     * Restaurants on a package right now (effectivePackage()): assigned and
-     * started, ended included, or on the default while their own has not
-     * started yet.
-     *
-     * @param  Builder<Restaurant>  $query
-     * @return Builder<Restaurant>
-     */
-    public function scopeOnPackage(Builder $query, int $packageId): Builder
-    {
-        return $query->where(function (Builder $q) use ($packageId): void {
-            $q->where(fn (Builder $assigned) => $assigned->where('package_id', $packageId)
-                ->where(fn (Builder $started) => $started->whereNull('package_started_at')->orWhere('package_started_at', '<=', now())));
-
-            if ($packageId === Package::default()?->id) {
-                $q->orWhere(fn (Builder $waiting) => $waiting->packageScheduled())
-                    ->orWhereNull('package_id');
-            }
-        });
-    }
-
-    /** Where the assigned package stands between its start and end dates. */
-    public function packageStatus(): PackageStatus
-    {
-        return match (true) {
-            $this->package_started_at !== null && $this->package_started_at->isFuture() => PackageStatus::Scheduled,
-            $this->package_ends_at !== null && $this->package_ends_at->isPast() => PackageStatus::Expired,
-            default => PackageStatus::Active,
-        };
-    }
-
-    /** True once an admin-set expiry has passed. */
-    public function packageExpired(): bool
-    {
-        return $this->packageStatus() === PackageStatus::Expired;
-    }
-
-    /** Days an ended package keeps the menu online (config/package.php). */
-    public static function graceDays(): int
-    {
-        return max(0, (int) config('package.grace_days', 3));
-    }
-
-    /** When the menu goes offline: the grace days past the package's end; null when it never ends. */
-    public function offlineAt(): ?CarbonImmutable
-    {
-        return $this->package_ends_at === null
-            ? null
-            : CarbonImmutable::instance($this->package_ends_at)->addDays(self::graceDays());
-    }
-
-    /**
-     * Whether guests can open the menu, order and see the QR card: switched
-     * on by the admin, and not past the grace days of an ended package.
-     * Extending or assigning a package brings it back that moment.
-     */
-    public function menuOnline(): bool
-    {
-        return (bool) $this->is_active && ! (bool) $this->offlineAt()?->isPast();
-    }
-
-    /**
-     * The package the limits actually come from: the assigned one, ended or
-     * not (an ended package takes the menu offline, it never downgrades), and
-     * the default only while the assigned one has not started.
-     */
-    public function effectivePackage(): ?Package
-    {
-        if ($this->package_id !== null && $this->packageStatus() !== PackageStatus::Scheduled) {
-            return $this->package;
-        }
-
-        return Package::default();
-    }
-
-    /** A row in the package history for the save just made (RestaurantObserver). */
-    public function recordPackageChange(?int $fromPackageId): void
-    {
-        $this->packageChanges()->create([
-            'from_package_id' => $fromPackageId,
-            'to_package_id' => $this->package_id,
-            'starts_at' => $this->package_started_at,
-            'ends_at' => $this->package_ends_at,
-            'changed_by' => auth()->id(),
-            'note' => $this->packageChangeNote,
-        ]);
-
-        $this->packageChangeNote = null;
     }
 
     /**
@@ -464,7 +357,10 @@ class Restaurant extends Model implements HasMedia
     {
         $entitlements = $this->entitlements();
 
-        return array_keys(array_filter(self::FLAG_OF, fn (Feature $flag): bool => $entitlements->can($flag)));
+        return array_keys(array_filter(
+            self::FLAG_OF,
+            fn (array $flags): bool => collect($flags)->contains(fn (Feature $flag): bool => $entitlements->can($flag)),
+        ));
     }
 
     /**
@@ -482,112 +378,6 @@ class Restaurant extends Model implements HasMedia
         if ($off !== $this->switchedOff()) {
             $this->forceFill(['switched_off' => $off])->saveQuietly();
         }
-    }
-
-    /** Guests can order: the package includes it and the owner has not switched it off. */
-    public function takesOrders(): bool
-    {
-        return $this->entitlements()->can(Feature::Ordering) && ! $this->isSwitchedOff('orders');
-    }
-
-    /**
-     * How guests' orders reach this restaurant, or null when it takes none.
-     *
-     * The owner picks one way (`order_mode`). Ordering in the menu needs its
-     * own package flag, and without it the restaurant quietly falls back to
-     * WhatsApp: a downgrade never leaves guests with a cart that goes nowhere.
-     */
-    public function orderChannel(): ?OrderChannel
-    {
-        if (! $this->takesOrders()) {
-            return null;
-        }
-
-        return $this->order_mode === OrderChannel::Menu->value && $this->entitlements()->can(Feature::MenuOrdering)
-            ? OrderChannel::Menu
-            : OrderChannel::WhatsApp;
-    }
-
-    /**
-     * The kinds of order that leave the restaurant (delivery, pickup) it
-     * accepts in the menu, in a fixed order. Nothing chosen yet means both.
-     * Ordering at the table is not one of them: it is takesDineIn().
-     *
-     * @return array<int, string>
-     */
-    public function orderTypes(): array
-    {
-        $types = array_values(array_intersect(Fulfilment::away(), (array) $this->order_types));
-
-        return $types === [] ? Fulfilment::away() : $types;
-    }
-
-    /**
-     * Every kind of order this restaurant takes: the delivery and pickup it
-     * chose, and dine-in while that is on. Whether delivery and pickup are
-     * taken in the menu right now is the channel's question, answered by the
-     * order controller (a page built for the other way is told to refresh).
-     * Dine-in still needs a table's code to order to.
-     *
-     * @return array<int, string>
-     */
-    public function menuFulfilments(): array
-    {
-        return [
-            ...$this->orderTypes(),
-            ...$this->takesDineIn() ? [Fulfilment::DineIn->value] : [],
-        ];
-    }
-
-    /**
-     * Guests at a table can order to it: in the package and not switched
-     * off. A feature of its own, apart from ordering: it works whichever way
-     * delivery and pickup come in, or with them off (dineInChannel()).
-     */
-    public function takesDineIn(): bool
-    {
-        return $this->entitlements()->can(Feature::DineIn) && ! $this->isSwitchedOff('dine_in');
-    }
-
-    /**
-     * How orders at the table reach this restaurant, or null when it takes
-     * none: on WhatsApp when the owner chose it (`dine_in_mode`) and there
-     * is a number to send to, placed in the menu (the Table orders page)
-     * otherwise. A number removed later never leaves a table's cart going
-     * nowhere.
-     */
-    public function dineInChannel(): ?OrderChannel
-    {
-        if (! $this->takesDineIn()) {
-            return null;
-        }
-
-        return $this->dine_in_mode === OrderChannel::WhatsApp->value && WhatsAppLink::internationalNumber($this) !== null
-            ? OrderChannel::WhatsApp
-            : OrderChannel::Menu;
-    }
-
-    /**
-     * What a WhatsApp order asks the guest for, per way in: delivery and
-     * pickup (`away`: name, phone, and an address, which also asks delivery
-     * or pickup) and orders at the table (`table`: name, phone). Each
-     * Ask::value; anything not set is off.
-     *
-     * @return array{away: array{name: string, phone: string, address: string}, table: array{name: string, phone: string}}
-     */
-    public function whatsappAsks(): array
-    {
-        $stored = (array) $this->whatsapp_fields;
-        $asks = [];
-
-        foreach (self::WHATSAPP_ASKS as $group => $fields) {
-            foreach ($fields as $field) {
-                $asks[$group][$field] = Ask::tryFrom((string) ($stored[$group][$field] ?? ''))?->value ?? Ask::Off->value;
-            }
-        }
-
-        /** @var array{away: array{name: string, phone: string, address: string}, table: array{name: string, phone: string}} $asks */
-        return $asks;
     }
 
     /** The QR studio's styling is on: in the package and not switched off. */
@@ -614,6 +404,15 @@ class Restaurant extends Model implements HasMedia
         return $this->entitlements()->can(Feature::Addons) && ! $this->isSwitchedOff('addons');
     }
 
+    /**
+     * Dishes show their "build your own" (half and half pizzas): only where
+     * an admin switched it on for this restaurant, since no package has it.
+     */
+    public function showsBuilds(): bool
+    {
+        return $this->entitlements()->can(Feature::BuildYourOwn);
+    }
+
     /** The owner's colours, fonts and other design choices reach the menu. */
     public function hasAppearance(): bool
     {
@@ -623,6 +422,11 @@ class Restaurant extends Model implements HasMedia
     /** Whether this restaurant's package lets it use a design. */
     public function mayUseTemplate(Template $template): bool
     {
+        // Made for one restaurant: that one only, whatever its package.
+        if ($template->restaurant_id !== null) {
+            return $template->restaurant_id === $this->id;
+        }
+
         return ! $template->is_premium || $this->entitlements()->can(Feature::PremiumDesigns);
     }
 
@@ -710,191 +514,51 @@ class Restaurant extends Model implements HasMedia
         return Entitlements::for($this);
     }
 
-    /**
-     * The link every QR code for this menu encodes. `?qr=1` is how a visit is
-     * counted as a scan, so the printed card, the dashboard and the menu's own
-     * pop-up all use this one.
-     */
-    public function qrUrl(): string
-    {
-        return rtrim((string) config('app.url'), '/').'/'.$this->slug.'?qr=1';
-    }
-
-    /**
-     * The QR card's default design.
-     *
-     * @return array<string, mixed>
-     */
-    public function qrDefaultDesign(): array
-    {
-        // The simple QR: black on white, square everything, no logo.
-        return [
-            'dot_style' => 'square',
-            'dot_color' => '#000000',
-            'dot_gradient' => null,
-            'gradient_type' => 'linear',
-            'corner_style' => 'square',
-            'corner_color' => '#000000',
-            'eye_style' => 'square',
-            'eye_color' => '#000000',
-            'background' => '#FFFFFF',
-            'logo' => false,
-            'logo_size' => 'medium',
-            'card_theme' => 'light',
-            'title' => $this->name,
-            'subtitle' => null,
-            'cta' => null,
-            'show_url' => true,
-        ];
-    }
-
-    /**
-     * The saved QR design merged over the defaults, shared by the dashboard
-     * studio and the public card page so both render the exact same card.
-     *
-     * @return array<string, mixed>
-     */
-    public function qrDesign(): array
-    {
-        $defaults = $this->qrDefaultDesign();
-
-        // Only keys the current design knows, so a field that is renamed or
-        // dropped later never lingers in what the card is drawn from.
-        $saved = array_intersect_key(
-            array_filter((array) $this->qr_settings, fn ($value) => $value !== null),
-            $defaults,
-        );
-
-        return array_merge($defaults, $saved);
-    }
-
-    /** Null means unlimited on this package. */
-    public function getDishLimitAttribute(): ?int
-    {
-        return $this->entitlements()->limit(Feature::DishLimit);
-    }
-
-    public function getCategoryLimitAttribute(): ?int
-    {
-        return $this->entitlements()->limit(Feature::CategoryLimit);
-    }
-
-    public function getSocialLinkLimitAttribute(): ?int
-    {
-        return $this->entitlements()->limit(Feature::SocialLinkLimit);
-    }
-
-    public function hasReachedDishLimit(): bool
-    {
-        return $this->dish_limit !== null && $this->dishes()->count() >= $this->dish_limit;
-    }
-
-    public function hasReachedCategoryLimit(): bool
-    {
-        return $this->category_limit !== null && $this->categories()->count() >= $this->category_limit;
-    }
-
-    public function hasReachedSocialLinkLimit(): bool
-    {
-        return $this->social_link_limit !== null && $this->socialLinks()->count() >= $this->social_link_limit;
-    }
-
-    /**
-     * The menu's visits at a glance (the admin's user page), in one pass:
-     * views, distinct visitors, QR scans, today's views (the restaurant's own
-     * day) and the last visit.
-     *
-     * @return array{views: int, visitors: int, scans: int, today: int, last: string|null}
-     */
-    public function trafficTotals(): array
-    {
-        $today = CarbonImmutable::now($this->localTimezone())->startOfDay()->utc()->toDateTimeString();
-        $history = $this->historyBeforeRawRows();
-        $from = $history->isEmpty() ? null : MenuDays::boundary($this)->utc()->toDateTimeString();
-
-        // With history the visitors come from sketches below: no distinct count here.
-        $visitorsSql = $from === null ? 'count(distinct session_id)' : '0';
-
-        $totals = $this->menuSessions()
-            ->when($from, fn ($query, string $from) => $query->where('viewed_at', '>=', $from))
-            ->toBase()
-            ->selectRaw(
-                "count(*) as views, {$visitorsSql} as visitors, sum(case when via_qr then 1 else 0 end) as scans, sum(case when viewed_at >= ? then 1 else 0 end) as today, max(viewed_at) as last",
-                [$today],
-            )
-            ->first();
-
-        $visitors = (int) ($totals->visitors ?? 0);
-
-        // Days added up before the raw rows (MenuDays): their visitors and
-        // the raw ones counted together, a returning guest once.
-        if ($history->isNotEmpty()) {
-            $visitors = HyperLogLog::of($this->menuSessions()->where('viewed_at', '>=', $from)->distinct()->pluck('session_id'))
-                ->merge(MenuDays::mergedSketch($this, MenuDays::boundary($this), 'visitorSketch'))
-                ->count();
-        }
-
-        return [
-            'views' => (int) ($totals->views ?? 0) + $history->sum('views'),
-            'visitors' => $visitors,
-            'scans' => (int) ($totals->scans ?? 0) + $history->sum('qr_scans'),
-            'today' => (int) ($totals->today ?? 0),
-            'last' => $totals->last ?? null,
-        ];
-    }
-
-    /**
-     * Visits that came from the QR code: today, this week, this month (the
-     * restaurant's own days, like the analytics) and ever. One pass over
-     * plain ranges, so the (restaurant_id, viewed_at) index does the work;
-     * "ever" adds the days added up before the raw rows (MenuDays).
-     *
-     * @return array{today: int, week: int, month: int, total: int}
-     */
-    public function qrScans(): array
-    {
-        $now = CarbonImmutable::now($this->localTimezone());
-        $since = fn (CarbonImmutable $start): string => $start->utc()->toDateTimeString();
-        $history = $this->historyBeforeRawRows();
-
-        $counts = $this->menuSessions()
-            ->where('via_qr', true)
-            ->when($history->isNotEmpty(), fn ($query) => $query->where('viewed_at', '>=', $since(MenuDays::boundary($this))))
-            ->selectRaw(
-                'count(*) as total,
-                sum(case when viewed_at >= ? then 1 else 0 end) as today,
-                sum(case when viewed_at >= ? then 1 else 0 end) as week,
-                sum(case when viewed_at >= ? then 1 else 0 end) as month',
-                [$since($now->startOfDay()), $since($now->startOfWeek()), $since($now->startOfMonth())],
-            )
-            ->toBase()
-            ->first();
-
-        return [
-            'today' => (int) ($counts->today ?? 0),
-            'week' => (int) ($counts->week ?? 0),
-            'month' => (int) ($counts->month ?? 0),
-            'total' => (int) ($counts->total ?? 0) + $history->sum('qr_scans'),
-        ];
-    }
-
-    /**
-     * The days added up before the raw rows take over (MenuDays::boundary()),
-     * oldest first; none while every visit is still a raw row.
-     *
-     * @return \Illuminate\Database\Eloquent\Collection<int, MenuDay>
-     */
-    private function historyBeforeRawRows(): \Illuminate\Database\Eloquent\Collection
-    {
-        return $this->menuDays()->where('day', '<', MenuDays::boundary($this)->toDateString())->orderBy('day')->get(['id', 'day', 'views', 'qr_scans']);
-    }
-
-    /** The restaurant's timezone, UTC when unset or not a real one. */
+    /** The restaurant's timezone: the app's when unset or not a real one. */
     public function localTimezone(): string
     {
-        $timezone = $this->timezone ?: config('app.timezone', 'UTC');
+        return self::validTimezone($this->timezone);
+    }
 
-        return in_array($timezone, timezone_identifiers_list(), true) ? $timezone : 'UTC';
+    /**
+     * A stored `timezone` as localTimezone() reads it: kept when PHP knows
+     * it, older names included (`Asia/Calcutta`, which a browser may still
+     * send and UpdateRestaurantRequest accepts); else the app's; else UTC.
+     */
+    public static function validTimezone(?string $timezone): string
+    {
+        if (self::isTimezone($timezone)) {
+            return $timezone;
+        }
+
+        $fallback = config('app.timezone');
+
+        return self::isTimezone($fallback) ? $fallback : 'UTC';
+    }
+
+    /** Whether PHP knows this timezone, older names included. */
+    public static function isTimezone(mixed $timezone): bool
+    {
+        $known = once(fn (): array => array_flip(timezone_identifiers_list(DateTimeZone::ALL_WITH_BC)));
+
+        return is_string($timezone) && isset($known[$timezone]);
+    }
+
+    /**
+     * Where a new restaurant most likely is: the owner's browser's timezone,
+     * else its country's first one (Lebanon has only Asia/Beirut), else none.
+     */
+    public static function likelyTimezone(?string $browser, ?string $countryCode): ?string
+    {
+        if (self::isTimezone($browser)) {
+            return $browser;
+        }
+
+        if ($countryCode === null || ! preg_match('/^[A-Za-z]{2}$/', $countryCode)) {
+            return null;
+        }
+
+        return DateTimeZone::listIdentifiers(DateTimeZone::PER_COUNTRY, strtoupper($countryCode))[0] ?? null;
     }
 
     public function registerMediaCollections(): void

@@ -62,65 +62,60 @@
 
 <p>These cookies are strictly necessary for the service to operate. Without them, features such as logging in, maintaining your session, and protecting against cross-site request forgery (CSRF) would not work. You cannot opt out of these cookies.</p>
 
-<table style="width:100%;border-collapse:collapse;font-size:13.5px;margin-bottom:16px">
+<table class="legal-table">
     <thead>
-        <tr style="border-bottom:1px solid rgba(15,15,16,.1)">
-            <th style="text-align:left;padding:8px 12px;font-weight:600;color:var(--muted)">Cookie</th>
-            <th style="text-align:left;padding:8px 12px;font-weight:600;color:var(--muted)">Purpose</th>
-            <th style="text-align:left;padding:8px 12px;font-weight:600;color:var(--muted)">Duration</th>
+        <tr>
+            <th>Cookie</th>
+            <th>Purpose</th>
+            <th>Duration</th>
         </tr>
     </thead>
     <tbody>
-        <tr style="border-bottom:1px solid rgba(15,15,16,.06)">
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema-session</code></td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Keeps you signed in and holds temporary data, such as the message a form shows once it is sent. Guests on a public menu are not given one</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Up to 1 year</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(15,15,16,.06)">
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">XSRF-TOKEN</code></td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Protects against cross-site request forgery attacks</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Up to 1 year</td>
+        <tr>
+            <td><code>qayema-session</code></td>
+            <td>Keeps you signed in and holds temporary data, such as the message a form shows once it is sent. Guests on a public menu are not given one</td>
+            <td>Up to 1 year</td>
         </tr>
         <tr>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">remember_web_…</code></td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Keeps you signed in even after your session ends when "Keep me signed in" is ticked (it is by default) or when you sign in with Google</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">400 days</td>
+            <td><code>XSRF-TOKEN</code></td>
+            <td>Protects against cross-site request forgery attacks</td>
+            <td>Up to 1 year</td>
+        </tr>
+        <tr>
+            <td><code>remember_web_…</code></td>
+            <td>Keeps you signed in even after your session ends when "Keep me signed in" is ticked (it is by default) or when you sign in with Google</td>
+            <td>400 days</td>
         </tr>
     </tbody>
 </table>
 
 <h2 id="functional">Functional storage</h2>
 
-<p>Functional storage allows the service to remember choices you make, such as your preferred language and theme, and keeps a guest's cart on a menu. Apart from your website language, which is kept in a small cookie, these entries live in your browser's local storage and are never sent to our servers on their own. Clearing them may affect your experience.</p>
+<p>Functional storage allows the service to remember choices you make, such as your preferred language, and keeps a guest's cart on a menu. Apart from your website language, which is kept in a small cookie, these entries live in your browser's local storage and are never sent to our servers on their own. Clearing them may affect your experience.</p>
 
-<table style="width:100%;border-collapse:collapse;font-size:13.5px;margin-bottom:16px">
+<table class="legal-table">
     <thead>
-        <tr style="border-bottom:1px solid rgba(15,15,16,.1)">
-            <th style="text-align:left;padding:8px 12px;font-weight:600;color:var(--muted)">Name</th>
-            <th style="text-align:left;padding:8px 12px;font-weight:600;color:var(--muted)">Purpose</th>
-            <th style="text-align:left;padding:8px 12px;font-weight:600;color:var(--muted)">Duration</th>
+        <tr>
+            <th>Name</th>
+            <th>Purpose</th>
+            <th>Duration</th>
         </tr>
     </thead>
     <tbody>
-        <tr style="border-bottom:1px solid rgba(15,15,16,.06)">
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">owner_locale</code> (cookie)</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Remembers the language you chose on the website and sign-in pages</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">1 year</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(15,15,16,.06)">
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema-theme</code> (localStorage)</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Remembers the light or dark theme you chose on the website</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Until you clear it</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(15,15,16,.06)">
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema.dashboard.theme.v1</code>, <code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema.dashboard.locale.v1</code>, <code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema.dashboard.sidebar.collapsed.v1</code> (localStorage)</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Remember your dashboard theme, language and whether the sidebar is collapsed</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Until you clear it</td>
+        <tr>
+            <td><code>owner_locale</code> (cookie)</td>
+            <td>Remembers the language you chose on the website and sign-in pages</td>
+            <td>1 year</td>
         </tr>
         <tr>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema-cart-…</code> (localStorage)</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">On menus that take orders, keeps the guest's cart so a reload does not lose it; emptied when the order is placed</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">Until you clear it</td>
+            <td><code>qayema.dashboard.locale.v1</code>, <code>qayema.dashboard.sidebar.collapsed.v1</code> (localStorage)</td>
+            <td>Remember your dashboard language and whether the sidebar is collapsed</td>
+            <td>Until you clear it</td>
+        </tr>
+        <tr>
+            <td><code>qayema-cart-…</code> (localStorage)</td>
+            <td>On menus that take orders, keeps the guest's cart so a reload does not lose it; emptied when the order is placed</td>
+            <td>Until you clear it</td>
         </tr>
     </tbody>
 </table>
@@ -157,7 +152,7 @@
     <li><a href="https://support.microsoft.com/en-us/microsoft-edge/delete-cookies-in-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09" target="_blank">Microsoft Edge</a></li>
 </ul>
 
-<p>You can also clear localStorage from your browser's settings or Developer Tools (Application tab) to remove the stored theme, dashboard preferences, menu carts and the menu statistics identifier.</p>
+<p>You can also clear localStorage from your browser's settings or Developer Tools (Application tab) to remove the dashboard preferences, menu carts and the menu statistics identifier.</p>
 
 <h2 id="changes">Changes to this policy</h2>
 
@@ -193,65 +188,60 @@
 
 <p>هذه الملفات ضرورية تمامًا لتشغيل الخدمة. بدونها لن تعمل ميزات مثل تسجيل الدخول والحفاظ على جلستك والحماية من هجمات طلب التزوير عبر المواقع (CSRF). لا يمكنك إلغاء الاشتراك في هذه الملفات.</p>
 
-<table style="width:100%;border-collapse:collapse;font-size:13.5px;margin-bottom:16px">
+<table class="legal-table">
     <thead>
-        <tr style="border-bottom:1px solid rgba(15,15,16,.1)">
-            <th style="text-align:right;padding:8px 12px;font-weight:600;color:var(--muted)">ملف الارتباط</th>
-            <th style="text-align:right;padding:8px 12px;font-weight:600;color:var(--muted)">الغرض</th>
-            <th style="text-align:right;padding:8px 12px;font-weight:600;color:var(--muted)">المدة</th>
+        <tr>
+            <th>ملف الارتباط</th>
+            <th>الغرض</th>
+            <th>المدة</th>
         </tr>
     </thead>
     <tbody>
-        <tr style="border-bottom:1px solid rgba(15,15,16,.06)">
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema-session</code></td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">يُبقيك مسجّل الدخول ويخزّن بيانات مؤقتة، مثل الرسالة التي يعرضها النموذج بعد إرساله. ولا يُعطى ضيوف القائمة العامة ملفًا منه</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">حتى سنة واحدة</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(15,15,16,.06)">
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">XSRF-TOKEN</code></td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">يحمي من هجمات طلب التزوير عبر المواقع</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">حتى سنة واحدة</td>
+        <tr>
+            <td><code>qayema-session</code></td>
+            <td>يُبقيك مسجّل الدخول ويخزّن بيانات مؤقتة، مثل الرسالة التي يعرضها النموذج بعد إرساله. ولا يُعطى ضيوف القائمة العامة ملفًا منه</td>
+            <td>حتى سنة واحدة</td>
         </tr>
         <tr>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">remember_web_…</code></td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">يُبقيك مسجّل الدخول حتى بعد انتهاء جلستك عند تفعيل خيار "ابقني متصلاً" (وهو مفعّل افتراضيًا) أو عند تسجيل الدخول عبر Google</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">400 يوم</td>
+            <td><code>XSRF-TOKEN</code></td>
+            <td>يحمي من هجمات طلب التزوير عبر المواقع</td>
+            <td>حتى سنة واحدة</td>
+        </tr>
+        <tr>
+            <td><code>remember_web_…</code></td>
+            <td>يُبقيك مسجّل الدخول حتى بعد انتهاء جلستك عند تفعيل خيار "ابقني متصلاً" (وهو مفعّل افتراضيًا) أو عند تسجيل الدخول عبر Google</td>
+            <td>400 يوم</td>
         </tr>
     </tbody>
 </table>
 
 <h2 id="functional-ar">التخزين الوظيفي</h2>
 
-<p>يتيح التخزين الوظيفي للخدمة تذكّر الخيارات التي تتخذها، مثل اللغة والمظهر المفضّلين لديك، ويحفظ سلة الضيف في القائمة. باستثناء لغة الموقع التي تُحفظ في ملف ارتباط صغير، تُخزَّن هذه الإدخالات في التخزين المحلي لمتصفحك ولا تُرسل وحدها إلى خوادمنا. قد يؤثر مسحها على تجربتك.</p>
+<p>يتيح التخزين الوظيفي للخدمة تذكّر الخيارات التي تتخذها، مثل لغتك المفضّلة، ويحفظ سلة الضيف في القائمة. باستثناء لغة الموقع التي تُحفظ في ملف ارتباط صغير، تُخزَّن هذه الإدخالات في التخزين المحلي لمتصفحك ولا تُرسل وحدها إلى خوادمنا. قد يؤثر مسحها على تجربتك.</p>
 
-<table style="width:100%;border-collapse:collapse;font-size:13.5px;margin-bottom:16px">
+<table class="legal-table">
     <thead>
-        <tr style="border-bottom:1px solid rgba(15,15,16,.1)">
-            <th style="text-align:right;padding:8px 12px;font-weight:600;color:var(--muted)">الاسم</th>
-            <th style="text-align:right;padding:8px 12px;font-weight:600;color:var(--muted)">الغرض</th>
-            <th style="text-align:right;padding:8px 12px;font-weight:600;color:var(--muted)">المدة</th>
+        <tr>
+            <th>الاسم</th>
+            <th>الغرض</th>
+            <th>المدة</th>
         </tr>
     </thead>
     <tbody>
-        <tr style="border-bottom:1px solid rgba(15,15,16,.06)">
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">owner_locale</code> (ملف ارتباط)</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">يتذكر اللغة التي اخترتها في الموقع وصفحات تسجيل الدخول</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">سنة واحدة</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(15,15,16,.06)">
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema-theme</code> (localStorage)</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">يتذكر المظهر الفاتح أو الداكن الذي اخترته في الموقع</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">حتى تمسحه</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(15,15,16,.06)">
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema.dashboard.theme.v1</code>، <code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema.dashboard.locale.v1</code>، <code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema.dashboard.sidebar.collapsed.v1</code> (localStorage)</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">تتذكر مظهر لوحة التحكم ولغتها وما إذا كان الشريط الجانبي مطويًا</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">حتى تمسحها</td>
+        <tr>
+            <td><code>owner_locale</code> (ملف ارتباط)</td>
+            <td>يتذكر اللغة التي اخترتها في الموقع وصفحات تسجيل الدخول</td>
+            <td>سنة واحدة</td>
         </tr>
         <tr>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)"><code style="font-size:12px;background:rgba(15,15,16,.05);padding:2px 6px;border-radius:4px">qayema-cart-…</code> (localStorage)</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">في القوائم التي تستقبل الطلبات، يحفظ سلة الضيف كي لا تضيع عند إعادة تحميل الصفحة، ويُفرَّغ عند إرسال الطلب</td>
-            <td style="padding:8px 12px;color:rgba(15,15,16,.75)">حتى تمسحه</td>
+            <td><code>qayema.dashboard.locale.v1</code>، <code>qayema.dashboard.sidebar.collapsed.v1</code> (localStorage)</td>
+            <td>تتذكر لغة لوحة التحكم وما إذا كان الشريط الجانبي مطويًا</td>
+            <td>حتى تمسحها</td>
+        </tr>
+        <tr>
+            <td><code>qayema-cart-…</code> (localStorage)</td>
+            <td>في القوائم التي تستقبل الطلبات، يحفظ سلة الضيف كي لا تضيع عند إعادة تحميل الصفحة، ويُفرَّغ عند إرسال الطلب</td>
+            <td>حتى تمسحه</td>
         </tr>
     </tbody>
 </table>
@@ -288,7 +278,7 @@
     <li><a href="https://support.microsoft.com/en-us/microsoft-edge/delete-cookies-in-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09" target="_blank">Microsoft Edge</a></li>
 </ul>
 
-<p>يمكنك أيضًا مسح التخزين المحلي من إعدادات متصفحك أو أدوات المطوّرين فيه (علامة تبويب التطبيقات) لإزالة المظهر المحفوظ وتفضيلات لوحة التحكم وسلال القوائم ومعرّف إحصاءات القوائم.</p>
+<p>يمكنك أيضًا مسح التخزين المحلي من إعدادات متصفحك أو أدوات المطوّرين فيه (علامة تبويب التطبيقات) لإزالة تفضيلات لوحة التحكم وسلال القوائم ومعرّف إحصاءات القوائم.</p>
 
 <h2 id="changes-ar">التغييرات على هذه السياسة</h2>
 

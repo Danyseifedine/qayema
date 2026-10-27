@@ -9,8 +9,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * One restaurant's day of writing help: its uses and the tokens they spent
- * (App\Services\Ai\WritingHelpLog writes it).
+ * One restaurant's day of writing help: its uses, the tokens they spent and
+ * what that cost in dollars (App\Services\Ai\WritingHelpLog writes it).
  */
 class WritingHelpDay extends Model
 {
@@ -23,6 +23,12 @@ class WritingHelpDay extends Model
         'uses',
         'input_tokens',
         'output_tokens',
+        'cost',
+        'credits',
+        'translation_uses',
+        'translation_cost',
+        'description_uses',
+        'description_cost',
     ];
 
     protected function casts(): array
@@ -32,6 +38,12 @@ class WritingHelpDay extends Model
             'uses' => 'integer',
             'input_tokens' => 'integer',
             'output_tokens' => 'integer',
+            'cost' => 'decimal:6',
+            'credits' => 'integer',
+            'translation_uses' => 'integer',
+            'translation_cost' => 'decimal:6',
+            'description_uses' => 'integer',
+            'description_cost' => 'decimal:6',
         ];
     }
 

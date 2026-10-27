@@ -3,11 +3,11 @@
 namespace App\Ai\Agents;
 
 use App\Ai\Agents\Concerns\UsesWritingHelpModel;
-use Illuminate\Contracts\JsonSchema\JsonSchema;
-use Laravel\Ai\Attributes\MaxTokens;
+use App\Ai\Agents\Concerns\WritesVersions;
 use Laravel\Ai\Attributes\Temperature;
 use Laravel\Ai\Attributes\UseCheapestModel;
 use Laravel\Ai\Contracts\Agent;
+use Laravel\Ai\Contracts\HasProviderOptions;
 use Laravel\Ai\Contracts\HasStructuredOutput;
 use Laravel\Ai\Promptable;
 use Stringable;
@@ -17,11 +17,10 @@ use Stringable;
  * the owner's own line made better.
  */
 #[UseCheapestModel]
-#[MaxTokens(400)]
 #[Temperature(0.4)]
-class CategoryDescriptionWriter implements Agent, HasStructuredOutput
+class CategoryDescriptionWriter implements Agent, HasProviderOptions, HasStructuredOutput
 {
-    use Promptable, UsesWritingHelpModel;
+    use Promptable, UsesWritingHelpModel, WritesVersions;
 
     /**
      * $language is what the menu prints it in, as the menu lists it
@@ -34,7 +33,7 @@ class CategoryDescriptionWriter implements Agent, HasStructuredOutput
         return <<<TEXT
         You write the short line printed under a category's title on a restaurant's menu, in {$this->language}.
         You know only what the owner tells you: the category's name and, sometimes, their own description. You know nothing else about this restaurant or its food.
-        Write one sentence of {$this->shortest} to {$this->longest} characters, counting spaces and punctuation: never shorter, never longer. Inviting and plain.
+        Write one sentence, inviting and plain. Give {$this->versionCount()} versions of it, each a whole sentence of its own, of rising length: {$this->versionsLine()}, counting spaces and punctuation.
         No dashes or hyphens of any kind, no emoji, quotation marks, hashtags or prices.
         Make it warm through the moment, never the making: a craving, sharing at the table, a start or an end to the meal, something for everyone. Do not open with "A selection of".
         Do not lean on stock phrases (with friends, at the table, with your loved ones, every occasion, on a high note); find the words that suit this category.
@@ -44,14 +43,7 @@ class CategoryDescriptionWriter implements Agent, HasStructuredOutput
         Bad, for "Pizza": Hand-stretched dough baked in our wood-fired oven. (It invents how they are made.)
         When given the owner's description, every fact in it must be in your answer (what, how, where, when, with what): drop none, add none, only fix and polish the wording. Their facts come before any words about the moment.
         The examples show the kind of line wanted; never copy them word for word.
-        Answer with the description only, in {$this->language}.
+        Answer with `texts`: the versions, shortest first, in {$this->language}.
         TEXT;
-    }
-
-    public function schema(JsonSchema $schema): array
-    {
-        return [
-            'text' => $schema->string()->required(),
-        ];
     }
 }

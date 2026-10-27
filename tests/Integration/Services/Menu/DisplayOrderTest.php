@@ -3,7 +3,6 @@
 namespace Tests\Integration\Services\Menu;
 
 use App\Models\Category;
-use App\Models\Dish;
 use App\Models\Restaurant;
 use App\Services\Menu\DisplayOrder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -53,7 +52,7 @@ class DisplayOrderTest extends TestCase
         $this->assertSame([$a->id => 2, $b->id => 1], $this->orderOf($restaurant));
     }
 
-    public function test_it_is_one_statement_however_long_the_list(): void
+    public function test_it_is_one_read_and_one_write_however_long_the_list(): void
     {
         $restaurant = $this->owner();
         $ids = array_map(fn (Category $category): int => $category->id, $this->categories($restaurant, 12));
@@ -63,8 +62,9 @@ class DisplayOrderTest extends TestCase
         $queries = DB::getQueryLog();
         DB::disableQueryLog();
 
-        $this->assertCount(1, $queries);
-        $this->assertStringStartsWith('update', strtolower($queries[0]['query']));
+        $this->assertCount(2, $queries);
+        $this->assertStringStartsWith('select', strtolower($queries[0]['query']));
+        $this->assertStringStartsWith('update', strtolower($queries[1]['query']));
         $this->assertSame(range(12, 1), array_values($this->orderOf($restaurant)));
     }
 
@@ -104,22 +104,31 @@ class DisplayOrderTest extends TestCase
         DisplayOrder::apply($restaurant->categories(), [$theirs->id, $mine->id]);
 
         $this->assertSame(5, $theirs->fresh()->display_order, 'A tampered id stays out of reach.');
-        $this->assertSame(2, $mine->fresh()->display_order, 'Numbered by its place in the list as sent.');
+        $this->assertSame(1, $mine->fresh()->display_order, 'A dropped id leaves no gap in the order.');
     }
 
-    public function test_extra_columns_are_set_on_the_same_rows(): void
+    public function test_unknown_ids_are_dropped_and_the_rest_keep_the_order_sent(): void
     {
         $restaurant = $this->owner();
-        [$from, $to] = $this->categories($restaurant, 2);
-        $moved = Dish::factory()->for($restaurant)->create(['category_id' => $from->id]);
-        $sibling = Dish::factory()->for($restaurant)->create(['category_id' => $to->id]);
-        $untouched = Dish::factory()->for($restaurant)->create(['category_id' => $from->id, 'display_order' => 4]);
+        [$a, $b, $c] = $this->categories($restaurant, 3);
 
-        DisplayOrder::apply($restaurant->dishes(), [$sibling->id, $moved->id], ['category_id' => $to->id]);
+        DisplayOrder::apply($restaurant->categories(), [$c->id, 999999, $a->id, $b->id]);
 
-        $this->assertSame([$to->id, 2], [$moved->fresh()->category_id, $moved->fresh()->display_order]);
-        $this->assertSame([$to->id, 1], [$sibling->fresh()->category_id, $sibling->fresh()->display_order]);
-        $this->assertSame([$from->id, 4], [$untouched->fresh()->category_id, $untouched->fresh()->display_order]);
+        $this->assertSame([$a->id => 2, $b->id => 3, $c->id => 1], $this->orderOf($restaurant));
+    }
+
+    public function test_a_list_of_only_foreign_ids_writes_nothing(): void
+    {
+        $restaurant = $this->owner();
+        [$theirs] = $this->categories($this->owner(), 1);
+
+        DB::enableQueryLog();
+        DisplayOrder::apply($restaurant->categories(), [$theirs->id]);
+        $queries = DB::getQueryLog();
+        DB::disableQueryLog();
+
+        $this->assertCount(1, $queries, 'Only the read of which ids are the owner\'s.');
+        $this->assertSame(0, $theirs->fresh()->display_order);
     }
 
     public function test_ids_sent_as_numeric_strings_are_read_as_numbers(): void

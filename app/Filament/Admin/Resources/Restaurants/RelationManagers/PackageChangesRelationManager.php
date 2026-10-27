@@ -10,6 +10,7 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Number;
 
 /**
  * Every package this restaurant has been on: what it moved from and to, the
@@ -44,6 +45,10 @@ class PackageChangesRelationManager extends RelationManager
                         : $record->fromPackage?->name.' → '.$record->toPackage?->name)
                     ->badge()
                     ->color('gray'),
+                TextColumn::make('price_cents')
+                    ->label('Price')
+                    ->formatStateUsing(fn (int $state, PackageChange $record): string => Number::currency($state / 100, $record->toPackage->currency ?? 'USD'))
+                    ->placeholder('Package price'),
                 TextColumn::make('starts_at')
                     ->label('From')
                     ->date(),

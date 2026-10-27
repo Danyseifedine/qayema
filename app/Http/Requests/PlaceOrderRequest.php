@@ -34,6 +34,10 @@ class PlaceOrderRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        // Changing an order lives on its tracking sheet: without order
+        // tracking there is none to change, before anything is checked.
+        abort_if($this->isChange() && ! $this->restaurant()->tracksOrders(), 404);
+
         app()->setLocale($this->guestLocale());
     }
 
@@ -70,6 +74,12 @@ class PlaceOrderRequest extends FormRequest
             'items.*.options.*' => ['integer', 'min:1'],
             'items.*.addons' => ['nullable', 'array', 'max:'.config('menu.dish_options.addons')],
             'items.*.addons.*' => ['integer', 'min:1'],
+            // A dish built from parts: each build and the choice of each
+            // part, by key ("d12" a dish, "c5" a choice of its own list).
+            'items.*.builds' => ['nullable', 'array', 'max:'.config('menu.dish_builds.builds')],
+            'items.*.builds.*.build' => ['required', 'integer', 'min:1'],
+            'items.*.builds.*.parts' => ['required', 'array', 'min:1', 'max:'.config('menu.dish_builds.parts')],
+            'items.*.builds.*.parts.*' => ['string', 'regex:/^[cd][0-9]{1,10}$/'],
             'note' => ['nullable', 'string', 'max:500'],
             // The language the guest was reading (guestLocale()).
             'locale' => ['nullable', 'string', 'size:2'],
@@ -77,6 +87,9 @@ class PlaceOrderRequest extends FormRequest
             'mode' => ['nullable', Rule::enum(OrderChannel::class)],
             // The code of the table the guest scanned (DiningTable), if any.
             'table' => ['nullable', 'string', 'max:16'],
+            // The total the cart showed: never trusted as a price, only
+            // compared (OrderPlacer refuses a dearer cart).
+            'seen_total' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
         ];
 
         if (! $this->inMenu()) {
@@ -198,6 +211,7 @@ class PlaceOrderRequest extends FormRequest
             longitude: $located ? (string) $this->validated('longitude') : null,
             clientToken: $this->validated('client_token'),
             table: $fulfilment === Fulfilment::DineIn ? $this->table() : null,
+            seenTotal: $this->seenTotal(),
         );
     }
 
@@ -256,7 +270,16 @@ class PlaceOrderRequest extends FormRequest
             latitude: $located ? (string) $this->validated('latitude') : null,
             longitude: $located ? (string) $this->validated('longitude') : null,
             table: $this->table(),
+            seenTotal: $this->seenTotal(),
         );
+    }
+
+    /** The total the guest's cart showed, to the cent, when the page sent one. */
+    private function seenTotal(): ?string
+    {
+        $seen = $this->validated('seen_total');
+
+        return $seen === null ? null : number_format((float) $seen, 2, '.', '');
     }
 
     /** The table the guest scanned, when its code is one of this restaurant's. */

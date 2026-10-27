@@ -16,7 +16,9 @@ use Spatie\Translatable\HasTranslations;
 /**
  * A menu item: name, price, ingredients and one image. No description. It
  * may carry variants (pick one option of each) and add-ons (pick any), each
- * adding to the price.
+ * adding to the price. An offer may make one of its own (its deal dish,
+ * `offer_id`, Offer::deal()), which guests meet only while that offer is
+ * live; `offer_id` is set by the offer API alone, never by a dish save.
  */
 class Dish extends Model implements HasMedia
 {
@@ -28,11 +30,23 @@ class Dish extends Model implements HasMedia
     protected $fillable = [
         'restaurant_id',
         'category_id',
+        'icon',
         'name',
         'ingredients',
         'price',
+        'currency',
         'is_available',
         'display_order',
+    ];
+
+    /**
+     * Priced in the restaurant's main currency until a second one is picked,
+     * and no offer's deal until one makes it (strict models).
+     */
+    protected $attributes = [
+        'currency' => null,
+        'offer_id' => null,
+        'icon' => null,
     ];
 
     protected function casts(): array
@@ -40,6 +54,7 @@ class Dish extends Model implements HasMedia
         return [
             'restaurant_id' => 'integer',
             'category_id' => 'integer',
+            'offer_id' => 'integer',
             'price' => 'decimal:2',
             'is_available' => 'boolean',
             'display_order' => 'integer',
@@ -58,6 +73,23 @@ class Dish extends Model implements HasMedia
         return $this->belongsTo(Category::class);
     }
 
+    /**
+     * The offer that made this dish (its deal), when one did: the dish is
+     * on the menu only while that offer is live.
+     *
+     * @return BelongsTo<Offer, $this>
+     */
+    public function offer(): BelongsTo
+    {
+        return $this->belongsTo(Offer::class);
+    }
+
+    /** An offer's deal dish, guests meet it only while that offer is live. */
+    public function isDeal(): bool
+    {
+        return $this->offer_id !== null;
+    }
+
     /** @return HasMany<DishVariant, $this> */
     public function variants(): HasMany
     {
@@ -68,6 +100,12 @@ class Dish extends Model implements HasMedia
     public function addons(): HasMany
     {
         return $this->hasMany(DishAddon::class)->orderBy('display_order')->orderBy('id');
+    }
+
+    /** @return HasMany<DishBuild, $this> */
+    public function builds(): HasMany
+    {
+        return $this->hasMany(DishBuild::class)->orderBy('display_order')->orderBy('id');
     }
 
     public function registerMediaCollections(): void

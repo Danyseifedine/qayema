@@ -30,7 +30,8 @@ class MenuSeo
 
     /**
      * The categories and dishes the page shows (only categories with
-     * something available), already loaded by the controller.
+     * something available, offers' deal dishes left out), already loaded by
+     * the controller.
      *
      * @return array{
      *     title: string,
@@ -51,7 +52,11 @@ class MenuSeo
         // Only a description written in this language: an Arabic page with an
         // English description reads as the wrong language to a search engine.
         $description = trim((string) $restaurant->getTranslation('description', $locale, false));
-        $visible = $restaurant->categories->filter(fn ($category) => $category->dishes->isNotEmpty());
+        // An offer's deal dish is on the menu only for a while: never in
+        // what a search engine keeps.
+        $visible = $restaurant->categories
+            ->map(fn ($category) => (clone $category)->setRelation('dishes', $category->dishes->reject(fn ($dish): bool => $dish->isDeal())->values()))
+            ->filter(fn ($category) => $category->dishes->isNotEmpty());
 
         $alternates = [];
         foreach ($restaurant->menuLanguages() as $code) {
@@ -118,7 +123,7 @@ class MenuSeo
             'address' => $restaurant->country_code
                 ? ['@type' => 'PostalAddress', 'addressCountry' => $restaurant->country_code]
                 : null,
-            'currenciesAccepted' => $currency ?: null,
+            'currenciesAccepted' => implode(', ', array_filter([$currency, $restaurant->second_currency])) ?: null,
             'openingHoursSpecification' => $this->hours($restaurant) ?: null,
             'sameAs' => $restaurant->socialLinks->pluck('url')->filter()->values()->all() ?: null,
             'hasMenu' => [
@@ -135,8 +140,9 @@ class MenuSeo
                         'name' => $read($dish, 'name'),
                         'description' => trim($read($dish, 'ingredients')) ?: null,
                         'image' => $dish->getFirstMediaUrl('image') ?: null,
+                        // In its own currency: the main one, or the second it is priced in.
                         'offers' => $dish->price !== null && $currency !== ''
-                            ? ['@type' => 'Offer', 'price' => number_format((float) $dish->price, 2, '.', ''), 'priceCurrency' => $currency]
+                            ? ['@type' => 'Offer', 'price' => number_format((float) $dish->price, 2, '.', ''), 'priceCurrency' => $dish->currency ?? $currency]
                             : null,
                     ]))->values()->all(),
                 ]))->values()->all(),

@@ -49,7 +49,8 @@ $list = collect(config('countries', []))
                  c.value.toLowerCase().includes(q)
              );
          },
-         pick(c) { this.cc = c.value; this.q = ''; this.open = false; },
+         // Says so (`phone-country-change`), for a page that follows the country.
+         pick(c) { this.cc = c.value; this.q = ''; this.open = false; this.$dispatch('phone-country-change', { value: c.value }); },
      }"
      @click.outside="open = false">
 

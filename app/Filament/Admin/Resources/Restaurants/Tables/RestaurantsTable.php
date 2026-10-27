@@ -2,28 +2,31 @@
 
 namespace App\Filament\Admin\Resources\Restaurants\Tables;
 
+use App\Enums\Feature;
 use App\Enums\PackageStatus;
 use App\Filament\Admin\Actions\ChangePackageAction;
 use App\Filament\Admin\Actions\ExtendPackageAction;
 use App\Filament\Admin\Actions\ResetPackageAction;
 use App\Filament\Admin\Resources\Restaurants\RestaurantResource;
 use App\Filament\Admin\Resources\Restaurants\Schemas\PackageFields;
-use App\Models\MenuSession;
 use App\Models\Restaurant;
 use App\Services\Ai\WritingHelpLog;
+use App\Services\Ai\WritingHelpPrice;
+use App\Services\Analytics\MenuTraffic;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Actions\ViewAction;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\SpatieMediaLibraryImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Number;
@@ -34,20 +37,17 @@ class RestaurantsTable
     {
         return $table
             // Everything a row shows, read with the page rather than once
-            // per row (a page of ten restaurants was sixty queries).
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query
-                ->with(['user', 'package', 'template'])
-                ->withCount([
-                    'menuSessions as total_views',
-                    'menuSessions as qr_scans' => fn (Builder $sessions): Builder => $sessions->where('via_qr', true),
-                ])
-                ->addSelect(['unique_visitors' => MenuSession::query()
-                    ->selectRaw('count(distinct session_id)')
-                    ->whereColumn('menu_sessions.restaurant_id', 'restaurants.id'),
-                ])
+            // per row (a page of ten restaurants was sixty queries). The
+            // views and scans add the days added up in `menu_days` to the
+            // last raw rows (MenuTraffic), so they neither scan months of
+            // visits nor drop when old ones are deleted.
+            ->modifyQueryUsing(fn (Builder $query): Builder => MenuTraffic::withTotals($query
+                // The grants in force too, for the dish limit (Entitlements).
+                ->with(['user', 'package', 'template', 'activeFeatureGrants']))
                 ->addSelect([
                     'writing_help_uses' => WritingHelpLog::lastDaysOf('uses'),
                     'writing_help_tokens' => WritingHelpLog::lastDaysOf('input_tokens + output_tokens'),
+                    'writing_help_cost' => WritingHelpLog::lastDaysOf('cost'),
                 ]))
             ->columns([
                 SpatieMediaLibraryImageColumn::make('logo')
@@ -58,10 +58,11 @@ class RestaurantsTable
                     // second, textless link on the picture helps nobody.
                     ->disabledClick()
                     ->extraImgAttributes(fn (Restaurant $record): array => ['alt' => 'Logo of '.$record->name])
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('name')
                     ->placeholder('N/A')
+                    ->description(fn (Restaurant $record): string => '/'.$record->slug)
                     // The whole JSON, so a name matches in whichever language
                     // the owner wrote it.
                     ->searchable(query: fn ($query, string $search) => $query
@@ -71,7 +72,8 @@ class RestaurantsTable
                 TextColumn::make('user.name')
                     ->label('Owner')
                     ->placeholder('N/A')
-                    ->searchable()
+                    ->description(fn (Restaurant $record): ?string => $record->user->email ?? $record->user->username)
+                    ->searchable(['name', 'email', 'username'])
                     ->sortable(),
 
                 TextColumn::make('package.name')
@@ -86,8 +88,32 @@ class RestaurantsTable
                     ->description(fn (Restaurant $record): string => self::packageDates($record))
                     ->toggleable(),
 
+                // What it pays a month: its own price, marked, or the package's.
+                TextColumn::make('price_cents')
+                    ->label('Price')
+                    ->state(fn (Restaurant $record): ?int => $record->monthlyPriceCents())
+                    ->formatStateUsing(fn (?int $state, Restaurant $record): string => Number::currency($state / 100, $record->effectivePackage()->currency ?? 'USD'))
+                    ->placeholder('-')
+                    // Under it: an own price, and paying through Whish.
+                    ->description(fn (Restaurant $record): ?string => implode(' · ', array_filter([
+                        $record->price_cents !== null ? 'Custom' : null,
+                        $record->pays_with_whish ? 'Whish' : null,
+                    ])) ?: null)
+                    ->toggleable(),
+
+                // A tick for Whish, a quiet dash otherwise: not paying with
+                // Whish is not a problem to flag in red.
+                IconColumn::make('pays_with_whish')
+                    ->label('Whish')
+                    ->boolean()
+                    ->trueColor('success')
+                    ->falseIcon(Heroicon::Minus)
+                    ->falseColor('gray')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 // The dashboard's AI buttons: who leans on them, heaviest
-                // first when sorted, with what they cost underneath.
+                // first when sorted, with their tokens underneath; what that
+                // cost is the next column.
                 TextColumn::make('writing_help_uses')
                     ->label('AI uses (30 days)')
                     ->getStateUsing(fn (Restaurant $record): int => (int) $record->writing_help_uses)
@@ -98,13 +124,21 @@ class RestaurantsTable
                     ->badge()
                     ->color(fn (int $state): string => $state === 0 ? 'gray' : 'primary')
                     ->sortable(query: fn (Builder $query, string $direction): Builder => $query->orderBy('writing_help_uses', $direction))
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('writing_help_cost')
+                    ->label('AI cost (30 days)')
+                    ->getStateUsing(fn (Restaurant $record): float => (float) $record->getAttribute('writing_help_cost'))
+                    ->formatStateUsing(fn (float $state): string => WritingHelpPrice::format($state))
+                    ->color(fn (float $state): string => $state === 0.0 ? 'gray' : 'primary')
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => $query->orderBy('writing_help_cost', $direction))
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('template.name')
                     ->label('Template')
                     ->placeholder('None')
                     ->badge()
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('dishes_count')
                     ->label('Dishes')
@@ -113,7 +147,7 @@ class RestaurantsTable
 
                 TextColumn::make('dish_limit')
                     ->label('Dish Limit')
-                    ->getStateUsing(fn (Restaurant $record): string => $record->dish_limit === null ? '∞' : (string) $record->dish_limit)
+                    ->getStateUsing(fn (Restaurant $record): string => (string) ($record->limitOf(Feature::DishLimit) ?? '∞'))
                     ->badge()
                     ->toggleable(isToggledHiddenByDefault: true),
 
@@ -121,28 +155,22 @@ class RestaurantsTable
                     ->label('Categories')
                     ->counts('categories')
                     ->placeholder('N/A')
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('total_views')
                     ->label('Total Views')
                     ->getStateUsing(fn (Restaurant $record): int => (int) $record->total_views)
                     ->badge()
                     ->color('info')
-                    ->sortable(false),
-
-                TextColumn::make('unique_visitors')
-                    ->label('Unique Visitors')
-                    ->getStateUsing(fn (Restaurant $record): int => (int) $record->unique_visitors)
-                    ->badge()
-                    ->color('success')
-                    ->toggleable(),
+                    ->sortable(false)
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('qr_scans')
                     ->label('QR Scans')
                     ->getStateUsing(fn (Restaurant $record): int => (int) $record->qr_scans)
                     ->badge()
                     ->color('warning')
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 ToggleColumn::make('is_active')
                     ->label('Active'),
@@ -152,7 +180,7 @@ class RestaurantsTable
                     ->dateTime()
                     ->sortable()
                     ->since()
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 SelectFilter::make('is_active')
@@ -181,7 +209,15 @@ class RestaurantsTable
 
                 Filter::make('has_views')
                     ->label('Has visitor traffic')
-                    ->query(fn (Builder $query) => $query->whereHas('menuSessions')),
+                    // Days added up count too: raw visits go after 6 months.
+                    ->query(fn (Builder $query) => $query->where(fn (Builder $any) => $any->whereHas('menuSessions')->orWhereHas('menuDays'))),
+
+                TernaryFilter::make('pays_with_whish')
+                    ->label('Pays with Whish'),
+
+                Filter::make('custom_price')
+                    ->label('Has its own price')
+                    ->query(fn (Builder $query) => $query->whereNotNull('price_cents')),
 
                 SelectFilter::make('package')
                     ->label('Package in force')
@@ -220,16 +256,23 @@ class RestaurantsTable
                     ->icon(Heroicon::OutlinedCreditCard)
                     ->button()
                     ->color('gray'),
-                ViewAction::make(),
                 EditAction::make(),
-                Action::make('impersonate')
-                    ->label('Log in as owner')
-                    ->icon(Heroicon::OutlinedUserCircle)
-                    ->url(fn (Restaurant $record): string => route('impersonate', $record->user_id))
-                    ->visible(fn (Restaurant $record): bool => $record->user?->canBeImpersonated() ?? false),
-                DeleteAction::make()
-                    ->modalHeading('Delete restaurant and owner')
-                    ->modalDescription(RestaurantResource::DELETE_WARNING),
+                // The rarer ones behind "more", so a row stays one line.
+                ActionGroup::make([
+                    Action::make('menu')
+                        ->label('Open menu')
+                        ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
+                        ->url(fn (Restaurant $record): string => route('public.menu', $record->slug))
+                        ->openUrlInNewTab(),
+                    Action::make('impersonate')
+                        ->label('Log in as owner')
+                        ->icon(Heroicon::OutlinedUserCircle)
+                        ->url(fn (Restaurant $record): string => route('impersonate', $record->user_id))
+                        ->visible(fn (Restaurant $record): bool => $record->user?->canBeImpersonated() ?? false),
+                    DeleteAction::make()
+                        ->modalHeading('Delete restaurant and owner')
+                        ->modalDescription(RestaurantResource::DELETE_WARNING),
+                ]),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

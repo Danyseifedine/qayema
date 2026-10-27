@@ -8,14 +8,18 @@
     and $menu_token (what its requests carry in place of a CSRF token).
     Its static styles are public/css/menu-classic.css; the owner's fonts and
     the design's colour variables come from menu.partials.theme, and only the
-    colours this design names differently stay inline below. Run
-    `php artisan make:menu-template <slug>` to add a design: it copies this
-    file and the stylesheet, and the slug must match the template row's.
+    colours this design names differently stay inline below. A design is its
+    layout only: what the menu does (the hours, the cart and tracking, a
+    dish's choices, the scripts) is menu.partials.scripts, included last.
+    Run `php artisan make:menu-template <slug>` to add a design: it copies
+    this file and the stylesheet, and the slug must match the template row's.
 --}}
 @use('App\Models\RestaurantSocialLink')
 @use('App\Models\Template')
 @use('App\Services\Menu\MenuLanguages')
+@use('App\Support\Asset')
 @use('App\Support\Color')
+@use('App\Support\CategoryIcons')
 @use('App\Support\MenuIcons')
 @use('App\Support\Price')
 @php
@@ -118,6 +122,11 @@
     $hasContact = $whatsapp_url || $restaurant->socialLinks->isNotEmpty();
 
     $visible = $restaurant->categories->filter(fn ($category) => $category->dishes->isNotEmpty());
+    // An offer's deal dish not live as the page is drawn is hidden
+    // (data-deal-off), and so is a category with nothing else, heading and
+    // tab; menu-offers.js shows them when the offer is live.
+    $hidden_deals ??= [];
+    $dealsOnly = fn ($category): bool => $category->dishes->every(fn ($dish): bool => in_array($dish->id, $hidden_deals, true));
 @endphp
 <!DOCTYPE html>
 <html lang="{{ $locale }}" dir="{{ $isRtl ? 'rtl' : 'ltr' }}">
@@ -166,7 +175,7 @@
             color-scheme: {{ Color::isDark($background) ? 'dark' : 'light' }};
         }
     </style>
-    <link rel="stylesheet" href="{{ asset('css/menu-classic.css') }}?v={{ filemtime(public_path('css/menu-classic.css')) }}">
+    <link rel="stylesheet" href="{{ Asset::versioned('css/menu-classic.css') }}">
 </head>
 <body class="has-dock">
 <header class="topbar">
@@ -250,7 +259,7 @@
             @if ($cover)
                 {{-- Above the fold, so never lazy: it is what the page waits on. --}}
                 <img class="cover-photo" src="{{ $cover }}" alt="" fetchpriority="high" decoding="async"
-                     @if ($coverPhone) srcset="{{ $coverPhone }} 960w, {{ $cover }} 1920w" sizes="(min-width: 1024px) 1000px, 100vw" @endif>
+                     @if ($coverPhone) srcset="{{ $coverPhone }} 960w, {{ $cover }} {{ (int) $coverMedia->getCustomProperty('width', 1920) }}w" sizes="(min-width: 1024px) 1000px, 100vw" @endif>
             @endif
             <span class="cover-shade"></span>
             <div class="cover-body">
@@ -286,6 +295,10 @@
             </div>
         @endif
 
+        @include('menu.partials.offers-banner')
+
+        @include('menu.partials.builds')
+
         @if ($visible->isNotEmpty())
             <div class="search">
                 <label class="field">
@@ -299,8 +312,13 @@
                     <span class="tab-pill" aria-hidden="true"></span>
                     <button type="button" class="tab" data-tab="all" aria-current="true">{{ __('All') }}</button>
                     @foreach ($visible as $category)
-                        <button type="button" class="tab" data-tab="category-{{ $category->id }}" aria-current="false">
-                            {{ $text($category, 'name') }}
+                        <button type="button" class="tab" data-tab="category-{{ $category->id }}" aria-current="false" @if ($dealsOnly($category)) hidden data-deal-off @endif>
+                            @if ($categoryIcon = CategoryIcons::svg($category->icon))
+                                <span class="tab-icon">{!! $categoryIcon !!}</span>
+                                <span class="tab-name">{{ $text($category, 'name') }}</span>
+                            @else
+                                {{ $text($category, 'name') }}
+                            @endif
                         </button>
                     @endforeach
                 </div>
@@ -309,7 +327,7 @@
 
         <div class="sections">
             @forelse ($visible as $category)
-                <section class="category" id="category-{{ $category->id }}">
+                <section class="category" id="category-{{ $category->id }}" @if ($dealsOnly($category)) hidden data-deal-off @endif>
                     @php $categoryDescription = $text($category, 'description'); @endphp
                     <div class="category-head">
                         <h2>{{ $text($category, 'name') }}</h2>
@@ -333,12 +351,24 @@
                                 // A dish with no price of its own may be priced by its
                                 // variants (Small $7, Large $12): it starts at 0.
                                 $basePrice = $dish->price !== null ? (string) $dish->price : ($choices ? '0.00' : null);
+                                // On a live offer: its price, with the dish's own struck through.
+                                $deal = $dish->price !== null ? ($offer_deals[$dish->id] ?? null) : null;
+                                // Priced in the second currency: its own symbol, and the
+                                // rate the cart turns it into the main one at.
+                                $dishRate = $restaurant->rateOf($dish);
+                                $dishCurrency = $dishRate === null ? $currency : config('currencies.'.$dish->currency.'.symbol', $dish->currency);
+                                $offerPrice = $deal?->discounted((string) $dish->price, $dishRate);
+                                $shownPrice = $choices['lowest'] ?? $dish->price;
                             @endphp
                             {{-- A dish with choices opens its sheet (menu-dish.js) when tapped. --}}
                             <article @class(['dish', 'has-choices' => $choices]) data-dish="{{ $dish->id }}" data-name="{{ $dishName }}"
                                      data-image="{{ $image }}" data-photo="{{ $photo }}"
-                                     data-price="{{ $basePrice ?? '' }}"
+                                     data-price="{{ $offerPrice ?? $basePrice ?? '' }}"
+                                     @if ($dish->price !== null) data-full-price="{{ $dish->price }}" data-extra="{{ bcsub((string) $shownPrice, (string) $dish->price, 2) }}" @endif
                                      @if ($choices) data-choices data-ingredients="{{ $ingredients }}" @endif
+                                     @if ($dishRate !== null) data-currency="{{ $dishCurrency }}" data-rate="{{ App\Support\Price::rate($dishRate) }}" @endif
+                                     @if ($dish->isDeal()) data-deal-offer="{{ $dish->offer_id }}" @endif
+                                     @if (in_array($dish->id, $hidden_deals, true)) hidden data-deal-off @endif
                                      data-search="{{ Str::lower($dishName.' '.$ingredients) }}">
                                 @if ($image && $choices)
                                     <span class="dish-photo-slot">
@@ -358,7 +388,12 @@
                                     @endif
                                     <div class="dish-foot">
                                         @if ($basePrice !== null)
-                                            <span class="price">{{ $currency }}{{ Price::format($choices['lowest'] ?? $dish->price) }}</span>
+                                            <span class="price-group">
+                                                <span class="price">{{ Price::money($dishCurrency, $deal ? bcadd($offerPrice, bcsub((string) $shownPrice, (string) $dish->price, 2), 2) : $shownPrice) }}</span>
+                                                @if ($deal)
+                                                    <s class="price-was">{{ Price::money($dishCurrency, $shownPrice) }}</s>
+                                                @endif
+                                            </span>
                                         @else
                                             <span></span>
                                         @endif
@@ -456,7 +491,7 @@
              rather than on every menu render. --}}
         <div class="qr-code" data-qr-canvas role="img" aria-label="{{ __('QR code for the menu') }}"
              data-options="{{ route('public.qr.options', $restaurant->slug) }}"
-             data-lib="{{ asset('js/qr-code-styling.js') }}?v={{ filemtime(public_path('js/qr-code-styling.js')) }}"></div>
+             data-lib="{{ Asset::versioned('js/qr-code-styling.js') }}"></div>
         <p class="pop-note" dir="ltr">{{ $menu_url }}</p>
         <button type="button" class="pop-done" data-pop-close>{{ __('Close') }}</button>
     </div>
@@ -550,263 +585,6 @@
     </dialog>
 @endif
 
-{{-- Open or closed, worked out again on the guest's phone (menu-hours.js), so
-     a copy of this page that Cloudflare kept is never wrong about the time.
-     Before the cart, which asks it. --}}
-@unless ($hours->isEmpty())
-    <script>
-        window.QAYEMA_HOURS = {
-            timezone: @js($hours->timezone()),
-            week: @js($hours->toArray()),
-            labels: { open: @js(__('Open now')), closed: @js(__('Closed now')), closedToday: @js(__('Closed today')) },
-        };
-    </script>
-    <script src="{{ asset('js/menu-hours.js') }}?v={{ filemtime(public_path('js/menu-hours.js')) }}" defer></script>
-@endunless
-
-@if ($can_order)
-    <dialog class="sheet" id="cart-sheet">
-        <div class="sheet-body">
-            <div class="sheet-head">
-                <button type="button" class="sheet-close" data-close-cart aria-label="{{ __('Close') }}">
-                    <span class="icon icon-back">{!! $icons['back'] !!}</span>
-                </button>
-                <h2>{{ __('Your cart') }}</h2>
-                <span style="width:36px"></span>
-            </div>
-            <div class="sheet-scroll" data-cart-panel="sheet"></div>
-            <div class="sheet-foot" data-cart-foot></div>
-        </div>
-    </dialog>
-
-    @php
-        // Ordering in the menu: who to call and where to bring it. On
-        // WhatsApp the guest only adds a note.
-        $inMenu = $order_channel === \App\Enums\OrderChannel::Menu;
-        // The guest's details are asked in the menu, and on WhatsApp when the
-        // owner chose to ask any (Restaurant::whatsappAsks()).
-        $asksDetails = $inMenu || collect($whatsapp_asks ?? [])->contains(fn (string $rule): bool => $rule !== \App\Enums\Ask::Off->value);
-        // Live order tracking through Pusher, when its keys are set; the
-        // public key and cluster only, the secret stays on the server.
-        $pusher = config('broadcasting.default') === 'pusher' && config('broadcasting.connections.pusher.key')
-            ? [
-                'key' => config('broadcasting.connections.pusher.key'),
-                'cluster' => config('broadcasting.connections.pusher.options.cluster'),
-                'script' => asset('js/pusher.min.js').'?v='.filemtime(public_path('js/pusher.min.js')),
-            ]
-            : null;
-        $guestCountries = $asksDetails
-            ? collect(config('countries'))->map(fn (array $country, string $code): array => [
-                'code' => $code,
-                'flag' => $country['flag'],
-                'dial' => $country['dial'],
-                // In the menu's language, to read and to search; the English
-                // name is searched too.
-                'name' => class_exists(\Locale::class) ? (\Locale::getDisplayRegion('-'.$code, $locale) ?: $country['label']) : $country['label'],
-                'label' => $country['label'],
-            ])->values()->all()
-            : [];
-    @endphp
-    <script>
-        window.QAYEMA_MENU = {
-            orderUrl: @js(route('public.order', $restaurant->slug)),
-            locale: @js($locale),
-            currency: @js($currency),
-            storageKey: @js('qayema-cart-'.$restaurant->slug),
-            mode: @js($order_channel->value),
-            // The table whose QR code opened the menu, and where the page
-            // remembers it, so a reload or a language switch stays at it.
-            table: @js($table ? ['code' => $table->code, 'name' => $table->name] : null),
-            tableKey: @js('qayema-table-'.$restaurant->slug),
-            @if ($asksDetails)
-            guestKey: @js('qayema-guest-'.$restaurant->slug),
-            addressUrl: @js(route('public.address', $restaurant->slug)),
-            // Delivery and pickup taken in the menu, or asked on WhatsApp
-            // with the address; dine-in is its own feature, offered only at
-            // a table (menu-cart.js types()).
-            types: @js($order_types ?? []),
-            country: @js(isset(config('countries')[$restaurant->country_code]) ? $restaurant->country_code : array_key_first(config('countries'))),
-            countries: @js($guestCountries),
-            @endif
-            @if ($inMenu)
-            dineIn: @js($dine_in ?? false),
-            // An order placed in the menu waits for someone to read it, so
-            // outside the hours the cart only shows what was picked.
-            closed: @js($open === false),
-            @else
-            // What this WhatsApp cart asks for: each off, optional or required.
-            asks: @js($whatsapp_asks ?? null),
-            @endif
-            icons: { plus: @js($icons['plus']), minus: @js($icons['minus']), chevron: @js($icons['chevron']), check: @js($icons['check']), close: @js($icons['close']), pin: @js($icons['pin']) },
-            strings: {
-                empty: @js(__('Nothing added yet.')),
-                each: @js(__('each')),
-                item: @js(__('item')),
-                items: @js(__('items')),
-                place: @js(__('Place order')),
-                placing: @js(__('Sending…')),
-                total: @js(__('Total')),
-                failed: @js(__('That did not send. Please try again.')),
-                remove: @js(__('Remove')),
-                add: @js(__('Add')),
-                options: @js(__('See options')),
-                close: @js(__('Close')),
-                optional: @js(__('Optional')),
-                note: @js(__('Note for the restaurant')),
-                noteHint: @js(__('Anything they should know?')),
-                check: @js(__('Check the details above.')),
-                forTable: @js(__('This order is for :table.')),
-                @if ($asksDetails)
-                how: @js(__('How would you like it?')),
-                delivery: @js(__('Delivery')),
-                pickup: @js(__('Pickup')),
-                dine_in: @js(__('At my table')),
-                needsTable: @js(__('Scan the QR code on your table to order.')),
-                needsTableShort: @js(__('Scan your table to order')),
-                name: @js(__('Your name')),
-                nameHint: @js(__('First and last name')),
-                nameMissing: @js(__('Add your name so the restaurant knows who to ask for.')),
-                phone: @js(__('Phone number')),
-                phoneHint: @js(__('Mobile number')),
-                country: @js(__('Country code')),
-                countrySearch: @js(__('Search a country or code')),
-                countryNone: @js(__('No country matches that.')),
-                address: @js(__('Address')),
-                addressHint: @js(__('Street, building, floor')),
-                locate: @js(__('Use my current location')),
-                locating: @js(__('Finding your location…')),
-                located: @js(__('Location added')),
-                locatedFilled: @js(__('We filled in your street. Add the building and floor.')),
-                locateFailed: @js(__('We could not get your location. Your address is enough.')),
-                phoneMissing: @js(__('Add your phone number so the restaurant can call you.')),
-                phoneInvalid: @js(__('Check your phone number.')),
-                addressMissing: @js(__('Add your address for the delivery.')),
-                @endif
-                @if ($inMenu)
-                closed: @js(__('Closed now')),
-                closedNote: @js(__('We are closed right now. Ordering opens again when we do.')),
-                sent: @js(__('Order sent')),
-                track: @js(__('Track your order')),
-                editing: @js(__('Changing order #:reference')),
-                adding: @js(__('Adding to your order #:reference')),
-                addToOrder: @js(__('Add to order')),
-                added: @js(__('Added to your order')),
-                addedBody: @js(__('The restaurant will see what you added.')),
-                waitingAccepted: @js(__('Your order #:reference is being prepared. You can order again once it is done.')),
-                waitingDelivery: @js(__('Your order #:reference is on its way. You can order again once it arrives.')),
-                waitingPickup: @js(__('Your order #:reference is ready for pickup. You can order again once you have it.')),
-                waitingDineIn: @js(__('Your order #:reference is coming to your table. You can order again once it is served.')),
-                oneAtATime: @js(__('One order at a time')),
-                keepOrder: @js(__('Keep it as it was')),
-                update: @js(__('Update order')),
-                updated: @js(__('Order updated')),
-                updatedBody: @js(__('The restaurant will see your changes.')),
-                unavailable: @js(__('Sent. :dishes is no longer available, so it was taken off your order.')),
-                locked: @js(__('This order can no longer be changed')),
-                lockedBody: @js(__('The restaurant has already accepted it. Call them if you need to change something.')),
-                sentBody: @js(__('The restaurant will call you to confirm. Your order number is :reference.')),
-                sentBodyDineIn: @js(__('The restaurant has your order for :table. Your order number is :reference.')),
-                @endif
-            },
-        };
-    </script>
-    <script src="{{ asset('js/menu-cart.js') }}?v={{ filemtime(public_path('js/menu-cart.js')) }}" defer></script>
-
-    @if ($inMenu)
-        {{-- Following an order placed in the menu, in a sheet over it
-             (public/js/menu-order.js); live through Pusher when the keys
-             are set, its library loaded only when there is an order. --}}
-        <dialog class="dish-sheet track-sheet" id="track-sheet" aria-labelledby="track-sheet-title">
-            <div class="dish-sheet-body">
-                <div class="track-sheet-head">
-                    <h2 id="track-sheet-title">{{ __('Order tracking') }}</h2>
-                    <button type="button" class="track-sheet-close" data-track-close aria-label="{{ __('Close') }}">
-                        <span class="icon">{!! $icons['close'] !!}</span>
-                    </button>
-                </div>
-                <div class="dish-sheet-scroll track-sheet-scroll" data-track-body></div>
-            </div>
-        </dialog>
-
-        <script>
-            window.QAYEMA_ORDERS = {
-                orderUrl: @js(route('public.order', $restaurant->slug)),
-                orderKey: @js('qayema-order-'.$restaurant->slug),
-                pusher: @js($pusher),
-                icons: { cart: @js($icons['cart']), close: @js($icons['close']) },
-                strings: {
-                    close: @js(__('Close')),
-                    track: @js(__('Track your order')),
-                    trackShort: @js(__('Track')),
-                    yourOrder: @js(__('Your order #:reference')),
-                    statusWaiting: @js(__('Waiting for the restaurant')),
-                    statusAccepted: @js(__('Accepted, being prepared')),
-                    statusOnItsWay: @js(__('On its way')),
-                    statusReady: @js(__('Ready for pickup')),
-                    statusDelivered: @js(__('Delivered')),
-                    statusPickedUp: @js(__('Picked up')),
-                    statusComing: @js(__('Coming to your table')),
-                    statusServed: @js(__('Served')),
-                    statusCancelled: @js(__('Cancelled')),
-                },
-            };
-        </script>
-        <script src="{{ asset('js/menu-order.js') }}?v={{ filemtime(public_path('js/menu-order.js')) }}" defer></script>
-    @endif
-@endif
-
-@if ($dish_options)
-    {{-- One sheet for every dish with choices, filled by menu-dish.js from
-         the data below: a bottom sheet on a phone, a card on a wide screen.
-         Without ordering it only shows the choices and their prices. --}}
-    <dialog class="dish-sheet" id="dish-sheet" aria-labelledby="dish-sheet-title">
-        <div class="dish-sheet-body">
-            <button type="button" class="dish-sheet-close" data-dish-close aria-label="{{ __('Close') }}">
-                <span class="icon">{!! $icons['close'] !!}</span>
-            </button>
-            <div class="dish-sheet-scroll">
-                <img class="dish-sheet-photo" data-dish-photo alt="" hidden>
-                <div class="dish-sheet-head">
-                    <h2 id="dish-sheet-title" data-dish-title></h2>
-                    <span class="dish-sheet-price" data-dish-price></span>
-                    <p class="dish-sheet-ingredients" data-dish-ingredients></p>
-                </div>
-                <div data-dish-groups></div>
-            </div>
-            <div class="dish-sheet-foot" data-dish-foot></div>
-        </div>
-    </dialog>
-
-    <script type="application/json" id="dish-options">@json($dish_options)</script>
-    <script>
-        window.QAYEMA_DISH = {
-            currency: @js($currency),
-            canOrder: @js($can_order),
-            icons: { plus: @js($icons['plus']), minus: @js($icons['minus']), check: @js($icons['check']) },
-            strings: {
-                pickOne: @js(__('Pick 1')),
-                optional: @js(__('Optional')),
-                addons: @js(__('Add-ons')),
-                add: @js(__('Add')),
-                remove: @js(__('Remove')),
-                quantity: @js(__('Quantity')),
-                free: @js(__('Free')),
-            },
-        };
-    </script>
-    <script src="{{ asset('js/menu-dish.js') }}?v={{ filemtime(public_path('js/menu-dish.js')) }}" defer></script>
-@endif
-
-@unless ($is_preview)
-    <script>
-        window.QAYEMA_TRACK = {
-            url: @js(route('public.events', $restaurant->slug)),
-            menu: @js($menu_url),
-            locale: @js($locale),
-        };
-    </script>
-    <script src="{{ asset('js/menu-track.js') }}?v={{ filemtime(public_path('js/menu-track.js')) }}" defer></script>
-@endunless
-<script src="{{ asset('js/menu-nav.js') }}?v={{ filemtime(public_path('js/menu-nav.js')) }}" defer></script>
+@include('menu.partials.scripts')
 </body>
 </html>

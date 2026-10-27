@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Http\Requests\Concerns\NamesTables;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 /**
  * One table or many at once ("Table 1" to "Table 20"): the dashboard sends
@@ -25,7 +26,7 @@ class StoreDiningTablesRequest extends FormRequest
     {
         return [
             'names' => ['required', 'array', 'min:1', 'max:'.config('menu.tables.batch')],
-            'names.*' => $this->nameRules(),
+            'names.*' => $this->nameRules(checkTaken: false),
         ];
     }
 
@@ -39,6 +40,14 @@ class StoreDiningTablesRequest extends FormRequest
             'names.max' => __('Add up to :max tables at a time.', ['max' => config('menu.tables.batch')]),
             ...$this->nameMessages('names.*'),
         ];
+    }
+
+    /**
+     * @return array<int, callable>
+     */
+    public function after(): array
+    {
+        return [fn (Validator $validator) => $this->namesTaken($validator, 'names', (array) $this->input('names', []))];
     }
 
     /** @return array<int, string> the names, trimmed */

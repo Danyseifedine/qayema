@@ -109,8 +109,9 @@ class OrdersTest extends TestCase
 
         $this->actingAs($shop->user)->getJson(route('api.orders.index', ['kind' => 'table']))
             ->assertJsonCount(2, 'data')
-            ->assertJsonPath('data.1.id', $atTable->id)
-            ->assertJsonPath('data.1.table', 'Table 4')
+            // The one still waiting comes before the finished one.
+            ->assertJsonPath('data.0.id', $atTable->id)
+            ->assertJsonPath('data.0.table', 'Table 4')
             ->assertJsonPath('meta.open', 1);
 
         // Left out, both, as before.
@@ -229,6 +230,40 @@ class OrdersTest extends TestCase
             ->assertJsonCount(1, 'data');
     }
 
+    public function test_an_order_still_to_see_to_comes_before_newer_finished_ones(): void
+    {
+        $shop = $this->owner();
+        $waiting = $this->orderFor($shop, OrderStatus::Placed);
+        $waiting->forceFill(['placed_at' => now()->subDays(3)])->save();
+        $ready = $this->orderFor($shop, OrderStatus::Ready);
+        $ready->forceFill(['placed_at' => now()->subDays(2)])->save();
+        // A full page of newer finished orders.
+        foreach (range(1, 30) as $minutes) {
+            $this->orderFor($shop, OrderStatus::Done)->forceFill(['placed_at' => now()->subMinutes($minutes)])->save();
+        }
+
+        $this->actingAs($shop->user)->getJson(route('api.orders.index'))
+            ->assertOk()
+            ->assertJsonCount(30, 'data')
+            ->assertJsonPath('data.0.reference', $ready->reference)
+            ->assertJsonPath('data.1.reference', $waiting->reference)
+            ->assertJsonPath('data.2.status', 'done')
+            ->assertJsonPath('meta.last_page', 2);
+    }
+
+    /** An admin with a restaurant of their own still only manages its orders from the dashboard. */
+    public function test_an_admin_owning_a_restaurant_cannot_reach_anothers_orders_through_the_dashboard(): void
+    {
+        $theirs = $this->orderFor($this->owner());
+        $admin = $this->admin();
+        $mine = $this->owner(['slug' => 'admins-own']);
+        $mine->update(['user_id' => $admin->id]);
+
+        $this->actingAs($admin->fresh())->deleteJson(route('api.orders.destroy', $theirs))
+            ->assertForbidden();
+        $this->assertModelExists($theirs);
+    }
+
     public function test_the_list_can_be_filtered_by_status(): void
     {
         $shop = $this->owner();
@@ -273,9 +308,25 @@ class OrdersTest extends TestCase
 
         $this->actingAs($mine->user)
             ->patchJson(route('api.orders.update', $theirs), ['status' => 'done'])
-            ->assertForbidden();
+            ->assertForbidden()
+            ->assertExactJson(['message' => 'You do not have access to this.', 'code' => 'forbidden']);
 
         $this->assertSame(OrderStatus::Placed, $theirs->fresh()->status);
+    }
+
+    /** OrderPolicy's refusal reads like every other owner 403, in the owner's language. */
+    public function test_someone_elses_order_is_refused_in_arabic_too(): void
+    {
+        $mine = $this->owner();
+        $theirs = $this->orderFor($this->owner(['slug' => 'theirs']));
+
+        $this->actingAs($mine->user)
+            ->withHeader('Accept-Language', 'ar')
+            ->deleteJson(route('api.orders.destroy', $theirs))
+            ->assertForbidden()
+            ->assertExactJson(['message' => 'لا تملك صلاحية الوصول إلى هذا.', 'code' => 'forbidden']);
+
+        $this->assertNotNull($theirs->fresh());
     }
 
     public function test_the_contents_of_an_order_cannot_be_edited(): void

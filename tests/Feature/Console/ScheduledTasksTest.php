@@ -6,6 +6,8 @@ use App\Models\Restaurant;
 use App\Services\Analytics\MenuDays;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class ScheduledTasksTest extends TestCase
@@ -93,5 +95,49 @@ class ScheduledTasksTest extends TestCase
         }
 
         $this->assertDatabaseHas('menu_sessions', ['session_id' => 'old']);
+    }
+
+    public function test_the_retention_defaults_to_the_one_menu_days_keeps(): void
+    {
+        $option = Artisan::all()['stats:rollup']->getDefinition()->getOption('prune-months');
+
+        $this->assertSame((string) MenuDays::RAW_MONTHS, (string) $option->getDefault());
+    }
+
+    /** A restaurant that cannot be added up keeps its raw rows; the rest are pruned as usual. */
+    public function test_one_restaurant_that_fails_keeps_its_rows_and_the_rest_are_pruned(): void
+    {
+        $broken = Restaurant::factory()->create();
+        $broken->menuSessions()->create(['session_id' => 'broken', 'viewed_at' => now()->subMonths(7)]);
+        $fine = Restaurant::factory()->create();
+        $fine->menuSessions()->create(['session_id' => 'fine', 'viewed_at' => now()->subMonths(7)]);
+        $this->mock(MenuDays::class)->shouldReceive('addUpMissing')->andReturn(['written' => 0, 'failed' => [$broken->id]]);
+
+        $this->artisan('stats:rollup')
+            ->assertSuccessful()
+            ->expectsOutputToContain("Could not add up restaurant(s) {$broken->id}")
+            ->expectsOutputToContain('Pruned 1 raw menu_sessions');
+
+        $this->assertDatabaseHas('menu_sessions', ['session_id' => 'broken']);
+        $this->assertDatabaseMissing('menu_sessions', ['session_id' => 'fine']);
+    }
+
+    public function test_the_prune_deletes_a_batch_at_a_time(): void
+    {
+        $restaurant = Restaurant::factory()->create();
+        foreach (range(1, 5) as $i) {
+            $restaurant->menuSessions()->create(['session_id' => "old-{$i}", 'viewed_at' => now()->subMonths(7)]);
+        }
+        $restaurant->menuSessions()->create(['session_id' => 'new', 'viewed_at' => now()]);
+        $deletes = 0;
+        DB::listen(function ($query) use (&$deletes): void {
+            $deletes += (int) str_starts_with(strtolower($query->sql), 'delete from "menu_sessions"');
+        });
+
+        $this->artisan('stats:rollup', ['--batch' => 2])->assertSuccessful()->expectsOutputToContain('Pruned 5 raw menu_sessions');
+
+        // 2, 2, 1, then one that finds nothing left.
+        $this->assertSame(4, $deletes);
+        $this->assertDatabaseCount('menu_sessions', 1);
     }
 }

@@ -18,7 +18,8 @@ class PackageController extends Controller
     {
         // The effective package, so an expired assignment reports as the
         // default rather than as something the owner no longer has.
-        $current = $request->user()->restaurant?->effectivePackage();
+        $restaurant = $request->user()->restaurant;
+        $current = $restaurant?->effectivePackage();
 
         // What is on offer, and the owner's own package even once it is not,
         // so they still see what they have beside what they could ask for.
@@ -31,6 +32,9 @@ class PackageController extends Controller
         return PackageResource::collection($packages)->additional([
             'meta' => [
                 'current' => $current?->slug,
+                // What this restaurant pays for it when an admin set its own
+                // price (cents, the package's currency); null: the public one.
+                'your_price_cents' => $restaurant?->price_cents,
             ],
         ]);
     }

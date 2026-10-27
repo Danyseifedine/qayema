@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use App\Enums\Feature;
 use App\Models\Restaurant;
 use App\Models\Template;
+use App\Services\Qr\QrDesign;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -153,7 +154,7 @@ class QrEdgeTest extends TestCase
         $owner = $this->owner();
         $owner->update(['qr_settings' => ['bg' => 'gold', 'dot' => '#a8863c', 'dot_style' => 'rounded']]);
 
-        $settings = $owner->fresh()->qrDesign();
+        $settings = QrDesign::saved($owner->fresh());
 
         $this->assertArrayNotHasKey('bg', $settings);
         $this->assertArrayNotHasKey('dot', $settings);
@@ -213,6 +214,6 @@ class QrEdgeTest extends TestCase
     {
         $owner = $this->owner(['name' => ['en' => 'Olive']]);
 
-        $this->assertSame('Olive', Restaurant::find($owner->id)->qrDesign()['title']);
+        $this->assertSame('Olive', QrDesign::saved(Restaurant::find($owner->id))['title']);
     }
 }

@@ -40,8 +40,8 @@ class FairUseTest extends TestCase
         $this->assertSame(10, $premium['features']['social_link_limit']);
 
         // What holds is the number.
-        $this->assertSame(1000, $restaurant->dish_limit);
-        $this->assertSame(1000, $restaurant->category_limit);
+        $this->assertSame(1000, $restaurant->limitOf(Feature::DishLimit));
+        $this->assertSame(1000, $restaurant->limitOf(Feature::CategoryLimit));
     }
 
     public function test_the_fair_use_number_holds_and_says_what_it_is(): void
@@ -80,7 +80,7 @@ class FairUseTest extends TestCase
         $restaurant = $this->ownerOn('premium');
         FeatureGrant::factory()->create(['restaurant_id' => $restaurant->id, 'feature' => Feature::DishLimit, 'value' => 3]);
 
-        $this->assertSame(5, $restaurant->fresh()->dish_limit);
+        $this->assertSame(5, $restaurant->fresh()->limitOf(Feature::DishLimit));
         $this->assertNull($restaurant->fresh()->entitlements()->shownLimit(Feature::DishLimit));
     }
 

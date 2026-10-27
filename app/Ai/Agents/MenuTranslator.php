@@ -4,24 +4,32 @@ namespace App\Ai\Agents;
 
 use App\Ai\Agents\Concerns\UsesWritingHelpModel;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
-use Laravel\Ai\Attributes\MaxTokens;
 use Laravel\Ai\Attributes\Temperature;
 use Laravel\Ai\Attributes\UseCheapestModel;
 use Laravel\Ai\Contracts\Agent;
+use Laravel\Ai\Contracts\HasProviderOptions;
 use Laravel\Ai\Contracts\HasStructuredOutput;
 use Laravel\Ai\Promptable;
 use Stringable;
 
 /** One piece of a restaurant's menu text, put into the menu's other language. */
 #[UseCheapestModel]
-#[MaxTokens(2000)]
 #[Temperature(0.2)]
-class MenuTranslator implements Agent, HasStructuredOutput
+class MenuTranslator implements Agent, HasProviderOptions, HasStructuredOutput
 {
     use Promptable, UsesWritingHelpModel;
 
-    /** Both are language names as the menu lists them ("Français"). */
-    public function __construct(public string $from, public string $to) {}
+    /**
+     * Both are language names as the menu lists them ("Français");
+     * $characters is the longest its answer may be (the field's limit).
+     */
+    public function __construct(public string $from, public string $to, public int $characters) {}
+
+    /** Never more than an answer of $characters needs. */
+    public function maxTokens(): int
+    {
+        return $this->tokensFor($this->characters);
+    }
 
     public function instructions(): Stringable|string
     {

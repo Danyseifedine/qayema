@@ -15,7 +15,8 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
  * The design store: what an owner can pick from, and switching between them.
  *
  * Every active design is open to every restaurant except one marked premium,
- * which needs the `premium_designs` flag. A newly onboarded restaurant has no
+ * which needs the `premium_designs` flag, and one made for another
+ * restaurant, which this one never sees. A newly onboarded restaurant has no
  * template and must pick one before the rest of the dashboard unlocks.
  */
 class TemplateController extends Controller
@@ -35,7 +36,7 @@ class TemplateController extends Controller
     public function select(SelectTemplateRequest $request): AnonymousResourceCollection
     {
         $restaurant = $this->restaurant($request);
-        $template = $this->activeTemplate($request->validated('template_id'));
+        $template = $this->activeTemplate($request->validated('template_id'), $restaurant);
 
         abort_unless($restaurant->mayUseTemplate($template), 403, __('This design is not on your package.'));
 
@@ -46,7 +47,7 @@ class TemplateController extends Controller
 
     private function collection(Restaurant $restaurant): AnonymousResourceCollection
     {
-        return TemplateResource::collection(Template::query()->active()->with('media')->get())->additional([
+        return TemplateResource::collection(Template::query()->active()->availableTo($restaurant)->with('media')->get())->additional([
             'meta' => [
                 'current' => $restaurant->template_id,
                 // What the menu is drawn in: the choice, or the fallback when
@@ -56,8 +57,9 @@ class TemplateController extends Controller
         ]);
     }
 
-    private function activeTemplate(int $id): Template
+    /** One it may see: another restaurant's own design is a 404, as if it were not there. */
+    private function activeTemplate(int $id, Restaurant $restaurant): Template
     {
-        return Template::query()->active()->findOrFail($id);
+        return Template::query()->active()->availableTo($restaurant)->findOrFail($id);
     }
 }

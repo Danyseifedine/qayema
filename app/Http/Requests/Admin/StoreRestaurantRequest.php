@@ -7,6 +7,7 @@ use App\Rules\AvailableSlug;
 use App\Rules\Username;
 use App\Services\Menu\MenuLanguages;
 use App\Services\Packages\PackageAssigner;
+use App\Support\MenuTextLimits;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -43,8 +44,8 @@ class StoreRestaurantRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'min:2', 'max:255', new AvailableSlug],
+            'name' => ['required', 'string', 'max:'.MenuTextLimits::RESTAURANT_NAME],
+            'slug' => AvailableSlug::rules(),
             'owner_name' => ['required', 'string', 'max:255'],
             'username' => ['nullable', 'required_without:email', 'string', 'max:30', new Username],
             'email' => ['nullable', 'required_without:username', 'string', 'email', 'max:255', Rule::unique('users', 'email')],

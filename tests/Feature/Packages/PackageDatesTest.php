@@ -42,13 +42,13 @@ class PackageDatesTest extends TestCase
         $restaurant = $restaurant->fresh();
         $this->assertSame(PackageStatus::Scheduled, $restaurant->packageStatus());
         $this->assertSame('free', $restaurant->effectivePackage()->slug);
-        $this->assertSame(40, $restaurant->dish_limit);
+        $this->assertSame(40, $restaurant->limitOf(Feature::DishLimit));
 
         $this->travel(8)->days();
         $this->newRequest();
 
         $this->assertSame(PackageStatus::Active, $restaurant->fresh()->packageStatus());
-        $this->assertSame(1000, $restaurant->fresh()->dish_limit);
+        $this->assertSame(1000, $restaurant->fresh()->limitOf(Feature::DishLimit));
     }
 
     public function test_the_cached_answer_ends_when_the_package_starts(): void
@@ -56,13 +56,13 @@ class PackageDatesTest extends TestCase
         $restaurant = $this->owner();
         $this->assigner()->assign($restaurant, Package::findBySlug('pro'), now()->addMinute(), null);
 
-        $this->assertSame(40, $restaurant->fresh()->dish_limit);
+        $this->assertSame(40, $restaurant->fresh()->limitOf(Feature::DishLimit));
 
         // No write, no flush: only the clock moves past the start.
         $this->travel(2)->minutes();
         $this->newRequest();
 
-        $this->assertSame(150, $restaurant->fresh()->dish_limit);
+        $this->assertSame(150, $restaurant->fresh()->limitOf(Feature::DishLimit));
     }
 
     public function test_the_cached_answer_ends_when_a_grant_does(): void
@@ -70,12 +70,12 @@ class PackageDatesTest extends TestCase
         $restaurant = $this->owner();
         FeatureGrant::factory()->for($restaurant)->forFeature(Feature::DishLimit, 10)->create(['ends_at' => now()->addMinute()]);
 
-        $this->assertSame(50, $restaurant->fresh()->dish_limit);
+        $this->assertSame(50, $restaurant->fresh()->limitOf(Feature::DishLimit));
 
         $this->travel(2)->minutes();
         $this->newRequest();
 
-        $this->assertSame(40, $restaurant->fresh()->dish_limit);
+        $this->assertSame(40, $restaurant->fresh()->limitOf(Feature::DishLimit));
     }
 
     public function test_assign_for_months_and_forever(): void
@@ -111,7 +111,7 @@ class PackageDatesTest extends TestCase
         $restaurant = $restaurant->fresh();
         $this->assertSame(PackageStatus::Active, $restaurant->packageStatus());
         $this->assertTrue($restaurant->package_ends_at->isSameDay(now()->addMonthNoOverflow()));
-        $this->assertSame(150, $restaurant->dish_limit);
+        $this->assertSame(150, $restaurant->limitOf(Feature::DishLimit));
     }
 
     public function test_extend_forever_clears_the_end(): void

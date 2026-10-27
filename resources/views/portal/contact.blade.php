@@ -6,7 +6,7 @@
 @endphp
 
 @push('styles')
-<link rel="stylesheet" href="{{ asset('portal/css/pages/contact.css') }}?v={{ @filemtime(public_path('portal/css/pages/contact.css')) ?: '1' }}">
+<link rel="stylesheet" href="{{ \App\Support\Asset::versioned('portal/css/pages/contact.css') }}">
 @endpush
 
 @section('content')

@@ -27,6 +27,7 @@ class TellAdminsAboutMenuEdits
         'api.qr.*',
         'api.menu-languages.*',
         'api.social-links.*',
+        'api.offers.*',
     ];
 
     public function __construct(private readonly AdminAlerts $alerts) {}

@@ -77,13 +77,42 @@ class DiningTable extends Model
 
     public static function freshCode(): string
     {
-        do {
-            $code = '';
+        return self::freshCodes(1)[0];
+    }
 
-            for ($i = 0; $i < self::CODE_LENGTH; $i++) {
-                $code .= self::ALPHABET[random_int(0, strlen(self::ALPHABET) - 1)];
+    /**
+     * `$count` new codes, none taken: checked all at once, so adding twenty
+     * tables is one look rather than twenty.
+     *
+     * @return list<string>
+     */
+    public static function freshCodes(int $count): array
+    {
+        $codes = [];
+
+        while (count($codes) < $count) {
+            $wanted = [];
+            while (count($wanted) < $count - count($codes)) {
+                $code = self::randomCode();
+                if (! in_array($code, $codes, true)) {
+                    $wanted[$code] = $code;
+                }
             }
-        } while (self::query()->where('code', $code)->exists());
+
+            $taken = self::query()->whereIn('code', array_values($wanted))->pluck('code')->all();
+            $codes = [...$codes, ...array_values(array_diff($wanted, $taken))];
+        }
+
+        return $codes;
+    }
+
+    private static function randomCode(): string
+    {
+        $code = '';
+
+        for ($i = 0; $i < self::CODE_LENGTH; $i++) {
+            $code .= self::ALPHABET[random_int(0, strlen(self::ALPHABET) - 1)];
+        }
 
         return $code;
     }

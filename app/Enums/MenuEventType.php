@@ -32,6 +32,12 @@ enum MenuEventType: string
     /** The guest switched language. Carries the language code. */
     case Language = 'language';
 
+    /** An offer appeared on the guest's screen, once a visit. Carries the offer's id. */
+    case OfferShown = 'offer_shown';
+
+    /** The guest tapped an offer. Carries the offer's id. */
+    case OfferTap = 'offer_tap';
+
     public function carriesDish(): bool
     {
         return $this === self::DishAdd;
@@ -44,6 +50,22 @@ enum MenuEventType: string
 
     public function carriesValue(): bool
     {
-        return in_array($this, [self::Search, self::SearchMiss, self::Social, self::Language], true);
+        return in_array($this, [self::Search, self::SearchMiss, self::Social, self::Language, self::OfferShown, self::OfferTap], true);
+    }
+
+    public function carriesOffer(): bool
+    {
+        return $this === self::OfferShown || $this === self::OfferTap;
+    }
+
+    /**
+     * What the analytics page counts as guest actions. An offer's numbers
+     * are shown on the Offers page, beside the offer.
+     *
+     * @return array<int, self>
+     */
+    public static function guestActions(): array
+    {
+        return array_values(array_filter(self::cases(), fn (self $type): bool => ! $type->carriesOffer()));
     }
 }

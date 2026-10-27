@@ -62,7 +62,7 @@ class WritingHelpGeminiTest extends TestCase
 
         $this->actingAs($owner->user)->translate()
             ->assertOk()
-            ->assertExactJson(['data' => ['text' => 'شوربة عدس', 'left' => 4]]);
+            ->assertExactJson(['data' => ['text' => 'شوربة عدس', 'left' => 4, 'credits_left' => 499]]);
 
         Http::assertSentCount(1);
         Http::assertSent(fn (Request $request): bool => $request->url() === self::INTERACTIONS

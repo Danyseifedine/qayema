@@ -47,13 +47,6 @@ html[lang="ar"] .guide-card h3 { font-family: var(--font-ar); letter-spacing: 0;
 .guide-card .more { margin-top: auto; padding-top: 10px; font-size: 14px; font-weight: 600; color: var(--gold-on); }
 .guide-card .mins { font-size: 12.5px; color: var(--muted); }
 
-/* The brand gold is too light for small text on the light theme's near
-   white; this darker gold keeps it above 4.5:1 there. */
-html[data-theme="light"] .page-hero .mono-label,
-html[data-theme="light"] .guide-card .more,
-html[data-theme="light"] .crumbs a:hover,
-html[data-theme="light"] .prose a { color: #87661a; }
-
 /* ---- Read next ---- */
 .related { padding: 30px 0 10px; }
 .related h2 { margin: 0 0 22px; text-align: center; font-size: 26px; font-weight: 500; }

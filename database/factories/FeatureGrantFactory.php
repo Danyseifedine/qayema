@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\Feature;
+use App\Enums\GrantMode;
 use App\Models\FeatureGrant;
 use App\Models\Restaurant;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -22,10 +23,21 @@ class FeatureGrantFactory extends Factory
         return [
             'restaurant_id' => Restaurant::factory(),
             'feature' => Feature::DishLimit,
+            'mode' => GrantMode::Add,
             'value' => 10,
             'source' => 'admin',
             'ends_at' => null,
         ];
+    }
+
+    /** Sets the feature for the restaurant: a limit (null unlimited) or a flag (0 off, 1 on). */
+    public function setTo(Feature $feature, ?int $value): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'feature' => $feature,
+            'mode' => GrantMode::Set,
+            'value' => $value,
+        ]);
     }
 
     public function forFeature(Feature $feature, int $value = 1): static

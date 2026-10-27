@@ -6,6 +6,7 @@ use App\Models\BlockedIp;
 use App\Services\Security\AbuseGuard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class AbuseGuardTest extends TestCase
@@ -100,5 +101,42 @@ class AbuseGuardTest extends TestCase
         BlockedIp::query()->delete();
 
         $this->assertTrue($guard->isBlocked(self::IP), 'Still cached for up to a minute.');
+    }
+
+    /** One cached list for every address: a thousand guests are one query a minute, not a thousand. */
+    public function test_every_address_is_answered_from_one_query_a_minute(): void
+    {
+        $guard = app(AbuseGuard::class);
+        $guard->block(self::IP);
+        DB::enableQueryLog();
+
+        foreach (range(1, 50) as $i) {
+            $guard->isBlocked("203.0.113.{$i}");
+        }
+        $this->assertTrue($guard->isBlocked(self::IP));
+
+        $this->assertCount(1, array_filter(DB::getQueryLog(), fn (array $query): bool => str_contains($query['query'], 'blocked_ips')));
+    }
+
+    public function test_a_new_block_reaches_the_list_at_once(): void
+    {
+        $guard = app(AbuseGuard::class);
+        $this->assertFalse($guard->isBlocked(self::IP));
+
+        $guard->block(self::IP);
+
+        $this->assertTrue($guard->isBlocked(self::IP));
+    }
+
+    /** The list remembers when each block ends, so one that ends inside the minute stops then. */
+    public function test_a_block_stops_at_its_end_though_the_list_is_cached(): void
+    {
+        $guard = app(AbuseGuard::class);
+        $guard->block(self::IP, expiresAt: now()->addSeconds(30));
+        $this->assertTrue($guard->isBlocked(self::IP));
+
+        $this->travel(31)->seconds();
+
+        $this->assertFalse($guard->isBlocked(self::IP));
     }
 }

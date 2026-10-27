@@ -18,9 +18,27 @@ return [
         'variants' => 5,
         'options' => 10,
         'addons' => 20,
-        'name_max' => 60,
         // As a dish's own price: a menu in Lebanese pounds runs to millions.
         'price_max' => 99999999.99,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Build your own
+    |--------------------------------------------------------------------------
+    |
+    | A dish's "build your own" (App\Models\DishBuild): how many one dish may
+    | carry, the most parts a guest may fill (a pizza in eighths), and the
+    | most choices in a build's own list. A category's dishes are as many as
+    | the category holds. On no package: an admin switches the
+    | `build_your_own` flag on for a restaurant.
+    |
+    */
+
+    'dish_builds' => [
+        'builds' => 3,
+        'parts' => 8,
+        'choices' => 30,
     ],
 
     /*

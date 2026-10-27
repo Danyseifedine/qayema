@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Exceptions\TooManyContactMessages;
 use App\Http\Requests\ContactRequest;
 use App\Services\Contact\ContactService;
+use App\Services\Contact\TooManyContactMessages;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;

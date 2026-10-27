@@ -25,7 +25,7 @@ class RestaurantPackageTest extends TestCase
         $owner = $this->owner();
 
         $this->assertSame('free', $owner->package->slug);
-        $this->assertSame(40, $owner->dish_limit);
+        $this->assertSame(40, $owner->limitOf(Feature::DishLimit));
     }
 
     public function test_assigning_a_package_from_the_panel_raises_the_limits(): void
@@ -40,14 +40,14 @@ class RestaurantPackageTest extends TestCase
 
         $owner = $owner->fresh();
         $this->assertSame('premium', $owner->package->slug);
-        $this->assertSame(1000, $owner->dish_limit);
+        $this->assertSame(1000, $owner->limitOf(Feature::DishLimit));
         $this->assertTrue($owner->entitlements()->can(Feature::QrStudio));
     }
 
     public function test_an_expiry_in_the_past_keeps_the_package_and_takes_the_menu_offline_after_the_grace_days(): void
     {
         $owner = $this->ownerOn('pro');
-        $this->assertSame(150, $owner->dish_limit);
+        $this->assertSame(150, $owner->limitOf(Feature::DishLimit));
         $this->actingAs($this->admin());
 
         Livewire::test(EditRestaurant::class, ['record' => $owner->id])
@@ -57,7 +57,7 @@ class RestaurantPackageTest extends TestCase
 
         $owner = $owner->fresh();
         $this->assertTrue($owner->packageExpired());
-        $this->assertSame(150, $owner->dish_limit, 'Never dropped to Free.');
+        $this->assertSame(150, $owner->limitOf(Feature::DishLimit), 'Never dropped to Free.');
         $this->assertTrue($owner->entitlements()->can(Feature::Appearance));
         $this->assertFalse($owner->menuOnline());
     }
@@ -78,6 +78,6 @@ class RestaurantPackageTest extends TestCase
             ])
             ->assertHasNoActionErrors();
 
-        $this->assertSame(180, $owner->fresh()->dish_limit, '150 from Pro + 30 granted.');
+        $this->assertSame(180, $owner->fresh()->limitOf(Feature::DishLimit), '150 from Pro + 30 granted.');
     }
 }

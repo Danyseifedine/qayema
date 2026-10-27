@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api;
 
+use App\Support\MenuTextLimits;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\CreatesOwners;
 use Tests\TestCase;
@@ -28,9 +29,9 @@ class ApiLocaleTest extends TestCase
         $owner = $this->owner();
 
         $this->actingAs($owner->user)
-            ->postJson(route('api.categories.store'), ['name' => ['en' => str_repeat('x', 256)]], ['Accept-Language' => 'ar'])
+            ->postJson(route('api.categories.store'), ['name' => ['en' => str_repeat('x', MenuTextLimits::CATEGORY_NAME + 1)]], ['Accept-Language' => 'ar'])
             ->assertStatus(422)
-            ->assertJsonFragment(['name.en' => ['يجب ألا يتجاوز حقل الاسم 255 حرفاً.']]);
+            ->assertJsonFragment(['name.en' => ['يجب ألا يتجاوز حقل الاسم 40 حرفاً.']]);
     }
 
     public function test_english_is_the_default(): void

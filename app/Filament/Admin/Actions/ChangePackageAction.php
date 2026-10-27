@@ -47,7 +47,9 @@ class ChangePackageAction
             ->modalSubmitActionLabel('Save package')
             ->schema(PackageFields::components())
             ->action(function (Collection $records, array $data): void {
-                $records->each(fn (Restaurant $restaurant) => self::apply($restaurant, $data));
+                // The package read once for every restaurant selected.
+                $package = Package::query()->findOrFail($data['package_id']);
+                $records->each(fn (Restaurant $restaurant) => self::apply($restaurant, $data, $package));
 
                 Notification::make()->title('Package saved for '.$records->count().' restaurants')->success()->send();
             })
@@ -56,7 +58,8 @@ class ChangePackageAction
 
     /**
      * On a package request: the sender's restaurant, pre-filled with the
-     * package they asked for, starting now.
+     * package they asked for, starting now. Applying it marks the request
+     * handled, so it leaves the open inbox.
      */
     public static function forRequest(): Action
     {
@@ -67,25 +70,42 @@ class ChangePackageAction
             ->modalHeading(fn (ContactMessage $record): string => 'Put '.$record->user->restaurant->name.' on '.$record->package->name)
             ->modalSubmitActionLabel('Save package')
             ->schema(PackageFields::components())
-            ->fillForm(fn (ContactMessage $record): array => [
-                ...PackageFields::stateFor($record->user->restaurant),
-                'package_id' => $record->package_id,
-                'package_started_at' => now(),
-                'note' => 'Requested on '.$record->created_at->toFormattedDateString(),
-            ])
+            ->fillForm(fn (ContactMessage $record): array => self::requestState($record))
             ->action(function (ContactMessage $record, array $data): void {
                 self::apply($record->user->restaurant, $data);
+                $record->markHandled();
 
                 Notification::make()->title('Package saved')->success()->send();
             });
     }
 
+    /**
+     * The form as a request opens it: the requested package from now. An end
+     * still to come is kept (moving up mid-period); one already passed, a
+     * renewal, opens on a month instead, so Save works as it opens.
+     *
+     * @return array<string, mixed>
+     */
+    public static function requestState(ContactMessage $record): array
+    {
+        $restaurant = $record->user->restaurant;
+        $ended = $restaurant->package_ends_at?->isPast() ?? false;
+
+        return [
+            ...PackageFields::stateFor($restaurant),
+            ...($ended ? ['duration' => PackageFields::MONTHS, 'months' => 1, 'package_ends_at' => null] : []),
+            'package_id' => $record->package_id,
+            'package_started_at' => now(),
+            'note' => 'Requested on '.$record->created_at->toFormattedDateString(),
+        ];
+    }
+
     /** @param  array<string, mixed>  $data */
-    public static function apply(Restaurant $restaurant, array $data): void
+    public static function apply(Restaurant $restaurant, array $data, ?Package $package = null): void
     {
         app(PackageAssigner::class)->assign(
             $restaurant,
-            Package::query()->findOrFail($data['package_id']),
+            $package ?? Package::query()->findOrFail($data['package_id']),
             CarbonImmutable::parse($data['package_started_at'] ?? now()),
             PackageFields::endsAt($data),
             $data['note'] ?? null,

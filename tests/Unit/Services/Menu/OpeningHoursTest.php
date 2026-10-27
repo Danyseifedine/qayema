@@ -180,6 +180,7 @@ class OpeningHoursTest extends TestCase
     {
         $this->assertSame('Asia/Beirut', $this->hours([])->timezone());
         $this->assertSame('America/New_York', $this->hours([], 'America/New_York')->timezone());
+        $this->assertSame('Asia/Calcutta', $this->hours([], 'Asia/Calcutta')->timezone(), 'An older name is still a real one.');
     }
 
     public function test_the_week_is_all_seven_days_monday_first_with_rubbish_dropped(): void

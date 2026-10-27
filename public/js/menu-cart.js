@@ -210,8 +210,18 @@
         });
     }
 
-    function keyOf(dish, options, addons) {
-        return dish + '|' + sorted(options).join(',') + '|' + sorted(addons).join(',');
+    /** A dish's builds in one order, so the same pizza is the same line. */
+    function builtOf(builds) {
+        return (builds || []).map(function (entry) {
+            return { build: Number(entry.build), parts: (entry.parts || []).map(String) };
+        }).sort(function (a, b) {
+            return a.build - b.build;
+        });
+    }
+
+    function keyOf(dish, options, addons, builds) {
+        var built = builtOf(builds);
+        return dish + '|' + sorted(options).join(',') + '|' + sorted(addons).join(',') + (built.length ? '|' + JSON.stringify(built) : '');
     }
 
     function load() {
@@ -236,11 +246,13 @@
             if (typeof value === 'number') {
                 lines[keyOf(key, [], [])] = { dish: key, options: [], addons: [], qty: value };
             } else if (value && typeof value === 'object' && Array.isArray(value.options) && Array.isArray(value.addons)) {
-                lines[keyOf(value.dish, value.options, value.addons)] = {
+                lines[keyOf(value.dish, value.options, value.addons, value.builds)] = {
                     dish: String(value.dish),
                     options: sorted(value.options),
                     addons: sorted(value.addons),
+                    builds: builtOf(value.builds),
                     qty: Number(value.qty) || 0,
+                    name: typeof value.name === 'string' ? value.name : undefined,
                 };
             }
         });
@@ -350,11 +362,14 @@
         return Array.prototype.slice.call(document.querySelectorAll('.dish[data-price]:not([data-price=""])'));
     }
 
-    function money(amount) {
+    /** `symbol` for a dish priced in the second currency; the menu's own otherwise. */
+    function money(amount, symbol) {
         // As App\Support\Price: no decimals on a whole amount, two otherwise.
         var rounded = Math.round(amount * 100) / 100;
         var whole = rounded === Math.floor(rounded);
-        return config.currency + rounded.toLocaleString('en-US', {
+        var sign = (symbol || config.currency);
+        // A sign stays on the number ("$5"), letters get a small space ("L.L 89,000"), as App\Support\Price::symbol().
+        return (sign.length > 1 ? sign + ' ' : sign) + rounded.toLocaleString('en-US', {
             minimumFractionDigits: whole ? 0 : 2,
             maximumFractionDigits: whole ? 0 : 2,
         });
@@ -364,8 +379,9 @@
         return parseFloat(element.dataset.price || '0') || 0;
     }
 
+    /** The dish on the menu now; an offer's deal dish while the offer is not live is not. */
     function findDish(id) {
-        return document.querySelector('.dish[data-dish="' + id + '"][data-price]:not([data-price=""])');
+        return document.querySelector('.dish[data-dish="' + id + '"][data-price]:not([data-price=""]):not([data-deal-off])');
     }
 
     /**
@@ -377,11 +393,20 @@
         var data = choices[line.dish];
 
         if (!data) {
-            return line.options.length === 0 && line.addons.length === 0 ? { extra: 0, labels: [] } : null;
+            return line.options.length === 0 && line.addons.length === 0 && (line.builds || []).length === 0 ? { extra: 0, labels: [] } : null;
         }
 
-        var extra = 0;
-        var labels = [];
+        // Built from parts (menu-build.js): each build filled as it allows.
+        var built = { extra: 0, labels: [] };
+        if ((data.builds || []).length > 0 || (line.builds || []).length > 0) {
+            built = window.QAYEMA_BUILD ? window.QAYEMA_BUILD.priced(data.builds || [], line.builds || []) : null;
+            if (!built) {
+                return null;
+            }
+        }
+
+        var extra = built.extra;
+        var labels = built.labels.slice();
         var used = 0;
 
         for (var v = 0; v < data.variants.length; v++) {
@@ -414,13 +439,29 @@
         return { extra: extra, labels: labels };
     }
 
-    /** Drop anything no longer on the menu, so a stale cart cannot linger. */
+    /**
+     * Drop anything no longer on the menu, so a stale cart cannot linger.
+     * Returns the names of the dishes taken off because they left the menu
+     * (sold out, removed, an offer's deal whose offer is not running now),
+     * which the guest is told; a line kept from before names were kept says
+     * nothing.
+     */
     function prune() {
+        var gone = [];
+
         Object.keys(cart).forEach(function (key) {
-            if (!(cart[key].qty > 0) || !findDish(cart[key].dish) || !picked(cart[key])) {
+            var line = cart[key];
+            var left = !findDish(line.dish);
+
+            if (!(line.qty > 0) || left || !picked(line)) {
+                if (left && line.qty > 0 && line.name && gone.indexOf(line.name) === -1) {
+                    gone.push(line.name);
+                }
                 delete cart[key];
             }
         });
+
+        return gone;
     }
 
     /** The lines in the menu's order, a dish's lines in the order added. */
@@ -436,17 +477,25 @@
 
                 var choice = picked(line);
                 var unit = priceOf(dish) + choice.extra;
+                // A dish priced in the second currency counts in the main one
+                // at the rate, to the cent, as App\Support\Price::toMain.
+                var rate = parseFloat(dish.dataset.rate || '') || null;
+                var cents = Math.round(unit * line.qty * 100);
                 result.push({
                     key: key,
                     id: line.dish,
                     options: line.options,
                     addons: line.addons,
+                    builds: line.builds || [],
                     name: dish.dataset.name,
                     choices: choice.labels.join(', '),
                     image: dish.dataset.image || '',
                     unit: unit,
                     quantity: line.qty,
                     total: unit * line.qty,
+                    symbol: dish.dataset.currency || '',
+                    main: rate ? Math.round(cents * rate) / 100 : cents / 100,
+                    converted: rate !== null,
                 });
             });
         });
@@ -465,10 +514,11 @@
         return lines().reduce(
             function (carry, line) {
                 carry.count += line.quantity;
-                carry.amount += line.total;
+                carry.amount += line.main;
+                carry.converted = carry.converted || line.converted;
                 return carry;
             },
-            { count: 0, amount: 0 }
+            { count: 0, amount: 0, converted: false }
         );
     }
 
@@ -477,7 +527,8 @@
      * @param {{dish: string, options: number[], addons: number[]}} what  the line, when it is new
      */
     function setQuantity(key, quantity, what) {
-        var line = cart[key] || { dish: what.dish, options: sorted(what.options), addons: sorted(what.addons), qty: 0 };
+        var dish = findDish(what.dish);
+        var line = cart[key] || { dish: what.dish, options: sorted(what.options), addons: sorted(what.addons), builds: builtOf(what.builds), qty: 0, name: dish ? dish.dataset.name : undefined };
 
         // Every step up is one "added to cart" for the owner's analytics.
         if (quantity > line.qty) {
@@ -625,11 +676,11 @@
         if (line.choices) {
             body.appendChild(element('div', 'cart-line-choices', line.choices));
         }
-        body.appendChild(element('div', 'cart-line-each', money(line.unit) + ' ' + strings.each));
+        body.appendChild(element('div', 'cart-line-each', money(line.unit, line.symbol) + ' ' + strings.each));
 
         var bottom = element('div', 'cart-line-foot');
-        bottom.appendChild(stepper(line.key, line.quantity, { dish: line.id, options: line.options, addons: line.addons }));
-        bottom.appendChild(element('div', 'cart-line-total', money(line.total)));
+        bottom.appendChild(stepper(line.key, line.quantity, { dish: line.id, options: line.options, addons: line.addons, builds: line.builds }));
+        bottom.appendChild(element('div', 'cart-line-total', money(line.total, line.symbol)));
         body.appendChild(bottom);
 
         row.appendChild(body);
@@ -1472,6 +1523,9 @@
         totalRow.appendChild(element('span', null, strings.total));
         totalRow.appendChild(element('span', null, money(sum.amount)));
         summary.appendChild(totalRow);
+        if (sum.converted && config.rateNote) {
+            summary.appendChild(element('div', 'cart-rate', config.rateNote));
+        }
         parts.lines.appendChild(summary);
 
         if (!sending) {
@@ -1480,7 +1534,11 @@
     }
 
     function render() {
-        prune();
+        var gone = prune();
+        if (gone.length > 0) {
+            save();
+            toast(strings.goneFromCart, strings.goneFromCartBody.replace(':dishes', gone.join(', ')));
+        }
         renderDishActions();
 
         var sum = totals();
@@ -1530,7 +1588,7 @@
     function payload(current) {
         var body = {
             items: current.map(function (line) {
-                return { dish_id: Number(line.id), quantity: line.quantity, options: line.options, addons: line.addons };
+                return { dish_id: Number(line.id), quantity: line.quantity, options: line.options, addons: line.addons, builds: line.builds };
             }),
             // The language the guest is reading, so the WhatsApp message
             // and any error come back in it.
@@ -1541,6 +1599,9 @@
             note: details.note,
             // The table scanned: an order to it, or on WhatsApp, a label.
             table: table ? table.code : null,
+            // The total shown: a dearer cart is not placed (an offer ended
+            // meanwhile), the guest is shown the prices now instead.
+            seen_total: totals().amount.toFixed(2),
         };
 
         if (inMenu) {
@@ -1639,6 +1700,22 @@
             })
             .then(function (result) {
                 if (!result.ok) {
+                    if (result.status === 409 && result.body && result.body.prices) {
+                        // Prices went up while the cart sat here: the dishes
+                        // take the server's prices (menu-offers.js keeps
+                        // them), the cart draws again, and nothing was sent.
+                        document.dispatchEvent(new CustomEvent('qayema:server-prices', { detail: result.body.prices }));
+                        if (!window.QAYEMA_OFFERS) {
+                            // No offers on this menu: a price simply went up.
+                            Object.keys(result.body.prices).forEach(function (id) {
+                                var dish = findDish(id);
+                                if (dish) {
+                                    dish.dataset.price = String(result.body.prices[id]);
+                                }
+                            });
+                        }
+                        throw new Error(result.body.message || strings.failed);
+                    }
                     var tableError = result.status === 422 && result.body && result.body.errors && result.body.errors.table;
                     if (tableError) {
                         // The card on the table was replaced: the code this
@@ -1680,7 +1757,9 @@
                         : strings.sentBody.replace(':reference', data.reference);
                     resetDetails();
                     announce(data);
-                    toast(strings.sent, body, data.tracking_url);
+                    // A dish sold out while it sat in the cart was left off:
+                    // the guest is told which, as on a change.
+                    toast(strings.sent, withoutUnavailable(body, data), data.tracking_url);
                 } else if (data.whatsapp_url) {
                     // WhatsApp is what reaches the owner.
                     window.location.href = data.whatsapp_url;
@@ -1794,10 +1873,14 @@
         sheet.addEventListener('animationend', onEnd);
     }
 
+    // An offer began or ended while the page was open (menu-offers.js): the
+    // dishes' data-price changed, so the lines and the total are drawn again.
+    document.addEventListener('qayema:prices', render);
+
     // A dish and its choices, from the dish sheet (menu-dish.js).
     document.addEventListener('qayema:add', function (event) {
         var what = event.detail;
-        var key = keyOf(what.dish, what.options, what.addons);
+        var key = keyOf(what.dish, what.options, what.addons, what.builds);
         var quantity = cart[key] ? cart[key].qty : 0;
 
         setQuantity(key, quantity + what.quantity, what);
@@ -1859,10 +1942,10 @@
 
                 var merged = {};
                 data.lines.concat(current.map(function (line) {
-                    return { dish: line.id, options: line.options, addons: line.addons, qty: line.quantity };
+                    return { dish: line.id, options: line.options, addons: line.addons, builds: line.builds, qty: line.quantity };
                 })).forEach(function (line) {
-                    var key = keyOf(line.dish, line.options, line.addons);
-                    merged[key] = merged[key] || { dish_id: Number(line.dish), quantity: 0, options: sorted(line.options), addons: sorted(line.addons) };
+                    var key = keyOf(line.dish, line.options, line.addons, line.builds);
+                    merged[key] = merged[key] || { dish_id: Number(line.dish), quantity: 0, options: sorted(line.options), addons: sorted(line.addons), builds: builtOf(line.builds) };
                     merged[key].quantity = Math.min(99, merged[key].quantity + line.qty);
                 });
 
@@ -1969,10 +2052,11 @@
 
                 cart = {};
                 data.lines.forEach(function (line) {
-                    cart[keyOf(line.dish, line.options, line.addons)] = {
+                    cart[keyOf(line.dish, line.options, line.addons, line.builds)] = {
                         dish: String(line.dish),
                         options: sorted(line.options),
                         addons: sorted(line.addons),
+                        builds: builtOf(line.builds),
                         qty: line.qty,
                     };
                 });

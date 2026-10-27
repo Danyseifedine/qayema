@@ -2,13 +2,16 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\WritingHelpAction;
 use App\Models\Restaurant;
 use App\Services\Ai\WritingHelp;
+use App\Services\Ai\WritingHelpCredits;
 use App\Services\Ai\WritingHelpLog;
 use App\Services\Ai\WritingHelpSetup;
 use App\Services\Ai\WritingHelpUses;
 use Closure;
 use Illuminate\Contracts\Cache\Lock;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Symfony\Component\HttpFoundation\Response;
@@ -22,11 +25,17 @@ use Symfony\Component\HttpFoundation\Response;
  *    per restaurant (a double click or a second tab waits its turn), and at
  *    most config('services.writing_help.at_once') across the server. Past
  *    either, an instant "busy, try again" keeps workers free for guests.
- * 3. Then the use is taken, and given back when the answer is not a
+ * 3. The month's credits (WritingHelpCredits), checked in the
+ *    restaurant's turn so two requests cannot both take the last ones: the
+ *    action's credits must be left, and the most it could cost must fit in
+ *    what they are worth. Either missing is a 429 that names credits only
+ *    (creditsSpent()).
+ * 4. Then the use is taken, and given back when the answer is not a
  *    success (the provider failed, the request was refused): an owner only
- *    spends a use on text they got. A busy answer never took one.
- * 4. The request goes in the usage log (WritingHelpLog) with the tokens its
- *    calls spent, a failure's included.
+ *    spends a use or credits on text they got. A busy answer never took one.
+ * 5. The request goes in the usage log (WritingHelpLog) with its credits
+ *    and the tokens its calls spent, a failure's included, and the answer
+ *    says the credits left.
  */
 class PaceWritingHelp
 {
@@ -34,6 +43,7 @@ class PaceWritingHelp
         private readonly WritingHelpUses $uses,
         private readonly WritingHelpLog $log,
         private readonly WritingHelp $help,
+        private readonly WritingHelpCredits $credits,
     ) {}
 
     /**
@@ -70,16 +80,27 @@ class PaceWritingHelp
             }
 
             try {
+                $route = (string) $request->route()?->getName();
+                $action = WritingHelpAction::fromRoute($route);
+
+                $refusal = $this->credits->refusal($restaurant, $action, $this->help->mostItCouldCost($route, $request->all()));
+
+                if ($refusal !== null) {
+                    return $this->creditsSpent($restaurant, $refusal);
+                }
+
                 $this->uses->take($restaurant);
                 $response = $next($request);
+                $used = $response->isSuccessful();
 
-                if (! $response->isSuccessful()) {
+                if (! $used) {
                     $this->uses->giveBack($restaurant);
                 }
 
-                $this->log->record($restaurant, $response->isSuccessful(), ...$this->help->takeTokens());
+                [$inputTokens, $outputTokens] = $this->help->takeTokens();
+                $this->log->record($restaurant, $used, $inputTokens, $outputTokens, $action, $action->credits());
 
-                return $response;
+                return $used ? $this->withCreditsLeft($response, $restaurant) : $response;
             } finally {
                 $place->release();
             }
@@ -121,6 +142,45 @@ class PaceWritingHelp
             'retry_after' => $wait,
             'left' => 0,
         ], 429, ['Retry-After' => $wait]);
+    }
+
+    /**
+     * This month's credits do not cover the action: when they come back,
+     * and nothing that hints at money or the model behind them. Too few for
+     * it (`credits`) says those left, so what they still cover stays on; one
+     * too big for the money left (`cost`) says none, so the buttons lock
+     * until the page is opened again, rather than each try being refused.
+     *
+     * @param  'credits'|'cost'  $refusal
+     */
+    private function creditsSpent(Restaurant $restaurant, string $refusal): Response
+    {
+        $back = $this->credits->resetsOn($restaurant);
+        $wait = (int) now($restaurant->localTimezone())->diffInSeconds($back);
+        $left = $refusal === 'credits' ? (int) $this->credits->left($restaurant) : 0;
+        $date = $back->locale(app()->getLocale())->translatedFormat('j F');
+
+        return response()->json([
+            'message' => $left === 0 && $refusal === 'credits'
+                ? __('You have used this month\'s AI credits. They come back on :date.', ['date' => $date])
+                : __('Not enough AI credits left this month for this. They come back on :date.', ['date' => $date]),
+            'code' => 'writing_help_credits',
+            'retry_after' => $wait,
+            'resets_on' => $back->toDateString(),
+            'credits_left' => $left,
+        ], 429, ['Retry-After' => $wait]);
+    }
+
+    /** The answer, with the credits left now this one is spent (null for no cap). */
+    private function withCreditsLeft(Response $response, Restaurant $restaurant): Response
+    {
+        if ($response instanceof JsonResponse) {
+            $answer = $response->getData(true);
+            $answer['data']['credits_left'] = $this->credits->left($restaurant);
+            $response->setData($answer);
+        }
+
+        return $response;
     }
 
     private function busy(): Response

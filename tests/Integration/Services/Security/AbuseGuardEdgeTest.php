@@ -37,7 +37,7 @@ class AbuseGuardEdgeTest extends TestCase
                 && $context['ip'] === self::IP
                 && $context['exception'] !== '',
         );
-        $this->assertFalse(Cache::has('abuse_guard:blocked:'.self::IP), 'A failure is not remembered as "not blocked".');
+        $this->assertFalse(Cache::has(AbuseGuard::BLOCKS_CACHE_KEY), 'A failure is not remembered as "not blocked".');
     }
 
     public function test_a_trusted_address_is_never_looked_up(): void

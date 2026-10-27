@@ -2,7 +2,6 @@
 
 namespace App\Services\Contact;
 
-use App\Exceptions\TooManyContactMessages;
 use App\Mail\ContactMessageReceived;
 use App\Models\ContactMessage;
 use App\Services\Push\AdminAlerts;

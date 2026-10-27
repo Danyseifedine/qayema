@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use App\Enums\Feature;
 use App\Models\Category;
 use App\Models\Dish;
+use App\Support\MenuTextLimits;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\CreatesOwners;
 use Tests\TestCase;
@@ -25,12 +26,12 @@ class CategoryEdgeTest extends TestCase
         $owner = $this->owner();
 
         $this->actingAs($owner->user)
-            ->postJson(route('api.categories.store'), ['name' => ['ar' => 'المقبلات الساخنة 🌶️', 'en' => str_repeat('x', 255)]])
+            ->postJson(route('api.categories.store'), ['name' => ['ar' => 'المقبلات الساخنة 🌶️', 'en' => str_repeat('x', MenuTextLimits::CATEGORY_NAME)]])
             ->assertCreated()
             ->assertJsonPath('data.name.ar', 'المقبلات الساخنة 🌶️');
 
         $this->actingAs($owner->user)
-            ->postJson(route('api.categories.store'), ['name' => ['en' => str_repeat('x', 256)]])
+            ->postJson(route('api.categories.store'), ['name' => ['en' => str_repeat('x', MenuTextLimits::CATEGORY_NAME + 1)]])
             ->assertStatus(422)->assertJsonValidationErrors('name.en');
     }
 

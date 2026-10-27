@@ -24,6 +24,7 @@ class CategoryResource extends JsonResource
             'id' => $this->id,
             'name' => MenuLanguages::map($this->resource, 'name', MenuLanguages::forOwner($request->user())),
             'description' => MenuLanguages::map($this->resource, 'description', MenuLanguages::forOwner($request->user())),
+            'icon' => $this->icon,
             'dishes_count' => $this->whenCounted('dishes', fn (int|string $count): int => (int) $count),
         ];
     }

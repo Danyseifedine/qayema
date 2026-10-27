@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Menu;
 
-use App\Jobs\PurgeMenuCache;
 use App\Models\Category;
 use App\Models\DiningTable;
 use App\Models\Dish;
@@ -13,6 +12,7 @@ use App\Models\RestaurantSocialLink;
 use App\Models\Template;
 use App\Services\Menu\DisplayOrder;
 use App\Services\Menu\MenuCache;
+use App\Services\Menu\PendingPurges;
 use Closure;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Factory as HttpFactory;
@@ -20,7 +20,6 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Support\Defer\DeferredCallbackCollection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Queue;
 use RuntimeException;
 use Tests\Support\CreatesOwners;
 use Tests\TestCase;
@@ -48,7 +47,6 @@ class MenuCacheTest extends TestCase
             'services.cloudflare.api_token' => 'purge-only-token',
         ]);
         $this->freshCloudflare();
-        Queue::fake();
     }
 
     /** A pretend Cloudflare with nothing recorded yet, and a new request's MenuCache. */
@@ -128,6 +126,26 @@ class MenuCacheTest extends TestCase
         }
     }
 
+    public function test_a_restaurant_saved_without_a_change_clears_nothing(): void
+    {
+        $shop = $this->quietly(fn () => $this->owner(['slug' => 'olive']));
+
+        $shop->save();
+        $shop->update(['name' => $shop->name]);
+        $this->respond();
+
+        Http::assertNothingSent();
+    }
+
+    /** So the 404 a guest got at that link before it existed is not kept. */
+    public function test_a_new_restaurant_clears_its_link(): void
+    {
+        Restaurant::factory()->create(['slug' => 'olive']);
+        $this->respond();
+
+        $this->assertSame([['prefixes' => ['qayema.test/olive']]], $this->purges());
+    }
+
     public function test_a_new_link_clears_the_old_one_too(): void
     {
         $shop = $this->quietly(fn () => $this->owner(['slug' => 'olive']));
@@ -176,18 +194,30 @@ class MenuCacheTest extends TestCase
         $this->assertSame([['prefixes' => ['qayema.test/olive']]], $this->purges());
     }
 
+    /** Every menu, by the menus' host: the zone's other hosts (the dashboard, the photos) keep their copies. */
     public function test_a_package_or_a_design_clears_every_menu(): void
     {
         [$package, $template] = $this->quietly(fn () => [Package::factory()->create(), Template::factory()->create()]);
 
         $package->update(['price_cents' => 1500]);
         $this->respond();
-        $this->assertSame([['purge_everything' => true]], $this->purges());
+        $this->assertSame([['hosts' => ['qayema.test']]], $this->purges());
 
         $this->freshCloudflare();
         $template->update(['is_active' => false]);
         $this->respond();
-        $this->assertSame([['purge_everything' => true]], $this->purges());
+        $this->assertSame([['hosts' => ['qayema.test']]], $this->purges());
+    }
+
+    public function test_a_package_or_a_design_saved_without_a_change_clears_nothing(): void
+    {
+        [$package, $template] = $this->quietly(fn () => [Package::factory()->create()->fresh(), Template::factory()->create()->fresh()]);
+
+        $package->save();
+        $template->update(['is_active' => $template->is_active]);
+        $this->respond();
+
+        Http::assertNothingSent();
     }
 
     public function test_clearing_everything_covers_a_menu_cleared_in_the_same_request(): void
@@ -198,7 +228,7 @@ class MenuCacheTest extends TestCase
         app(MenuCache::class)->forgetAll();
         $this->respond();
 
-        $this->assertSame([['purge_everything' => true]], $this->purges());
+        $this->assertSame([['hosts' => ['qayema.test']]], $this->purges());
     }
 
     public function test_the_next_request_clears_again(): void
@@ -240,7 +270,7 @@ class MenuCacheTest extends TestCase
         $this->assertCount(1, $this->purges()[1]['prefixes']);
     }
 
-    public function test_a_refused_clearing_is_tried_again_from_the_queue_and_said_at_once(): void
+    public function test_a_refused_clearing_waits_for_the_next_minute_and_is_said_at_once(): void
     {
         $shop = $this->quietly(fn () => $this->owner(['slug' => 'olive']));
         $this->freshCloudflare(fn () => Http::response(['success' => false], 429));
@@ -249,19 +279,32 @@ class MenuCacheTest extends TestCase
         Dish::factory()->for($shop)->create();
         $this->respond();
 
-        Queue::assertPushed(PurgeMenuCache::class, fn (PurgeMenuCache $job) => $job->body === ['prefixes' => ['qayema.test/olive']] && $job->delay === 60);
-        Log::shouldHaveReceived('warning')->with('Menu cache purge refused: trying again from the queue.', ['body' => ['prefixes' => ['qayema.test/olive']]])->once();
+        $this->assertSame(['prefixes|qayema.test/olive' => now()->getTimestamp()], PendingPurges::all());
+        Log::shouldHaveReceived('warning')->with('Menu cache purge refused: trying again within the minute.', ['body' => ['prefixes' => ['qayema.test/olive']]])->once();
     }
 
-    public function test_no_answer_at_all_is_tried_again_too(): void
+    public function test_no_answer_at_all_waits_too(): void
     {
-        $shop = $this->quietly(fn () => $this->owner(['slug' => 'olive']));
+        $this->quietly(fn () => null);
         $this->freshCloudflare(fn () => throw new RuntimeException('No route to Cloudflare'));
 
-        Dish::factory()->for($shop)->create();
+        app(MenuCache::class)->forgetAll();
         $this->respond();
 
-        Queue::assertPushed(PurgeMenuCache::class);
+        $this->assertSame(['hosts|qayema.test'], array_keys(PendingPurges::all()));
+    }
+
+    /** The menus live at the main address, so a www. APP_URL still clears them there. */
+    public function test_the_menus_are_cleared_at_the_main_address(): void
+    {
+        config(['app.url' => 'https://www.qayema.test']);
+        $shop = $this->quietly(fn () => $this->owner(['slug' => 'olive']));
+
+        app(MenuCache::class)->forget($shop);
+        app(MenuCache::class)->forgetAll();
+        $this->respond();
+
+        $this->assertSame([['hosts' => ['qayema.test']]], $this->purges());
     }
 
     public function test_without_cloudflare_set_up_nothing_is_sent(): void
@@ -272,34 +315,6 @@ class MenuCacheTest extends TestCase
         $this->respond();
 
         Http::assertNothingSent();
-        Queue::assertNothingPushed();
-    }
-
-    public function test_the_job_clears_and_throws_when_refused_so_the_queue_tries_later(): void
-    {
-        (new PurgeMenuCache(['prefixes' => ['qayema.test/olive']]))->handle();
-        Http::assertSent(fn (Request $request) => $request->data() === ['prefixes' => ['qayema.test/olive']]);
-
-        $this->freshCloudflare(fn () => Http::response([], 500));
-        $this->expectException(RuntimeException::class);
-        (new PurgeMenuCache(['prefixes' => ['qayema.test/olive']]))->handle();
-    }
-
-    public function test_a_job_left_in_the_queue_after_cloudflare_is_unset_does_nothing(): void
-    {
-        config(['services.cloudflare.zone_id' => null]);
-
-        (new PurgeMenuCache(['purge_everything' => true]))->handle();
-
-        Http::assertNothingSent();
-    }
-
-    public function test_the_job_gives_up_loudly(): void
-    {
-        Log::spy();
-
-        (new PurgeMenuCache(['purge_everything' => true]))->failed();
-
-        Log::shouldHaveReceived('error')->withArgs(fn (string $message) => str_contains($message, 'Menu cache purge failed'));
+        $this->assertSame([], PendingPurges::all());
     }
 }

@@ -4,18 +4,11 @@
    ============================================================= */
 
 :root {
-    --ink:          #141109;
-    --paper:        #FBFAF6;
-    --paper-2:      #F6F4EE;
-    --sand:         #E8DCCB;
-    --sand-2:       #D9CAB3;
     --olive:        #F8D38D;
     --olive-deep:   #B08A2C;
     --gold:         #F8D38D;
-    --line:         rgba(20,17,9,.10);
     --line-strong:  rgba(20,17,9,.18);
-    --muted:        rgba(20,17,9,.58);
-    --muted-2:      rgba(20,17,9,.40);
+    --muted-2:      rgba(245,241,232,.50);
     --danger:       #B45040;
     --font-sans:    'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
     --font-display: 'Instrument Serif', 'Times New Roman', serif;
@@ -48,17 +41,15 @@
     display: flex;
     align-items: center;
     background: var(--paper);
-    border: .5px solid var(--line);
+    border: .5px solid rgba(255,255,255,.12);
     border-radius: 12px;
     transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
 }
-.ui-input-wrap:hover { border-color: var(--line-strong); }
 .ui-input-wrap:focus-within {
-    border-color: var(--olive);
     background: var(--surface);
     box-shadow: 0 0 0 3px rgba(107,122,79,.12);
 }
-.ui-input-wrap.error   { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(180,80,64,.10); }
+.ui-input-wrap.error   { box-shadow: 0 0 0 3px rgba(180,80,64,.10); }
 
 .ui-input-wrap .lead-ico {
     padding: 0 6px 0 14px;
@@ -124,7 +115,7 @@
     box-shadow: none;
     border-color: transparent;
 }
-.ui-input::placeholder { color: rgba(20,17,9,.32); }
+.ui-input::placeholder { color: rgba(245,241,232,.40); }
 
 /* ── Combo (searchable select) ──────────────────────────────── */
 .ui-combo { position: relative; }
@@ -171,7 +162,7 @@
     border-color: transparent;
     border: 0;
 }
-.ui-combo-input::placeholder { color: rgba(20,17,9,.36); }
+.ui-combo-input::placeholder { color: rgba(245,241,232,.40); }
 
 .ui-combo-caret { color: var(--muted); padding: 0 6px; display: inline-flex; align-items: center; flex-shrink: 0; }
 .ui-combo-caret svg { width: 14px; height: 14px; transition: transform .2s ease; }
@@ -289,9 +280,8 @@
     transition: all .15s ease;
 }
 .ui-check .box svg { width: 12px; height: 12px; color: var(--surface); opacity: 0; transform: scale(.6); transition: all .15s ease; }
-.ui-check input:checked + .box { background: var(--ink); border-color: var(--ink); }
+.ui-check input:checked + .box { background: var(--accent, #E9BD66); border-color: var(--accent, #E9BD66); }
 .ui-check input:checked + .box svg { opacity: 1; transform: scale(1); }
-.ui-check.olive input:checked + .box { background: var(--olive); border-color: var(--olive); }
 .ui-check .meta { display: flex; flex-direction: column; gap: 3px; }
 
 /* ── Phone input ────────────────────────────────────────────── */
@@ -418,11 +408,11 @@
     font-feature-settings: "tnum";
     min-width: 0;
 }
-.ui-phone-num::placeholder { color: rgba(20,17,9,.32); }
+.ui-phone-num::placeholder { color: rgba(245,241,232,.40); }
 
 /* ── Dropzone · single image ─────────────────────────────────── */
 .ui-uploader {
-    border: 1.5px dashed rgba(20,17,9,.18);
+    border: 1.5px dashed rgba(245,241,232,.22);
     border-radius: 14px;
     background:
         repeating-linear-gradient(135deg, transparent 0 12px, rgba(20,17,9,.015) 12px 13px),
@@ -437,8 +427,8 @@
     cursor: pointer;
     position: relative;
 }
-.ui-uploader:hover { border-color: rgba(107,122,79,.55); background: var(--surface); }
-.ui-uploader.drag  { border-color: var(--olive); background: var(--surface); box-shadow: 0 0 0 4px rgba(107,122,79,.12); }
+.ui-uploader:hover { background: var(--surface); }
+.ui-uploader.drag  { background: var(--surface); box-shadow: 0 0 0 4px rgba(107,122,79,.12); }
 .ui-uploader .up-icon {
     width: 44px; height: 44px; border-radius: 12px;
     background: var(--ink); color: var(--paper);
@@ -451,7 +441,6 @@
 
 .ui-uploader.uploading {
     pointer-events: none;
-    border-color: var(--olive);
 }
 .ui-uploader .up-spinner {
     width: 32px; height: 32px;

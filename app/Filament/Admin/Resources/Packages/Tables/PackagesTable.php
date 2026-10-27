@@ -35,9 +35,15 @@ class PackagesTable
                     ->placeholder('Contact us')
                     ->sortable(),
                 ToggleColumn::make('is_active')
-                    ->label('Offered')
+                    ->label('Active')
                     ->disabled(fn (Package $record): bool => $record->is_default)
-                    ->tooltip(fn (Package $record): ?string => $record->is_default ? 'The default package is always offered.' : null),
+                    ->tooltip(fn (Package $record): ?string => $record->is_default ? 'The default package is always active. Make another package the default to make this one inactive.' : null),
+                IconColumn::make('is_default')
+                    ->label('Default')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-minus')
+                    ->tooltip(fn (Package $record): ?string => $record->is_default ? 'New restaurants start on it.' : null),
                 TextColumn::make('restaurants_count')
                     ->label('Restaurants')
                     ->counts('restaurants')

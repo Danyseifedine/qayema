@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Dish;
 use App\Models\MenuDay;
 use App\Models\Restaurant;
+use App\Services\Analytics\MenuTraffic;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
@@ -188,8 +189,8 @@ class AnalyticsHistoryJourneyTest extends TestCase
             $this->assertSame($was['advanced'], $now['advanced'], "{$where}: all time, advanced");
 
             // And the admin's totals for the restaurant.
-            $this->assertSame($truth[$where]['all']['summary']['totals']['views'], $restaurant->trafficTotals()['views'], "{$where}: admin views");
-            $this->assertSame($truth[$where]['all']['summary']['totals']['qr_scans'], $restaurant->qrScans()['total'], "{$where}: admin QR scans");
+            $this->assertSame($truth[$where]['all']['summary']['totals']['views'], (new MenuTraffic($restaurant))->totals()['views'], "{$where}: admin views");
+            $this->assertSame($truth[$where]['all']['summary']['totals']['qr_scans'], (new MenuTraffic($restaurant))->qrScans()['total'], "{$where}: admin QR scans");
         }
     }
 

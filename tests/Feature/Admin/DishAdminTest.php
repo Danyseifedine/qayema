@@ -8,6 +8,8 @@ use App\Filament\Admin\Resources\Dishes\Pages\EditDish;
 use App\Filament\Admin\Resources\Dishes\Pages\ListDishes;
 use App\Models\Category;
 use App\Models\Dish;
+use App\Models\Offer;
+use App\Support\MenuTextLimits;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -119,6 +121,43 @@ class DishAdminTest extends TestCase
         $this->assertFalse($dish->is_available);
     }
 
+    public function test_a_dish_of_a_restaurant_with_a_second_currency_can_be_priced_in_it(): void
+    {
+        $restaurant = $this->owner(['currency' => 'LBP', 'second_currency' => 'USD', 'exchange_rate' => '89000']);
+        $dish = Dish::factory()->create(['restaurant_id' => $restaurant->id, 'name' => ['en' => 'Burger'], 'price' => 5]);
+
+        Livewire::test(EditDish::class, ['record' => $dish->id])
+            ->assertFormFieldIsVisible('currency')
+            ->fillForm(['currency' => 'USD'])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame('USD', $dish->fresh()->currency);
+        // The list shows it in its own money.
+        Livewire::test(ListDishes::class)->assertTableColumnFormattedStateSet('price', '$5.00', $dish);
+
+        // Without a second currency there is nothing to pick.
+        $plain = Dish::factory()->create(['restaurant_id' => $this->owner()->id, 'price' => 5]);
+        Livewire::test(EditDish::class, ['record' => $plain->id])->assertFormFieldIsHidden('currency');
+    }
+
+    public function test_an_offers_deal_dish_says_so_on_its_form_and_in_the_list(): void
+    {
+        $restaurant = $this->owner();
+        $offer = Offer::factory()->create(['restaurant_id' => $restaurant->id, 'title' => ['en' => 'Family deal']]);
+        $deal = Dish::factory()->dealOf($offer)->create(['name' => ['en' => 'Family meal']]);
+        $plain = Dish::factory()->create(['restaurant_id' => $restaurant->id]);
+
+        Livewire::test(EditDish::class, ['record' => $deal->id])
+            ->assertSee('Made by the offer: Family deal. It shows on the menu only while the offer is live.');
+        Livewire::test(EditDish::class, ['record' => $plain->id])
+            ->assertDontSee('Made by the offer');
+
+        Livewire::test(ListDishes::class)
+            ->assertTableColumnStateSet('offer.title', 'Family deal', $deal)
+            ->assertTableColumnStateNotSet('offer.title', 'Family deal', $plain);
+    }
+
     public function test_the_edit_form_refuses_a_negative_price_and_a_blank_name(): void
     {
         $dish = Dish::factory()->create(['restaurant_id' => $this->owner()->id, 'name' => ['en' => 'Kept'], 'price' => 4]);
@@ -130,6 +169,21 @@ class DishAdminTest extends TestCase
 
         $this->assertSame('Kept', $dish->fresh()->getTranslation('name', 'en'));
         $this->assertEquals(4, $dish->fresh()->price);
+    }
+
+    public function test_the_edit_form_keeps_to_the_menus_text_limits(): void
+    {
+        $dish = Dish::factory()->create(['restaurant_id' => $this->owner()->id]);
+
+        Livewire::test(EditDish::class, ['record' => $dish->id])
+            ->fillForm(['name.en' => str_repeat('a', MenuTextLimits::DISH_NAME + 1), 'ingredients.en' => str_repeat('a', MenuTextLimits::INGREDIENTS + 1)])
+            ->call('save')
+            ->assertHasFormErrors(['name.en' => 'max', 'ingredients.en' => 'max']);
+
+        Livewire::test(EditDish::class, ['record' => $dish->id])
+            ->fillForm(['name.en' => str_repeat('a', MenuTextLimits::DISH_NAME), 'ingredients.en' => str_repeat('a', MenuTextLimits::INGREDIENTS)])
+            ->call('save')
+            ->assertHasNoFormErrors();
     }
 
     public function test_an_empty_price_saves_as_no_price(): void
@@ -157,6 +211,21 @@ class DishAdminTest extends TestCase
             ->assertHasNoFormErrors();
 
         $this->assertSame(['ar' => 'حمص حب'], $dish->fresh()->getTranslations('ingredients'));
+    }
+
+    public function test_ingredients_are_saved_as_a_tidy_list(): void
+    {
+        $dish = Dish::factory()->create([
+            'restaurant_id' => $this->owner()->id,
+            'ingredients' => ['en' => 'Chickpeas'],
+        ]);
+
+        Livewire::test(EditDish::class, ['record' => $dish->id])
+            ->fillForm(['ingredients.en' => "chickpeas,..tahini\nlemon...etc"])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(['en' => 'chickpeas, tahini, lemon'], $dish->fresh()->getTranslations('ingredients'));
     }
 
     public function test_changing_the_restaurant_clears_the_category(): void

@@ -61,8 +61,9 @@ class WhatsAppLink
     {
         $main = MenuLanguages::main($restaurant);
         $say = fn (string $key): string => __($key, [], $main);
-        $symbol = (string) config("currencies.{$restaurant->currency}.symbol", $restaurant->currency);
-        $money = fn (string $amount): string => $symbol.Price::format($amount);
+        $symbol = fn (string $currency): string => (string) config("currencies.{$currency}.symbol", $currency);
+        // A line in its own currency (one priced in the second); the total in the main one.
+        $money = fn (string $amount, ?string $currency = null): string => Price::money($symbol($currency ?? $restaurant->currency), $amount);
 
         $name = MenuLanguages::reader($restaurant, $main)($restaurant, 'name');
         $lines = [self::bold($say('New order').' · '.$name)];
@@ -92,7 +93,7 @@ class WhatsAppLink
         $lines[] = '';
 
         foreach ($order->items as $item) {
-            $lines[] = self::bold($item->quantity.' × '.$item->name).'   '.$money((string) $item->line_total);
+            $lines[] = self::bold($item->quantity.' × '.$item->name).'   '.$money((string) $item->line_total, $item->currency);
 
             foreach ($item->choices() as $choice) {
                 $lines[] = '   '.$choice;
@@ -101,6 +102,10 @@ class WhatsAppLink
 
         $lines[] = '';
         $lines[] = self::bold($say('Total').': '.$money((string) $order->total));
+        if ($order->exchange_rate !== null && $order->items->contains(fn ($item): bool => $item->currency !== null)) {
+            $second = (string) $order->items->firstWhere('currency', '!=', null)?->currency;
+            $lines[] = '1 '.$symbol($second).' = '.$money(Price::toMain('1', (string) $order->exchange_rate));
+        }
 
         if ($order->note !== null) {
             $lines[] = '';

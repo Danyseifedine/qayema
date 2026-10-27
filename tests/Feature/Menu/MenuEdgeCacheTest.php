@@ -78,6 +78,28 @@ class MenuEdgeCacheTest extends TestCase
         $this->assertStringNotContainsString('public', $this->cacheControl($this->get('/olive')->assertNotFound()));
     }
 
+    /** The same 404 for everyone; a restaurant that takes the link clears it (MenuCacheTest). */
+    public function test_a_link_nobody_has_may_be_kept_a_few_minutes(): void
+    {
+        $this->shop();
+
+        $this->assertSame('max-age=0, public, s-maxage=300', $this->cacheControl($this->get('/nobody-here')->assertNotFound()));
+    }
+
+    public function test_a_link_nobody_has_is_not_kept_for_someone_with_a_session(): void
+    {
+        $id = (string) $this->get('/contact')->getCookie((string) config('session.cookie'))?->getValue();
+
+        $response = $this->withCookie((string) config('session.cookie'), $id)->get('/nobody-here')->assertNotFound();
+
+        $this->assertStringNotContainsString('public', $this->cacheControl($response));
+    }
+
+    public function test_another_page_that_is_not_there_is_not_kept(): void
+    {
+        $this->assertStringNotContainsString('public', $this->cacheControl($this->get('/nobody-here/qr-options')->assertNotFound()));
+    }
+
     public function test_a_page_that_sets_a_cookie_is_never_kept(): void
     {
         // Kept, a cookie meant for one browser would go to every guest.

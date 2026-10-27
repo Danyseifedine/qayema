@@ -59,7 +59,19 @@ class AdminRestaurantDetailsTest extends TestCase
 
         $this->getJson("/api/admin/restaurants/{$restaurant->id}")
             ->assertOk()
-            ->assertJsonPath('data.stats.writing_help', ['today' => 2, 'uses' => 8, 'tokens' => 2200]);
+            ->assertJsonPath('data.stats.writing_help', ['today' => 2, 'uses' => 8, 'tokens' => 2200, 'cost' => 0]);
+    }
+
+    public function test_a_restaurant_shows_its_price_and_whish(): void
+    {
+        $restaurant = $this->ownerOn('premium', ['price_cents' => 600, 'pays_with_whish' => true]);
+
+        $this->getJson("/api/admin/restaurants/{$restaurant->id}")
+            ->assertOk()
+            ->assertJsonPath('data.package.price_cents', 600)
+            ->assertJsonPath('data.package.monthly_price_cents', 600)
+            ->assertJsonPath('data.package.currency', 'USD')
+            ->assertJsonPath('data.pays_with_whish', true);
     }
 
     public function test_a_restaurant_never_visited_has_no_last_visit(): void
@@ -152,6 +164,20 @@ class AdminRestaurantDetailsTest extends TestCase
         $this->patchJson("/api/admin/restaurants/{$restaurant->id}", ['name' => 'Beit Rami', 'slug' => 'beit-rami', 'phone' => null])
             ->assertOk();
         $this->assertSame(0, PreviousSlug::count());
+    }
+
+    /** The same rules as the owner's dashboard (AvailableSlug::rules()), so no link the owner cannot keep. */
+    public function test_a_link_over_100_characters_is_refused(): void
+    {
+        $restaurant = $this->owner(['slug' => 'beit-rami']);
+
+        $this->patchJson("/api/admin/restaurants/{$restaurant->id}", ['name' => 'Beit Rami', 'slug' => str_repeat('a', 101), 'phone' => null])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('slug');
+        $this->assertSame('beit-rami', $restaurant->fresh()->slug);
+
+        $this->patchJson("/api/admin/restaurants/{$restaurant->id}", ['name' => 'Beit Rami', 'slug' => str_repeat('a', 100), 'phone' => null])
+            ->assertOk();
     }
 
     public function test_the_owner_gets_a_new_password_and_their_old_one_stops_working(): void

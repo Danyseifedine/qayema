@@ -189,11 +189,16 @@ class DishEdgeTest extends TestCase
                 'name' => ['en' => 'Hummus', 'ar' => 'حمص'],
                 'ingredients' => ['en' => 'Chickpeas', 'ar' => null],
                 'price' => '4.50',
+                'currency' => $owner->currency,
                 'is_available' => false,
                 'category_id' => $category->id,
+                'icon' => null,
                 'image_url' => null,
+                // No offer made it.
+                'offer' => null,
                 'variants' => [],
                 'addons' => [],
+                'builds' => [],
             ]);
     }
 

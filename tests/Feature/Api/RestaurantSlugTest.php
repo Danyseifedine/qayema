@@ -40,7 +40,7 @@ class RestaurantSlugTest extends TestCase
         $this->get('/cedar-and-salt')->assertOk();
         // A printed QR code still lands on the menu, and still counts as a scan.
         $this->get('/cedar?qr=1')->assertStatus(301)->assertRedirect('/cedar-and-salt?qr=1');
-        $this->assertSame(['cedar'], $shop->previousSlugs()->pluck('slug')->all());
+        $this->assertSame(['cedar'], PreviousSlug::where('restaurant_id', $shop->id)->pluck('slug')->all());
     }
 
     public function test_every_page_under_the_old_link_forwards(): void
@@ -93,7 +93,7 @@ class RestaurantSlugTest extends TestCase
 
         $this->change('cedar', $shop)->assertOk()->assertJsonPath('data.slug', 'cedar');
 
-        $this->assertSame(['cedar-and-salt'], $shop->previousSlugs()->pluck('slug')->all());
+        $this->assertSame(['cedar-and-salt'], PreviousSlug::where('restaurant_id', $shop->id)->pluck('slug')->all());
         $this->get('/cedar')->assertOk();
         $this->get('/cedar-and-salt')->assertRedirect('/cedar');
     }

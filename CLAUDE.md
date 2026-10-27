@@ -504,14 +504,14 @@ Bilingual (ar/en) restaurant-menu SaaS. The codebases in this folder:
 
 ## Packages
 
-**Four packages: Free, Pro, Premium and Custom.** A restaurant points at one
+**Four packages to start: Free, Pro, Premium and Custom** (an admin may add more). A restaurant points at one
 (`restaurants.package_id`) and that package holds every limit and flag it gets.
 Nothing is sold in-app yet: an owner asks for a package and an admin assigns it.
 
 ```
 Owner → POST /api/packages/request → ContactService::submit()
     → contact_messages row (user_id + package_id) + email to the admin
-Admin → /admin → the request → "Apply this package" (or Restaurants →
+Admin → /admin → Inbox → the request → "Apply this package" (or Restaurants →
     Package → Change package / Extend) → PackageAssigner → in force at its start
 ```
 
@@ -523,8 +523,10 @@ the admin owns the numbers after install):
 | price a month | free | $7.99 | $10 | talk to us |
 | dishes / categories / social links | 40 / 8 / 1 | 150 / 15 / 2 | 1,000 / 1,000 (fair use, shown as unlimited) / 10 | unlimited |
 | `writing_help_limit` (AI uses a day) | 10 | 100 | 200 | 200 |
+| AI budget a month (`ai_budget_cents`; credits at 0.01¢ each) | $0.05 (500) | $0.75 (7,500) | $1.50 (15,000) | $1.50 (15,000) |
 | `multiple_languages`, `variants`, `addons`, `appearance`, `analytics` | - | ✓ | ✓ | ✓ |
-| `premium_designs`, `qr_studio`, `ordering`, `menu_ordering`, `advanced_analytics` | - | - | ✓ | ✓ |
+| `premium_designs`, `qr_studio`, `ordering`, `menu_ordering`, `advanced_analytics`, `offers` | - | - | ✓ | ✓ |
+| `offer_banner_limit` / `offer_popup_limit` / `offer_ad_limit` (switched on at once) | (3 / 1 / 1, unused) | (3 / 1 / 1, unused) | 3 / 1 / 1 | 3 / 1 / 1 |
 
 Premium is `is_featured` ("Most popular" on the dashboard and the landing page); only one package holds it, and marking another in the admin takes it off the rest.
 The landing page's pricing is read from the
@@ -538,10 +540,21 @@ invented reviews (`tests/Feature/Portal/LandingContentTest`).
   an integer allowance, **null for unlimited**, or 0/1 for a flag. A key the map
   doesn't carry falls back to that feature's `defaultValue()`, so adding an enum
   case never breaks an existing package.
-- The four rows are **fixed**: seeded by `create_packages_table` from
-  `config('package.catalog')`, edited at **/admin → Packages**, never created or
-  deleted there. `PackageSeeder` is `firstOrCreate`, so seeding a live database
-  cannot overwrite an admin's edits.
+- The four start from `config('package.catalog')` (seeded by
+  `create_packages_table`; `PackageSeeder` is `firstOrCreate`, so seeding a
+  live database cannot overwrite an admin's edits). At **/admin → Packages**
+  an admin edits them and makes new ones ("New package", `CreatePackage`:
+  it opens on the default package's limits, features and AI budget, so it
+  never starts unlimited; its slug, lowercase letters, numbers and dashes,
+  is chosen then and fixed after). Each has a **crown** (`tier`,
+  `App\Enums\PackageTier`: bronze, silver or gold), the metal the dashboard
+  draws it in. One package is the **default** (`is_default`: new restaurants
+  start on it, one whose package has not started yet uses it, a deleted
+  package's restaurants move to it); "Default for new restaurants" on
+  another package moves the mark (`PackageObserver`, one at a time like
+  "Most popular"). The default is always offered and never deleted, so to
+  switch Free off, make another package the default first; restaurants
+  already on the old default keep it.
 - **Dates:** the assigned package is in force from `package_started_at` (null =
   always): `Restaurant::packageStatus()` (`PackageStatus` Active / Scheduled /
   Expired). Before its start `effectivePackage()` is the default package.
@@ -576,14 +589,14 @@ invented reviews (`tests/Feature/Portal/LandingContentTest`).
   so no path skips it: from → to, dates, `changed_by` (the signed-in
   admin), and the note (`$restaurant->packageChangeNote`, set before the save).
   Read-only "Package history" relation manager on the restaurant.
-- **Offered or not** (`packages.is_active`, the "Offered" switch on the
-  Packages list and form): a package switched off leaves the landing page
+- **Active or inactive** (`packages.is_active`, the "Active" switch on the
+  Packages list and form): an inactive package leaves the landing page
   and `/pricing` (`PricingCards`, `Package::offered()`), the search offers
   (`StructuredData`), the dashboard's Package page (`/api/packages` lists
   what is offered plus the owner's own package) and package requests (422).
   Restaurants already on it keep it until it ends; the admin can still
-  assign it, labelled "(not offered)". The default package is always
-  offered, and switching one off takes its "Most popular" mark
+  assign it, labelled "(inactive)". The default package is always
+  active, and making one inactive takes its "Most popular" mark
   (`PackageObserver::saving`). Written copy that names a package (`lang/*/portal.php`,
   `pages.php`) is not touched: edit it by hand.
 - **Card lines** (`packages.highlights`, `{en: [...], ar: [...]}`, the
@@ -595,12 +608,23 @@ invented reviews (`tests/Feature/Portal/LandingContentTest`).
   only where none are written): a design for the brand, limits for the
   group, direct help. Empty, the card lists what the package adds.
 - The admin home (`App\Filament\Admin\Pages\Dashboard`) is the
+  `Overview` figures (restaurants and menus online, new this week, paying
+  (`Restaurant::paying()`: switched on, package in force, own or package price above 0)
+  with Whish, what they pay a month added up in SQL by `Restaurant::monthlyIncome()`, which the admin app's summary sends too, open inbox), then the
   `PackagesEndingSoon` widget: ending in 14 days or ended in the last 30,
   with Extend / Change package; its header has "Send test notification"
   (`SendTestNotificationAction`, `AdminAlerts::test()`: my phones or every
   admin's, sent at once, and it says why nothing went).
 - A package request shares the public contact form's durable per-IP quota of
   3/day, and comes back as a **429** carrying `retry_after` when it is hit.
+- **A design made for one brand:** `templates.restaurant_id` (the admin's
+  "Only for" on a template). Only that restaurant sees it
+  (`Template::scopeAvailableTo()`: the design list, choosing it, `?preview=`),
+  picks it whatever its package (`Restaurant::mayUseTemplate()`), and its
+  card says "Made for you"; for every other restaurant it is a 404, never a
+  fallback (`Template::fallback()`), and it goes when its restaurant is
+  deleted (`RestaurantObserver::deleting`, `ownDesigns()`). The admin's
+  restaurant form offers only every restaurant's designs and its own.
 - **Premium designs:** a template with `is_premium` needs the
   `premium_designs` flag to be chosen (`TemplateController::select` 403s, the
   list sends `is_premium` and `locked`). A restaurant that loses the flag keeps
@@ -621,8 +645,16 @@ invented reviews (`tests/Feature/Portal/LandingContentTest`).
 
 ## Limits / entitlements
 
-One rule: **effective value = the package's value + Σ active grants** (limits
-add, flags OR, unlimited stays unlimited). Resolved by
+One rule: **effective value = the package's value + Σ active added grants**
+(limits add, flags OR, unlimited stays unlimited), **unless a set grant
+decides it**: `feature_grants.mode` is `add` (as every grant was) or `set`
+(`GrantMode::Set`), and a set grant's `value` is the final say for that
+restaurant (a limit lower or higher than the package, null for unlimited; a
+flag 0 off or 1 on; the newest when several). `Entitlements::turnedOff()`
+names the flags set to 0, which `/api/user` sends as `turned_off` so the
+dashboard says "turned off for your restaurant" instead of offering a
+package. Rows over a lowered limit stay; no new ones until under it.
+Resolved by
 `App\Services\Packages\Entitlements`, cached `entitlements:{id}` for 300 s or
 until the package starts or a grant ends, whichever is sooner. A
 date passing never leaves a stale answer, and no scheduler is needed.
@@ -638,23 +670,51 @@ date passing never leaves a stale answer, and no scheduler is needed.
   `entitlements:version`, which every answer's key carries (`cacheKey()`); the
   old answers go unread until they expire. Changing one restaurant's package or expiry
   flushes only that one.
+- **The restaurant page's Features section** (`Restaurants/Schemas/FeatureFields`,
+  every feature once in `GROUPS`, a test holds it to `Feature::cases()`)
+  shows what the restaurant has now, like a package, each with "Package:
+  …" or "Changed for this restaurant". Saving writes only what the admin
+  changed (`RestaurantFeatures::changed()`, read before the save, so a
+  package changed in the same save is not pinned to the old one) as a
+  lasting set grant noted "Set on the restaurant page"; set back to the
+  package's value, that grant goes.
 - `feature_grants` = per-restaurant grants, managed on the restaurant's
-  "Extra slots & add-ons" tab, with source `admin` or `purchase`, an optional
-  end and a `note`.
-- A limit of **null is unlimited**: `hasReachedXLimit()` is false, the API sends
-  `limit: null`, and a grant on top of it leaves it unlimited.
+  "Extras & overrides" tab (`FeatureGrantsRelationManager`: feature, add or
+  set, the amount / on-off / unlimited, source `admin` or `purchase`, an
+  optional end and a `note`).
+- **What one restaurant pays**: `restaurants.price_cents` (null: its
+  package's price, in the package's currency), set on the restaurant's
+  Package section and shown to the owner on their Package page
+  (`/api/packages` `meta.your_price_cents`); `monthlyPriceCents()` is the
+  price in force. `PackageAssigner::assign()` (every Change package action)
+  clears it when the package changes; the restaurant's own page saves the
+  price box as left. Every change is a Package history
+  row (`package_changes.price_cents`). `restaurants.pays_with_whish` records
+  that it pays through Whish Money, for the admin only. Neither clears the
+  cached menu (`Restaurant::ADMIN_ONLY_FIELDS`). The admin API sends both
+  and sets them (`PUT /api/admin/restaurants/{id}/billing`, or with a package change).
+- A limit of **null is unlimited**: `Restaurant::hasReached(Feature::DishLimit)`
+  is false, the API sends `limit: null`, and a grant on top of it leaves it
+  unlimited. `limitOf(Feature)` is the limit in force; a create checks it with
+  `ensureRoomFor()` on the restaurant read under its row lock (dishes,
+  categories, links; the fair-use or plan message, a 422 on the field).
 
 ## Templates
 
 A template is a row + a Blade view of the same slug
 (`resources/views/menu/templates/{slug}.blade.php`) + its stylesheet
-(`public/css/menu-{slug}.css`, cache-busted by `filemtime`). The view's `<head>`
+(`public/css/menu-{slug}.css`, linked with `App\Support\Asset::versioned()`). The view's `<head>`
 `@include('menu.partials.theme')`, which loads the owner's fonts and prints
 every colour the design declares as a CSS variable (`primary_color` →
 `--primary-color` and `--primary-color-ink`), plus `--font`. Classic also
 keeps its own `--accent/--bg/--text` lines; tests assert `--accent: #XXXXXX`,
 so keep their spacing. The inline SVG icons come from `App\Support\MenuIcons`.
-Scaffold all of it with:
+**A design is its layout only**: what the menu does is shared partials in
+`resources/views/menu/partials/`, which every design includes once, last in
+its `<body>`: `scripts` (the hours on the phone, then `cart` with
+`track-sheet`, `dish-sheet`, and the track and nav scripts). The design
+keeps the hooks they look for (`data-open-cart`, `data-cart-panel`,
+`data-dish`, `data-pop-open`, `data-track`...). Scaffold all of it with:
 
 ```bash
 php artisan make:menu-template midnight
@@ -717,34 +777,64 @@ One name per thing, shared with the dashboard (`../qayema-dashboard`):
 
 Three words that are never swapped: **plan** = what a restaurant may use
 (`restaurant.plan.{multiple_languages, variants, addons, appearance,
-premium_designs, qr_studio, ordering, menu_ordering, analytics, advanced_analytics}` in `/api/user`,
+premium_designs, qr_studio, ordering, menu_ordering, analytics, advanced_analytics, offers}` in `/api/user`,
 resolved by `Entitlements`); **grant** = an admin giving one restaurant more
 than its package (`FeatureGrant`, table `feature_grants`); **switched off** =
 what the owner turned off on the Features page (`restaurant.switched_off`).
 `App\Enums\Feature` and `Package.features` describe what a *package* contains.
 
-- `app/Services/<Group>/`: `Analytics` (MenuStats, MenuEventRecorder,
-  MenuVisitRecorder), `Menu` (MenuLanguages, OpeningHours, MapPoint,
-  DisplayOrder, DishOptionsSync, MenuDishOptions), `Orders` (OrderPlacer, WhatsAppLink), `Packages`
-  (Entitlements, PackageAssigner), `Qr` (QrStyle), `Media` (MediaService, UploadLimits),
+- `app/Services/<Group>/`: `Analytics` (MenuStats over a StatsRange, its
+  orders in MenuOrderStats; MenuTraffic, the admin's visit counts and the
+  passes MenuStats shares; MenuEventRecorder, MenuVisitRecorder), `Menu` (MenuLanguages, OpeningHours, MapPoint,
+  DisplayOrder, DishOptionsSync, MenuDishOptions, FormerMenuLink), `Orders` (OrderPlacer, OrderEditor, WhatsAppLink), `Packages`
+  (Entitlements, PackageAssigner), `Qr` (QrStyle, QrDesign: the link, the default, saved and
+  shown design), `Media` (MediaService, UploadLimits),
   `Security` (AbuseGuard, Captcha), `Contact` (ContactService), `Portal`
   (OnboardingService), `Ai` (WritingHelp). A new service goes in the group it serves.
+  A service's exceptions sit beside it (`Orders/OrderChanged`,
+  `Contact/TooManyContactMessages`); there is no `app/Exceptions`.
 - `app/Ai/Agents/` holds the AI SDK's agents (see Writing help).
-- `app/Support/` is for value helpers with no dependencies (`Color`).
+- `app/Support/` is for value helpers with no dependencies (`Color`, `Asset`); anything
+  that reads the database is a service.
 - Every owner API controller resolves its restaurant through the
   `ResolvesRestaurant` trait (403 when the user has none); never copy the
   helper. `PackageRequestController` is the one exception on purpose: a user
-  without a restaurant may still ask for a package.
+  without a restaurant may still ask for a package. A row is authorised
+  through its policy (`$this->authorize()`: `CategoryPolicy`, `DishPolicy`,
+  `RestaurantSocialLinkPolicy`, `OrderPolicy`), never an inline id check;
+  `OrderPolicy`'s `manage` (the dashboard's move, edit and delete) is the
+  owner's own orders only, refused with the same words as
+  `ResolvesRestaurant`; its `delete` also lets an admin remove orders in
+  /admin.
 - Validation is always a Form Request, including one-field ones
-  (`AnalyticsRangeRequest`, `UpdateOrderRequest`, `UpdateDishAvailabilityRequest`).
+  (`AnalyticsRangeRequest`, `UpdateOrderRequest`, `UpdateDishAvailabilityRequest`)
+  and onboarding (`AdvanceOnboardingRequest`, rules per `_step`). Rules
+  several forms share live once in `Requests/Concerns/SharedFieldRules`
+  (phone, country, currency, temp image key, a name without control
+  characters), with their translated messages.
 - `Template::CLASSIC_SCHEMA` is the one copy of the classic design's settings
   (seeder and `make:menu-template`).
 
 ## Conventions & gotchas
 
-- **Content:** category = name, an optional one-line description (max 300),
-  and order. Dish = name, price, ingredients, one image, availability, order.
-  No category images, no tags.
+- **Content:** category = name, an optional one-line description,
+  an optional icon and order. The icon is one of 30 Tabler outline icons
+  (`App\Support\CategoryIcons`, keys like `pizza`, `coffee`; validated with
+  `Rule::in(CategoryIcons::keys())`, null for none), drawn inline in the
+  menu's category tabs (not the section headings); the dashboard's picker
+  (`src/features/menu/categories/constants/category-icons.ts`) has the same
+  list, so add one in both. Dish = name, price, ingredients, one image,
+  availability, order. No category images, no tags. Every text's most
+  characters (dish name 60, ingredients 300, category name 40 and
+  description 120, restaurant name 60 and description 200, a choice's name
+  40, an offer's title 60 and description 200) are `App\Support\MenuTextLimits`,
+  read by every request, the admin forms and the writing help; the
+  dashboard's twin is `src/shared/constants/menu-text-limits.ts`. Ingredients are free text tidied into a clean
+  list on every save (`App\Support\Ingredients`, through the dish requests'
+  `TidiesIngredients` and the admin form): commas, Arabic commas, dots, new
+  lines and "etc." become one list joined with the language's separator
+  ("، " in Arabic). The dashboard's twin (`shared/utils/string/ingredients.ts`)
+  tidies the box as the owner leaves it: change one, change both.
 - **Never run `migrate:fresh`, `migrate:refresh`, `db:wipe` or `db:seed` over
   the local database without asking.** Migrations are edited in place
   pre-launch, which makes `migrate:fresh` look like the way to apply one, but
@@ -791,7 +881,11 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
   top-level page means adding it *before* that route.
 - **Analytics:** see the Analytics section below.
 - Rate limiters in `AppServiceProvider` (`api`/`mutations`/`uploads`/`auth`/
-  `contact`); the high-volume ones feed the `AbuseGuard` auto-ban.
+  `contact`); the high-volume ones feed the `AbuseGuard` auto-ban. A limiter
+  may return several limits (`menu-events`: 120 a minute per IP and 20 per
+  guest on that IP, the `visitor` id the batch names). `AbuseGuard` reads
+  one cached list of active blocks (`abuse_guard:blocked`, 60 s, each with
+  its end), never a query per address; a `BlockedIp` save or delete forgets it.
 - **Strict models** (`AppServiceProvider::keepModelsStrict()`): locally and
   in the tests a lazy-loaded relation on a model that came with others
   (N+1), an attribute dropped because it is not fillable, and a column read
@@ -892,6 +986,27 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
   create/edit pages: filling gives the form every language, saving merges what
   the form sent over the languages it does not show. Never bind a translatable
   column to a single input (it shows `[object Object]` and overwrites the text).
+- **Admin layout.** The menu: Dashboard, Restaurants (badge: packages to
+  renew, `RestaurantResource::toRenew()`: ending within 7 days, or ended
+  and still in the grace days), Inbox (`ContactMessageResource`; badge: open
+  messages), Users; then the "Menu content" group (Dishes, Categories,
+  Social links, across every restaurant); then "Settings" (Packages,
+  Templates, Blocked IPs). Lists open on tabs for what is asked most
+  (Restaurants: to renew, ended, paying, Whish, switched off; Inbox: open,
+  package requests, handled; Users: owners, setup not finished, admins).
+  A restaurant's page is one page of tabs (`hasCombinedRelationManagerTabsWithContent`):
+  Details (with an "At a glance" side box), Extras & overrides, Package
+  history, Orders, Dishes, Categories, Social links; the last three reuse
+  their resource's table (`$relatedResource`), which hides its restaurant
+  column and filter there. Keep the relation managers in that order: the
+  e2e suite opens them by `?relation=` index. The rarer row actions (open
+  menu, log in as owner, delete) sit in the row's "Actions" menu. The top
+  bar's search (Ctrl K) finds restaurants by name or link and users by
+  name, email or username. **Inbox:** `contact_messages.handled_at` (null:
+  open; `ContactMessage::open()`, `markHandled()` keeps the first date,
+  `reopen()`); "Mark handled" / "Reopen" on the row, the message and in
+  bulk (`HandleMessageAction`), and applying a requested package marks it
+  handled.
 - **Admin forms and tables** (`AdminPanelProvider::boot()` sets the defaults):
   a select or select filter is never the browser's native dropdown
   (`native(false)` everywhere; never switch one back); a section spans the
@@ -954,12 +1069,15 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
   form too). Printed QR codes keep working: the restaurant's `updated` hook
   keeps each former link (`previous_slugs`, model `PreviousSlug`), and a GET
   to one is a 301 to the same page under today's link with its query kept
-  (`?qr=1` still counts the scan; `App\Support\FormerMenuLink`, wired in
+  (`?qr=1` still counts the scan; `App\Services\Menu\FormerMenuLink`, wired in
   `bootstrap/app.php` only when no restaurant has that slug, so a normal
-  visit pays nothing). A POST to an old link is a 404. `App\Rules\AvailableSlug`
-  is the one check (onboarding, its live check, the admin, the API): not
-  reserved, not another restaurant's link, not another restaurant's former
-  link; a restaurant may take back its own. Guests' carts and order bars are
+  visit pays nothing). A POST to an old link is a 404.
+  `App\Rules\AvailableSlug::rules()` is the one list of rules (onboarding,
+  the owner's API, the admin app's API, the admin panel's restaurant and
+  user forms): 2 to 100 characters (`MAX_LENGTH`), lowercase letters,
+  numbers and dashes (`FORMAT`), not reserved, not another restaurant's
+  link, not another restaurant's former link; a restaurant may take back its
+  own. Onboarding's live check asks `isFree()`. Guests' carts and order bars are
   kept per link in their browser, so a guest mid-order when the link changes
   starts again.
 - Every `api/*` error is `{message, code}` JSON (see `bootstrap/app.php`); a
@@ -975,11 +1093,23 @@ what the owner turned off on the Features page (`restaurant.switched_off`).
 
 ## Ordering
 
-Guests order from the menu one way at a time (`restaurants.order_mode`: WhatsApp, or in the menu with the `menu_ordering` flag; table orders have their own `dine_in_mode`). `App\Services\Orders\OrderPlacer` is the only way an order is created: every dish is re-read scoped to the restaurant and every price comes from the database. Guest routes store no session and take the page's `X-Menu-Token` instead of CSRF (`MenuToken`, `VerifyMenuToken`); orders are tracked by a 40-character token in a sheet over the menu, live through Pusher (`OrderNews`, after the response), and a guest may change an order until it is accepted. **Full rules: [docs/architecture/ordering.md](docs/architecture/ordering.md); read it before touching orders, the cart or tracking.**
+Guests order from the menu one way at a time: four package switches, each sellable alone (`ordering` WhatsApp and `menu_ordering` in the menu for delivery and pickup, `dine_in` in the menu and `dine_in_whatsapp` for table orders); with both ways of a kind the owner picks (`order_mode`, `dine_in_mode`). `order_tracking` is its own switch: without it an order placed in the menu is sent and the guest only gets its number. `App\Services\Orders\OrderPlacer` is the only way an order is created: every dish is re-read scoped to the restaurant and every price comes from the database. Guest routes store no session and take the page's `X-Menu-Token` instead of CSRF (`MenuToken`, `VerifyMenuToken`); orders are tracked by a 40-character token in a sheet over the menu, live through Pusher (`OrderNews`, after the response), and a guest may change an order until it is accepted. **Full rules: [docs/architecture/ordering.md](docs/architecture/ordering.md); read it before touching orders, the cart or tracking.**
+
+## Two currencies
+
+A restaurant has its main currency (`restaurants.currency`) and may add one second currency with the rate between them (`second_currency`, `exchange_rate`: how many of the main currency one of the second is worth, 89000 for 1 USD in LBP; the dashboard lets the owner write it either way round, 89,000 by default for USD and LBP). A dish is priced in the main one (`dishes.currency` null) or the second one, its variants and add-ons with it (`Restaurant::currencyOf()`, `rateOf()`, `ownCurrency()`). The menu shows each dish in its own money (`data-currency`, `data-rate` on the card); the cart, the order total and `seen_total` are in the main currency, each second-currency line counted at the rate, line by line, to the cent, half up (`App\Support\Price::toMain()`, twinned by `menu-cart.js` and the dashboard; a cent of rounding per such line is not "dearer"). An order keeps the rate it was placed at (`orders.exchange_rate`, set only when a line used it) and each line its currency (`order_items.currency`, null for the main one), so the owner changing the rate later changes no order; the owner adding a dish counts it at the order's rate. An amount-off offer is in the main currency and comes off a second-currency dish at the rate (`Offer::discounted($price, $rate)`, `Price::fromMain()`, `menu-offers.js`); its "below the cheapest dish" check compares in the main currency. A second currency is not removed or swapped while dishes are priced in it (422 naming how many); made the main one, those dishes simply are in it. Analytics' sales are the orders' totals; top dishes count second-currency lines at their order's rate. Admin: the dish form offers the second currency when the restaurant has one. Onboarding's step 2 sets it too: dollars are suggested beside any other main currency, and a menu in dollars gets the money of its phone's country (`config/countries.php` `currency`) until the owner picks one; the rate is written the way people say it, the dollar as the 1 (1 USD = 89,000 LBP, else 1 second = X main), and `OnboardingService::saveSecondCurrency()` stores it as main per one second (`writtenRate()` reads it back).
 
 ## Variants and add-ons
 
 A dish's variants (pick one option of each) and add-ons (pick any), each price added to the dish's; flags `variants` and `addons`, each with its own switch. Written whole by `DishOptionsSync`, shown by `MenuDishOptions`, priced by `OrderPlacer`, snapshotted on `order_items.options`. **Full rules: [docs/architecture/variants-and-addons.md](docs/architecture/variants-and-addons.md).**
+
+## Build your own
+
+A dish built from parts (`build_your_own` flag, on no package: an admin switches it on per restaurant): up to three builds (`DishBuild`), each a part count the guest picks (`split`, a pizza half and half; `pieces`, three scoops) and a choice per part, from a category's dishes or the build's own list (`BuildChoices`), priced by `BuildPrice` (a part pays its set price for that size, else its share; twinned by `public/js/menu-build.js`), charged by `OrderPlacer`, worded "½ Margherita + ½ Pepperoni" (`OrderItem::built()`). A build's dish is a name and an icon in no category, drawn in a row above the menu's search with no price (`menu.partials.builds`). A restaurant may have `build_limit` of them (3 unless an admin sets another). **Full rules: [docs/architecture/build-your-own.md](docs/architecture/build-your-own.md).**
+
+## Offers
+
+An owner's promotions on the menu (`offers` flag, Premium): a banner carousel, a pop-up and/or a short ad that cannot be skipped (its seconds count down, then an X closes it; the ad after the pop-up is closed), each in its shape (banner rectangle or square, pop-up square or tall, ad a rectangle), as many switched on at once as the package's `offer_*_limit` allow (Premium 3 banners, 1 pop-up, 1 ad; `OfferSlots`; 0 leaves the place out), with schedules and discounts as switches of their own (`offer_schedules`, `offer_discounts`; `OfferRules` keeps off what the package lacks), on a schedule (dates, weekdays or days of the month, times of day, in the restaurant's timezone; `OfferSchedule`, twinned by `public/js/menu-offers.js` on the cached menu and the dashboard's `offer-schedule.ts`), with an optional discount on chosen dishes that `OrderPlacer` charges (the line keeps `offer_id`, `offer_title`, `full_price`). An offer may instead make a dish of its own, its deal (`dishes.offer_id`, `Offer::deal()`, `DealDish`; no discount and no other dishes beside it), on the menu and for sale only while the offer is live (`hidden_deals` and `menu-offers.js` on the cached page, `LiveOffers::liveAmong()` in orders), deleted with the offer. **Full rules: [docs/architecture/offers.md](docs/architecture/offers.md); read it before touching offers, the menu's prices or the cart.**
 
 ## Queries
 
@@ -993,7 +1123,8 @@ A dish's variants (pick one option of each) and add-ons (pick any), each price a
   `PricingCards` keeps its packages per instance (a page shares one),
   `Entitlements` is memoized per request, `Package::default()` is `once()`
   per request (a package save flushes it), and `/api/user` counts dishes,
-  categories and links with one `loadCount`.
+  categories, links and the dishes without a photo (Home's checklist,
+  `dishes_without_photo`) with one `loadCount`.
 - More read once: `Package::onOffer()` (`once()`, the landing page's cards
   and its search data share it), `Entitlements` reads the grants in force
   once on a miss (the value, then its time to live from the same grants),
@@ -1001,17 +1132,40 @@ A dish's variants (pick one option of each) and add-ons (pick any), each price a
   is handed its restaurant rather than reading it again, and a change's one
   dish query also names the dishes no longer sold (`OrderChange`). Lists
   eager-load what their resource reads (`/api/templates` with `media`).
+- The owner's lists (`/api/user`, dishes, categories, offers, orders,
+  tables, links, QR, restaurant) cost the same queries with 3 rows as with
+  12, and an order's lines are one insert however many (`Order::addItems()`):
+  `tests/Feature/Api/OwnerListQueriesTest`. A wildcard rule that queries
+  (`exists`, `unique` on `names.*`, `dish_ids.*`) runs once per item, so a
+  batch is checked in the request's `after()` with one `whereIn`
+  (`StoreOfferRequest::chosenDishes()`, `NamesTables::namesTaken()`,
+  `DiningTable::freshCodes()`).
+- A value several parts of one request ask for is `App\Support\PerRequest`
+  (kept on the request, so the next one reads it fresh): the admin's Inbox
+  and To renew counts (menu badge, tab badge, the Overview), the timezones
+  `MenuTraffic::withTotals()` needs, `Template::fallback()`, the admin
+  forms' restaurant columns (`MenuTextInputs`). The admin's restaurant list
+  loads every row's grants in force with the page, and `Entitlements` uses
+  them when loaded (`valuesFrom()`, also what `RestaurantFeatures::save()`
+  works each feature out with, without reading again).
 - Counts in one pass with conditional sums: `MenuStats::summary()` (views,
   visitors, scans and today's views; orders and those done),
-  `Restaurant::trafficTotals()` (the admin's user page), `qrScans()`,
-  `OrderPulse`.
+  `MenuTraffic::totals()` (the admin's user page), `qrScans()`,
+  `OrderPulse`. The admin's lists add `total_views` and `qr_scans` per row
+  with `MenuTraffic::withTotals()`: `menu_days` up to the last
+  `LIST_RAW_DAYS` and the raw rows since, met at each timezone's midnight,
+  so a page is one query and the totals outlive the 6-month prune. The
+  menu's orders are added up in SQL (`MenuOrderStats`), never loaded.
 - Counts over time are plain ranges, never `date()`/`month()` on a column,
-  so the index does the work: `Restaurant::qrScans()` (today, week, month,
+  so the index does the work: `MenuTraffic::qrScans()` (today, week, month,
   total in one pass, in the restaurant's timezone, `localTimezone()`) and
-  `OrderPulse` (three numbers, one query). `menu_sessions` is indexed
+  `OrderPulse` (three numbers, one query, read from `orders_pulse_index`:
+  restaurant, channel, status, fulfilment, guest_updated_at, which the
+  orders list's `open` count uses too). `menu_sessions` is indexed
   `(restaurant_id, viewed_at, via_qr, session_id)` so QR and visitor counts
-  come from the index, and `viewed_at` / `menu_events.occurred_at` alone for
-  the nightly prune.
+  come from the index (every read of `session_id` names the restaurant, so
+  it has no index of its own), and `viewed_at` / `menu_events.occurred_at`
+  alone for the nightly prune.
 
 ## Deploying (the owner does it; never run from here)
 
@@ -1052,10 +1206,13 @@ AppServiceProvider for that reason (`tests/Feature/Security/TrustedProxiesTest`)
 **In the background** (`routes/console.php`; production's only cron line is
 `schedule:run` every minute): the queue worker (`queue:work --max-time=55`,
 every minute, never two at once, so a job starts within seconds), the
-heartbeat `/up` checks, `menus:forget-ended` hourly, and nightly
+heartbeat `/up` checks, `menus:purge-pending` every minute (the Cloudflare
+purges it refused, `PendingPurges`), `menus:forget-ended` hourly, and nightly
 `stats:rollup` (adds each finished day of analytics up into `menu_days`,
-then deletes raw visits older than 6 months), `queue:prune-failed`,
-`sanctum:prune-expired` and `model:prune` (ended `BlockedIp` rows).
+each restaurant on its own so one failure skips only it, then deletes raw
+visits older than `MenuDays::RAW_MONTHS` 10,000 rows a statement, keeping a
+failed restaurant's), `queue:prune-failed`, `sanctum:prune-expired` and
+`model:prune` (ended `BlockedIp` rows).
 
 **Health:** `GET /up` answers 500 (and logs "Health check failed: ...")
 when the database or the cache fails, and in production also when the
@@ -1079,35 +1236,51 @@ the password too. Local and the tests keep the database and array stores.
 s-maxage=3600` (`CacheMenuForGuests`), so Cloudflare answers the next guests
 itself in under 0.1 s and the server is not asked. Never kept: a request
 with a session cookie (owner, admin), `?preview=`, `?track=`, anything but a
-200. It works because the page holds nothing of one guest: no session or
+200. Any other query key (`fbclid`, `utm_*`, `gclid`) would be a miss of its
+own, so the menu answers it with a 301 to the same address with only
+`lang`, `table`, `qr`, `preview` and `track`, in their order, kept at the
+edge too (`DropUnknownMenuQuery`; a new key the menu reads goes in its
+`KEYS`). An unknown link's 404 is kept 5 minutes (bootstrap/app.php); a
+restaurant created or renamed clears its link. `/{slug}/qr-options` is kept
+the hour (under the menu's prefix), `/sitemap.xml` the hour (and built once
+an hour). It works because the page holds nothing of one guest: no session or
 cookie (StartSessionForReturningVisitors), the visit counted by the phone
 (menu-track.js), open or closed and today's hours worked out on the phone
 (`public/js/menu-hours.js`, the twin of `OpeningHours`; the cart asks
 `QAYEMA_HOURS.isOpen()`), and the order token valid a day (`MenuToken`).
 - **A change clears it at once** (`App\Services\Menu\MenuCache`, one per
   request, sent after the response): a saved or deleted row of
-  `Models\Concerns\ClearsMenuCache` (Category, Dish, RestaurantSocialLink,
+  `Models\Concerns\ClearsMenuCache` (Category, Dish, Offer, RestaurantSocialLink,
   DiningTable, FeatureGrant), the restaurant (its old link too), a reorder
   (`DisplayOrder`, which saves no model), a photo (spatie Media, in
-  AppServiceProvider). A package or a design clears every menu
-  (`purge_everything`). Cloudflare is asked by prefix (`qayema.com/<slug>`),
-  which covers every address under it; a refused call (the Free plan allows
-  five a minute) goes to `PurgeMenuCache` on the queue, retried, then
-  logged as an error. A new writer of menu data that saves no model must
-  call `MenuCache::forget()` itself.
+  AppServiceProvider). A package or a design clears every menu by the
+  menus' host (`{"hosts": ["qayema.com"]}`, `SiteAddress::host()`), never
+  `purge_everything`, which would empty the zone's other hosts too. A save
+  that changed nothing (`wasChanged()`) clears nothing. Cloudflare is asked
+  by prefix (`qayema.com/<slug>`), which covers every address under it; a
+  refused call (the Free plan allows five a minute) goes into
+  `PendingPurges` (one cache key, under a lock), which `menus:purge-pending`
+  sends every minute in at most five calls of 100, the longest waiting
+  first; one still refused after 15 minutes is dropped and logged as an
+  error. A new writer of menu data that saves no model must call
+  `MenuCache::forget()` itself.
 - **What Cloudflare needs** (the owner sets it up): a cache rule for
   qayema.com, path not starting with /api, /admin or /livewire, "Eligible
   for cache", edge TTL "Use cache-control header if present, bypass cache
   if not", browser TTL "Respect origin"; and `CLOUDFLARE_ZONE_ID` +
   `CLOUDFLARE_API_TOKEN` (only Zone, Cache Purge) in `.env`. Without them
-  nothing is cleared and a copy lives at most the hour.
+  nothing is cleared and a copy lives at most the hour. Worth turning on
+  too: Smart Tiered Cache (one Cloudflare data centre asks the server, the
+  rest ask it) and a rate-limit rule on `POST /*/events` in front of the
+  app's own.
 - Time-driven changes save nothing (a package starting, a menu going
   offline past its grace days, a grant ending, overnight):
   `menus:forget-ended` (hourly, `ForgetEndedMenus`) clears those menus; the server refuses what the package no longer allows meanwhile (an
   order). A release that changes the menu page clears every menu
   (`menus:forget-all`, run by `deploy.sh`).
   A refused purge is logged as a warning at once ("Menu cache purge
-  refused"), and as an error once the queue gives up.
+  refused"), and as an error ("Menu cache purge failed") once it has waited
+  15 minutes.
 
 The public menu is opened on a phone, often on mobile data, so it stays light
 (`tests/Feature/Menu/MenuSpeedTest`):
@@ -1122,7 +1295,8 @@ The public menu is opened on a phone, often on mobile data, so it stays light
   (`config/media-library.php`): a new photo is always a new address.
 - Fonts load without blocking the first paint (`media="print"` swapped on
   load, `display=swap`).
-- Every local script and stylesheet is linked with `?v=filemtime(...)`:
+- Every local script and stylesheet is linked with `?v=filemtime(...)`
+  (`App\Support\Asset::versioned('js/menu-cart.js')`):
   `public/.htaccess` keeps css/js for a year, so one without a version would
   go stale for guests. It also compresses text (mod_deflate).
 - Opening the menu writes nothing: no session for a guest (Redis) and no
@@ -1156,7 +1330,7 @@ A main language (required for every name) plus one optional second language (`mu
 
 ## Writing help (AI)
 
-The dashboard's Translate and Write with AI buttons, through `laravel/ai` (`App\Services\Ai\WritingHelp`, agents in `app/Ai/Agents`). Off until a provider and its key are set; uses a day per package (`writing_help_limit`), counted by `WritingHelpUses`, logged by `WritingHelpLog`; the server checks every answer (lengths, no dashes, no invented claims); `PaceWritingHelp` keeps it from starving the menus. Tests never call a provider. **Full rules: [docs/architecture/writing-help.md](docs/architecture/writing-help.md).**
+The dashboard's Translate and Write with AI buttons, through `laravel/ai` (`App\Services\Ai\WritingHelp`, agents in `app/Ai/Agents`). Off until a provider and its key are set; uses a day per package (`writing_help_limit`), counted by `WritingHelpUses`, logged by `WritingHelpLog`; credits a month (`WritingHelpCredits`: a package's AI budget in dollars at what a credit is worth, set at /admin → Settings → AI credits with each action's price; one restaurant's own number is a grant), checked before every call so the real cost never passes what they are worth, and owners only ever see credits; the server checks every answer (lengths, no dashes, no invented claims); `PaceWritingHelp` keeps it from starving the menus. Tests never call a provider. **Full rules: [docs/architecture/writing-help.md](docs/architecture/writing-help.md).**
 
 ## Not yet built
 
@@ -1200,6 +1374,17 @@ Routes: `POST /__e2e/scenario` builds an owner with whatever a test needs
 `/__e2e/password-reset-token`, `GET /__e2e/media/{path}` serves uploads.
 `E2eSeeder`: Classic, the premium Midnight design, `admin@e2e.test` /
 `e2e-password`.
+
+**Demo restaurant** (`database/seeders/DemoSeeder.php`, not called by
+`DatabaseSeeder`): "Olive & Ember" at `/demo`, owner `demo` /
+`qayema-demo`, on Premium in English and Arabic, with a logo, a cover,
+six categories of dishes with photos, variants and add-ons, three banners,
+a pop-up and an ad, tables, links, three weeks of orders and a month of
+visits. Its pictures (`database/seeders/demo/`, CC0 and public domain,
+listed in `sources.json`; the logo drawn for it) go through
+`MediaService::storeUpload()`, so they come out as WebP on `MEDIA_DISK`.
+Seeding it again starts it over. `php artisan db:seed --class=DemoSeeder`
+(`tests/Integration/Database/DemoSeederTest`).
 
 **PHPUnit layout: three suites**, each file in the first that fits:
 

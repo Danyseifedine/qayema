@@ -42,7 +42,7 @@ class QrStyle
     private const MAX_LOGO_BYTES = 1024 * 1024;
 
     /**
-     * @param  array<string, mixed>  $design  a full design, as Restaurant::qrDesign() returns it
+     * @param  array<string, mixed>  $design  a full design, as QrDesign::shown() returns it
      * @param  string|null  $logo  the logo as a data URL, or null for none
      * @return array<string, mixed>
      */

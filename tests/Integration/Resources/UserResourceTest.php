@@ -6,11 +6,15 @@ use App\Enums\Feature;
 use App\Http\Resources\UserResource;
 use App\Models\Category;
 use App\Models\Dish;
+use App\Models\DishBuild;
+use App\Models\FeatureGrant;
 use App\Models\Package;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\Support\CreatesOwners;
 use Tests\TestCase;
 
@@ -22,7 +26,7 @@ class UserResourceTest extends TestCase
 
     private const RESTAURANT_KEYS = [
         'id', 'languages', 'main_locale', 'second_locale', 'default_locale', 'template_id', 'public_url',
-        'package', 'lapsed', 'upcoming', 'limits', 'switched_off', 'ordering', 'plan', 'writing_help',
+        'package', 'lapsed', 'upcoming', 'limits', 'dishes_without_photo', 'switched_off', 'ordering', 'plan', 'turned_off', 'writing_help',
     ];
 
     protected function setUp(): void
@@ -103,6 +107,7 @@ class UserResourceTest extends TestCase
         $this->assertSame('https://qayema.test/aran', $data['public_url']);
         $this->assertSame([
             'slug' => 'free',
+            'tier' => 'bronze',
             'name' => ['en' => 'Free', 'ar' => 'مجاني'],
             'is_contact_only' => false,
             'ends_at' => null,
@@ -114,11 +119,14 @@ class UserResourceTest extends TestCase
             'dishes' => ['used' => 2, 'limit' => 40],
             'categories' => ['used' => 1, 'limit' => 8],
             'social_links' => ['used' => 0, 'limit' => 1],
+            'builds' => ['used' => 0, 'limit' => 3],
         ], $data['limits']);
+        $this->assertSame(2, $data['dishes_without_photo']);
         $this->assertSame([], $data['switched_off']);
         $this->assertSame(['mode' => 'whatsapp', 'types' => ['delivery', 'pickup'], 'dine_in' => 'menu', 'whatsapp_number' => true, 'whatsapp_fields' => ['away' => ['name' => 'off', 'phone' => 'off', 'address' => 'off'], 'table' => ['name' => 'off', 'phone' => 'off']]], $data['ordering']);
         $this->assertSame(array_column(Feature::flags(), 'value'), array_keys($data['plan']));
         $this->assertSame(array_fill_keys(array_column(Feature::flags(), 'value'), false), $data['plan']);
+        $this->assertSame([], $data['turned_off']);
     }
 
     public function test_an_active_package_with_an_end_sends_its_end_and_days_left(): void
@@ -137,6 +145,18 @@ class UserResourceTest extends TestCase
         $this->assertSame(['qr'], $data['switched_off']);
         $this->assertTrue($data['plan']['ordering']);
         $this->assertSame(['en', 'ar'], $data['languages']);
+    }
+
+    public function test_a_feature_an_admin_turned_off_is_named_and_locked_in_the_plan(): void
+    {
+        $restaurant = $this->ownerOn('premium');
+        FeatureGrant::factory()->for($restaurant)->setTo(Feature::Ordering, 0)->create();
+
+        $data = $this->resolve($restaurant->user->load('restaurant'))['restaurant'];
+
+        $this->assertSame(['ordering'], $data['turned_off']);
+        $this->assertFalse($data['plan']['ordering']);
+        $this->assertTrue($data['plan']['qr_studio']);
     }
 
     /** Ordering in the menu shows only while the package includes it; the choice is kept. */
@@ -179,6 +199,7 @@ class UserResourceTest extends TestCase
         $this->assertNull($data['package']['days_left']);
         $this->assertSame([
             'slug' => 'pro',
+            'tier' => 'silver',
             'name' => ['en' => 'Pro', 'ar' => 'برو'],
             'ended_at' => '2026-06-01T00:00:00+00:00',
             'offline_at' => '2026-06-04T00:00:00+00:00',
@@ -211,6 +232,7 @@ class UserResourceTest extends TestCase
         $this->assertNull($data['lapsed']);
         $this->assertSame([
             'slug' => 'custom',
+            'tier' => 'gold',
             'name' => ['en' => 'Custom', 'ar' => 'مخصّص'],
             'starts_at' => '2026-07-01T00:00:00+00:00',
         ], $data['upcoming']);
@@ -226,7 +248,28 @@ class UserResourceTest extends TestCase
         $this->assertNull($data['limits']['dishes']['limit']);
         $this->assertNull($data['limits']['categories']['limit']);
         $this->assertNull($data['limits']['social_links']['limit']);
-        $this->assertNotContains(false, $data['plan']);
+        // Every flag but build your own, which an admin switches on per restaurant.
+        $this->assertNotContains(false, array_diff_key($data['plan'], ['build_your_own' => true]));
+        $this->assertFalse($data['plan']['build_your_own']);
         $this->assertTrue(Package::findBySlug('custom')->is($restaurant->effectivePackage()));
+    }
+
+    /** Home's checklist counts the dishes still without a photo, only this restaurant's (a build's has an icon instead). */
+    public function test_it_counts_the_dishes_without_a_photo(): void
+    {
+        Storage::fake(config('media-library.disk_name'));
+        $restaurant = $this->owner();
+        $restaurant->addMedia(UploadedFile::fake()->image('logo.png'))->toMediaCollection('logo');
+        $category = Category::factory()->for($restaurant)->create();
+        [$pictured] = Dish::factory()->for($restaurant)->count(3)->create(['category_id' => $category->id]);
+        $pictured->addMedia(UploadedFile::fake()->image('kafta.jpg'))->toMediaCollection('image');
+        $other = $this->owner();
+        Dish::factory()->for($other)->create(['category_id' => Category::factory()->for($other)->create()->id]);
+        DishBuild::factory()->for(Dish::factory()->for($restaurant)->create(['category_id' => null]))->create();
+
+        $data = $this->resolve($restaurant->user->load('restaurant'))['restaurant'];
+
+        $this->assertSame(4, $data['limits']['dishes']['used']);
+        $this->assertSame(2, $data['dishes_without_photo']);
     }
 }

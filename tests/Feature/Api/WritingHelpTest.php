@@ -63,7 +63,7 @@ class WritingHelpTest extends TestCase
         $this->actingAs($owner->user)
             ->translate(['text' => 'Fattoush salad', 'from' => 'en', 'to' => 'ar'])
             ->assertOk()
-            ->assertExactJson(['data' => ['text' => 'سلطة الفتوش', 'left' => 9]]);
+            ->assertExactJson(['data' => ['text' => 'سلطة الفتوش', 'left' => 9, 'credits_left' => 499]]);
 
         MenuTranslator::assertPrompted(fn (AgentPrompt $prompt): bool => $prompt->prompt === 'Fattoush salad'
             && $prompt->timeout === 10
@@ -134,6 +134,32 @@ class WritingHelpTest extends TestCase
             ->assertJsonPath('data.text', 'Warm bowls of soup to start your meal or share across the table.');
 
         CategoryDescriptionWriter::assertPrompted(fn (AgentPrompt $prompt): bool => $prompt->contains('Your last answer, "Soups to start.", was 15 characters. Write it again in 60 to 70 characters.'));
+    }
+
+    public function test_of_a_writers_versions_the_first_that_keeps_every_rule_wins(): void
+    {
+        CategoryDescriptionWriter::fake([
+            ['texts' => ['Soups to start.', 'Soups made fresh every morning, to start your meal well.', 'Warm bowls of soup to start your meal or share across the table.']],
+        ]);
+        $owner = $this->owner();
+
+        $this->actingAs($owner->user)
+            ->describe(['name' => 'Soups', 'language' => 'en'])
+            ->assertOk()
+            ->assertJsonPath('data.text', 'Warm bowls of soup to start your meal or share across the table.');
+    }
+
+    public function test_versions_that_all_miss_are_asked_again_with_their_lengths(): void
+    {
+        CategoryDescriptionWriter::fake([
+            ['texts' => ['Soups.', 'Soups to start the meal.']],
+            ['texts' => ['Warm bowls of soup to start your meal or share across the table.']],
+        ]);
+        $owner = $this->owner();
+
+        $this->actingAs($owner->user)->describe(['name' => 'Soups', 'language' => 'en'])->assertOk();
+
+        CategoryDescriptionWriter::assertPrompted(fn (AgentPrompt $prompt): bool => $prompt->contains('Your last versions were 6, 24 characters long; none was 60 to 70 characters.'));
     }
 
     public function test_never_a_description_of_the_wrong_length(): void
@@ -310,6 +336,9 @@ class WritingHelpTest extends TestCase
     public function test_the_model_is_the_configured_one_or_else_the_providers_cheapest(): void
     {
         MenuTranslator::fake([['text' => 'Soupe'], ['text' => 'Soupe']]);
+        // No cap on its AI: the most a Sonnet call could cost is more than
+        // the free package's whole month (WritingHelpCreditsTest).
+        $this->defaultPackageAiBudget(null);
         $owner = $this->owner(['second_locale' => 'fr']);
 
         $this->actingAs($owner->user)->translate(['text' => 'Soup', 'from' => 'en', 'to' => 'fr'])->assertOk();
@@ -335,7 +364,7 @@ class WritingHelpTest extends TestCase
         $this->actingAs($owner->user)->describeRestaurant(['language' => 'en'])->assertNotFound();
 
         config(['services.writing_help.provider' => 'anthropic']);
-        $this->actingAs($owner->user)->getJson(route('api.user'))->assertJsonPath('data.restaurant.writing_help', ['limit' => 10, 'left' => 10]);
+        $this->actingAs($owner->user)->getJson(route('api.user'))->assertJsonPath('data.restaurant.writing_help.limit', 10)->assertJsonPath('data.restaurant.writing_help.left', 10);
 
         MenuTranslator::assertNeverPrompted();
     }
@@ -387,7 +416,7 @@ class WritingHelpTest extends TestCase
         foreach (range(1, 5) as $use) {
             $this->actingAs($owner->user)->describe(['name' => 'Soups', 'language' => 'en'])->assertOk();
         }
-        $this->actingAs($owner->user)->getJson(route('api.user'))->assertJsonPath('data.restaurant.writing_help', ['limit' => null, 'left' => null]);
+        $this->actingAs($owner->user)->getJson(route('api.user'))->assertJsonPath('data.restaurant.writing_help.limit', null)->assertJsonPath('data.restaurant.writing_help.left', null);
         $this->actingAs($owner->user)->describe(['name' => 'Soups', 'language' => 'en'])->assertJsonPath('data.left', null);
     }
 
@@ -418,7 +447,7 @@ class WritingHelpTest extends TestCase
         $this->actingAs($owner->user)->describe(['name' => 'Soups', 'language' => 'en'])->assertJsonPath('data.left', 2);
         $this->actingAs($owner->user)->describe(['name' => 'Soups', 'language' => 'en'])->assertJsonPath('data.left', 1);
         $this->actingAs($owner->user)->getJson(route('api.user'))
-            ->assertJsonPath('data.restaurant.writing_help', ['limit' => 3, 'left' => 1]);
+            ->assertJsonPath('data.restaurant.writing_help.limit', 3)->assertJsonPath('data.restaurant.writing_help.left', 1);
     }
 
     public function test_once_spent_the_answer_says_none_left_and_when_they_come_back(): void
@@ -455,7 +484,7 @@ class WritingHelpTest extends TestCase
         $this->actingAs($owner->user)->translate(['text' => 'Soup', 'from' => 'en', 'to' => 'fr'])->assertUnprocessable();
 
         $this->actingAs($owner->user)->getJson(route('api.user'))
-            ->assertJsonPath('data.restaurant.writing_help', ['limit' => 2, 'left' => 2]);
+            ->assertJsonPath('data.restaurant.writing_help.limit', 2)->assertJsonPath('data.restaurant.writing_help.left', 2);
     }
 
     public function test_each_restaurant_has_its_own_daily_allowance(): void

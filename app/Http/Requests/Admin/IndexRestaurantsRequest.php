@@ -30,6 +30,9 @@ class IndexRestaurantsRequest extends FormRequest
     /** A package that has ended, the latest end first. */
     public const ENDED = 'ended';
 
+    /** Paying now (Restaurant::paying()), newest first. */
+    public const PAYING = 'paying';
+
     public function authorize(): bool
     {
         // The route already requires an admin.
@@ -43,7 +46,7 @@ class IndexRestaurantsRequest extends FormRequest
     {
         return [
             'search' => ['nullable', 'string', 'max:100'],
-            'filter' => ['nullable', Rule::in([self::ALL, self::NEW, self::ACTIVE, self::INACTIVE, self::ENDING, self::ENDED])],
+            'filter' => ['nullable', Rule::in([self::ALL, self::NEW, self::ACTIVE, self::INACTIVE, self::ENDING, self::ENDED, self::PAYING])],
         ];
     }
 

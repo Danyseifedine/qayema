@@ -4,6 +4,7 @@ namespace App\Http\Requests\Concerns;
 
 use App\Models\Restaurant;
 use App\Services\Menu\MenuLanguages;
+use App\Support\MenuTextLimits;
 use Illuminate\Validation\Validator;
 
 /**
@@ -24,7 +25,7 @@ trait ValidatesDishOptions
     {
         $restaurant = $this->user()?->restaurant;
         $limits = config('menu.dish_options');
-        $name = $limits['name_max'];
+        $name = MenuTextLimits::CHOICE_NAME;
         $price = ['nullable', 'numeric', 'min:0', 'max:'.$limits['price_max']];
         $rules = [];
 
@@ -77,12 +78,13 @@ trait ValidatesDishOptions
     /**
      * An add-on adds to the dish's price, so a dish with add-ons needs one,
      * unless it has variants: then a dish with no price of its own costs
-     * what its options cost (a sandwich priced by size alone).
+     * what its options cost (a sandwich priced by size alone). A dish built
+     * from parts ($hasBuilds) is priced by them, its variants then extras.
      *
      * @param  string|null  $currentPrice  the saved price, for an edit that does not send one
      * @param  bool  $hasSavedVariants  the dish's saved variants, for an edit that does not send them
      */
-    protected function priceForOptions(Validator $validator, ?string $currentPrice, bool $hasSavedVariants = false): void
+    protected function priceForOptions(Validator $validator, ?string $currentPrice, bool $hasSavedVariants = false, bool $hasBuilds = false): void
     {
         $restaurant = $this->user()?->restaurant;
 
@@ -97,14 +99,14 @@ trait ValidatesDishOptions
 
         $unpriced = $price === null || $price === '';
 
-        if ($hasAddons && ! $hasVariants && $unpriced) {
+        if ($hasAddons && ! $hasVariants && ! $hasBuilds && $unpriced) {
             $validator->errors()->add('price', __('Give the dish a price before adding add-ons.'));
         }
 
         // Priced by its first variant, each of its options needs a price: an
         // empty one would be a free sandwich, not a forgotten one. The raw
         // input keeps the order the form sent, so the first is index 0.
-        if ($unpriced && $hasVariants && $this->exists('variants')) {
+        if ($unpriced && $hasVariants && ! $hasBuilds && $this->exists('variants')) {
             $variants = (array) $this->input('variants');
             $options = is_array($variants[0] ?? null) ? (array) ($variants[0]['options'] ?? []) : [];
 

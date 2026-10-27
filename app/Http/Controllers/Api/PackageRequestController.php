@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Exceptions\TooManyContactMessages;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\RequestPackageRequest;
 use App\Models\Package;
 use App\Services\Contact\ContactService;
+use App\Services\Contact\TooManyContactMessages;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 

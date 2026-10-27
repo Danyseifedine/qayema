@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\Packages;
 
+use App\Filament\Admin\Resources\Packages\Pages\CreatePackage;
 use App\Filament\Admin\Resources\Packages\Pages\EditPackage;
 use App\Filament\Admin\Resources\Packages\Pages\ListPackages;
 use App\Filament\Admin\Resources\Packages\Schemas\PackageForm;
@@ -29,7 +30,7 @@ class PackageResource extends Resource
 
     protected static ?string $navigationLabel = 'Packages';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'System';
+    protected static \UnitEnum|string|null $navigationGroup = 'Settings';
 
     protected static ?int $navigationSort = 1;
 
@@ -41,11 +42,6 @@ class PackageResource extends Resource
     public static function table(Table $table): Table
     {
         return PackagesTable::configure($table);
-    }
-
-    public static function canCreate(): bool
-    {
-        return false;
     }
 
     /** Any package but the default, which every restaurant falls back on. */
@@ -69,6 +65,7 @@ class PackageResource extends Resource
     {
         return [
             'index' => ListPackages::route('/'),
+            'create' => CreatePackage::route('/create'),
             'edit' => EditPackage::route('/{record}/edit'),
         ];
     }

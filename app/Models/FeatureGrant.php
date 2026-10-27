@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\Feature;
+use App\Enums\GrantMode;
 use App\Models\Concerns\ClearsMenuCache;
 use App\Observers\FeatureGrantObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -12,17 +13,30 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * One grant an admin stacked on top of the restaurant's package. Limits add their `value` to
- * the allowance; flags switch theirs on.
+ * One grant an admin gave a restaurant. Added (`GrantMode::Add`), limits add
+ * their `value` to the allowance and flags switch theirs on. Set
+ * (`GrantMode::Set`), the feature is `value` for this restaurant whatever
+ * the package says: a limit (null for unlimited) or a flag (0 off, 1 on).
  */
 #[ObservedBy(FeatureGrantObserver::class)]
 class FeatureGrant extends Model
 {
     use ClearsMenuCache, HasFactory;
 
+    /**
+     * What a new row holds before it is read back: the mode the database
+     * fills itself (strict models).
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'mode' => 'add',
+    ];
+
     protected $fillable = [
         'restaurant_id',
         'feature',
+        'mode',
         'value',
         'source',
         'note',
@@ -34,6 +48,7 @@ class FeatureGrant extends Model
         return [
             'restaurant_id' => 'integer',
             'feature' => Feature::class,
+            'mode' => GrantMode::class,
             'value' => 'integer',
             'ends_at' => 'datetime',
         ];

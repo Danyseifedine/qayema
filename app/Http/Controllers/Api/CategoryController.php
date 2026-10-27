@@ -17,7 +17,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 
 /**
  * Category CRUD + reordering for the dashboard SPA. Every action is scoped to
@@ -41,7 +40,7 @@ class CategoryController extends Controller
         return CategoryResource::collection($categories)->additional([
             'meta' => [
                 'used' => $categories->count(),
-                'limit' => $restaurant->category_limit,
+                'limit' => $restaurant->limitOf(Feature::CategoryLimit),
             ],
         ]);
     }
@@ -56,15 +55,15 @@ class CategoryController extends Controller
         $category = DB::transaction(function () use ($request, $restaurant): Category {
             $locked = Restaurant::query()->whereKey($restaurant->id)->lockForUpdate()->firstOrFail();
 
-            if ($locked->hasReachedCategoryLimit()) {
-                throw ValidationException::withMessages([
-                    'name' => $locked->entitlements()->isFairUse(Feature::CategoryLimit)
-                        ? __('You have reached the fair-use limit of :limit categories. Contact us if you need more.', ['limit' => number_format($locked->category_limit)])
-                        : __('You have reached your plan limit of :limit categories.', ['limit' => $locked->category_limit]),
-                ]);
-            }
+            $locked->ensureRoomFor(
+                Feature::CategoryLimit,
+                'name',
+                'You have reached your plan limit of :limit categories.',
+                'You have reached the fair-use limit of :limit categories. Contact us if you need more.',
+            );
 
             $category = new Category([
+                'icon' => $request->validated('icon'),
                 'display_order' => (int) $locked->categories()->max('display_order') + 1,
             ]);
             $languages = $locked->menuLanguages();
@@ -91,6 +90,10 @@ class CategoryController extends Controller
         $languages = $category->restaurant->menuLanguages();
         MenuLanguages::fill($category, 'name', MenuLanguages::input($request, 'name', $languages), $languages);
         MenuLanguages::fill($category, 'description', MenuLanguages::input($request, 'description', $languages), $languages);
+        // A client that does not send it keeps the icon there is.
+        if ($request->has('icon')) {
+            $category->icon = $request->validated('icon');
+        }
 
         $category->save();
 
@@ -118,13 +121,8 @@ class CategoryController extends Controller
 
         /** @var array<int, int> $ids */
         $ids = $request->validated('ids');
-        $owned = $restaurant->categories()->whereIn('id', $ids)->pluck('id')->flip();
 
-        // Keep the client's order, drop anything it does not own. `flip()` makes
-        // that check a hash lookup rather than a scan per id.
-        $ordered = array_values(array_filter($ids, static fn (int $id): bool => $owned->has($id)));
-
-        DisplayOrder::apply($restaurant->categories(), $ordered);
+        DisplayOrder::apply($restaurant->categories(), $ids);
 
         $categories = $restaurant->categories()
             ->withCount('dishes')

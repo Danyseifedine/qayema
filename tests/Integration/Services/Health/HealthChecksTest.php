@@ -104,7 +104,7 @@ class HealthChecksTest extends TestCase
         $this->inProduction();
         $this->scheduleRan(10);
 
-        // A retry put off ten minutes (PurgeMenuCache's backoff) is not waiting yet.
+        // A job put off ten minutes (a retry's backoff) is not waiting yet.
         $this->queueJob(-600);
         $this->assertSame([], app(HealthChecks::class)->failures());
 

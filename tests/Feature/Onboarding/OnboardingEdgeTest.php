@@ -138,6 +138,29 @@ class OnboardingEdgeTest extends TestCase
         $this->assertSame(2, $user->fresh()->onboarding_step);
     }
 
+    public function test_step_two_keeps_the_owners_timezone_so_open_now_is_right(): void
+    {
+        $user = $this->fresh();
+        $this->actingAs($user)->postJson(route('onboarding.advance'), ['_step' => 1, 'name' => 'Tz Place', 'slug' => 'tz-place']);
+        $this->actingAs($user)->postJson(route('onboarding.advance'), [
+            '_step' => 2, 'country_code' => 'LB', 'phone' => '+96170123456', 'currency' => 'USD', 'timezone' => 'Europe/Paris',
+        ])->assertOk();
+
+        $this->assertSame('Europe/Paris', $user->restaurant()->first()->timezone);
+    }
+
+    public function test_step_two_falls_back_to_the_countrys_timezone(): void
+    {
+        $user = $this->fresh();
+        $this->actingAs($user)->postJson(route('onboarding.advance'), ['_step' => 1, 'name' => 'Cc Place', 'slug' => 'cc-place']);
+        // A browser that sends nothing PHP knows is no reason to refuse the step.
+        $this->actingAs($user)->postJson(route('onboarding.advance'), [
+            '_step' => 2, 'country_code' => 'LB', 'phone' => '+96170123456', 'currency' => 'USD', 'timezone' => 'Mars/Olympus',
+        ])->assertOk();
+
+        $this->assertSame('Asia/Beirut', $user->restaurant()->first()->timezone);
+    }
+
     public function test_a_completed_owner_is_sent_to_the_dashboard_instead_of_the_wizard(): void
     {
         config(['app.dashboard_url' => 'https://dash.qayema.test']);

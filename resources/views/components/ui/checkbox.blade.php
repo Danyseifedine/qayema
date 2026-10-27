@@ -8,7 +8,7 @@
 
 @php $inputId = $name ? 'cb_' . $name . '_1' : null; @endphp
 
-<label class="ui-check olive" @if ($inputId) for="{{ $inputId }}" @endif>
+<label class="ui-check" @if ($inputId) for="{{ $inputId }}" @endif>
     <input
         type="checkbox"
         @if ($inputId) id="{{ $inputId }}" @endif

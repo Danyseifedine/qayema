@@ -87,6 +87,10 @@ class E2eServiceProvider extends ServiceProvider
                 'ai.providers.gemini.key' => 'e2e-not-a-key',
                 'cache.default' => self::WRITING_HELP_CACHE,
             ]);
+        } else {
+            // Off for every other request, whatever the developer's .env
+            // holds: a real key there must never be spent by a test.
+            config(['services.writing_help.provider' => null]);
         }
     }
 
@@ -109,7 +113,7 @@ class E2eServiceProvider extends ServiceProvider
 
     /**
      * What the pretend Gemini answers, in its own shape: a translation reads
-     * "Translated: <the text>", a category's line and the restaurant's are
+     * "Translated: <the text>" (each of a list's too), a category's line and the restaurant's are
      * fixed lines of the lengths WritingHelp holds them to.
      *
      * @param  array<string, mixed>  $body
@@ -119,15 +123,21 @@ class E2eServiceProvider extends ServiceProvider
     {
         $instructions = (string) ($body['system_instruction'] ?? '');
 
-        $text = match (true) {
-            str_contains($instructions, "category's title") => self::CATEGORY_LINE,
-            str_contains($instructions, 'introduces itself') => self::RESTAURANT_LINE,
-            default => 'Translated: '.self::lastText($body['input'] ?? []),
+        $last = self::lastText($body['input'] ?? []);
+        // A list (a dish's save) reads "Translated: <the text>" for each.
+        $list = json_decode($last, true);
+
+        $answer = match (true) {
+            str_contains($instructions, "a list of a restaurant's") => ['texts' => array_map(fn (mixed $text): string => 'Translated: '.$text, is_array($list) ? $list : [])],
+            // A description writer answers with its versions (WritesVersions).
+            str_contains($instructions, "category's title") => ['texts' => [self::CATEGORY_LINE]],
+            str_contains($instructions, 'introduces itself') => ['texts' => [self::RESTAURANT_LINE]],
+            default => ['text' => 'Translated: '.$last],
         };
 
         return [
             'status' => 'completed',
-            'steps' => [['type' => 'model_output', 'content' => [['type' => 'text', 'text' => json_encode(['text' => $text])]]]],
+            'steps' => [['type' => 'model_output', 'content' => [['type' => 'text', 'text' => json_encode($answer)]]]],
         ];
     }
 

@@ -1,5 +1,5 @@
 /* ============================================================
-   QAYEMA: portal interactions (GSAP choreography, theme, FAQ)
+   QAYEMA: portal interactions (GSAP choreography, FAQ)
    Content + language are server-rendered (Laravel locale); this
    file only handles animation and client-side interactions.
    ============================================================ */
@@ -25,17 +25,6 @@
         if (open) { item.classList.remove('open'); animateHeight(ans, 0); }
         else { item.classList.add('open'); animateHeight(ans, ans.querySelector('.inner').offsetHeight); }
       });
-    });
-  }
-
-  /* ---------- Theme toggle (client-side; language is server-side) ---------- */
-  function initTheme() {
-    var tog = document.getElementById('themeTog');
-    if (!tog) return;
-    tog.addEventListener('click', function () {
-      var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', next);
-      try { localStorage.setItem('qayema-theme', next); } catch (e) {}
     });
   }
 
@@ -144,7 +133,6 @@
   function boot() {
     initFaq();
     initNav();
-    initTheme();
 
     if (window.gsap && window.ScrollTrigger) {
       gsap.registerPlugin(ScrollTrigger);

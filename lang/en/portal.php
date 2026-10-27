@@ -209,6 +209,7 @@ return [
             'dine_in' => 'Orders at the table',
             'analytics' => 'Analytics',
             'advanced_analytics' => 'Advanced analytics',
+            'offers' => 'Offers on your menu',
         ],
         'fair_use_note' => 'Fair use on :package: up to :limits.',
         'and' => ' and ',

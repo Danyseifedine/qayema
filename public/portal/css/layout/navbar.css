@@ -25,37 +25,18 @@
 .nav-links a:hover::after { width: 100%; }
 .nav-right { display: flex; align-items: center; gap: 14px; }
 
-/* theme toggle */
-.theme-tog {
-  width: 58px; height: 32px; border-radius: 100px; border: 1px solid var(--line);
-  background: var(--surface); position: relative; flex-shrink: 0;
-}
-.theme-tog .knob {
-  position: absolute; top: 50%; transform: translateY(-50%);
-  inset-inline-start: 3px; width: 24px; height: 24px; border-radius: 50%;
-  background: var(--gold); display: grid; place-items: center; color: #1A1408;
-  transition: inset-inline-start .4s var(--ease);
-}
-html[data-theme="dark"] .theme-tog .knob { inset-inline-start: 29px; }
-.theme-tog svg { width: 13px; height: 13px; }
-.theme-tog .moon { display: none; } .theme-tog .sun { display: block; }
-html[data-theme="dark"] .theme-tog .moon { display: block; } html[data-theme="dark"] .theme-tog .sun { display: none; }
-
 /* ===== Responsive ===== */
 @media (max-width: 1000px) {
   .nav-links { display: none; }
 }
-/* A phone has room for the logo, the language switch, the theme toggle and
-   the button only when each is a size smaller. */
+/* A phone has room for the logo, the language switch and the button only
+   when each is a size smaller. */
 @media (max-width: 600px) {
   .nav-in { padding: 14px 16px; gap: 10px; }
   .brand img { height: 38px; }
   .nav-right { gap: 8px; }
   .nav-right .btn-sm { height: 38px; padding: 0 14px; font-size: 13px; }
   .nav-right .seg a { height: 26px; min-width: 30px; padding: 0 9px; }
-  .theme-tog { width: 50px; height: 28px; }
-  .theme-tog .knob { width: 22px; height: 22px; }
-  html[data-theme="dark"] .theme-tog .knob { inset-inline-start: 23px; }
 }
 
 /* The narrowest phones: the button says less. Its text (and so its name for

@@ -8,7 +8,10 @@ use Illuminate\Support\Str;
 
 /**
  * Scaffolds a menu template: the database row (schema, ordering) and the Blade
- * view that renders it, copied from `classic` as a starting point.
+ * view that renders it, copied from `classic` as a starting point. Only the
+ * layout is copied: what the menu does (the cart, the dish sheet, tracking
+ * and the scripts) stays in menu.partials.scripts, which the copy includes,
+ * so a fix there reaches every design.
  */
 class MakeMenuTemplate extends Command
 {
@@ -52,8 +55,8 @@ class MakeMenuTemplate extends Command
             mkdir(dirname($path), 0755, true);
         }
 
-        // The view and its stylesheet are copied together, so a new design
-        // starts self-contained and can be restyled without touching classic.
+        // The layout and its stylesheet are copied together, so a new design
+        // can be restyled without touching classic; its behaviour is shared.
         $contents = str_replace(
             ['Template: classic (free)', 'css/menu-classic.css'],
             ["Template: {$slug}", "css/menu-{$slug}.css"],

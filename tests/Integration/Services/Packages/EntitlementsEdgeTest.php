@@ -239,7 +239,7 @@ class EntitlementsEdgeTest extends TestCase
         $this->assertNull($entitlements->limit(Feature::DishLimit));
         $this->assertTrue($entitlements->can(Feature::DishLimit));
         $this->assertTrue($entitlements->can(Feature::Ordering));
-        $this->assertFalse($restaurant->fresh()->hasReachedDishLimit());
+        $this->assertFalse($restaurant->fresh()->hasReached(Feature::DishLimit));
     }
 
     public function test_limit_grants_add_up_and_flag_grants_only_switch_on(): void

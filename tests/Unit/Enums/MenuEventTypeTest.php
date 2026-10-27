@@ -10,7 +10,7 @@ class MenuEventTypeTest extends TestCase
     public function test_the_types_menu_track_js_sends(): void
     {
         $this->assertSame(
-            ['dish_add', 'category_open', 'search', 'search_miss', 'whatsapp', 'map', 'call', 'social', 'language'],
+            ['dish_add', 'category_open', 'search', 'search_miss', 'whatsapp', 'map', 'call', 'social', 'language', 'offer_shown', 'offer_tap'],
             array_map(fn (MenuEventType $type): string => $type->value, MenuEventType::cases()),
         );
     }
@@ -34,7 +34,7 @@ class MenuEventTypeTest extends TestCase
         $carrying = array_values(array_filter(MenuEventType::cases(), fn (MenuEventType $type): bool => $type->carriesValue()));
 
         $this->assertSame(
-            [MenuEventType::Search, MenuEventType::SearchMiss, MenuEventType::Social, MenuEventType::Language],
+            [MenuEventType::Search, MenuEventType::SearchMiss, MenuEventType::Social, MenuEventType::Language, MenuEventType::OfferShown, MenuEventType::OfferTap],
             $carrying,
         );
     }

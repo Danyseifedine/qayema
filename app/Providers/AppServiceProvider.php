@@ -21,6 +21,7 @@ use Illuminate\Foundation\Events\DiagnosingHealth;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Events\RouteMatched;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\Event;
@@ -282,9 +283,16 @@ class AppServiceProvider extends ServiceProvider
         // Pusher says it moved (once a minute while Pusher cannot be heard);
         // a dining room of them shares one IP.
         $this->defineRateLimiter('order-status', fn (): Limit => Limit::perMinute(120), autoBan: false);
-        // The menu batches what guests do, so one guest sends a handful of
-        // these a visit. The ceiling is for a full room on one wifi.
-        $this->defineRateLimiter('menu-events', fn (): Limit => Limit::perMinute(300), autoBan: false);
+        // The menu batches what guests do (the visit, then at most one send
+        // every 30 seconds and one on leaving), so one guest sends a handful
+        // of these a visit. Two ceilings: one for a full room on one wifi,
+        // and one per guest (the anonymous id the batch names, as
+        // MenuEventsRequest::visitor() reads it) so one phone or script
+        // cannot use up the room's.
+        $this->defineRateLimiter('menu-events', fn (Request $request): array => [
+            Limit::perMinute(120),
+            Limit::perMinute(20)->by($request->ip().'|'.$this->menuVisitor($request)),
+        ], autoBan: false);
         // A dashboard reports at most five errors a page load (reportError);
         // more than this is a loop or a stranger, and is dropped, never banned.
         $this->defineRateLimiter('client-errors', fn (): Limit => Limit::perMinute(10), autoBan: false);
@@ -300,29 +308,48 @@ class AppServiceProvider extends ServiceProvider
         $this->defineRateLimiter('uploads', fn (): Limit => Limit::perMinute(20));
     }
 
+    /** The guest a menu-events batch names, or the hash its request stands for without one. */
+    private function menuVisitor(Request $request): string
+    {
+        $visitor = $request->input('visitor');
+
+        return is_string($visitor) && preg_match('/^[a-f0-9]{32}$/', $visitor) === 1
+            ? $visitor
+            : md5($request->ip().$request->userAgent());
+    }
+
     /**
-     * @param  Closure(): Limit  $factory
+     * A limiter keyed by the user (or the IP) unless a limit names its own
+     * key; several limits all apply, and a 429 from any answers the same way.
+     *
+     * @param  Closure(Request): (Limit|list<Limit>)  $factory
      */
     private function defineRateLimiter(string $name, Closure $factory, bool $autoBan = true): void
     {
-        RateLimiter::for($name, function (Request $request) use ($factory, $autoBan): Limit {
-            return $factory()
-                ->by($request->user()?->id ?: $request->ip())
-                ->response(function (Request $request, array $headers) use ($autoBan): Response {
-                    if ($autoBan) {
-                        app(AbuseGuard::class)->recordViolation($request->ip());
-                    }
+        RateLimiter::for($name, function (Request $request) use ($factory, $autoBan): array {
+            return array_map(fn (Limit $limit): Limit => $this->answerTooMany(
+                $limit->key === '' ? $limit->by($request->user()?->id ?: $request->ip()) : $limit,
+                $autoBan,
+            ), Arr::wrap($factory($request)));
+        });
+    }
 
-                    if ($request->is('api/*') || $request->expectsJson()) {
-                        return response()->json([
-                            'message' => __('Too many requests. Please slow down.'),
-                            'code' => 'too_many_requests',
-                            'retry_after' => isset($headers['Retry-After']) ? (int) $headers['Retry-After'] : null,
-                        ], 429, $headers);
-                    }
+    private function answerTooMany(Limit $limit, bool $autoBan): Limit
+    {
+        return $limit->response(function (Request $request, array $headers) use ($autoBan): Response {
+            if ($autoBan) {
+                app(AbuseGuard::class)->recordViolation($request->ip());
+            }
 
-                    return response('Too many requests.', 429, $headers);
-                });
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json([
+                    'message' => __('Too many requests. Please slow down.'),
+                    'code' => 'too_many_requests',
+                    'retry_after' => isset($headers['Retry-After']) ? (int) $headers['Retry-After'] : null,
+                ], 429, $headers);
+            }
+
+            return response('Too many requests.', 429, $headers);
         });
     }
 }

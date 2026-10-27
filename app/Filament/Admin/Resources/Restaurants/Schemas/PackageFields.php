@@ -126,7 +126,7 @@ class PackageFields
         // Once per request: the form and its actions both ask.
         return once(fn (): array => Package::query()->orderBy('sort_order')->orderBy('id')->get()
             ->mapWithKeys(fn (Package $package): array => [
-                $package->id => $package->is_active ? (string) $package->name : $package->name.' (not offered)',
+                $package->id => $package->is_active ? (string) $package->name : $package->name.' (inactive)',
             ])
             ->all());
     }

@@ -46,6 +46,8 @@ class RestaurantResourceTest extends TestCase
             'phone' => '70123456',
             'country_code' => 'LB',
             'currency' => 'USD',
+            'second_currency' => null,
+            'exchange_rate' => null,
             // Saved before shifts: one range reads as one shift.
             'opening_hours' => [
                 'mon' => [['open' => '09:00', 'close' => '17:00']],
@@ -85,6 +87,15 @@ class RestaurantResourceTest extends TestCase
         $this->assertNull($data['google_maps_url']);
         $this->assertSame(array_fill_keys(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'], null), $data['opening_hours']);
         $this->assertSame('UTC', $data['timezone']);
+    }
+
+    public function test_the_timezone_is_the_one_the_menu_runs_on(): void
+    {
+        config(['app.timezone' => 'Asia/Beirut']);
+
+        $this->assertSame('Asia/Calcutta', $this->resolve($this->owner(['timezone' => 'Asia/Calcutta']))['timezone'], 'An older name is kept.');
+        $this->assertSame('Asia/Beirut', $this->resolve($this->owner(['timezone' => 'Mars/Olympus']))['timezone'], 'Not a real one: the app\'s.');
+        $this->assertSame('Asia/Beirut', $this->resolve($this->owner(['timezone' => null]))['timezone']);
     }
 
     public function test_the_logo_and_cover_come_as_urls(): void

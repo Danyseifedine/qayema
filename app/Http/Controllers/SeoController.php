@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Restaurant;
 use App\Support\PortalUrl;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * What search engines read before anything else: robots.txt (what to leave
@@ -23,6 +24,8 @@ class SeoController extends Controller
         'guide' => '0.7',
         'contact' => '0.6',
     ];
+
+    private const SITEMAP_SECONDS = 3600;
 
     public function robots(): Response
     {
@@ -48,7 +51,26 @@ class SeoController extends Controller
         return response(implode("\n", $lines)."\n", 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
     }
 
+    /**
+     * Built at most once an hour (it reads every restaurant), and kept by
+     * Cloudflare as long: a new menu reaches search engines within the hour.
+     */
     public function sitemap(): Response
+    {
+        $xml = Cache::remember('seo:sitemap:'.url('/'), self::SITEMAP_SECONDS, fn (): string => view('seo.sitemap', ['pages' => $this->pages()])->render());
+
+        return response($xml, 200, [
+            'Content-Type' => 'application/xml; charset=UTF-8',
+            'Cache-Control' => 'public, max-age=0, s-maxage='.self::SITEMAP_SECONDS,
+        ]);
+    }
+
+    /**
+     * Every page the sitemap lists.
+     *
+     * @return list<array{url: string, alternates: array<string, string>, default: string|null, priority: string, lastmod: string|null}>
+     */
+    private function pages(): array
     {
         $pages = [];
 
@@ -79,9 +101,7 @@ class SeoController extends Controller
             ];
         }
 
-        return response()
-            ->view('seo.sitemap', ['pages' => $pages])
-            ->header('Content-Type', 'application/xml; charset=UTF-8');
+        return $pages;
     }
 
     /**

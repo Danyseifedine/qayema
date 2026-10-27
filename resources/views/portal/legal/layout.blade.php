@@ -8,7 +8,7 @@
 @endphp
 
 @push('styles')
-<link rel="stylesheet" href="{{ asset('portal/css/pages/legal.css') }}?v={{ @filemtime(public_path('portal/css/pages/legal.css')) ?: '1' }}">
+<link rel="stylesheet" href="{{ \App\Support\Asset::versioned('portal/css/pages/legal.css') }}">
 @endpush
 
 @section('content')

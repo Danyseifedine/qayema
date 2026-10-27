@@ -8,6 +8,7 @@ use App\Filament\Admin\Resources\Categories\Pages\EditCategory;
 use App\Filament\Admin\Resources\Categories\Pages\ListCategories;
 use App\Models\Category;
 use App\Models\Dish;
+use App\Support\MenuTextLimits;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -104,6 +105,21 @@ class CategoryAdminTest extends TestCase
         $this->assertSame(['en' => 'Kept'], $category->fresh()->getTranslations('name'));
     }
 
+    public function test_the_edit_form_keeps_to_the_menus_text_limits(): void
+    {
+        $category = Category::factory()->create(['restaurant_id' => $this->owner()->id]);
+
+        Livewire::test(EditCategory::class, ['record' => $category->id])
+            ->fillForm(['name.en' => str_repeat('a', MenuTextLimits::CATEGORY_NAME + 1), 'description.en' => str_repeat('a', MenuTextLimits::CATEGORY_DESCRIPTION + 1)])
+            ->call('save')
+            ->assertHasFormErrors(['name.en' => 'max', 'description.en' => 'max']);
+
+        Livewire::test(EditCategory::class, ['record' => $category->id])
+            ->fillForm(['name.en' => str_repeat('a', MenuTextLimits::CATEGORY_NAME), 'description.en' => str_repeat('a', MenuTextLimits::CATEGORY_DESCRIPTION)])
+            ->call('save')
+            ->assertHasNoFormErrors();
+    }
+
     public function test_clearing_the_description_drops_that_language(): void
     {
         $category = Category::factory()->create([
@@ -117,6 +133,24 @@ class CategoryAdminTest extends TestCase
             ->assertHasNoFormErrors();
 
         $this->assertSame(['ar' => 'من الظهر'], $category->fresh()->getTranslations('description'));
+    }
+
+    public function test_an_icon_is_picked_from_the_menus_set_and_taken_away(): void
+    {
+        $restaurant = $this->owner();
+        $category = Category::factory()->create(['restaurant_id' => $restaurant->id, 'icon' => null]);
+
+        Livewire::test(EditCategory::class, ['record' => $category->getRouteKey()])
+            ->fillForm(['icon' => 'coffee'])
+            ->call('save')
+            ->assertHasNoFormErrors();
+        $this->assertSame('coffee', $category->fresh()->icon);
+
+        Livewire::test(EditCategory::class, ['record' => $category->getRouteKey()])
+            ->fillForm(['icon' => null])
+            ->call('save')
+            ->assertHasNoFormErrors();
+        $this->assertNull($category->fresh()->icon);
     }
 
     public function test_the_delete_header_action_removes_the_category(): void

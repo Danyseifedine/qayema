@@ -4,7 +4,9 @@ namespace App\Http\Resources;
 
 use App\Enums\PackageStatus;
 use App\Models\Restaurant;
+use App\Services\Ai\WritingHelpCredits;
 use App\Services\Ai\WritingHelpLog;
+use App\Services\Analytics\MenuTraffic;
 use App\Services\Menu\MenuLanguages;
 use App\Support\MediaUrl;
 use Carbon\CarbonImmutable;
@@ -79,7 +81,13 @@ class AdminRestaurantResource extends JsonResource
                     ? (int) max(0, ceil(now()->diffInSeconds($this->package_ends_at) / 86400))
                     : null,
                 'in_force' => $inForce === null ? null : ['id' => $inForce->id, 'name' => (string) $inForce->name],
+                // Its own price when an admin set one (null: the package's),
+                // and what it pays a month either way, in the package's currency.
+                'price_cents' => $this->price_cents,
+                'monthly_price_cents' => $this->monthlyPriceCents(),
+                'currency' => $inForce->currency ?? 'USD',
             ],
+            'pays_with_whish' => (bool) $this->pays_with_whish,
             'phone' => $this->when($this->withStats, fn (): ?array => $this->phone === null ? null : [
                 'number' => $this->phone,
                 'country_code' => $this->country_code,
@@ -94,21 +102,23 @@ class AdminRestaurantResource extends JsonResource
     /**
      * Visits (today in the restaurant's own day, and ever), QR scans, and
      * its writing help (AI uses today and over the last WritingHelpLog::DAYS
-     * days, with their tokens): three queries.
+     * days, with their tokens) and this month's AI credits: four queries.
      *
      * @return array<string, mixed>
      */
     private function stats(): array
     {
-        $traffic = $this->trafficTotals();
+        $visits = new MenuTraffic($this->resource);
+        $traffic = $visits->totals();
 
         return [
             'views_today' => $traffic['today'],
             'views_total' => $traffic['views'],
             'visitors_total' => $traffic['visitors'],
             'last_visit_at' => $traffic['last'] === null ? null : CarbonImmutable::parse($traffic['last'], 'UTC')->toIso8601String(),
-            'qr_scans' => $this->qrScans(),
+            'qr_scans' => $visits->qrScans(),
             'writing_help' => app(WritingHelpLog::class)->of($this->resource),
+            'ai_credits' => app(WritingHelpCredits::class)->forAdmin($this->resource),
         ];
     }
 }

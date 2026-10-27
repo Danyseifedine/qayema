@@ -10,8 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Translatable\HasTranslations;
 
 /**
- * A menu section: a name, an optional line describing it, and a position.
- * No image.
+ * A menu section: a name, an optional line describing it, an optional
+ * icon (App\Support\CategoryIcons) and a position. No image.
  */
 class Category extends Model
 {
@@ -24,6 +24,7 @@ class Category extends Model
         'restaurant_id',
         'name',
         'description',
+        'icon',
         'display_order',
     ];
 

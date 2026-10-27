@@ -33,7 +33,7 @@ class WhatsAppGuestDetailsTest extends TestCase
     {
         parent::setUp();
 
-        $this->defaultPackageIncludes(Feature::Ordering, Feature::DineIn);
+        $this->defaultPackageIncludes(Feature::Ordering, Feature::DineIn, Feature::DineInWhatsApp);
         $this->shop = $this->published([
             'slug' => 'olive', 'name' => ['en' => 'Olive'], 'currency' => 'USD', 'order_mode' => 'whatsapp',
             'country_code' => 'LB', 'phone' => '70123456',

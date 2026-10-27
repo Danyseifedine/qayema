@@ -34,7 +34,7 @@ class OrderNewsTest extends TestCase
     {
         parent::setUp();
 
-        $this->defaultPackageIncludes(Feature::Ordering, Feature::MenuOrdering);
+        $this->defaultPackageIncludes(Feature::Ordering, Feature::MenuOrdering, Feature::OrderTracking);
         $this->shop = $this->published(['slug' => 'olive', 'order_mode' => 'menu', 'country_code' => 'LB', 'phone' => '70123456']);
         $this->fries = Dish::factory()->create([
             'restaurant_id' => $this->shop->id,

@@ -29,11 +29,7 @@ class UpdateRestaurantSlugRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'slug' => [
-                'required', 'string', 'min:2', 'max:100',
-                'regex:/^[a-z0-9][a-z0-9-]*[a-z0-9]$/',
-                new AvailableSlug($this->user()?->restaurant?->id),
-            ],
+            'slug' => AvailableSlug::rules($this->user()?->restaurant?->id),
         ];
     }
 

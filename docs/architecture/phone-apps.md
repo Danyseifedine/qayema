@@ -42,25 +42,37 @@ Part of the Qayema backend's architecture notes; CLAUDE.md has the summary.
   What it does (`Api\Admin\*` controllers, `AdminRestaurantResource`,
   requests in `app/Http/Requests/Admin/`): list restaurants
   (`GET /api/admin/restaurants`, search by name, link or owner, filter
-  `all|active|inactive|ending|ended`; ending = package in force with an end,
-  soonest first), one restaurant, open one with its owner
+  `all|active|inactive|ending|ended|paying`; ending = package in force with an end,
+  soonest first; paying = `Restaurant::paying()`), one restaurant, open one with its owner
   (`POST /api/admin/restaurants`: the owner's account and the restaurant
   together, through `OnboardingService::openForOwner()`, which /admin →
   Users → Create also uses), switch a menu on or off
   (`PATCH …/{id}/active`), change its package from today
-  (`PUT …/{id}/package`) or add time (`POST …/{id}/package/extend`, 422 on a
-  package with no end), both through `PackageAssigner`, and
+  (`PUT …/{id}/package`, optional `price_cents` and `pays_with_whish` saved
+  after the change, so the price given wins over the assigner clearing it)
+  or add time (`POST …/{id}/package/extend`, 422 on a
+  package with no end), both through `PackageAssigner`, what it pays
+  (`PUT …/{id}/billing`: `price_cents` null or 0 to 10,000,000, null for the
+  package's price, and `pays_with_whish`; a plain save, so a new price is a
+  history row and the menu cache is left alone), and
   `GET /api/admin/packages`. Months are `PackageAssigner::DURATIONS`, any
   from 1 to 12, added to today (or to the current end when extending); no
   months means no end date. Also: the home screen's numbers
   (`GET /api/admin/summary`, `SummaryController`: restaurants, new in 7
   days (list filter `new`), menus off, ending in 7 days, ended, menu visits
-  today since midnight in Beirut, and `writing_help_today`: the AI writing
-  help's uses and tokens in and out today; three queries), what the AI
-  writing help spent (`GET /api/admin/writing-help?range=today|30d`,
-  `WritingHelpUsageController`: totals from `WritingHelpLog::totalsSince()`
-  and each restaurant, the most tokens first, `byRestaurantSince()`, at most
-  100; a day is Lebanon's, each restaurant's rows its own days), a restaurant's basics
+  today since midnight in Beirut, `writing_help_today` and
+  `writing_help_month` (from the 1st in Beirut): the AI writing help's uses,
+  tokens in and out, cost in dollars, credits and each kind's uses and cost;
+  and `income`: `paying`, `paying_whish` and `totals`, a row per currency
+  `{currency, cents, whish_cents}`, the most first, from
+  `Restaurant::monthlyIncome()`, which the /admin Overview reads too; six
+  queries), what the AI
+  writing help spent (`GET /api/admin/writing-help?range=today|30d|month`,
+  `WritingHelpUsageController`: totals from `WritingHelpLog::totalsSince()`,
+  `model` {`name`, `input_per_million`, `output_per_million`} from
+  `WritingHelpSetup`/`WritingHelpPrice`, and each restaurant, the most tokens first, `byRestaurantSince()`, at most
+  100, with `pays_cents` (its monthly price while it is paying, else null)
+  and `currency`; a day is Lebanon's, each restaurant's rows its own days), a restaurant's basics
   (`PATCH /api/admin/restaurants/{id}`: English name with its other
   languages kept, menu link through `AvailableSlug` (the former one keeps
   forwarding), phone), and the owner's password
@@ -68,7 +80,7 @@ Part of the Qayema backend's architecture notes; CLAUDE.md has the summary.
   remember-me token, and the owner's open sessions end on their next
   request). One restaurant (`AdminRestaurantResource::detail()`, every
   answer about one restaurant) also carries its phone with its dial code and
-  its visits (`trafficTotals()`, `qrScans()`) and its writing help
+  its visits (`MenuTraffic::totals()`, `qrScans()`) and its writing help
   (`stats.writing_help`, `WritingHelpLog::of()`: uses today, uses and tokens
   over 30 days).
 - **Admin phone notifications** (Firebase Cloud Messaging, `kreait/laravel-firebase`,

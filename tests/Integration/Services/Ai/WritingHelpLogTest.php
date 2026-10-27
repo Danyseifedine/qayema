@@ -36,6 +36,21 @@ class WritingHelpLogTest extends TestCase
         $this->assertSame(45, $day->output_tokens);
     }
 
+    public function test_each_request_is_priced_when_made_and_a_later_model_never_reprices_it(): void
+    {
+        $owner = $this->owner();
+        config(['services.writing_help.provider' => 'anthropic', 'services.writing_help.model' => 'claude-haiku-5-5']);
+
+        // 1,000,000 in and 200,000 out on Haiku 5.5: $0.10 + $0.10.
+        $this->log()->record($owner, true, 1_000_000, 200_000);
+        $this->assertSame('0.200000', WritingHelpDay::query()->sole()->cost);
+
+        // Sonnet 5.5 from now on: the new request at its price, the first kept.
+        config(['services.writing_help.model' => 'claude-sonnet-5-5']);
+        $this->log()->record($owner, true, 1000, 100);
+        $this->assertSame('0.203000', WritingHelpDay::query()->sole()->cost);
+    }
+
     public function test_a_failure_spends_tokens_but_no_use(): void
     {
         $owner = $this->owner();
@@ -83,18 +98,18 @@ class WritingHelpLogTest extends TestCase
     {
         $this->travelTo(Carbon::parse('2026-10-11 12:00', 'UTC'));
         $owner = $this->owner(['timezone' => 'UTC']);
-        WritingHelpDay::factory()->for($owner)->create(['day' => '2026-10-11', 'uses' => 3, 'input_tokens' => 900, 'output_tokens' => 100]);
-        WritingHelpDay::factory()->for($owner)->create(['day' => '2026-09-20', 'uses' => 10, 'input_tokens' => 3000, 'output_tokens' => 400]);
+        WritingHelpDay::factory()->for($owner)->create(['day' => '2026-10-11', 'uses' => 3, 'input_tokens' => 900, 'output_tokens' => 100, 'cost' => '0.000140']);
+        WritingHelpDay::factory()->for($owner)->create(['day' => '2026-09-20', 'uses' => 10, 'input_tokens' => 3000, 'output_tokens' => 400, 'cost' => '0.000500']);
         // Thirty days ago is out of the window; another restaurant never counts.
         WritingHelpDay::factory()->for($owner)->create(['day' => '2026-09-11', 'uses' => 50]);
         WritingHelpDay::factory()->create(['day' => '2026-10-11', 'uses' => 7]);
 
-        $this->assertSame(['today' => 3, 'uses' => 13, 'tokens' => 4400], $this->log()->of($owner));
+        $this->assertSame(['today' => 3, 'uses' => 13, 'tokens' => 4400, 'cost' => 0.00064], $this->log()->of($owner));
     }
 
     public function test_a_restaurant_that_never_used_it_reads_nothing(): void
     {
-        $this->assertSame(['today' => 0, 'uses' => 0, 'tokens' => 0], $this->log()->of($this->owner()));
+        $this->assertSame(['today' => 0, 'uses' => 0, 'tokens' => 0, 'cost' => 0.0], $this->log()->of($this->owner()));
     }
 
     public function test_everyones_last_thirty_days_for_the_admin(): void
@@ -102,17 +117,24 @@ class WritingHelpLogTest extends TestCase
         $this->travelTo(Carbon::parse('2026-10-11 12:00', 'UTC'));
         $first = $this->owner();
         $second = $this->owner();
-        WritingHelpDay::factory()->for($first)->create(['day' => '2026-10-11', 'uses' => 3, 'input_tokens' => 900, 'output_tokens' => 100]);
-        WritingHelpDay::factory()->for($first)->create(['day' => '2026-10-01', 'uses' => 2, 'input_tokens' => 500, 'output_tokens' => 50]);
+        WritingHelpDay::factory()->for($first)->create(['day' => '2026-10-11', 'uses' => 3, 'input_tokens' => 900, 'output_tokens' => 100, 'cost' => '0.000140', 'credits' => 5, 'translation_uses' => 2, 'translation_cost' => '0.000100', 'description_uses' => 1, 'description_cost' => '0.000040']);
+        WritingHelpDay::factory()->for($first)->create(['day' => '2026-10-01', 'uses' => 2, 'input_tokens' => 500, 'output_tokens' => 50, 'cost' => '0.000075', 'credits' => 2, 'translation_uses' => 2, 'translation_cost' => '0.000075']);
         WritingHelpDay::factory()->for($second)->create(['day' => '2026-10-05', 'uses' => 1, 'input_tokens' => 300, 'output_tokens' => 30]);
-        WritingHelpDay::factory()->create(['day' => '2026-08-01', 'uses' => 99]);
+        WritingHelpDay::factory()->create(['day' => '2026-08-01', 'uses' => 99, 'credits' => 99]);
 
-        $this->assertSame(['uses' => 6, 'tokens' => 1880, 'restaurants' => 2], $this->log()->overall());
+        $this->assertSame([
+            'uses' => 6, 'tokens' => 1880, 'restaurants' => 2, 'cost' => 0.000215, 'cost_today' => 0.00014,
+            // What the credits' prices are checked against.
+            'credits' => 7, 'translation_uses' => 4, 'translation_cost' => 0.000175, 'description_uses' => 1, 'description_cost' => 0.00004,
+        ], $this->log()->overall());
     }
 
     public function test_no_use_at_all_reads_zero_everywhere(): void
     {
-        $this->assertSame(['uses' => 0, 'tokens' => 0, 'restaurants' => 0], $this->log()->overall());
+        $this->assertSame([
+            'uses' => 0, 'tokens' => 0, 'restaurants' => 0, 'cost' => 0.0, 'cost_today' => 0.0,
+            'credits' => 0, 'translation_uses' => 0, 'translation_cost' => 0.0, 'description_uses' => 0, 'description_cost' => 0.0,
+        ], $this->log()->overall());
     }
 
     public function test_a_restaurant_deleted_takes_its_days_with_it(): void

@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use App\Enums\Feature;
+use App\Enums\PackageTier;
 use App\Observers\PackageObserver;
+use App\Services\Ai\WritingHelpCredits;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -32,6 +34,9 @@ class Package extends Model
     /** @var string[] */
     public array $translatable = ['name', 'description'];
 
+    /** What the database fills in, so a package just made reads it too. */
+    protected $attributes = ['tier' => 'bronze'];
+
     protected $fillable = [
         'slug',
         'name',
@@ -45,6 +50,8 @@ class Package extends Model
         'is_active',
         'highlights',
         'features',
+        'ai_budget_cents',
+        'tier',
         'fair_use',
     ];
 
@@ -59,6 +66,8 @@ class Package extends Model
             'is_active' => 'boolean',
             'highlights' => 'array',
             'features' => 'array',
+            'ai_budget_cents' => 'float',
+            'tier' => PackageTier::class,
             'fair_use' => 'array',
         ];
     }
@@ -139,7 +148,6 @@ class Package extends Model
         return $this->hasMany(Restaurant::class);
     }
 
-    /** This package's value for a feature, or null when it is unlimited. */
     /**
      * A limit shown to owners as unlimited while a fair-use number holds in
      * practice (Premium's dishes and categories): the number in `features`
@@ -159,8 +167,17 @@ class Package extends Model
         return $this->isFairUse($feature) ? null : $this->featureValue($feature);
     }
 
+    /**
+     * This package's value for a feature, or null when it is unlimited. Its
+     * AI credits are its AI budget at what a credit is worth now, so a
+     * change of either moves them.
+     */
     public function featureValue(Feature $feature): ?int
     {
+        if ($feature === Feature::WritingHelpCredits) {
+            return WritingHelpCredits::forBudget($this->ai_budget_cents);
+        }
+
         $features = $this->features ?? [];
 
         if (! array_key_exists($feature->value, $features)) {

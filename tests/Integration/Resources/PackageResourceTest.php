@@ -45,6 +45,8 @@ class PackageResourceTest extends TestCase
                 'category_limit' => 8,
                 'social_link_limit' => 1,
                 'writing_help_limit' => 10,
+                // Its AI budget as credits; never the dollars.
+                'writing_help_credits' => 500,
                 'multiple_languages' => false,
                 'variants' => false,
                 'addons' => false,
@@ -56,6 +58,16 @@ class PackageResourceTest extends TestCase
                 'dine_in' => false,
                 'analytics' => false,
                 'advanced_analytics' => false,
+                'offers' => false,
+                'offer_banner_limit' => 3,
+                'offer_popup_limit' => 1,
+                'offer_ad_limit' => 1,
+                'dine_in_whatsapp' => false,
+                'order_tracking' => false,
+                'offer_schedules' => false,
+                'offer_discounts' => false,
+                'build_your_own' => false,
+                'build_limit' => 3,
             ],
         ], $this->resolve($package));
     }
@@ -72,7 +84,8 @@ class PackageResourceTest extends TestCase
         $this->assertNull($data['features']['category_limit']);
         $this->assertNull($data['features']['social_link_limit']);
         foreach (Feature::flags() as $flag) {
-            $this->assertTrue($data['features'][$flag->value], $flag->value);
+            // Build your own is on no package: an admin switches it on for a restaurant.
+            $this->assertSame($flag !== Feature::BuildYourOwn, $data['features'][$flag->value], $flag->value);
         }
     }
 

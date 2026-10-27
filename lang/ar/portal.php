@@ -209,6 +209,7 @@ return [
             'dine_in' => 'الطلبات من الطاولة',
             'analytics' => 'الإحصائيات',
             'advanced_analytics' => 'تحليلات متقدّمة',
+            'offers' => 'العروض على قائمتك',
         ],
         'fair_use_note' => 'الاستخدام العادل في باقة :package: حتى :limits.',
         'and' => ' و',

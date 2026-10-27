@@ -5,6 +5,7 @@ namespace Tests\Integration\E2e;
 use App\Enums\Feature;
 use App\Models\Restaurant;
 use App\Services\Ai\WritingHelp;
+use App\Services\Ai\WritingHelpCredits;
 use App\Services\Ai\WritingHelpSetup;
 use App\Services\Ai\WritingHelpUses;
 use Illuminate\Cache\RateLimiter;
@@ -37,9 +38,9 @@ class E2eWritingHelpTest extends TestCase
         $this->app->register(E2eServiceProvider::class, force: true);
     }
 
-    public function test_it_is_off_for_a_request_that_does_not_ask(): void
+    public function test_it_is_off_for_a_request_that_does_not_ask_even_with_a_real_key_in_the_env(): void
     {
-        config(['services.writing_help.provider' => null]);
+        config(['services.writing_help.provider' => 'anthropic', 'ai.providers.anthropic.key' => 'a-real-key']);
 
         $this->boot(asking: false);
 
@@ -73,14 +74,16 @@ class E2eWritingHelpTest extends TestCase
 
     public function test_it_answers_each_kind_of_ask_in_geminis_shape(): void
     {
-        $text = fn (array $answer): string => json_decode($answer['steps'][0]['content'][0]['text'], true)['text'];
+        $json = fn (array $answer): array => json_decode($answer['steps'][0]['content'][0]['text'], true);
+        $text = fn (array $answer): string => $json($answer)['text'];
 
-        $this->assertSame(E2eServiceProvider::CATEGORY_LINE, $text(E2eServiceProvider::geminiAnswer([
+        // A description writer's answer is its versions.
+        $this->assertSame([E2eServiceProvider::CATEGORY_LINE], $json(E2eServiceProvider::geminiAnswer([
             'system_instruction' => "You write the short line printed under a category's title on a restaurant's menu",
-        ])));
-        $this->assertSame(E2eServiceProvider::RESTAURANT_LINE, $text(E2eServiceProvider::geminiAnswer([
+        ]))['texts']);
+        $this->assertSame([E2eServiceProvider::RESTAURANT_LINE], $json(E2eServiceProvider::geminiAnswer([
             'system_instruction' => 'You write the short line a restaurant introduces itself with',
-        ])));
+        ]))['texts']);
         $this->assertSame('Translated: Lentil soup', $text(E2eServiceProvider::geminiAnswer([
             'system_instruction' => 'You translate a restaurant\'s menu text',
             'input' => [['type' => 'user_input', 'content' => [['type' => 'text', 'text' => 'Lentil soup']]]],
@@ -102,6 +105,13 @@ class E2eWritingHelpTest extends TestCase
             ->postJson(route('api.writing.translate'), ['text' => 'Lentil soup', 'from' => 'en', 'to' => 'ar'])
             ->assertOk()
             ->assertJsonPath('data.text', 'Translated: Lentil soup');
+        $this->actingAs($owner->user)
+            ->postJson(route('api.writing.translate-many'), ['items' => [
+                ['text' => 'Lentil soup', 'from' => 'en', 'to' => 'ar'],
+                ['text' => 'Large', 'from' => 'en', 'to' => 'ar', 'max' => 60],
+            ]])
+            ->assertOk()
+            ->assertJsonPath('data.texts', ['Translated: Lentil soup', 'Translated: Large']);
         $this->actingAs($owner->user)
             ->postJson(route('api.writing.category-description'), ['name' => 'Soups', 'language' => 'en'])
             ->assertOk()
@@ -145,5 +155,17 @@ class E2eWritingHelpTest extends TestCase
         } finally {
             $store->flush();
         }
+    }
+
+    public function test_a_scenario_can_start_with_credits_already_spent_this_month(): void
+    {
+        $this->boot(asking: false);
+
+        $response = app(E2eController::class)->scenario(Request::create('/__e2e/scenario', 'POST', [
+            'package' => 'pro', 'template' => null, 'writing_help_days' => [['uses' => 4, 'credits' => 7400, 'cost' => '0.0100']],
+        ]));
+        $restaurant = Restaurant::query()->findOrFail($response->getData(true)['restaurant']['id']);
+
+        $this->assertSame(100, app(WritingHelpCredits::class)->left($restaurant));
     }
 }

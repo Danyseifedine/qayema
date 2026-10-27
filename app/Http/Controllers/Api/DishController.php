@@ -13,14 +13,15 @@ use App\Http\Resources\DishResource;
 use App\Models\Dish;
 use App\Models\Restaurant;
 use App\Services\Media\MediaService;
+use App\Services\Menu\DishBuildsSync;
 use App\Services\Menu\DishOptionsSync;
 use App\Services\Menu\DisplayOrder;
 use App\Services\Menu\MenuLanguages;
+use App\Support\Price;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 
 /**
  * Dish CRUD for the dashboard SPA. Every action is scoped to the authenticated
@@ -31,11 +32,12 @@ class DishController extends Controller
     use ResolvesRestaurant;
 
     /** What DishResource reads, loaded up front so a list is not one query per dish. */
-    private const WITH = ['media', 'variants.options', 'addons'];
+    private const WITH = ['media', 'variants.options', 'addons', 'builds.choices', 'offer'];
 
     public function __construct(
         private readonly MediaService $media,
         private readonly DishOptionsSync $options,
+        private readonly DishBuildsSync $builds,
     ) {}
 
     public function index(Request $request): AnonymousResourceCollection
@@ -52,8 +54,11 @@ class DishController extends Controller
         return DishResource::collection($dishes)->additional([
             'meta' => [
                 'used' => $dishes->count(),
-                'limit' => $restaurant->dish_limit,
+                'limit' => $restaurant->limitOf(Feature::DishLimit),
                 'currency' => $restaurant->currency,
+                // The one some dishes may be priced in instead, and its rate.
+                'second_currency' => $restaurant->second_currency,
+                'exchange_rate' => $restaurant->exchange_rate === null ? null : Price::rate((string) $restaurant->exchange_rate),
             ],
         ]);
     }
@@ -66,17 +71,22 @@ class DishController extends Controller
         $dish = DB::transaction(function () use ($request, $restaurant): Dish {
             $locked = Restaurant::query()->whereKey($restaurant->id)->lockForUpdate()->firstOrFail();
 
-            if ($locked->hasReachedDishLimit()) {
-                throw ValidationException::withMessages([
-                    'name' => $locked->entitlements()->isFairUse(Feature::DishLimit)
-                        ? __('You have reached the fair-use limit of :limit dishes. Contact us if you need more.', ['limit' => number_format($locked->dish_limit)])
-                        : __('You have reached your plan limit of :limit dishes.', ['limit' => $locked->dish_limit]),
-                ]);
+            $locked->ensureRoomFor(
+                Feature::DishLimit,
+                'name',
+                'You have reached your plan limit of :limit dishes.',
+                'You have reached the fair-use limit of :limit dishes. Contact us if you need more.',
+            );
+            // A dish guests build counts against its own limit too.
+            if (filled($request->validated('builds'))) {
+                $locked->ensureRoomFor(Feature::BuildLimit, 'builds', 'You can have up to :limit dishes guests build. Delete one to add another.');
             }
 
             $dish = new Dish([
                 'price' => $request->validated('price'),
+                'currency' => $locked->ownCurrency($request->validated('currency')),
                 'category_id' => $request->validated('category_id'),
+                'icon' => $request->validated('icon'),
                 'is_available' => $request->boolean('is_available', true),
                 'display_order' => (int) $locked->dishes()->max('display_order') + 1,
             ]);
@@ -108,14 +118,25 @@ class DishController extends Controller
         if ($request->has('price')) {
             $dish->price = $request->validated('price');
         }
+        if ($request->has('currency')) {
+            $dish->currency = $dish->restaurant->ownCurrency($request->validated('currency'));
+        }
         if ($request->has('category_id')) {
             $dish->category_id = $request->validated('category_id');
+        }
+        if ($request->has('icon')) {
+            $dish->icon = $request->validated('icon');
         }
         if ($request->has('is_available')) {
             $dish->is_available = $request->boolean('is_available');
         }
 
         DB::transaction(function () use ($request, $dish, $languages): void {
+            // A dish without builds given some becomes one guests build.
+            if (filled($request->validated('builds')) && ! $dish->builds()->exists()) {
+                Restaurant::query()->whereKey($dish->restaurant_id)->lockForUpdate()->firstOrFail()
+                    ->ensureRoomFor(Feature::BuildLimit, 'builds', 'You can have up to :limit dishes guests build. Delete one to add another.');
+            }
             $dish->save();
             $this->syncOptions($request, $dish, $languages);
         });
@@ -146,13 +167,8 @@ class DishController extends Controller
 
         /** @var array<int, int> $ids */
         $ids = $request->validated('ids');
-        $owned = $restaurant->dishes()->whereIn('id', $ids)->pluck('id')->flip();
 
-        // Keep the client's order, drop anything it does not own. `flip()` makes
-        // that check a hash lookup rather than a scan per id.
-        $ordered = array_values(array_filter($ids, static fn (int $id): bool => $owned->has($id)));
-
-        DisplayOrder::apply($restaurant->dishes(), $ordered);
+        DisplayOrder::apply($restaurant->dishes(), $ids);
 
         $dishes = $restaurant->dishes()
             ->with(self::WITH)
@@ -177,14 +193,16 @@ class DishController extends Controller
     }
 
     /**
-     * The variants and add-ons the form sent. A list the request leaves out
-     * (not sent, or switched off: see ValidatesDishOptions) stays as it is.
+     * The variants, add-ons and builds the form sent. A list the request
+     * leaves out (not sent, or not on: see ValidatesDishOptions and
+     * ValidatesDishBuilds) stays as it is.
      *
      * @param  array<int, string>  $languages
      */
     private function syncOptions(StoreDishRequest|UpdateDishRequest $request, Dish $dish, array $languages): void
     {
         $this->options->sync($dish, $request->validated('variants'), $request->validated('addons'), $languages);
+        $this->builds->sync($dish, $request->validated('builds'), $languages);
     }
 
     /**

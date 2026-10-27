@@ -76,6 +76,15 @@ class TemplateForm
                             Toggle::make('is_premium')
                                 ->label('Premium design')
                                 ->helperText('Only packages with "Premium designs" can use it. A restaurant that loses the package keeps its choice, and its menu shows the first free design until it is back.'),
+                            Select::make('restaurant_id')
+                                ->label('Only for')
+                                ->relationship('madeFor', 'name')
+                                ->getOptionLabelFromRecordUsing(fn ($record): string => (string) $record->name)
+                                ->searchable()
+                                ->preload()
+                                ->nullable()
+                                ->placeholder('Every restaurant')
+                                ->helperText('A design made for one brand: only that restaurant sees it and can pick it, whatever its package. Empty, it is for every restaurant.'),
                             Textarea::make('description.en')
                                 ->label('Description (English)')
                                 ->placeholder('Describe what this design looks like and when to use it…')

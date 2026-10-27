@@ -2,14 +2,24 @@
 
 namespace App\Filament\Admin\Resources\Dishes\Schemas;
 
+use App\Enums\BuildShape;
 use App\Filament\Admin\Schemas\Components\MenuTextInputs;
+use App\Models\Category;
+use App\Models\Dish;
 use App\Models\Restaurant;
+use App\Support\CategoryIcons;
+use App\Support\Ingredients;
+use App\Support\MenuTextLimits;
+use App\Support\PerRequest;
+use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
@@ -34,12 +44,24 @@ class DishForm
                                 ->label("Name ({$language})")
                                 ->placeholder('e.g. Grilled Salmon')
                                 ->required()
-                                ->maxLength(255)
+                                ->maxLength(MenuTextLimits::DISH_NAME)
                                 ->helperText('Displayed on the public menu.'), MenuTextInputs::ofChosenRestaurant()),
+                            // The main currency, or the second one the restaurant
+                            // set (its variants and add-ons with it); only shown
+                            // when it has one. Null is the main one.
+                            Select::make('currency')
+                                ->label('Currency')
+                                ->native(false)
+                                ->placeholder(fn (Get $get): string => (MenuTextInputs::currencyOf($get('restaurant_id')) ?? 'Main').' (main)')
+                                ->options(fn (Get $get): array => array_filter([
+                                    MenuTextInputs::secondCurrencyOf($get('restaurant_id')) => MenuTextInputs::secondCurrencyOf($get('restaurant_id')),
+                                ]))
+                                ->visible(fn (Get $get): bool => MenuTextInputs::secondCurrencyOf($get('restaurant_id')) !== null)
+                                ->live(),
                             TextInput::make('price')
                                 ->numeric()
-                                // The restaurant's own currency.
-                                ->prefix(fn (Get $get): ?string => Restaurant::query()->find($get('restaurant_id'))?->currency)
+                                // The dish's own currency: the second one when picked, else the main one.
+                                ->prefix(fn (Get $get): ?string => $get('currency') ?: MenuTextInputs::currencyOf($get('restaurant_id')))
                                 ->placeholder('0.00')
                                 ->step(0.01)
                                 ->minValue(0)
@@ -48,7 +70,10 @@ class DishForm
                                 ->label("Ingredients ({$language})")
                                 ->placeholder('e.g. Salmon, lemon, garlic, olive oil…')
                                 ->rows(3)
-                                ->helperText('Optional. Shown under the dish name on the menu.')
+                                ->maxLength(MenuTextLimits::INGREDIENTS)
+                                ->helperText('Optional. Shown under the dish name on the menu, tidied into a list on save.')
+                                // The same clean list the dashboard saves (App\Support\Ingredients).
+                                ->dehydrateStateUsing(fn (?string $state): ?string => Ingredients::tidy($state, $code))
                                 ->columnSpanFull(), MenuTextInputs::ofChosenRestaurant()),
                         ]),
                     Section::make('Variants and add-ons')
@@ -97,6 +122,105 @@ class DishForm
                                     self::extraPrice(),
                                 ]),
                         ]),
+                    Section::make('Build your own')
+                        ->description('Guests build the dish from parts: a pizza half and half, three scoops. Only for a restaurant this is switched on for (its Features section). The dashboard\'s Build your own page edits these more simply. A dish with a build shows above the menu\'s search with its icon, in no category.')
+                        ->collapsible()
+                        ->visible(fn (Get $get): bool => self::buildsOn($get('restaurant_id')))
+                        ->schema([
+                            Select::make('icon')
+                                ->label('Icon above the search')
+                                ->native(false)
+                                ->options(CategoryIcons::labels())
+                                ->placeholder('The chef\'s hat')
+                                ->helperText('Drawn beside its name above the menu\'s search.'),
+                            Repeater::make('builds')
+                                ->hiddenLabel()
+                                ->relationship()
+                                ->orderColumn('display_order')
+                                ->maxItems(config('menu.dish_builds.builds'))
+                                ->collapsible()
+                                ->itemLabel(fn (array $state): ?string => collect((array) ($state['name'] ?? []))->filter()->first())
+                                ->addActionLabel('Add a build')
+                                ->defaultItems(0)
+                                ->columns(2)
+                                ->schema([
+                                    ...self::choiceName('e.g. Your pizza'),
+                                    Select::make('shape')
+                                        ->label('Shape')
+                                        ->native(false)
+                                        ->options([BuildShape::Split->value => 'One item in parts (a pizza half and half)', BuildShape::Pieces->value => 'Separate pieces (three scoops)'])
+                                        ->default(BuildShape::Split->value)
+                                        ->selectablePlaceholder(false)
+                                        ->required()
+                                        ->live(),
+                                    CheckboxList::make('parts')
+                                        ->label('Parts guests may choose')
+                                        ->options(collect(range(1, (int) config('menu.dish_builds.parts')))->mapWithKeys(fn (int $count): array => [$count => (string) $count])->all())
+                                        ->columns(8)
+                                        ->required()
+                                        ->default([1, 2])
+                                        // Kept as numbers, sorted, as the dashboard saves them.
+                                        ->dehydrateStateUsing(fn (?array $state): array => collect($state ?? [])->map('intval')->unique()->sort()->values()->all())
+                                        ->columnSpanFull(),
+                                    Select::make('category_id')
+                                        ->label('Choices from a category')
+                                        ->native(false)
+                                        ->options(fn (Get $get): array => Category::query()->where('restaurant_id', $get('../../restaurant_id'))->get()->mapWithKeys(fn (Category $category): array => [$category->id => (string) $category->name])->all())
+                                        ->placeholder('None: its own list below')
+                                        ->live()
+                                        ->helperText('Its dishes are the choices, their prices followed. Leave empty to list the choices here.')
+                                        ->columnSpanFull(),
+                                    Select::make('dish_ids')
+                                        ->label('Only these dishes')
+                                        ->multiple()
+                                        ->native(false)
+                                        ->options(fn (Get $get): array => Dish::query()->where('category_id', $get('category_id'))->get()->mapWithKeys(fn (Dish $dish): array => [$dish->id => (string) $dish->name])->all())
+                                        ->placeholder('Every dish of the category')
+                                        ->helperText('Empty: every dish of the category, one added later included.')
+                                        // Kept as numbers, null for every dish, as the dashboard saves it.
+                                        ->dehydrateStateUsing(fn (?array $state): ?array => blank($state) ? null : collect($state)->map('intval')->unique()->values()->all())
+                                        ->visible(fn (Get $get): bool => filled($get('category_id')))
+                                        ->columnSpanFull(),
+                                    Repeater::make('choices')
+                                        ->label(fn (Get $get): string => filled($get('category_id')) ? 'Prices per part size (optional)' : 'Choices')
+                                        ->relationship()
+                                        ->orderColumn('display_order')
+                                        ->addActionLabel('Add a choice')
+                                        ->defaultItems(0)
+                                        ->columns(2)
+                                        ->columnSpanFull()
+                                        ->schema([
+                                            Select::make('dish_id')
+                                                ->label('Dish')
+                                                ->native(false)
+                                                ->options(fn (Get $get): array => Dish::query()->where('category_id', $get('../../category_id'))->get()->mapWithKeys(fn (Dish $dish): array => [$dish->id => (string) $dish->name])->all())
+                                                ->visible(fn (Get $get): bool => filled($get('../../category_id')))
+                                                ->required(fn (Get $get): bool => filled($get('../../category_id'))),
+                                            // Hidden beside the language rule: a category's dish has its own name.
+                                            ...array_map(
+                                                fn (TextInput $name): TextInput => $name
+                                                    ->hidden(fn (Get $get): bool => filled($get('../../category_id')))
+                                                    ->required(fn (Get $get): bool => blank($get('../../category_id'))),
+                                                self::choiceName('e.g. Vanilla'),
+                                            ),
+                                            TextInput::make('price')
+                                                ->label('Price')
+                                                ->numeric()
+                                                ->step(0.01)
+                                                ->minValue(0)
+                                                ->maxValue(config('menu.dish_options.price_max'))
+                                                ->visible(fn (Get $get): bool => blank($get('../../category_id')))
+                                                ->required(fn (Get $get): bool => blank($get('../../category_id'))),
+                                            KeyValue::make('part_prices')
+                                                ->label('Price per part size')
+                                                ->keyLabel('Parts (2, 3...)')
+                                                ->valueLabel('Price of one part')
+                                                ->visible(fn (Get $get): bool => $get('../../shape') === BuildShape::Split->value)
+                                                ->helperText('Empty: each part pays its share of the whole.')
+                                                ->columnSpanFull(),
+                                        ]),
+                                ]),
+                        ]),
                     Section::make('Assignment')
                         ->description('Which restaurant and category this dish belongs to.')
                         ->columns(2)
@@ -134,6 +258,11 @@ class DishForm
                         ]),
                     Section::make('Display & Availability')
                         ->schema([
+                            // An offer's deal dish (made from the offer editor) shows only while that offer is live.
+                            TextEntry::make('deal_offer')
+                                ->label('Offer')
+                                ->state(fn (?Dish $record): ?string => $record?->offer === null ? null : 'Made by the offer: '.$record->offer->title.'. It shows on the menu only while the offer is live.')
+                                ->visible(fn (?Dish $record): bool => (bool) $record?->isDeal()),
                             TextInput::make('display_order')
                                 ->label('Display Order')
                                 ->numeric()
@@ -161,7 +290,16 @@ class DishForm
             ->label("Name ({$language})")
             ->placeholder($placeholder)
             ->required()
-            ->maxLength(config('menu.dish_options.name_max')), MenuTextInputs::ofChosenRestaurant());
+            ->maxLength(MenuTextLimits::CHOICE_NAME), MenuTextInputs::ofChosenRestaurant());
+    }
+
+    /** Whether the chosen restaurant has "build your own" (Restaurant::showsBuilds()), read once a request. */
+    private static function buildsOn(mixed $restaurantId): bool
+    {
+        return is_numeric($restaurantId) && PerRequest::remember(
+            "dish-form-builds:{$restaurantId}",
+            fn (): bool => (bool) Restaurant::query()->find((int) $restaurantId)?->showsBuilds(),
+        );
     }
 
     /** What a variant option or add-on adds to the dish's price. */

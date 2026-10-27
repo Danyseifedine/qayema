@@ -24,6 +24,15 @@ class Order extends Model
     /** @use HasFactory<\Database\Factories\OrderFactory> */
     use HasFactory;
 
+    /**
+     * The dishes a new order was asked for but went without, sold out while
+     * they sat in the guest's cart, named in the guest's language. Set by
+     * OrderPlacer so the guest is told; never stored.
+     *
+     * @var list<string>
+     */
+    public array $leftOut = [];
+
     protected $fillable = [
         'restaurant_id',
         'reference',
@@ -33,6 +42,7 @@ class Order extends Model
         'table_id',
         'table_name',
         'currency',
+        'exchange_rate',
         'total',
         'note',
         'guest_name',
@@ -63,6 +73,7 @@ class Order extends Model
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
             'total' => 'decimal:2',
+            'exchange_rate' => 'decimal:12',
             'placed_at' => 'datetime',
             'accepted_at' => 'datetime',
             'ready_at' => 'datetime',
@@ -93,6 +104,28 @@ class Order extends Model
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class)->orderBy('id');
+    }
+
+    /**
+     * Writes the order's lines in one insert rather than one each, cast as
+     * the model casts them (the options as JSON, the prices to two places),
+     * in the order given, so `items()` reads them back the same way.
+     *
+     * @param  array<int, array<string, mixed>>  $lines
+     */
+    public function addItems(array $lines): void
+    {
+        $rows = array_map(function (array $line): array {
+            $item = $this->items()->make($line);
+            $item->updateTimestamps();
+
+            return $item->getAttributes();
+        }, $lines);
+
+        // One insert per shape of row: a multi-row insert needs the same columns in each.
+        foreach (collect($rows)->groupBy(fn (array $row): string => implode(',', array_keys($row))) as $sameColumns) {
+            OrderItem::query()->insert($sameColumns->all());
+        }
     }
 
     /**

@@ -8,6 +8,7 @@ use App\Models\Dish;
 use App\Models\DishAddon;
 use App\Models\DishVariant;
 use App\Models\DishVariantOption;
+use App\Models\Offer;
 use App\Models\Restaurant;
 use App\Models\RestaurantSocialLink;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -195,6 +196,29 @@ class MenuSpeedTest extends TestCase
 
         $this->assertSame($small, $big, 'A query per dish, category or choice crept in.');
         $this->assertLessThanOrEqual(self::MENU_QUERIES, $big);
+    }
+
+    public function test_offers_deal_dishes_cost_no_query_each(): void
+    {
+        $this->defaultPackageIncludes(Feature::Offers, Feature::OfferSchedules);
+        $addDeals = function (int $count): void {
+            foreach (range(1, $count) as $n) {
+                $category = Category::factory()->create(['restaurant_id' => $this->shop->id]);
+                // Live, not live yet, and paused: drawn, drawn hidden, left out.
+                foreach ([[], ['time_windows' => [['from' => '00:00', 'to' => '00:01']]], ['is_active' => false]] as $state) {
+                    Dish::factory()->dealOf(Offer::factory()->create(['restaurant_id' => $this->shop->id, ...$state]))->create(['category_id' => $category->id]);
+                }
+            }
+        };
+        $addDeals(1);
+        $this->menu();
+        $this->app->forgetScopedInstances();
+        $small = $this->queriesForTheMenu();
+
+        $addDeals(4);
+        $this->app->forgetScopedInstances();
+
+        $this->assertSame($small, $this->queriesForTheMenu(), 'A query per deal dish or offer crept in.');
     }
 
     public function test_the_package_is_read_once_per_view(): void

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,12 +19,46 @@ class ContactMessage extends Model
 
     protected $fillable = ['name', 'email', 'message', 'ip_address', 'user_id', 'package_id'];
 
+    /** A message just sent is open, and reads so before it is fetched again. */
+    protected $attributes = ['handled_at' => null];
+
     protected function casts(): array
     {
         return [
             'user_id' => 'integer',
             'package_id' => 'integer',
+            'handled_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Messages no admin has dealt with yet.
+     *
+     * @param  Builder<ContactMessage>  $query
+     * @return Builder<ContactMessage>
+     */
+    public function scopeOpen(Builder $query): Builder
+    {
+        return $query->whereNull('handled_at');
+    }
+
+    public function isHandled(): bool
+    {
+        return $this->handled_at !== null;
+    }
+
+    /** Dealt with now; once only, so the first date stays. */
+    public function markHandled(): void
+    {
+        if ($this->handled_at === null) {
+            $this->forceFill(['handled_at' => now()])->save();
+        }
+    }
+
+    /** Back in the open list. */
+    public function reopen(): void
+    {
+        $this->forceFill(['handled_at' => null])->save();
     }
 
     /** @return BelongsTo<User, $this> */

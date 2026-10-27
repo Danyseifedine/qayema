@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 use App\Services\Menu\MenuLanguages;
 use App\Services\Menu\OpeningHours;
 use App\Support\MediaUrl;
+use App\Support\Price;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -28,10 +29,13 @@ class RestaurantResource extends JsonResource
             'phone' => $this->phone,
             'country_code' => $this->country_code,
             'currency' => $this->currency,
+            'second_currency' => $this->second_currency,
+            // How many of the main currency one of the second is worth.
+            'exchange_rate' => $this->exchange_rate === null ? null : Price::rate((string) $this->exchange_rate),
             // Always the full week, null for a day it does not open, so the
             // dashboard never has to guess which keys exist.
             'opening_hours' => OpeningHours::normalise((array) $this->opening_hours),
-            'timezone' => $this->timezone ?: config('app.timezone', 'UTC'),
+            'timezone' => $this->localTimezone(),
             'logo_url' => MediaUrl::of($this->resource, 'logo'),
             'cover_url' => MediaUrl::of($this->resource, 'cover_image'),
         ];

@@ -30,6 +30,8 @@ class TemplateResource extends JsonResource
             ],
             'thumbnail_url' => MediaUrl::of($this->resource, 'thumbnail'),
             'is_premium' => $this->is_premium,
+            // Made for this restaurant alone (a list only ever holds its own).
+            'made_for_you' => $this->restaurant_id !== null,
             // Needs a package this restaurant is not on.
             'locked' => ! ($request->user()?->restaurant?->mayUseTemplate($this->resource) ?? true),
         ];

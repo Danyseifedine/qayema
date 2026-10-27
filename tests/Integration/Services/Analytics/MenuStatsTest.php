@@ -115,7 +115,8 @@ class MenuStatsTest extends TestCase
         $this->assertSame(array_fill(0, 24, 0), $advanced['hours']);
         $this->assertSame(array_fill(0, 7, 0), $advanced['weekdays']);
         $this->assertSame([], $advanced['languages']);
-        $this->assertSame(array_fill_keys(array_column(MenuEventType::cases(), 'value'), 0), $advanced['actions']);
+        // Offers count on the Offers page, not among the guest actions.
+        $this->assertSame(array_fill_keys(array_column(MenuEventType::guestActions(), 'value'), 0), $advanced['actions']);
         $this->assertSame([], $advanced['top_added']);
         $this->assertSame([], $advanced['top_categories']);
         $this->assertSame([], $advanced['searches']);
@@ -553,7 +554,7 @@ class MenuStatsTest extends TestCase
 
     public function test_orders_at_the_table_bring_menu_orders_only_while_placed_in_the_menu(): void
     {
-        $this->defaultPackageIncludes(Feature::Ordering, Feature::DineIn);
+        $this->defaultPackageIncludes(Feature::Ordering, Feature::DineIn, Feature::DineInWhatsApp);
 
         $this->assertNotNull((new MenuStats($this->restaurant(), '7d'))->advanced()['menu_orders']);
         $this->assertNull(

@@ -3,15 +3,14 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AdvanceOnboardingRequest;
 use App\Models\User;
 use App\Rules\AvailableSlug;
-use App\Services\Menu\MenuLanguages;
 use App\Services\Portal\OnboardingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class OnboardingController extends Controller
@@ -53,16 +52,11 @@ class OnboardingController extends Controller
         }
     }
 
-    public function advance(Request $request, OnboardingService $onboarding): JsonResponse
+    public function advance(AdvanceOnboardingRequest $request, OnboardingService $onboarding): JsonResponse
     {
         $user = $request->user()->load('restaurant');
         $dbStep = $user->onboarding_step ?? 0;
-
-        // Frontend sends the 1-based visual step; convert to 0-based and clamp to a
-        // valid range. Without this, rapid "next" clicks could push the returned
-        // step past the final one (07/06, 08/06, …) and run the wrong step handler.
-        $submitted = $request->integer('_step', 1) - 1;
-        $current = max(0, min($submitted, self::TOTAL_STEPS - 1));
+        $current = $request->step();
 
         // Every step after the first edits the restaurant created in step 1.
         if ($current > 0 && ! $user->restaurant) {
@@ -70,58 +64,19 @@ class OnboardingController extends Controller
         }
 
         $next = $current + 1;
+        $validated = $request->validated();
 
         switch ($current) {
             case 0: // Step 1: restaurant name + slug + the language the menu is written in
-                // Normalize the slug server-side so spaces/uppercase/special chars
-                // can never reach validation or the database as an invalid value.
-                $request->merge(['slug' => Str::slug((string) $request->input('slug', ''))]);
-
-                $validated = $request->validate([
-                    // The /u regex rejects interior control chars and malformed UTF-8
-                    // so a hostile name can't corrupt the JSON column or 500 the save.
-                    'name' => ['required', 'string', 'min:2', 'max:255', 'regex:/^[^\x00-\x1F\x7F]+$/u'],
-                    'slug' => [
-                        'required', 'string', 'min:2', 'max:100',
-                        'regex:/^[a-z0-9][a-z0-9-]*[a-z0-9]$/',
-                        new AvailableSlug($user->restaurant?->id),
-                    ],
-                    'main_locale' => ['nullable', 'string', Rule::in(MenuLanguages::choices())],
-                ]);
-
                 $onboarding->saveIdentity($user, $validated['name'], $validated['slug'], $validated['main_locale'] ?? null);
                 break;
 
             case 1: // Step 2: country code + phone + currency
-                $validated = $request->validate([
-                    // char(2) column → exactly two ASCII letters (ISO-3166-1 alpha-2).
-                    'country_code' => ['nullable', 'string', 'size:2', 'alpha:ascii'],
-                    // Literal space (not \s) so newlines/tabs can't be stored.
-                    'phone' => ['required', 'string', 'max:30', 'regex:/^(?=(?:\D*\d){6,})[0-9+() .\-]{6,30}$/'],
-                    'currency' => ['required', 'string', Rule::in(array_keys(config('currencies', [])))],
-                ], [
-                    'country_code.size' => 'Please choose a country from the list.',
-                    'country_code.alpha' => 'Please choose a country from the list.',
-                    'phone.regex' => 'Please enter a valid phone number using digits only.',
-                    'currency.in' => 'Please choose a currency from the list.',
-                ]);
-
-                $onboarding->saveContact($user->restaurant, $validated['country_code'] ?? null, $validated['phone'], $validated['currency']);
+                $onboarding->saveContact($user->restaurant, $validated['country_code'] ?? null, $validated['phone'], $validated['currency'], $validated['timezone'] ?? null);
+                $onboarding->saveSecondCurrency($user->restaurant, $validated['second_currency'] ?? null, isset($validated['rate']) ? (string) $validated['rate'] : null);
                 break;
 
             case 2: // Step 3: branding (logo required, cover image optional)
-                // A logo is required to finish onboarding, but an already-uploaded
-                // logo satisfies it; only force a new upload when none exists yet,
-                // so revisiting the step doesn't demand a re-upload.
-                $logoRule = $user->restaurant->hasMedia('logo') ? 'nullable' : 'required';
-
-                $validated = $request->validate([
-                    'logo_key' => [$logoRule, 'string', 'regex:/^[a-f0-9\-]{36}$/'],
-                    'cover_image_key' => ['nullable', 'string', 'regex:/^[a-f0-9\-]{36}$/'],
-                ], [
-                    'logo_key.required' => __('owner.onboarding.logo_required'),
-                ]);
-
                 $onboarding->saveBranding($user, $user->restaurant, $validated['logo_key'] ?? null, $validated['cover_image_key'] ?? null);
                 $onboarding->complete($user, $user->restaurant);
 

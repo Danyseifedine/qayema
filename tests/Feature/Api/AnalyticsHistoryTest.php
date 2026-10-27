@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Dish;
 use App\Models\MenuDay;
 use App\Models\Restaurant;
+use App\Services\Analytics\MenuTraffic;
 use App\Support\HyperLogLog;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -151,12 +152,12 @@ class AnalyticsHistoryTest extends TestCase
         $this->yearAgo();
         $this->recentVisit('regular', 0, qr: true);
 
-        $traffic = $this->restaurant->trafficTotals();
+        $traffic = (new MenuTraffic($this->restaurant))->totals();
         $this->assertSame(4, $traffic['views']);
         $this->assertSame(3, $traffic['visitors']);
         $this->assertSame(3, $traffic['scans']);
         $this->assertSame(1, $traffic['today']);
-        $this->assertSame(3, $this->restaurant->qrScans()['total']);
-        $this->assertSame(1, $this->restaurant->qrScans()['today']);
+        $this->assertSame(3, (new MenuTraffic($this->restaurant))->qrScans()['total']);
+        $this->assertSame(1, (new MenuTraffic($this->restaurant))->qrScans()['today']);
     }
 }

@@ -1,10 +1,11 @@
 /**
  * The menu's visits and what guests do on it, for the owner's analytics.
  *
- * Anonymous and fire-and-forget: the visit and the actions queue up and go
- * in one small batch a few seconds later, or straight away when the guest
- * is leaving, so nobody ever waits on it and a send that fails is simply
- * dropped.
+ * Anonymous and fire-and-forget: the visit goes a few seconds after the page
+ * opens (so a guest who opens and leaves still counts), and the actions after
+ * it wait in memory and go together: when the page is hidden or left, every
+ * 30 seconds while some are waiting, or once a batch is full. Nobody ever
+ * waits on it and a send that fails is simply dropped.
  *
  * Every batch names the guest's browser by a random id kept in local
  * storage (qayema-visitor, made anew after about 13 months), so the visit and
@@ -27,9 +28,17 @@
         return;
     }
 
-    /** The server takes at most this many in one request. */
+    /**
+     * The server takes at most this many in one request. A full one is a few
+     * KB, far under the 64 KB a browser lets keepalive requests carry.
+     */
     var BATCH = 25;
-    var DELAY = 4000;
+
+    /** How soon after opening the visit is reported. */
+    var VISIT_DELAY = 4000;
+
+    /** How long actions wait for more before they go anyway. */
+    var ACTIONS_DELAY = 30000;
     var VISITOR_KEY = 'qayema-visitor';
 
     /** About 13 months: how long one browser counts as the same guest. */
@@ -134,7 +143,7 @@
         if (queue.length >= BATCH) {
             flush();
         } else if (!timer) {
-            timer = window.setTimeout(flush, DELAY);
+            timer = window.setTimeout(flush, ACTIONS_DELAY);
         }
     }
 
@@ -167,8 +176,8 @@
 
     window.addEventListener('pagehide', flush);
 
-    // The visit goes with the first actions, or on its own a moment later.
+    // The visit goes a moment after opening, with any actions made by then.
     if (visit) {
-        timer = window.setTimeout(flush, DELAY);
+        timer = window.setTimeout(flush, VISIT_DELAY);
     }
 })();

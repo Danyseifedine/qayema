@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\DiningTableController;
 use App\Http\Controllers\Api\DishController;
 use App\Http\Controllers\Api\FeaturesController;
 use App\Http\Controllers\Api\MenuLanguagesController;
+use App\Http\Controllers\Api\OfferController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\OrderingSettingsController;
 use App\Http\Controllers\Api\PackageController;
@@ -96,13 +97,16 @@ Route::middleware(['auth:sanctum', 'throttle:api', TellAdminsAboutMenuEdits::cla
         ->middleware('throttle:mutations')
         ->name('api.menu-languages.update');
 
-    // Writing help: menu text translated, a category's or the restaurant's
+    // Writing help: menu text translated (one piece, or all a dish's save
+    // leaves in one language), a category's or the restaurant's
     // description written or improved. PaceWritingHelp counts each
     // restaurant's uses a day and runs one at a time per restaurant, a few
     // at once on the server.
     Route::middleware(['throttle:mutations', PaceWritingHelp::class])->group(function () {
         Route::post('/writing/translate', [WritingHelpController::class, 'translate'])
             ->name('api.writing.translate');
+        Route::post('/writing/translate-many', [WritingHelpController::class, 'translateMany'])
+            ->name('api.writing.translate-many');
         Route::post('/writing/category-description', [WritingHelpController::class, 'categoryDescription'])
             ->name('api.writing.category-description');
         Route::post('/writing/restaurant-description', [WritingHelpController::class, 'restaurantDescription'])
@@ -216,6 +220,14 @@ Route::middleware(['auth:sanctum', 'throttle:api', TellAdminsAboutMenuEdits::cla
     Route::post('/social-links', [SocialLinkController::class, 'store'])->name('api.social-links.store');
     Route::patch('/social-links/{socialLink}', [SocialLinkController::class, 'update'])->name('api.social-links.update');
     Route::delete('/social-links/{socialLink}', [SocialLinkController::class, 'destroy'])->name('api.social-links.destroy');
+
+    // Offers on the menu (Premium): OfferController refuses without the flag.
+    Route::get('/offers', [OfferController::class, 'index'])->name('api.offers.index');
+    Route::post('/offers', [OfferController::class, 'store'])->middleware('throttle:mutations')->name('api.offers.store');
+    Route::post('/offers/reorder', [OfferController::class, 'reorder'])->middleware('throttle:mutations')->name('api.offers.reorder');
+    Route::patch('/offers/{offer}/active', [OfferController::class, 'updateActive'])->middleware('throttle:mutations')->name('api.offers.active');
+    Route::patch('/offers/{offer}', [OfferController::class, 'update'])->middleware('throttle:mutations')->name('api.offers.update');
+    Route::delete('/offers/{offer}', [OfferController::class, 'destroy'])->middleware('throttle:mutations')->name('api.offers.destroy');
 });
 
 /*
@@ -255,6 +267,8 @@ Route::prefix('admin')->name('api.admin.')->group(function () {
                 ->name('restaurants.package');
             Route::post('/restaurants/{restaurant:id}/package/extend', [AdminRestaurantPackageController::class, 'extend'])
                 ->name('restaurants.package.extend');
+            Route::put('/restaurants/{restaurant:id}/billing', [AdminRestaurantPackageController::class, 'billing'])
+                ->name('restaurants.billing.update');
         });
     });
 });

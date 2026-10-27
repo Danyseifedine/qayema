@@ -85,7 +85,26 @@ $app = Application::configure(basePath: dirname(__DIR__))
                 return null;
             }
 
-            return \App\Support\FormerMenuLink::redirect($request);
+            return \App\Services\Menu\FormerMenuLink::redirect($request);
+        });
+
+        // A menu link nobody has is the same 404 for every guest, so
+        // Cloudflare may answer it for a few minutes (a scanner trying links,
+        // a typo shared around). A restaurant that takes the link clears it
+        // (RestaurantObserver::created and saved, MenuCache).
+        $exceptions->respond(function (Response $response, Throwable $e, Request $request): Response {
+            $missing = $e instanceof ModelNotFoundException ? $e : $e->getPrevious();
+
+            if ($response->getStatusCode() === Response::HTTP_NOT_FOUND
+                && $missing instanceof ModelNotFoundException
+                && $missing->getModel() === \App\Models\Restaurant::class
+                && $request->route()?->getName() === 'public.menu'
+                && $request->isMethod('GET')
+                && ! $request->cookies->has((string) config('session.cookie'))) {
+                $response->headers->set('Cache-Control', 'public, max-age=0, s-maxage=300');
+            }
+
+            return $response;
         });
 
         $exceptions->render(function (Throwable $e, Request $request): ?Response {

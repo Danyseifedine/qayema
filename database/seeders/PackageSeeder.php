@@ -25,6 +25,8 @@ class PackageSeeder extends Seeder
                 'is_default' => $package['is_default'] ?? false,
                 'sort_order' => $package['sort_order'] ?? 0,
                 'features' => $package['features'] ?? [],
+                'ai_budget_cents' => $package['ai_budget_cents'] ?? null,
+                'tier' => $package['tier'] ?? 'bronze',
                 'fair_use' => $package['fair_use'] ?? null,
             ]);
         }

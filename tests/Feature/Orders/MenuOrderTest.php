@@ -30,7 +30,7 @@ class MenuOrderTest extends TestCase
     {
         parent::setUp();
 
-        $this->defaultPackageIncludes(Feature::Ordering, Feature::MenuOrdering, Feature::MultipleLanguages);
+        $this->defaultPackageIncludes(Feature::Ordering, Feature::MenuOrdering, Feature::OrderTracking, Feature::MultipleLanguages);
     }
 
     private function shop(array $attributes = []): Restaurant
@@ -87,6 +87,32 @@ class MenuOrderTest extends TestCase
         $this->assertSame('Hamra, Bliss St, 3rd floor', $order->address);
         $this->assertSame('Ring twice', $order->note);
         $this->assertSame('https://www.google.com/maps?q=33.8959000,35.4784000', $order->mapUrl());
+    }
+
+    public function test_a_cart_dearer_than_the_guest_saw_is_not_placed(): void
+    {
+        $shop = $this->shop();
+        // The page showed 10.00 (an offer it thought live); two kebabs are 12.00.
+        $order = $this->order($shop, ['seen_total' => '10.00']);
+        $dish = $order['items'][0]['dish_id'];
+
+        $this->postJson(route('public.order', $shop->slug), $order)
+            ->assertStatus(409)
+            ->assertJsonPath('prices.'.$dish, '6.00')
+            ->assertJsonPath('message', 'Some prices changed since you opened the menu (an offer may have ended). Check your cart, then send it again.');
+        $this->assertSame(0, Order::query()->count());
+
+        // Shown the price as it is, the guest sends again.
+        $this->postJson(route('public.order', $shop->slug), [...$order, 'seen_total' => '12.00'])->assertCreated();
+    }
+
+    public function test_a_cart_cheaper_than_shown_goes_through(): void
+    {
+        $shop = $this->shop();
+
+        $this->postJson(route('public.order', $shop->slug), $this->order($shop, ['seen_total' => '15.00']))
+            ->assertCreated()
+            ->assertJsonPath('data.total', '12.00');
     }
 
     public function test_a_pickup_needs_no_address(): void

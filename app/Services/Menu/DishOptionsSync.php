@@ -27,7 +27,8 @@ class DishOptionsSync
     public function sync(Dish $dish, ?array $variants, ?array $addons, array $languages): void
     {
         if ($variants !== null) {
-            $saved = $dish->variants()->get();
+            // With their options: one read for every variant, not one each.
+            $saved = $dish->variants()->with('options')->get();
             $kept = [];
 
             foreach ($this->inOrder($variants) as $index => $input) {
@@ -63,7 +64,8 @@ class DishOptionsSync
      */
     private function syncOptions(DishVariant $variant, array $options, array $languages): void
     {
-        $saved = $variant->options()->get();
+        // A new variant has none yet; a saved one came with its options.
+        $saved = $variant->exists && $variant->relationLoaded('options') ? $variant->options : new Collection;
         $kept = [];
 
         foreach ($this->inOrder($options) as $index => $input) {

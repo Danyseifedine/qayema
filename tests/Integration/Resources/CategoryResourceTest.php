@@ -37,6 +37,7 @@ class CategoryResourceTest extends TestCase
             'id' => $category->id,
             'name' => ['en' => 'Mains'],
             'description' => ['en' => null],
+            'icon' => null,
         ], $this->resolve($category, $restaurant->user));
     }
 
@@ -48,7 +49,7 @@ class CategoryResourceTest extends TestCase
 
         $counted = $this->resolve(Category::query()->withCount('dishes')->find($category->id), $restaurant->user);
 
-        $this->assertSame(['id', 'name', 'description', 'dishes_count'], array_keys($counted));
+        $this->assertSame(['id', 'name', 'description', 'icon', 'dishes_count'], array_keys($counted));
         $this->assertSame(3, $counted['dishes_count']);
         $this->assertArrayNotHasKey('dishes_count', $this->resolve($category, $restaurant->user));
     }

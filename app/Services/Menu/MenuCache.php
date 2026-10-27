@@ -2,8 +2,8 @@
 
 namespace App\Services\Menu;
 
-use App\Jobs\PurgeMenuCache;
 use App\Models\Restaurant;
+use App\Support\SiteAddress;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -15,9 +15,9 @@ use function Illuminate\Support\defer;
  * they show changes, so guests see a change at once. Changes made in one
  * request are cleared together, after the response: one call to Cloudflare
  * for a save that touched a dish, its options and its photo. A call that
- * fails (Cloudflare's Free plan allows five a minute) is tried again from
- * the queue (PurgeMenuCache); a copy is kept at most
- * CacheMenuForGuests::EDGE_SECONDS anyway.
+ * fails (Cloudflare's Free plan allows five a minute) is kept in
+ * PendingPurges and sent by `menus:purge-pending` within the minute; a copy
+ * is kept at most CacheMenuForGuests::EDGE_SECONDS anyway.
  *
  * One instance a request (AppServiceProvider). Without a zone and a token
  * (services.cloudflare) nothing is sent: locally and in the tests.
@@ -51,7 +51,11 @@ class MenuCache
         $this->schedule();
     }
 
-    /** Clears every menu: a change that reaches all of them (a package, a design). */
+    /**
+     * Clears every menu: a change that reaches all of them (a package, a
+     * design). Cloudflare is asked for the menus' host, so what the zone
+     * keeps for its other hosts (the dashboard, the photos) stays.
+     */
     public function forgetAll(): void
     {
         $this->everything = true;
@@ -68,7 +72,7 @@ class MenuCache
      * Asks Cloudflare to drop what $body names; false when it would not (a
      * refusal, its limit, no answer), for the caller to try again.
      *
-     * @param  array<string, mixed>  $body  `purge_everything` or `prefixes`
+     * @param  array<string, mixed>  $body  `hosts` or `prefixes`
      */
     public static function send(array $body): bool
     {
@@ -99,8 +103,8 @@ class MenuCache
         foreach ($this->bodies() as $body) {
             if (! self::send($body)) {
                 // Seen at once in Grafana, before the retries run out.
-                Log::warning('Menu cache purge refused: trying again from the queue.', ['body' => $body]);
-                PurgeMenuCache::dispatch($body);
+                Log::warning('Menu cache purge refused: trying again within the minute.', ['body' => $body]);
+                PendingPurges::add($body);
             }
         }
 
@@ -111,12 +115,13 @@ class MenuCache
     /** @return list<array<string, mixed>> */
     private function bodies(): array
     {
+        $host = SiteAddress::host();
+
         if ($this->everything) {
-            return [['purge_everything' => true]];
+            return [['hosts' => [$host]]];
         }
 
         $slugs = Restaurant::query()->whereKey(array_keys($this->restaurants))->pluck('slug')->all();
-        $host = (string) parse_url((string) config('app.url'), PHP_URL_HOST);
         // A prefix is the host and the path, no scheme: it covers every
         // address under it, whatever follows the ? (each language, table, scan).
         $prefixes = array_map(fn (string $slug): string => $host.'/'.$slug, array_values(array_unique([...$slugs, ...array_keys($this->slugs)])));

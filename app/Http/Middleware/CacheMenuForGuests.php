@@ -42,6 +42,8 @@ class CacheMenuForGuests
             && ! $request->cookies->has((string) config('session.cookie'))
             && ! $request->query->has('preview')
             && ! $request->query->has('track')
+            // An owner's look at one offer (PublicMenuController::previewOffer).
+            && ! $request->query->has('offer')
             && $response->headers->getCookies() === [];
     }
 }

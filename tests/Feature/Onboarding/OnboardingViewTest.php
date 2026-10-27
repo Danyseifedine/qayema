@@ -4,6 +4,7 @@ namespace Tests\Feature\Onboarding;
 
 use App\Models\Restaurant;
 use App\Models\User;
+use App\Support\MenuTextLimits;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -16,6 +17,15 @@ class OnboardingViewTest extends TestCase
         $user = User::factory()->create(['onboarding_step' => 0, 'onboarding_completed_at' => null]);
 
         $this->actingAs($user)->get(route('onboarding'))->assertOk();
+    }
+
+    public function test_the_name_box_stops_at_the_names_limit(): void
+    {
+        $user = User::factory()->create(['onboarding_step' => 0, 'onboarding_completed_at' => null]);
+
+        $this->actingAs($user)->get(route('onboarding'))
+            ->assertOk()
+            ->assertSee('maxlength="'.MenuTextLimits::RESTAURANT_NAME.'"', false);
     }
 
     public function test_the_first_step_only_asks_for_what_it_shows(): void
@@ -38,11 +48,11 @@ class OnboardingViewTest extends TestCase
 
         $html = $this->actingAs($user)->get(route('onboarding'))->assertOk()->getContent();
 
-        foreach (['name', 'main_locale', 'phone', 'currency', 'logo'] as $field) {
+        foreach (['name', 'main_locale', 'phone', 'currency', 'second_currency', 'rate', 'logo'] as $field) {
             $this->assertStringNotContainsString('x-show="!errors.'.$field.'"', $html);
         }
-        // Name, menu language, link, phone, currency and logo.
-        $this->assertSame(6, substr_count($html, 'class="ui-helps"'));
+        // Name, menu language, link, phone, currency, second currency, rate and logo.
+        $this->assertSame(8, substr_count($html, 'class="ui-helps"'));
     }
 
     public function test_the_onboarding_page_renders_mid_flow(): void

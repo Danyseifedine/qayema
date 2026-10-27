@@ -58,14 +58,20 @@ class MediaServiceTest extends TestCase
         $this->assertArrayHasKey('saved_percent', $result);
     }
 
-    public function test_the_cover_preset_crops_to_its_aspect_ratio(): void
+    public function test_the_cover_preset_keeps_the_whole_photo(): void
     {
         $service = app(MediaService::class);
 
+        // Never cropped: the menu shows the band each screen has room for.
         $key = $service->storeTempUpload(UploadedFile::fake()->image('square.png', 1000, 1000), 'cover_image', 1)['key'];
-        [$w, $h] = getimagesize($service->tempPath(1, $key));
+        $this->assertSame([1000, 1000], array_slice(getimagesize($service->tempPath(1, $key)), 0, 2), 'Not cropped, not enlarged.');
 
-        $this->assertEqualsWithDelta(1920 / 600, $w / $h, 0.05, 'Cover is a wide banner, not a square.');
+        // A big one only shrinks, in its own proportions.
+        $key = $service->storeTempUpload(UploadedFile::fake()->image('wide.png', 4000, 3000), 'cover_image', 1)['key'];
+        [$w, $h] = getimagesize($service->tempPath(1, $key));
+        $this->assertLessThanOrEqual(1920, $w);
+        $this->assertLessThanOrEqual(1280, $h);
+        $this->assertEqualsWithDelta(4 / 3, $w / $h, 0.01);
     }
 
     public function test_small_images_are_not_upscaled(): void

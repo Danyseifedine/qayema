@@ -4,10 +4,16 @@ namespace App\Services\Analytics;
 
 use App\Enums\MenuEventType;
 use App\Models\MenuDay;
+use App\Models\MenuEvent;
+use App\Models\MenuSession;
 use App\Models\Restaurant;
 use App\Support\HyperLogLog;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\LazyCollection;
+use Throwable;
 
 /**
  * Adds up a menu's raw visits and guest actions into one `menu_days` row per
@@ -22,11 +28,24 @@ use Illuminate\Support\Facades\Cache;
  */
 class MenuDays
 {
-    /** How long the raw visits and actions are kept (stats:rollup). */
+    /** How long the raw visits and actions are kept (stats:rollup's default). */
     public const RAW_MONTHS = 6;
 
-    /** From this many days ago the analytics read raw rows; before it, `menu_days`. Inside RAW_MONTHS. */
-    public const RAW_DAYS = 180;
+    /**
+     * From this many days ago the analytics read raw rows; before it,
+     * `menu_days`. RAW_MONTHS counted as 30-day months, so it always falls
+     * inside the raw rows kept.
+     */
+    public const RAW_DAYS = self::RAW_MONTHS * 30;
+
+    /** When the last addUpMissing() started, and the restaurants it could not add up. */
+    public const LAST_RUN_KEY = 'menu-days:last-run';
+
+    /**
+     * How far before the last run a row can be and still belong to a day
+     * that was not finished then: a local day, a clock change, and slack.
+     */
+    private const UNFINISHED_SECONDS = 26 * 3600;
 
     /** The first of the restaurant's days the analytics take from raw rows. */
     public static function boundary(Restaurant $restaurant): CarbonImmutable
@@ -64,21 +83,60 @@ class MenuDays
     }
 
     /**
-     * Adds up every finished day not added up yet, for every restaurant.
+     * Adds up every finished day not added up yet, for every restaurant
+     * that can have one: after a first run, only those with a visit or an
+     * action since the day the last run could not finish, and those it
+     * could not add up. One restaurant that fails is logged and skipped,
+     * never the reason the others wait; the caller keeps its raw rows.
      *
-     * @return int the days written
+     * @return array{written: int, failed: list<int>} the days written, and the restaurants that failed
      */
-    public function addUpMissing(): int
+    public function addUpMissing(): array
     {
+        $startedAt = now()->getTimestamp();
         $written = 0;
+        $failed = [];
 
-        Restaurant::query()->chunkById(100, function ($restaurants) use (&$written): void {
-            foreach ($restaurants as $restaurant) {
+        foreach ($this->restaurantsToAddUp(Cache::get(self::LAST_RUN_KEY)) as $restaurant) {
+            try {
                 $written += $this->addUpFor($restaurant);
+            } catch (Throwable $exception) {
+                $failed[] = $restaurant->id;
+                Log::error('Menu analytics rollup failed for a restaurant: its raw rows are kept until it works.', [
+                    'restaurant_id' => $restaurant->id,
+                    'exception' => $exception,
+                ]);
             }
-        });
+        }
 
-        return $written;
+        Cache::forever(self::LAST_RUN_KEY, ['at' => $startedAt, 'failed' => $failed]);
+
+        return ['written' => $written, 'failed' => $failed];
+    }
+
+    /**
+     * Every restaurant on a first run (or once the cache lost the last
+     * one); then those with raw rows since the last run's unfinished days
+     * (the counting indexes answer it per restaurant) and the ones it failed.
+     *
+     * @param  array{at: int, failed: list<int>}|null  $lastRun
+     * @return LazyCollection<int, Restaurant>
+     */
+    private function restaurantsToAddUp(?array $lastRun): LazyCollection
+    {
+        $restaurants = Restaurant::query();
+
+        if ($lastRun !== null) {
+            $since = CarbonImmutable::createFromTimestamp($lastRun['at'] - self::UNFINISHED_SECONDS, 'UTC');
+
+            // Grouped, so lazyById's own `id >` applies to all of it.
+            $restaurants->where(fn ($query) => $query
+                ->whereIn('id', MenuSession::query()->select('restaurant_id')->where('viewed_at', '>=', $since))
+                ->orWhereIn('id', MenuEvent::query()->select('restaurant_id')->where('occurred_at', '>=', $since))
+                ->orWhereIn('id', $lastRun['failed']));
+        }
+
+        return $restaurants->lazyById(100);
     }
 
     /** @return int the days written for this restaurant */
@@ -90,17 +148,13 @@ class MenuDays
         // night's run reads one day of rows, not the six months kept.
         $last = $restaurant->menuDays()->max('day');
         $since = $last === null ? null : CarbonImmutable::parse($last, $timezone)->startOfDay()->addDay();
-        $added = $restaurant->menuDays()
-            ->when($since, fn ($query, CarbonImmutable $since) => $query->where('day', '>=', $since->toDateString()))
-            ->pluck('day')
-            ->map(fn ($day): string => $day->toDateString())
-            ->flip();
         $written = 0;
 
         foreach ($this->daysWithActivity($restaurant, $timezone, $since) as $day) {
             $local = CarbonImmutable::parse($day, $timezone);
 
-            if ($local->gte($today) || isset($added[$day])) {
+            // Every day from $since on is new: $since is the day after the last one added up.
+            if ($local->gte($today)) {
                 continue;
             }
 
@@ -111,7 +165,12 @@ class MenuDays
         return $written;
     }
 
-    /** One day's row, from its raw visits and actions. */
+    /**
+     * One day's row, from its raw visits and actions, counted by the
+     * database (GROUP BY, as MenuStats counts them) rather than read row by
+     * row: a busy menu's day is tens of thousands of rows. Only the
+     * visitors are read one by one, as ids streamed into their sketches.
+     */
     public function addUp(Restaurant $restaurant, CarbonImmutable $day): MenuDay
     {
         $timezone = $restaurant->localTimezone();
@@ -119,58 +178,72 @@ class MenuDays
         // The next midnight, not 24 hours on: a day a clock change shortens or lengthens.
         $range = [$start->utc(), $start->addDay()->startOfDay()->utc()];
 
-        $visits = $restaurant->menuSessions()
+        $visits = $restaurant->menuSessions()->toBase()
             ->where('viewed_at', '>=', $range[0])
-            ->where('viewed_at', '<', $range[1])
-            ->get(['session_id', 'device_type', 'browser', 'os', 'locale', 'viewed_at', 'via_qr']);
+            ->where('viewed_at', '<', $range[1]);
+        $events = $restaurant->menuEvents()->toBase()
+            ->where('occurred_at', '>=', $range[0])
+            ->where('occurred_at', '<', $range[1]);
 
-        $hours = array_fill(0, 24, 0);
+        $views = $qrScans = 0;
         $languages = $devices = $browsers = $systems = [];
 
-        foreach ($visits as $visit) {
-            $hours[CarbonImmutable::instance($visit->viewed_at)->setTimezone($timezone)->hour]++;
-            $this->tally($languages, $visit->locale);
-            $this->tally($devices, $visit->device_type);
-            $this->tally($browsers, $visit->browser);
-            $this->tally($systems, $visit->os);
+        // One row for each mix of language, device, browser, system and QR.
+        $kinds = (clone $visits)
+            ->selectRaw("COALESCE(locale, 'unknown') as language, COALESCE(device_type, 'unknown') as device, COALESCE(browser, 'unknown') as agent, COALESCE(os, 'unknown') as system, via_qr, COUNT(*) as total")
+            ->groupBy('language', 'device', 'agent', 'system', 'via_qr')
+            ->get();
+
+        foreach ($kinds as $kind) {
+            $total = (int) $kind->total;
+            $views += $total;
+            $qrScans += (bool) $kind->via_qr ? $total : 0;
+            $this->tally($languages, $kind->language, $total);
+            $this->tally($devices, $kind->device, $total);
+            $this->tally($browsers, $kind->agent, $total);
+            $this->tally($systems, $kind->system, $total);
         }
 
-        $events = $restaurant->menuEvents()
-            ->where('occurred_at', '>=', $range[0])
-            ->where('occurred_at', '<', $range[1])
-            ->get(['session_id', 'type', 'dish_id', 'category_id', 'value']);
+        // By UTC minute, so a timezone half or three quarters of an hour off still lands each view in its own hour.
+        $hours = array_fill(0, 24, 0);
+        $minutes = (clone $visits)->selectRaw('SUBSTR(viewed_at, 1, 16) as bucket, COUNT(*) as total')->groupBy('bucket')->pluck('total', 'bucket');
+
+        foreach ($minutes as $minute => $total) {
+            $hours[CarbonImmutable::createFromFormat('Y-m-d H:i', (string) $minute, 'UTC')->setTimezone($timezone)->hour] += (int) $total;
+        }
 
         $actions = $dishes = $categories = $searches = $missed = [];
-        $carted = new HyperLogLog;
+        $done = (clone $events)
+            ->selectRaw('type, dish_id, category_id, value, COUNT(*) as total')
+            ->groupBy('type', 'dish_id', 'category_id', 'value')
+            ->get();
 
-        foreach ($events as $event) {
-            $this->tally($actions, $event->type->value);
+        foreach ($done as $event) {
+            $total = (int) $event->total;
+            $this->tally($actions, $event->type, $total);
 
-            if ($event->type === MenuEventType::DishAdd) {
-                $carted->add($event->session_id);
-                if ($event->dish_id !== null) {
-                    $this->tally($dishes, (string) $event->dish_id);
-                }
+            if ($event->type === MenuEventType::DishAdd->value && $event->dish_id !== null) {
+                $this->tally($dishes, (string) $event->dish_id, $total);
             }
 
-            if ($event->type === MenuEventType::CategoryOpen && $event->category_id !== null) {
-                $this->tally($categories, (string) $event->category_id);
+            if ($event->type === MenuEventType::CategoryOpen->value && $event->category_id !== null) {
+                $this->tally($categories, (string) $event->category_id, $total);
             }
 
-            if (in_array($event->type, [MenuEventType::Search, MenuEventType::SearchMiss], true) && $event->value !== null) {
-                $this->tally($searches, $event->value);
-                if ($event->type === MenuEventType::SearchMiss) {
-                    $this->tally($missed, $event->value);
+            if (in_array($event->type, [MenuEventType::Search->value, MenuEventType::SearchMiss->value], true) && $event->value !== null) {
+                $this->tally($searches, $event->value, $total);
+                if ($event->type === MenuEventType::SearchMiss->value) {
+                    $this->tally($missed, $event->value, $total);
                 }
             }
         }
 
         return $restaurant->menuDays()->create([
             'day' => $start->toDateString(),
-            'views' => $visits->count(),
-            'qr_scans' => $visits->where('via_qr', true)->count(),
-            'visitors' => HyperLogLog::of($visits->pluck('session_id'))->toStored(),
-            'carted' => $carted->toStored(),
+            'views' => $views,
+            'qr_scans' => $qrScans,
+            'visitors' => $this->sketch(clone $visits)->toStored(),
+            'carted' => $this->sketch((clone $events)->where('type', MenuEventType::DishAdd->value))->toStored(),
             'hours' => $hours,
             'languages' => $languages,
             'devices' => $devices,
@@ -182,6 +255,18 @@ class MenuDays
             'searches' => $searches,
             'missed_searches' => $missed,
         ]);
+    }
+
+    /** The distinct guests of $rows, streamed into a sketch rather than loaded. */
+    private function sketch(Builder $rows): HyperLogLog
+    {
+        $sketch = new HyperLogLog;
+
+        foreach ($rows->distinct()->select('session_id')->cursor() as $row) {
+            $sketch->add((string) $row->session_id);
+        }
+
+        return $sketch;
     }
 
     /**
@@ -210,9 +295,8 @@ class MenuDays
     }
 
     /** @param  array<string, int>  $counts */
-    private function tally(array &$counts, ?string $key): void
+    private function tally(array &$counts, string $key, int $times): void
     {
-        $key ??= 'unknown';
-        $counts[$key] = ($counts[$key] ?? 0) + 1;
+        $counts[$key] = ($counts[$key] ?? 0) + $times;
     }
 }

@@ -45,11 +45,6 @@ trait CreatesOwners
         ], $restaurant));
     }
 
-    /**
-     * Put features on the default package, which `owner()` and `published()`
-     * land on. For tests about a feature itself rather than about which
-     * package has it (those are in Tests\Feature\Packages).
-     */
     /** Give the default package one feature's value: a limit, null for unlimited, or 0/1 for a flag. */
     protected function defaultPackageSets(Feature $feature, ?int $value): void
     {
@@ -57,6 +52,17 @@ trait CreatesOwners
         $package->update(['features' => [...(array) $package->features, $feature->value => $value]]);
     }
 
+    /** Give the default package its AI budget a month, in US cents (null for no cap). */
+    protected function defaultPackageAiBudget(?float $cents): void
+    {
+        Package::default()->update(['ai_budget_cents' => $cents]);
+    }
+
+    /**
+     * Put features on the default package, which `owner()` and `published()`
+     * land on. For tests about a feature itself rather than about which
+     * package has it (those are in Tests\Feature\Packages).
+     */
     protected function defaultPackageIncludes(Feature ...$features): void
     {
         foreach ($features as $feature) {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Support\Price;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -25,6 +26,8 @@ class OrderResource extends JsonResource
             'status' => $this->status->value,
             'currency' => $this->currency,
             'total' => (string) $this->total,
+            // The rate its lines in the second currency were counted at, when it has some.
+            'exchange_rate' => $this->exchange_rate === null ? null : Price::rate((string) $this->exchange_rate),
             'note' => $this->note,
             // How the guest gets it and how to reach them; null on a
             // WhatsApp order, which carries none of this.
@@ -50,6 +53,14 @@ class OrderResource extends JsonResource
                 'unit_price' => (string) $item->unit_price,
                 'quantity' => $item->quantity,
                 'line_total' => (string) $item->line_total,
+                // The line's own currency: the order's, or the second one it was priced in.
+                'currency' => $item->currency ?? $this->currency,
+                // Bought on an offer: its title then, and the unit price
+                // before the discount; both null otherwise.
+                'offer' => $item->offer_title === null ? null : [
+                    'title' => $item->offer_title,
+                    'full_price' => (string) $item->full_price,
+                ],
             ])->all()),
         ];
     }

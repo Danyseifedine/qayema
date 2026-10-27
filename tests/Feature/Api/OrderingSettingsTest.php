@@ -49,15 +49,55 @@ class OrderingSettingsTest extends TestCase
         $this->assertSame(['pickup'], $owner->fresh()->orderTypes());
     }
 
-    public function test_the_menu_needs_the_package_flag(): void
+    public function test_each_way_needs_its_own_package_switch(): void
     {
         $owner = $this->ownerOn('pro');
 
         $this->actingAs($owner->user)
             ->putJson(route('api.features.ordering'), ['mode' => 'menu', 'types' => ['delivery']])
-            ->assertForbidden();
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['mode' => 'Orders in the menu are not on your package.']);
+        $this->actingAs($owner->user)
+            ->putJson(route('api.features.ordering'), ['mode' => 'whatsapp', 'types' => ['delivery']])
+            ->assertJsonValidationErrors(['mode' => 'Orders on WhatsApp are not on your package.']);
 
         $this->assertSame('whatsapp', $owner->fresh()->order_mode);
+    }
+
+    public function test_orders_in_the_menu_alone_need_no_whatsapp_switch(): void
+    {
+        $this->defaultPackageIncludes(Feature::MenuOrdering);
+        $owner = $this->owner();
+
+        $this->actingAs($owner->user)
+            ->putJson(route('api.features.ordering'), ['mode' => 'menu', 'types' => ['pickup']])
+            ->assertOk()
+            ->assertJsonPath('data.mode', 'menu');
+        $this->assertSame(\App\Enums\OrderChannel::Menu, $owner->fresh()->orderChannel());
+    }
+
+    public function test_a_table_way_needs_its_own_package_switch(): void
+    {
+        $this->defaultPackageIncludes(Feature::DineIn);
+        $owner = $this->owner(['phone' => '+96170123456']);
+
+        $this->actingAs($owner->user)
+            ->putJson(route('api.features.dine-in'), ['mode' => 'whatsapp'])
+            ->assertJsonValidationErrors(['mode' => 'Table orders on WhatsApp are not on your package.']);
+
+    }
+
+    public function test_table_orders_on_whatsapp_alone_refuse_the_menu(): void
+    {
+        $this->defaultPackageIncludes(Feature::DineInWhatsApp);
+        $owner = $this->owner(['phone' => '+96170123456']);
+
+        $this->actingAs($owner->user)
+            ->putJson(route('api.features.dine-in'), ['mode' => 'menu'])
+            ->assertJsonValidationErrors(['mode' => 'Table orders in the menu are not on your package.']);
+        $this->actingAs($owner->user)
+            ->putJson(route('api.features.dine-in'), ['mode' => 'whatsapp'])
+            ->assertOk();
     }
 
     public function test_whatsapp_is_always_allowed(): void

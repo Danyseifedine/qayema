@@ -35,7 +35,7 @@ class OpeningHours
     {
         return new self(
             self::normalise((array) $restaurant->opening_hours),
-            $restaurant->timezone ?: config('app.timezone', 'UTC'),
+            $restaurant->localTimezone(),
         );
     }
 

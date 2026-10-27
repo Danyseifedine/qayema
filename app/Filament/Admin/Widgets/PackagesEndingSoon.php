@@ -23,6 +23,8 @@ class PackagesEndingSoon extends TableWidget
 
     public const RECENT_DAYS = 30;
 
+    protected static ?int $sort = 1;
+
     protected int|string|array $columnSpan = 'full';
 
     public function table(Table $table): Table

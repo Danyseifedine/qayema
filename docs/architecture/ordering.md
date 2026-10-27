@@ -24,7 +24,7 @@ it came in (`orders.channel`, `App\Enums\OrderChannel`):
   these orders are **not** listed on the Orders page and analytics call them
   "Sent to WhatsApp". It needs a usable number: without one the menu has no
   cart.
-- **In the menu** (also needs the `menu_ordering` flag, Premium and Custom):
+- **In the menu** (the `menu_ordering` flag, Premium and Custom):
   the guest gives their name, a phone number (country code from `config/countries.php`,
   stored international through `App\Support\PhoneNumber`), Delivery or
   Pickup (`restaurants.order_types`, null = both; `App\Enums\Fulfilment`),
@@ -36,17 +36,28 @@ it came in (`orders.channel`, `App\Enums\OrderChannel`):
   only on the menu itself (`SecurityHeaders`: `geolocation=(self)` there,
   `()` everywhere else).
 
-`Restaurant::orderChannel()` is the rule: null without ordering, Menu only
-while the package has `menu_ordering` (a downgrade falls back to WhatsApp),
-WhatsApp otherwise.
+Each way is a package switch of its own, so an admin may sell either alone
+(`Restaurant::orderWays()`). `Restaurant::orderChannel()` is the rule: null
+without either way or with orders switched off; with one way, that way
+whatever `order_mode` says (a downgrade never leaves a cart going nowhere);
+with both, the owner's `order_mode` (`orderMode()`, what `/api/user` sends as
+`ordering.mode`). Saving a way the package does not have is a 422 on `mode`
+(`UpdateOrderingRequest`).
 
-**Orders at the table** (dine-in, a table's QR code, the `dine_in` flag and
-switch) have their own way in, apart from delivery and pickup:
+**Orders at the table** (dine-in, a table's QR code, the `dine_in` switch on
+the Features page) have their own way in, apart from delivery and pickup,
+again one package switch per way (`Restaurant::dineInWays()`): `dine_in`
+(in the menu, the Table orders page) and `dine_in_whatsapp`.
 `restaurants.dine_in_mode` (`menu` | `whatsapp`, `PUT /api/features/dine-in`,
-`UpdateDineInRequest`: WhatsApp needs a number, 422 otherwise), read through
-`Restaurant::dineInChannel()`: null without dine-in, WhatsApp when chosen and
-the restaurant has a number WhatsApp can reach, Menu otherwise (a number
-removed later sends them back to the Table orders page). At a table the menu
+`UpdateDineInRequest`: a way the package has, and WhatsApp needs a number,
+422 otherwise) picks between them when the package has both
+(`dineInMode()`, sent as `ordering.dine_in`). `Restaurant::dineInChannel()`
+is the rule: null when switched off or without a way; WhatsApp when it is
+the only way, or chosen, and the restaurant has a number WhatsApp can reach;
+the menu otherwise when the package has it (a number removed later sends
+them back to the Table orders page); null when WhatsApp is the only way and
+there is no number (`takesDineIn()` is then false too). Tables (the owner's
+Tables page, `DiningTableController`) serve either way. At a table the menu
 builds its cart for that channel (`PublicMenuController`); on WhatsApp the
 cart says "This order is for Table 5." and the message names the table, and
 the order is not listed on Table orders. Without dine-in, a table's code on a
@@ -90,7 +101,16 @@ choice) and `ordering.whatsapp_number`.
   and never redrawn, so typing survives cart changes. What the guest types is
   kept in their browser (`qayema-guest-{slug}`) until the order goes, then the
   form starts over, empty.
-- **Tracking.** An order placed in the menu gets a 40-character
+- **Tracking** (the `order_tracking` flag, Premium and Custom,
+  `Restaurant::tracksOrders()`). Without it an order placed in the menu is
+  still sent and reaches the dashboard live, but the guest is only told its
+  number: the order answers `tracking_url: null`, the menu has no tracking
+  sheet (so nothing is kept to follow, change or add to; `menu-cart.js`
+  hears no `qayema:order-state`), the tracking, cart and change endpoints
+  answer 404 (`PublicOrderTrackingController`, `PlaceOrderRequest` before
+  validating a change), and the guest's `order.{token}` channel is never sent
+  to (`OrderNews`). The token is still made, for the owner's live events.
+  With it: an order placed in the menu gets a 40-character
   `tracking_token`. The guest follows it in a sheet over the menu
   (`#track-sheet`, `public/js/menu-order.js`), never on a page of its own:
   `GET /{slug}/order/{token}` answers JSON (status, `closed`, `closed_at` and
@@ -145,7 +165,9 @@ choice) and `ordering.whatsapp_number`.
   `client_token` of its own, kept in `orders.change_token`: the same change
   sent twice (an answer lost on mobile data) is made once. Dishes marked
   unavailable since are left out and named (`unavailable` in the answer,
-  `OrderPlacer::unavailable()`). Each change sets `guest_updated_at` and counts
+  `OrderPlacer::unavailable()`), and so is an offer's deal dish whose offer
+  is no longer live (`LiveOffers::liveAmong()`, on a new order too; see
+  offers.md, Deal dish). Each change sets `guest_updated_at` and counts
   `guest_updates`; the dashboard's pulse carries `changed` and chimes, and the
   card says "Changed by the guest at 13:05" (amber while it waits to be
   accepted). The

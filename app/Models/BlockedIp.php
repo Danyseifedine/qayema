@@ -34,7 +34,7 @@ class BlockedIp extends Model
 
     protected static function booted(): void
     {
-        $forget = fn (self $block) => app(AbuseGuard::class)->forgetBlockCache($block->ip);
+        $forget = fn () => app(AbuseGuard::class)->forgetBlockCache();
 
         static::saved($forget);
         static::deleted($forget);

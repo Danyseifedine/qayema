@@ -24,7 +24,7 @@
 @endphp
 
 @push('styles')
-<link rel="stylesheet" href="{{ asset('portal/css/pages/content.css') }}?v={{ @filemtime(public_path('portal/css/pages/content.css')) ?: '1' }}">
+<link rel="stylesheet" href="{{ \App\Support\Asset::versioned('portal/css/pages/content.css') }}">
 <style>
     /* Room enough that the footer never rides up under a short hero. */
     .error-hero { min-height: calc(100dvh - 160px); display: flex; align-items: center; box-sizing: border-box; }

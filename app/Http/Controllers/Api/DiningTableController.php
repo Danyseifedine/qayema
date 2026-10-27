@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Enums\Feature;
 use App\Http\Controllers\Concerns\ResolvesRestaurant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreDiningTablesRequest;
@@ -59,10 +58,12 @@ class DiningTableController extends Controller
             }
 
             $next = (int) $locked->diningTables()->max('sort_order') + 1;
+            $codes = DiningTable::freshCodes(count($names));
 
             return collect($names)->map(fn (string $name, int $index): DiningTable => $locked->diningTables()->create([
                 'name' => $name,
                 'sort_order' => $next + $index,
+                'code' => $codes[$index],
             ]));
         });
 
@@ -105,8 +106,9 @@ class DiningTableController extends Controller
     {
         $restaurant = $this->restaurant($request, __('Create your restaurant before adding tables.'));
 
+        // Tables serve either way orders at the table come in.
         abort_unless(
-            $restaurant->entitlements()->can(Feature::DineIn),
+            $restaurant->dineInWays() !== [],
             403,
             __('Ordering at the table is not on your package.'),
         );

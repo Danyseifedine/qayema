@@ -17,8 +17,13 @@ Part of the Qayema backend's architecture notes; CLAUDE.md has the summary.
   `session_id` of the visit and of its actions alike. The menu stores no
   session for guests, so the session id is not it.
 - **Guest actions:** `public/js/menu-track.js` batches what guests do into
-  `POST /{slug}/events` (`throttle:menu-events`, never a ban, since a dining room
-  shares one IP) → `MenuEventRecorder` → `menu_events`. Types are
+  `POST /{slug}/events`: after the visit's send, actions wait in memory and
+  go together when the page is hidden or left, every 30 seconds while some
+  wait, or at 25 (the request's cap, a few KB, under keepalive's 64 KB);
+  a tracked link (call, WhatsApp, a language) sends at once.
+  `throttle:menu-events` allows 120 a minute per IP and 20 per guest
+  (never a ban, since a dining room shares one IP) → `MenuEventRecorder` →
+  `menu_events`. Types are
   `App\Enums\MenuEventType`. Links opt in with `data-track="…"` (+
   `data-track-value`); the cart and the menu navigation dispatch a
   `qayema:track` DOM event rather than calling the tracker, so a menu without
@@ -37,6 +42,11 @@ Part of the Qayema backend's architecture notes; CLAUDE.md has the summary.
   The summary sends `previous` (the same totals for the period before,
   null for `all`), for Home's "vs. yesterday";
   `teaser()` (`GET /api/analytics/teaser`, this week's views) is every package.
+  `AnalyticsController` keeps each answer (`analytics:<id>:<kind>:<range>:<local
+  date>:<restaurant updated_at>`) 60 s for `today` and 300 s otherwise: a new
+  day or a save of the restaurant (how it takes orders, a switch, which the
+  dashboard reads again at once) is a new answer; a new visit or order shows
+  within that time (Home itself asks once a minute).
   Tests about a feature itself put it on the default package with
   `defaultPackageIncludes()` (`CreatesOwners`); which package has what is
   tested in `tests/Feature/Packages`. Days and hours are the restaurant's `timezone` (UTC when
@@ -48,17 +58,26 @@ Part of the Qayema backend's architecture notes; CLAUDE.md has the summary.
   visit rows still record device/browser/OS.
 - **History** (`menu_days`, model `MenuDay`, `App\Services\Analytics\MenuDays`):
   `stats:rollup` (nightly, 03:10) first adds up every finished day of every
-  menu into one row per day of its own (its timezone then): views, QR scans,
+  menu into one row per day of its own (its timezone then), counted by the
+  database (GROUP BY, the same grouping `MenuStats` uses; views per hour by
+  UTC minute, so half-hour timezones are exact) with only visitor ids
+  streamed (`cursor()`) into the sketches: views, QR scans,
   views per local hour, languages, devices, browsers, systems, every action
   count, dishes added and categories opened by id, searches and missed
   searches, and visitors and carted visitors as HyperLogLog sketches
   (`App\Support\HyperLogLog`, 4,096 registers, about 1% off, compressed to
-  well under 2 KB). Then it deletes raw `menu_sessions` and `menu_events`
-  older than 6 months; if adding up throws, nothing is deleted. A day is
-  added up once, never again.
-- "All time" (`MenuStats`, with `trafficTotals()` and `qrScans()` on the
-  restaurant) reads `menu_days` for the days before `MenuDays::boundary()`
-  (180 days back, inside the raw window) and the raw rows from then on, so
+  well under 2 KB). After its first run it looks only at restaurants with
+  raw rows since the last run's unfinished days, plus those that failed
+  then (`MenuDays::LAST_RUN_KEY` in the cache; lost, every restaurant is
+  looked at). A restaurant that throws is logged with its id and skipped,
+  and keeps its raw rows. Then it deletes raw `menu_sessions` and
+  `menu_events` older than `MenuDays::RAW_MONTHS` (the `--prune-months`
+  default), 10,000 rows a statement (`--batch`); if adding up throws as a
+  whole, nothing is deleted. A day is added up once, never again.
+- "All time" (`MenuStats`, with `MenuTraffic::totals()` and `qrScans()`
+  for the admin) reads `menu_days` for the days before `MenuDays::boundary()`
+  (`RAW_DAYS`, RAW_MONTHS counted as 30-day months, so 180 days back,
+  inside the raw window) and the raw rows from then on, so
   no day counts twice; visitors over both merge the sketches. With no day
   added up before the boundary it reads only the raw rows, exactly. The
   shorter ranges (90 days and its comparison included) only ever read raw

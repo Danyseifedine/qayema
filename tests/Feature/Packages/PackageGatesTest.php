@@ -182,6 +182,13 @@ class PackageGatesTest extends TestCase
                 'dine_in' => true,
                 'analytics' => true,
                 'advanced_analytics' => true,
+                'offers' => true,
+                'dine_in_whatsapp' => true,
+                'order_tracking' => true,
+                'offer_schedules' => true,
+                'offer_discounts' => true,
+                // On no package: an admin switches it on for a restaurant.
+                'build_your_own' => false,
             ]);
     }
 

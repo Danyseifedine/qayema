@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Schedule;
 // The heartbeat `/up` checks (HealthChecks): a scheduler that stopped shows.
 Schedule::call(fn () => HealthChecks::beat())->everyMinute()->name('health:heartbeat');
 
-// The queue worker (Cloudflare purges tried again, queued mail): started
+// The queue worker (queued mail, order news): started
 // every minute and kept up for most of it, so a job starts within seconds
 // and a worker that died or grew is replaced the next minute, on the code
 // deployed by then. Never two at once.
@@ -17,6 +17,10 @@ Schedule::command('queue:work --max-time=55 --sleep=3 --tries=3 --memory=128')
     ->everyMinute()
     ->withoutOverlapping(2)
     ->runInBackground();
+
+// The Cloudflare purges it refused (PendingPurges), sent again in the five
+// calls a minute its Free plan allows.
+Schedule::command('menus:purge-pending')->everyMinute()->withoutOverlapping(2);
 
 // Menus whose package or grant started or ended with the clock: Cloudflare's
 // copies are cleared (ForgetEndedMenus).

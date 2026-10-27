@@ -2,11 +2,11 @@
 
 namespace Tests\Integration\Services\Contact;
 
-use App\Exceptions\TooManyContactMessages;
 use App\Mail\ContactMessageReceived;
 use App\Models\ContactMessage;
 use App\Models\Package;
 use App\Services\Contact\ContactService;
+use App\Services\Contact\TooManyContactMessages;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;

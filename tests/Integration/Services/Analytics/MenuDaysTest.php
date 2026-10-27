@@ -10,6 +10,10 @@ use App\Models\Restaurant;
 use App\Services\Analytics\MenuDays;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Mockery;
+use RuntimeException;
 use Tests\TestCase;
 
 /**
@@ -96,7 +100,8 @@ class MenuDaysTest extends TestCase
 
         $day = app(MenuDays::class)->addUp($this->restaurant, CarbonImmutable::parse('2026-10-12', 'Asia/Beirut'));
 
-        $this->assertSame(['dish_add' => 3, 'category_open' => 1, 'search' => 1, 'search_miss' => 1, 'whatsapp' => 1], $day->actions);
+        // Counted by the database, in whatever order it groups them.
+        $this->assertEquals(['dish_add' => 3, 'category_open' => 1, 'search' => 1, 'search_miss' => 1, 'whatsapp' => 1], $day->actions);
         $this->assertSame([(string) $dish->id => 2], array_map('intval', $day->dishes_added));
         $this->assertSame([(string) $category->id => 1], array_map('intval', $day->categories_opened));
         $this->assertSame(['hummus' => 1, 'sushi' => 1], $day->searches);
@@ -112,7 +117,7 @@ class MenuDaysTest extends TestCase
         $this->event('2026-10-13 10:00:00', 'c', MenuEventType::Map);
         $this->visit('2026-10-14 08:00:00', 'today');
 
-        $this->assertSame(3, app(MenuDays::class)->addUpMissing());
+        $this->assertSame(['written' => 3, 'failed' => []], app(MenuDays::class)->addUpMissing());
         $this->assertSame(
             ['2026-10-10', '2026-10-12', '2026-10-13'],
             $this->restaurant->menuDays()->orderBy('day')->pluck('day')->map->toDateString()->all(),
@@ -121,8 +126,58 @@ class MenuDaysTest extends TestCase
         // A day with nothing on it gets no row; a day already added up is
         // never added up again.
         $this->visit('2026-10-12 11:00:00', 'late');
-        $this->assertSame(0, app(MenuDays::class)->addUpMissing());
+        $this->assertSame(['written' => 0, 'failed' => []], app(MenuDays::class)->addUpMissing());
         $this->assertSame(1, MenuDay::query()->whereDate('day', '2026-10-12')->value('views'));
+    }
+
+    /** Asia/Kolkata is UTC+5:30: a UTC hour holds the end of one local hour and the start of the next. */
+    public function test_each_view_lands_in_its_own_local_hour_in_a_half_hour_timezone(): void
+    {
+        $this->restaurant->update(['timezone' => 'Asia/Kolkata']);
+        $this->visit('2026-10-12 10:15:00', 'a');
+        $this->visit('2026-10-12 10:45:00', 'b');
+
+        $day = app(MenuDays::class)->addUp($this->restaurant, CarbonImmutable::parse('2026-10-12', 'Asia/Kolkata'));
+
+        $this->assertSame(1, $day->hours[15]);
+        $this->assertSame(1, $day->hours[16]);
+        $this->assertSame(2, $day->visitorSketch()->count());
+    }
+
+    public function test_one_restaurant_that_fails_is_logged_and_the_others_are_added_up(): void
+    {
+        $broken = Restaurant::factory()->create();
+        $broken->menuSessions()->create(['session_id' => 'x', 'viewed_at' => now()->subDays(2)]);
+        $this->visit('2026-10-12 10:00:00', 'a');
+        Log::spy();
+
+        $days = Mockery::mock(MenuDays::class)->makePartial();
+        $days->shouldReceive('addUpFor')->with(Mockery::on(fn (Restaurant $restaurant) => $restaurant->is($broken)))->andThrow(new RuntimeException('Bad row'));
+        $days->shouldReceive('addUpFor')->passthru();
+
+        $this->assertSame(['written' => 1, 'failed' => [$broken->id]], $days->addUpMissing());
+        Log::shouldHaveReceived('error')->withArgs(fn (string $message, array $context) => str_contains($message, 'rollup failed') && $context['restaurant_id'] === $broken->id)->once();
+    }
+
+    /**
+     * After a first run, a restaurant with nothing since the last run's
+     * unfinished days is not looked at; one that failed then is.
+     */
+    public function test_after_a_first_run_only_restaurants_with_new_rows_or_a_failure_are_added_up(): void
+    {
+        $idle = Restaurant::factory()->create();
+        $idle->menuSessions()->create(['session_id' => 'old', 'viewed_at' => now()->subDays(10)]);
+        $failedBefore = Restaurant::factory()->create();
+        $failedBefore->menuSessions()->create(['session_id' => 'old', 'viewed_at' => now()->subDays(10)]);
+        $this->event('2026-10-13 10:00:00', 'a', MenuEventType::Map);
+        Cache::forever(MenuDays::LAST_RUN_KEY, ['at' => now()->subDay()->getTimestamp(), 'failed' => [$failedBefore->id]]);
+
+        $this->assertSame(['written' => 2, 'failed' => []], app(MenuDays::class)->addUpMissing());
+
+        $this->assertSame(1, $this->restaurant->menuDays()->count());
+        $this->assertSame(1, $failedBefore->menuDays()->count());
+        $this->assertSame(0, $idle->menuDays()->count());
+        $this->assertSame(['at' => now()->getTimestamp(), 'failed' => []], Cache::get(MenuDays::LAST_RUN_KEY));
     }
 
     public function test_the_raw_rows_take_over_180_days_back(): void

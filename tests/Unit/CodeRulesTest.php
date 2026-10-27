@@ -110,9 +110,12 @@ class CodeRulesTest extends TestCase
 
     public function test_every_job_is_queued(): void
     {
-        foreach (self::phpFiles('app/Jobs') as $file) {
-            $this->assertMatchesRegularExpression('/\bimplements\b[^{]*\bShouldQueue\b/', (string) file_get_contents($file), $file);
-        }
+        $jobs = is_dir(self::ROOT.'/app/Jobs') ? self::phpFiles('app/Jobs') : [];
+
+        $this->assertSame([], array_values(array_filter(
+            $jobs,
+            fn (string $file): bool => preg_match('/\bimplements\b[^{]*\bShouldQueue\b/', (string) file_get_contents($file)) !== 1,
+        )));
     }
 
     public function test_the_rules_catch_what_they_look_for(): void

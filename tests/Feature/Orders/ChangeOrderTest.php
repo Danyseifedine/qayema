@@ -35,7 +35,7 @@ class ChangeOrderTest extends TestCase
     {
         parent::setUp();
 
-        $this->defaultPackageIncludes(Feature::Ordering, Feature::MenuOrdering, Feature::Variants, Feature::Addons);
+        $this->defaultPackageIncludes(Feature::Ordering, Feature::MenuOrdering, Feature::OrderTracking, Feature::Variants, Feature::Addons);
         $this->shop = $this->published(['slug' => 'olive', 'order_mode' => 'menu', 'timezone' => 'UTC']);
         $category = Category::factory()->create(['restaurant_id' => $this->shop->id]);
         $this->burger = Dish::factory()->create(['restaurant_id' => $this->shop->id, 'category_id' => $category->id, 'name' => ['en' => 'Burger'], 'price' => '8.00', 'is_available' => true]);
@@ -104,6 +104,7 @@ class ChangeOrderTest extends TestCase
                     'dish' => (string) $this->burger->id,
                     'options' => [$this->option('Small')],
                     'addons' => [$this->burger->addons()->first()->id],
+                    'builds' => [],
                     'qty' => 1,
                 ]],
                 'details' => [

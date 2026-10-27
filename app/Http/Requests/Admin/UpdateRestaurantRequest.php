@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Http\Requests\Concerns\SharedFieldRules;
 use App\Models\Restaurant;
 use App\Rules\AvailableSlug;
+use App\Support\MenuTextLimits;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
 
@@ -14,6 +16,8 @@ use Illuminate\Support\Str;
  */
 class UpdateRestaurantRequest extends FormRequest
 {
+    use SharedFieldRules;
+
     public function authorize(): bool
     {
         // The route already requires an admin.
@@ -37,10 +41,10 @@ class UpdateRestaurantRequest extends FormRequest
         $restaurant = $this->route('restaurant');
 
         return [
-            'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'min:2', 'max:255', new AvailableSlug($restaurant->id)],
+            'name' => ['required', 'string', 'max:'.MenuTextLimits::RESTAURANT_NAME],
+            'slug' => AvailableSlug::rules($restaurant->id),
             // The same shape the owner's dashboard accepts.
-            'phone' => ['nullable', 'string', 'max:30', 'regex:/^(?=(?:\D*\d){6,})[0-9+() .\-]{6,30}$/'],
+            'phone' => $this->phoneRules('nullable'),
         ];
     }
 

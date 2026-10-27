@@ -27,7 +27,7 @@ class TrackOrderTest extends TestCase
     {
         parent::setUp();
 
-        $this->defaultPackageIncludes(Feature::Ordering, Feature::MenuOrdering, Feature::MultipleLanguages);
+        $this->defaultPackageIncludes(Feature::Ordering, Feature::MenuOrdering, Feature::OrderTracking, Feature::MultipleLanguages);
     }
 
     private function shop(array $attributes = []): Restaurant

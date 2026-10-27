@@ -9,7 +9,7 @@
 @endphp
 
 @push('styles')
-<link rel="stylesheet" href="{{ asset('portal/css/pages/content.css') }}?v={{ @filemtime(public_path('portal/css/pages/content.css')) ?: '1' }}">
+<link rel="stylesheet" href="{{ \App\Support\Asset::versioned('portal/css/pages/content.css') }}">
 @endpush
 
 @section('content')

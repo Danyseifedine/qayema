@@ -86,26 +86,28 @@ class LandingContentTest extends TestCase
             ->assertDontSee('الذكاء الاصطناعي');
     }
 
-    public function test_the_product_shot_is_a_real_image_in_the_readers_language_and_both_themes(): void
+    public function test_the_product_shot_is_a_real_dark_image_in_the_readers_language(): void
     {
         $this->get('/')
             ->assertOk()
             ->assertSee(asset('images/landing/dashboard-en-dark.webp'), false)
-            ->assertSee(asset('images/landing/dashboard-en-light.webp'), false);
+            ->assertDontSee('dashboard-en-light.webp', false);
 
         foreach (['en', 'ar'] as $language) {
-            foreach (['dark', 'light'] as $theme) {
-                $this->assertFileExists(public_path("images/landing/dashboard-{$language}-{$theme}.webp"));
-            }
+            $this->assertFileExists(public_path("images/landing/dashboard-{$language}-dark.webp"));
+            $this->assertFileDoesNotExist(public_path("images/landing/dashboard-{$language}-light.webp"));
         }
     }
 
-    public function test_the_site_opens_dark_unless_the_visitor_chose_light(): void
+    public function test_the_site_is_dark_only_with_no_theme_toggle(): void
     {
-        $this->get('/')
-            ->assertOk()
-            ->assertSee('data-theme="dark"', false)
-            ->assertSee("localStorage.getItem('qayema-theme') || 'dark'", false);
+        foreach (['/', route('login'), route('signup'), route('password.request')] as $page) {
+            $this->get($page)
+                ->assertOk()
+                ->assertDontSee('theme-tog', false)
+                ->assertDontSee('qayema-theme', false)
+                ->assertDontSee('data-theme', false);
+        }
     }
 
     public function test_each_feature_card_names_the_package_that_unlocks_it(): void

@@ -3,7 +3,9 @@
 namespace Tests\Feature\Admin;
 
 use App\Enums\Feature;
+use App\Enums\PackageTier;
 use App\Filament\Admin\Resources\Packages\PackageResource;
+use App\Filament\Admin\Resources\Packages\Pages\CreatePackage;
 use App\Filament\Admin\Resources\Packages\Pages\EditPackage;
 use App\Filament\Admin\Resources\Packages\Pages\ListPackages;
 use App\Filament\Admin\Resources\Restaurants\Schemas\PackageFields;
@@ -11,6 +13,7 @@ use App\Models\Package;
 use App\Models\Restaurant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\CreatesOwners;
 use Tests\TestCase;
 
@@ -34,18 +37,131 @@ class PackageAdminTest extends TestCase
         $this->actingAs($owner->user)->get(PackageResource::getUrl('index'))->assertForbidden();
     }
 
-    public function test_packages_cannot_be_created_in_the_admin(): void
+    public function test_a_new_package_opens_on_the_default_packages_numbers(): void
     {
-        // They come from config/package.php; deleting one is in AdminDeleteTest.
-        $this->assertFalse(PackageResource::canCreate());
-        $this->assertArrayNotHasKey('create', PackageResource::getPages());
+        $this->actingAs($this->admin());
+        $free = Package::default();
+
+        Livewire::test(CreatePackage::class)
+            ->assertFormSet([
+                'features.dish_limit' => 40,
+                'features.writing_help_limit' => 10,
+                'features.analytics' => false,
+                'ai_budget_cents' => 0.05,
+                'tier' => 'bronze',
+                'is_active' => true,
+                'sort_order' => (int) Package::query()->max('sort_order') + 1,
+            ]);
+        $this->assertTrue($free->is_default);
+    }
+
+    public function test_an_admin_makes_a_package_that_owners_can_be_given(): void
+    {
+        $this->actingAs($this->admin());
+        $this->get(PackageResource::getUrl('create'))->assertOk();
+
+        Livewire::test(CreatePackage::class)
+            ->fillForm([
+                'name.en' => 'Starter',
+                'name.ar' => 'المبتدئ',
+                'slug' => 'starter',
+                'price_cents' => 499,
+                'tier' => 'silver',
+                'features.dish_limit' => 80,
+                'features.analytics' => true,
+                'ai_budget_cents' => 0.75,
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors()
+            ->assertNotified('Package created');
+
+        $starter = Package::findBySlug('starter');
+        $this->assertSame(['en' => 'Starter', 'ar' => 'المبتدئ'], $starter->getTranslations('name'));
+        $this->assertSame([499, PackageTier::Silver, 80, 1, 7500, false], [
+            $starter->price_cents, $starter->tier, $starter->featureValue(Feature::DishLimit),
+            $starter->featureValue(Feature::Analytics), $starter->featureValue(Feature::WritingHelpCredits), $starter->is_default,
+        ]);
+
+        // On offer at once, and an owner may ask for it.
+        $owner = $this->owner();
+        $this->actingAs($owner->user)->getJson(route('api.packages.index'))->assertJsonFragment(['slug' => 'starter']);
+    }
+
+    /** @return array<string, array{0: string}> */
+    public static function badSlugs(): array
+    {
+        return ['taken' => ['pro'], 'capitals' => ['Starter'], 'spaces' => ['my plan'], 'a dash at the end' => ['plan-'], 'none' => ['']];
+    }
+
+    #[DataProvider('badSlugs')]
+    public function test_a_new_packages_slug_must_be_free_and_plain(string $slug): void
+    {
+        $this->actingAs($this->admin());
+
+        Livewire::test(CreatePackage::class)
+            ->fillForm(['name.en' => 'Plan', 'slug' => $slug])
+            ->call('create')
+            ->assertHasFormErrors(['slug']);
+    }
+
+    public function test_a_saved_packages_slug_stays_as_it_is(): void
+    {
+        $this->actingAs($this->admin());
+        $pro = Package::findBySlug('pro');
+
+        Livewire::test(EditPackage::class, ['record' => $pro->id])
+            ->assertFormFieldIsDisabled('slug')
+            ->fillForm(['slug' => 'changed'])
+            ->call('save');
+
+        $this->assertSame('pro', $pro->fresh()->slug);
+    }
+
+    public function test_another_package_made_the_default_lets_the_old_one_be_switched_off(): void
+    {
+        $this->actingAs($this->admin());
+        $free = Package::findBySlug('free');
+        $pro = Package::findBySlug('pro');
+
+        Livewire::test(EditPackage::class, ['record' => $free->id])
+            ->assertFormFieldIsDisabled('is_active')
+            ->assertFormFieldIsDisabled('is_default');
+
+        Livewire::test(EditPackage::class, ['record' => $pro->id])
+            ->fillForm(['is_default' => true])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertTrue($pro->fresh()->is_default);
+        $this->assertFalse($free->fresh()->is_default);
+        $this->assertSame($pro->id, Package::default()->id);
+
+        Livewire::test(EditPackage::class, ['record' => $free->id])
+            ->assertFormFieldIsEnabled('is_active')
+            ->fillForm(['is_active' => false])
+            ->call('save');
+
+        $this->assertFalse($free->fresh()->is_active);
+        $this->assertTrue(PackageResource::canDelete($free->fresh()));
+        $this->assertFalse(PackageResource::canDelete($pro->fresh()));
+    }
+
+    public function test_the_default_is_always_offered_and_only_one(): void
+    {
+        $pro = Package::findBySlug('pro');
+        $pro->update(['is_active' => false]);
+
+        $pro->update(['is_default' => true]);
+
+        $this->assertTrue($pro->fresh()->is_active, 'Made the default, it is offered again.');
+        $this->assertSame(1, Package::query()->where('is_default', true)->count());
     }
 
     public function test_editing_a_limit_reaches_every_restaurant_on_that_package(): void
     {
         $onFree = Restaurant::factory()->create(['template_id' => null]);
         $onPro = $this->ownerOn('pro');
-        $this->assertSame(40, $onFree->dish_limit);
+        $this->assertSame(40, $onFree->limitOf(Feature::DishLimit));
 
         $this->actingAs($this->admin());
         Livewire::test(EditPackage::class, ['record' => Package::default()->id])
@@ -53,8 +169,8 @@ class PackageAdminTest extends TestCase
             ->call('save')
             ->assertHasNoFormErrors();
 
-        $this->assertSame(75, $onFree->fresh()->dish_limit);
-        $this->assertSame(150, $onPro->fresh()->dish_limit, 'Another package is untouched.');
+        $this->assertSame(75, $onFree->fresh()->limitOf(Feature::DishLimit));
+        $this->assertSame(150, $onPro->fresh()->limitOf(Feature::DishLimit), 'Another package is untouched.');
     }
 
     public function test_an_empty_limit_saves_as_unlimited(): void
@@ -68,8 +184,8 @@ class PackageAdminTest extends TestCase
             ->assertHasNoFormErrors();
 
         $this->assertNull(Package::findBySlug('pro')->featureValue(Feature::DishLimit));
-        $this->assertNull($owner->fresh()->dish_limit);
-        $this->assertFalse($owner->fresh()->hasReachedDishLimit());
+        $this->assertNull($owner->fresh()->limitOf(Feature::DishLimit));
+        $this->assertFalse($owner->fresh()->hasReached(Feature::DishLimit));
     }
 
     public function test_a_flag_is_stored_as_zero_or_one(): void
@@ -139,7 +255,7 @@ class PackageAdminTest extends TestCase
         Livewire::test(ListPackages::class)
             ->assertTableColumnExists('is_active')
             ->assertTableColumnVisible('is_active')
-            ->assertSee('Offered')
+            ->assertSee('Active')
             ->call('updateTableColumnState', 'is_active', (string) $pro->getKey(), false);
 
         $this->assertFalse($pro->fresh()->is_active);
@@ -173,7 +289,7 @@ class PackageAdminTest extends TestCase
 
         $options = PackageFields::packageOptions();
 
-        $this->assertSame('Pro (not offered)', $options[$pro->id]);
+        $this->assertSame('Pro (inactive)', $options[$pro->id]);
         $this->assertSame('Premium', $options[Package::query()->where('slug', 'premium')->value('id')]);
     }
 

@@ -76,6 +76,15 @@ html[dir="rtl"] .btn:hover:not(:disabled) .arr-left { transform: scaleX(1) trans
 
 /* ── Right: dark editorial pane ──────────────────────── */
 .right {
+  /* Inverts the page tokens: a dark pane with light text. */
+  --paper:   #FBFAF6;
+  --paper-2: #EFE8DA;
+  --ink:     #141109;
+  --muted:   rgba(15, 15, 16, .58);
+  --muted-2: rgba(20, 17, 9, .40);
+  --surface: #FFFFFF;
+  --sand:    #E8DCCB;
+  --sand-2:  #D9CAB3;
   position: relative; background: var(--ink); color: var(--paper);
   padding: 36px 48px 40px; display: flex; flex-direction: column; gap: 24px; overflow: hidden;
 }
@@ -111,7 +120,7 @@ html[dir="rtl"] .btn:hover:not(:disabled) .arr-left { transform: scaleX(1) trans
 /* Phone mockup */
 .phone-wrap { flex: 1; display: grid; place-items: center; position: relative; min-height: 340px; }
 .phone { position: relative; width: 268px; aspect-ratio: 9/19.2; background: #0a0a0b; border-radius: 40px; padding: 7px; box-shadow: 0 0 0 1.5px #2a2a2d, 0 50px 100px -30px rgba(0,0,0,.50); transform: rotate(-2deg); }
-.phone-screen { width: 100%; height: 100%; background: var(--paper); border-radius: 32px; overflow: hidden; position: relative; color: var(--ink); display: flex; flex-direction: column; }
+.phone-screen { width: 100%; height: 100%; background: #0F0F12; border-radius: 32px; overflow: hidden; position: relative; color: #F2EDE3; display: flex; flex-direction: column; }
 .phone-notch { position: absolute; top: 7px; left: 50%; transform: translateX(-50%); width: 28%; height: 16px; background: #0a0a0b; border-radius: 999px; z-index: 5; }
 .ps-status { display: flex; justify-content: space-between; align-items: center; padding: 12px 22px 6px; font-size: 10px; font-weight: 600; }
 .ps-header { padding: 14px 16px 10px; border-bottom: .5px solid var(--line); }
@@ -138,8 +147,8 @@ html[dir="rtl"] .btn:hover:not(:disabled) .arr-left { transform: scaleX(1) trans
 /* Alert */
 .onb-alert { background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 10px 14px; font-size: 13px; color: #dc2626; margin-bottom: 16px; }
 /* Slug field: status border */
-.slug-state-ok  .ui-input-wrap { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,.10); }
-.slug-state-bad .ui-input-wrap { border-color: #dc2626; box-shadow: 0 0 0 3px rgba(220,38,38,.10); }
+.slug-state-ok  .ui-input-wrap { box-shadow: 0 0 0 3px rgba(22,163,74,.10); }
+.slug-state-bad .ui-input-wrap { box-shadow: 0 0 0 3px rgba(220,38,38,.10); }
 .slug-icon-ok  { color: #16a34a; display:inline-flex; }
 .slug-icon-bad { color: #dc2626; display:inline-flex; }
 .slug-icon-chk { color: var(--muted); display:inline-flex; animation: onb-pulse 1s ease infinite; }
@@ -165,3 +174,7 @@ html[dir="rtl"] .btn:hover:not(:disabled) .arr-left { transform: scaleX(1) trans
   .meter-track { width: 100%; flex: 1; }
   .left-foot .meter { width: 100%; }
 }
+
+/* The exchange rate row: "1 USD =" before the number, the other currency
+   after it, clear of the field's edge. */
+.ui-input-wrap.rate-wrap .rate-to { padding: 0 14px 0 6px; }

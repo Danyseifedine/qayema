@@ -59,8 +59,8 @@ histogram_quantile(0.95, sum by (le) (rate(traces_span_metrics_duration_millisec
 
 ## 5. A menu purge gave up
 
-Cloudflare refused to clear a menu five times; guests may see an old menu
-until it expires (at most an hour).
+Cloudflare kept refusing to clear a menu for 15 minutes (`menus:purge-pending`
+gave up on it); guests may see an old menu until it expires (at most an hour).
 
 ```logql
 sum(count_over_time({service_name="qayema", deployment_environment_name="prod"} |= "Menu cache purge failed" [15m]))
@@ -68,7 +68,7 @@ sum(count_over_time({service_name="qayema", deployment_environment_name="prod"} 
 
 - Fires: above 0.
 - Earlier warning, not paged: "Menu cache purge refused" (the first refusal,
-  retried from the queue).
+  sent again within the minute).
 
 ## 6. Errors in owners' dashboards
 

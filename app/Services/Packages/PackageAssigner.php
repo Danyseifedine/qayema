@@ -37,7 +37,12 @@ class PackageAssigner
             'package_id' => $package->id,
             'package_started_at' => $startsAt,
             'package_ends_at' => $endsAt,
-        ])->save();
+            // A price agreed for the package it leaves does not follow it to
+            // another; the restaurant's own page sets one with a new package.
+            ...($restaurant->package_id !== $package->id ? ['price_cents' => null] : []),
+        ]);
+        // Already in hand: its observer needs the new package, not to read it again.
+        $restaurant->setRelation('package', $package)->save();
 
         return $restaurant;
     }

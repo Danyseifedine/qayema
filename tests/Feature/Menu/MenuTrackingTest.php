@@ -6,6 +6,7 @@ use App\Enums\Feature;
 use App\Models\MenuSession;
 use App\Models\Restaurant;
 use App\Models\Template;
+use App\Services\Analytics\MenuTraffic;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Js;
@@ -57,7 +58,7 @@ class MenuTrackingTest extends TestCase
         $this->visit($restaurant)->assertNoContent();
 
         $this->assertDatabaseCount('menu_sessions', 1);
-        $this->assertSame(1, $restaurant->trafficTotals()['views']);
+        $this->assertSame(1, (new MenuTraffic($restaurant))->totals()['views']);
     }
 
     public function test_opening_the_page_counts_nothing_by_itself(): void
@@ -93,7 +94,7 @@ class MenuTrackingTest extends TestCase
         $this->visit($restaurant, [], str_repeat('ab', 16));
         $this->visit($restaurant, [], str_repeat('cd', 16));
 
-        $this->assertSame(['views' => 3, 'visitors' => 2], array_intersect_key($restaurant->trafficTotals(), ['views' => 0, 'visitors' => 0]));
+        $this->assertSame(['views' => 3, 'visitors' => 2], array_intersect_key((new MenuTraffic($restaurant))->totals(), ['views' => 0, 'visitors' => 0]));
     }
 
     public function test_a_browser_that_sends_no_id_is_told_apart_by_a_hash(): void
@@ -126,7 +127,7 @@ class MenuTrackingTest extends TestCase
             'restaurant_id' => $restaurant->id,
             'via_qr' => true,
         ]);
-        $this->assertSame(1, $restaurant->qrScans()['total']);
+        $this->assertSame(1, (new MenuTraffic($restaurant))->qrScans()['total']);
     }
 
     public function test_a_plain_visit_is_not_counted_as_a_qr_scan(): void
@@ -135,8 +136,8 @@ class MenuTrackingTest extends TestCase
 
         $this->visit($restaurant)->assertNoContent();
 
-        $this->assertSame(1, $restaurant->trafficTotals()['views']);
-        $this->assertSame(0, $restaurant->qrScans()['total']);
+        $this->assertSame(1, (new MenuTraffic($restaurant))->totals()['views']);
+        $this->assertSame(0, (new MenuTraffic($restaurant))->qrScans()['total']);
     }
 
     /** Today, this week and this month are the restaurant's own, not UTC's. */
@@ -159,7 +160,7 @@ class MenuTrackingTest extends TestCase
         }
         MenuSession::factory()->create(['restaurant_id' => $restaurant->id, 'via_qr' => false, 'viewed_at' => '2026-10-15 09:00']);
 
-        $this->assertSame(['today' => 2, 'week' => 4, 'month' => 5, 'total' => 6], $restaurant->qrScans());
+        $this->assertSame(['today' => 2, 'week' => 4, 'month' => 5, 'total' => 6], (new MenuTraffic($restaurant))->qrScans());
     }
 
     /** The admin's user page reads all of it in one pass, today being the restaurant's. */
@@ -174,7 +175,7 @@ class MenuTrackingTest extends TestCase
 
         $this->assertEquals(
             ['views' => 3, 'visitors' => 2, 'scans' => 1, 'today' => 2, 'last' => '2026-10-15 09:00:00'],
-            $restaurant->trafficTotals(),
+            (new MenuTraffic($restaurant))->totals(),
         );
     }
 

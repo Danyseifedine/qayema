@@ -57,24 +57,34 @@ class FeatureTest extends TestCase
     public function test_the_registry_is_exactly_these_slugs(): void
     {
         $this->assertSame([
-            'dish_limit', 'category_limit', 'social_link_limit', 'writing_help_limit', 'multiple_languages', 'variants', 'addons',
-            'appearance', 'premium_designs', 'qr_studio', 'ordering', 'menu_ordering', 'dine_in', 'analytics', 'advanced_analytics',
+            'dish_limit', 'category_limit', 'social_link_limit', 'writing_help_limit', 'writing_help_credits', 'multiple_languages', 'variants', 'addons',
+            'appearance', 'premium_designs', 'qr_studio', 'ordering', 'menu_ordering', 'dine_in', 'analytics', 'advanced_analytics', 'offers',
+            'offer_banner_limit', 'offer_popup_limit', 'offer_ad_limit',
+            'dine_in_whatsapp', 'order_tracking', 'offer_schedules', 'offer_discounts', 'build_your_own', 'build_limit',
         ], array_map(fn (Feature $feature): string => $feature->value, Feature::cases()));
     }
 
-    public function test_the_four_limits_and_the_eleven_flags(): void
+    public function test_the_nine_limits_and_the_seventeen_flags(): void
     {
-        $this->assertSame([Feature::DishLimit, Feature::CategoryLimit, Feature::SocialLinkLimit, Feature::WritingHelpLimit], Feature::limits());
+        $this->assertSame([
+            Feature::DishLimit, Feature::CategoryLimit, Feature::SocialLinkLimit, Feature::WritingHelpLimit, Feature::WritingHelpCredits,
+            Feature::OfferBannerLimit, Feature::OfferPopupLimit, Feature::OfferAdLimit, Feature::BuildLimit,
+        ], Feature::limits());
         $this->assertSame([
             Feature::MultipleLanguages, Feature::Variants, Feature::Addons, Feature::Appearance, Feature::PremiumDesigns, Feature::QrStudio,
-            Feature::Ordering, Feature::MenuOrdering, Feature::DineIn, Feature::Analytics, Feature::AdvancedAnalytics,
+            Feature::Ordering, Feature::MenuOrdering, Feature::DineIn, Feature::Analytics, Feature::AdvancedAnalytics, Feature::Offers,
+            Feature::DineInWhatsApp, Feature::OrderTracking, Feature::OfferSchedules, Feature::OfferDiscounts, Feature::BuildYourOwn,
         ], Feature::flags());
     }
 
-    public function test_only_the_ais_daily_uses_stay_off_the_pricing_cards(): void
+    public function test_the_ais_uses_and_credits_and_the_offer_places_stay_off_the_pricing_cards(): void
     {
         $this->assertSame(
-            [Feature::WritingHelpLimit],
+            [
+                Feature::WritingHelpLimit, Feature::WritingHelpCredits, Feature::OfferBannerLimit, Feature::OfferPopupLimit, Feature::OfferAdLimit,
+                Feature::DineInWhatsApp, Feature::OrderTracking, Feature::OfferSchedules, Feature::OfferDiscounts, Feature::BuildYourOwn,
+                Feature::BuildLimit,
+            ],
             array_values(array_filter(Feature::cases(), fn (Feature $feature): bool => ! $feature->isOnPricing())),
         );
     }
@@ -101,6 +111,14 @@ class FeatureTest extends TestCase
         $this->assertSame(1, Feature::SocialLinkLimit->defaultValue());
         // The AI's uses a day: on for every package until an admin sets them.
         $this->assertSame(30, Feature::WritingHelpLimit->defaultValue());
+        // A package's credits come from its AI budget; no package has none.
+        $this->assertSame(0, Feature::WritingHelpCredits->defaultValue());
+        // Offers in each place switched on at once, where offers are on.
+        $this->assertSame(3, Feature::OfferBannerLimit->defaultValue());
+        $this->assertSame(1, Feature::OfferPopupLimit->defaultValue());
+        $this->assertSame(1, Feature::OfferAdLimit->defaultValue());
+        // Dishes guests build, where an admin switched it on.
+        $this->assertSame(3, Feature::BuildLimit->defaultValue());
 
         foreach (Feature::flags() as $feature) {
             $this->assertSame(0, $feature->defaultValue(), "{$feature->value} is on by default.");
@@ -126,7 +144,7 @@ class FeatureTest extends TestCase
 
         app()->setLocale('ar');
 
-        $this->assertSame('استوديو QR', Feature::QrStudio->label());
+        $this->assertSame('تصميم رمز QR', Feature::QrStudio->label());
         $this->assertSame('لغة ثانية في القائمة إلى جانب الإنجليزية.', Feature::MultipleLanguages->hint());
     }
 
@@ -139,17 +157,28 @@ class FeatureTest extends TestCase
             'category_limit' => 'Categories',
             'social_link_limit' => 'Social links',
             'writing_help_limit' => 'AI writing help a day',
+            'writing_help_credits' => 'AI credits a month',
             'multiple_languages' => 'Second menu language',
             'variants' => 'Variants',
             'addons' => 'Add-ons',
             'appearance' => 'Appearance',
             'premium_designs' => 'Premium designs',
             'qr_studio' => 'QR Studio',
-            'ordering' => 'Ordering',
-            'menu_ordering' => 'Ordering in the menu',
-            'dine_in' => 'Ordering at the table',
+            'ordering' => 'Orders on WhatsApp',
+            'menu_ordering' => 'Orders in the menu',
+            'dine_in' => 'Table orders in the menu',
             'analytics' => 'Analytics',
             'advanced_analytics' => 'Advanced analytics',
+            'offers' => 'Offers',
+            'offer_banner_limit' => 'Offer banners',
+            'offer_popup_limit' => 'Offer pop-ups',
+            'offer_ad_limit' => 'Offer short ads',
+            'dine_in_whatsapp' => 'Table orders on WhatsApp',
+            'order_tracking' => 'Order tracking',
+            'offer_schedules' => 'Offer schedules',
+            'offer_discounts' => 'Offer discounts',
+            'build_your_own' => 'Build your own',
+            'build_limit' => 'Dishes guests build',
         ], Feature::options());
     }
 }

@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Middleware\CacheMenuForGuests;
 use App\Models\Restaurant;
 use App\Services\Menu\MenuFonts;
+use App\Services\Qr\QrDesign;
 use App\Services\Qr\QrStyle;
 use App\Support\Color;
 use Illuminate\Http\JsonResponse;
@@ -23,8 +25,8 @@ class QrCardController extends Controller
 
         $base = rtrim((string) config('app.url'), '/');
         $host = (string) (parse_url($base, PHP_URL_HOST) ?: $base);
-        $url = $restaurant->qrUrl();
-        $design = $restaurant->qrDesign();
+        $url = QrDesign::url($restaurant);
+        $design = QrDesign::saved($restaurant);
         $accent = QrStyle::brandColor($restaurant);
         // The card's text is the owner's own, in any of the menu's languages,
         // so it carries every font the menu uses.
@@ -56,14 +58,17 @@ class QrCardController extends Controller
     {
         abort_unless($restaurant->menuOnline(), 404);
 
-        $design = $restaurant->hasQrStudio() ? $restaurant->qrDesign() : $restaurant->qrDefaultDesign();
+        $design = QrDesign::shown($restaurant);
         $logo = $design['logo'] ? QrStyle::logoDataUrl($restaurant) : null;
 
         // Every menu visit now fetches this in the background (menu-nav.js),
-        // so a guest's browser reuses it for a few minutes; a change in the
-        // QR studio still reaches the menu soon after.
-        return response()->json(['data' => QrStyle::options($design, $restaurant->qrUrl(), $logo)])
+        // so a guest's browser reuses it for a few minutes and Cloudflare
+        // answers it for the hour: a change in the QR studio saves the
+        // restaurant, which clears every address under its link (MenuCache),
+        // this one too, and still reaches a browser soon after.
+        return response()->json(['data' => QrStyle::options($design, QrDesign::url($restaurant), $logo)])
             ->setPublic()
-            ->setMaxAge(300);
+            ->setMaxAge(300)
+            ->setSharedMaxAge(CacheMenuForGuests::EDGE_SECONDS);
     }
 }

@@ -6,6 +6,7 @@ use App\Enums\Feature;
 use App\Http\Resources\DishResource;
 use App\Models\Category;
 use App\Models\Dish;
+use App\Models\Offer;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
@@ -17,7 +18,7 @@ class DishResourceTest extends TestCase
 {
     use CreatesOwners, RefreshDatabase;
 
-    private const KEYS = ['id', 'name', 'ingredients', 'price', 'is_available', 'category_id', 'image_url', 'variants', 'addons'];
+    private const KEYS = ['id', 'name', 'ingredients', 'price', 'currency', 'is_available', 'category_id', 'icon', 'image_url', 'offer', 'variants', 'addons', 'builds'];
 
     /** @return array<string, mixed> */
     private function resolve(Dish $dish, ?User $user): array
@@ -46,11 +47,16 @@ class DishResourceTest extends TestCase
             'name' => ['en' => 'Kibbeh', 'ar' => 'كبة'],
             'ingredients' => ['en' => 'Bulgur, lamb', 'ar' => null],
             'price' => '12.00',
+            // The menu's main currency: a dish is in it until priced in the second one.
+            'currency' => $restaurant->currency,
             'is_available' => true,
             'category_id' => $category->id,
+            'icon' => null,
             'image_url' => null,
+            'offer' => null,
             'variants' => [],
             'addons' => [],
+            'builds' => [],
         ], $this->resolve($dish, $restaurant->user));
     }
 
@@ -93,9 +99,22 @@ class DishResourceTest extends TestCase
         $this->assertSame(self::KEYS, array_keys($data));
         $this->assertNull($data['price']);
         $this->assertNull($data['category_id']);
+        $this->assertNull($data['icon']);
         $this->assertNull($data['image_url']);
         $this->assertSame(['en' => null], $data['ingredients']);
         $this->assertFalse($data['is_available']);
+    }
+
+    public function test_an_offers_deal_names_its_offer_and_where_it_stands(): void
+    {
+        $restaurant = $this->owner(['timezone' => 'Asia/Beirut']);
+        $offer = Offer::factory()->paused()->create(['restaurant_id' => $restaurant->id, 'title' => ['en' => 'Family deal']]);
+        $deal = Dish::factory()->dealOf($offer)->create();
+
+        $this->assertSame(
+            ['id' => $offer->id, 'title' => ['en' => 'Family deal'], 'status' => 'paused', 'next_start' => null],
+            $this->resolve($deal, $restaurant->user)['offer'],
+        );
     }
 
     public function test_an_image_comes_as_its_url(): void

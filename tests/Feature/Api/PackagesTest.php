@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api;
 
+use App\Enums\Feature;
 use App\Models\Package;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -62,6 +63,19 @@ class PackagesTest extends TestCase
             ->assertJsonPath('meta.current', 'pro');
     }
 
+    public function test_the_owner_is_told_their_own_price_when_an_admin_set_one(): void
+    {
+        $owner = $this->ownerOn('premium');
+
+        $this->actingAs($owner->user)->getJson(route('api.packages.index'))
+            ->assertJsonPath('meta.your_price_cents', null);
+
+        $owner->update(['price_cents' => 600]);
+
+        $this->actingAs($owner->user->refresh())->getJson(route('api.packages.index'))
+            ->assertJsonPath('meta.your_price_cents', 600);
+    }
+
     public function test_an_expired_package_is_still_the_current_one(): void
     {
         $owner = $this->ownerOn('premium', ['package_ends_at' => now()->subDays(10)]);
@@ -101,7 +115,7 @@ class PackagesTest extends TestCase
             ->assertJsonPath('meta.current', 'pro')
             ->assertJsonPath('data.1.slug', 'pro');
         // They keep what it gives until it ends.
-        $this->assertSame(150, $owner->fresh()->dish_limit);
+        $this->assertSame(150, $owner->fresh()->limitOf(Feature::DishLimit));
     }
 
     public function test_a_cards_own_lines_come_with_each_package(): void

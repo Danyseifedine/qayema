@@ -3,8 +3,8 @@
 namespace App\Http\Resources;
 
 use App\Enums\Feature;
-use App\Enums\OrderChannel;
 use App\Enums\PackageStatus;
+use App\Enums\PackageTier;
 use App\Models\Package;
 use App\Models\Restaurant;
 use App\Services\Ai\WritingHelpUses;
@@ -72,8 +72,18 @@ class UserResource extends JsonResource
     private function restaurant(Restaurant $restaurant): array
     {
         $entitlements = $restaurant->entitlements();
-        // What the limits have used, in one query: this is every dashboard boot.
-        $restaurant->loadCount(['dishes', 'categories', 'socialLinks']);
+        // What the limits have used, and the dishes still without a photo
+        // (Home's checklist), in one query: this is every dashboard boot.
+        $restaurant->loadCount([
+            'dishes',
+            'categories',
+            'socialLinks',
+            'dishes as built_dishes_count' => fn ($dishes) => $dishes->whereHas('builds'),
+            // A build's dish has an icon, never a photo.
+            'dishes as dishes_without_photo_count' => fn ($dishes) => $dishes
+                ->whereDoesntHave('builds')
+                ->whereDoesntHave('media', fn ($media) => $media->where('collection_name', 'image')),
+        ]);
         $package = $restaurant->effectivePackage();
         $status = $restaurant->packageStatus();
         $active = $status === PackageStatus::Active;
@@ -128,21 +138,23 @@ class UserResource extends JsonResource
                 'dishes' => ['used' => (int) $restaurant->dishes_count, 'limit' => $entitlements->shownLimit(Feature::DishLimit)],
                 'categories' => ['used' => (int) $restaurant->categories_count, 'limit' => $entitlements->shownLimit(Feature::CategoryLimit)],
                 'social_links' => ['used' => (int) $restaurant->social_links_count, 'limit' => $entitlements->shownLimit(Feature::SocialLinkLimit)],
+                // Dishes guests build (Build your own), counted whether or not it is on.
+                'builds' => ['used' => (int) $restaurant->getAttribute('built_dishes_count'), 'limit' => $entitlements->shownLimit(Feature::BuildLimit)],
             ],
+            // Home's checklist counts them, without downloading the menu.
+            'dishes_without_photo' => (int) $restaurant->getAttribute('dishes_without_photo_count'),
             // Optional features the owner switched off (Features page).
             'switched_off' => $restaurant->switchedOff(),
-            // How guests send their orders, when ordering is on: the menu
-            // only while the package includes it (Restaurant::orderChannel()).
+            // How guests send their orders, when ordering is on: the only way
+            // the package has, or the owner's pick of both
+            // (Restaurant::orderMode()).
             'ordering' => [
-                'mode' => $restaurant->order_mode === OrderChannel::Menu->value && $entitlements->can(Feature::MenuOrdering)
-                    ? OrderChannel::Menu->value
-                    : OrderChannel::WhatsApp->value,
+                'mode' => $restaurant->orderMode()->value,
                 'types' => $restaurant->orderTypes(),
-                // Orders at the table: the owner's choice (Table orders page
-                // or WhatsApp), which needs a number WhatsApp can reach;
-                // without one they arrive on the dashboard
-                // (Restaurant::dineInChannel()).
-                'dine_in' => $restaurant->dine_in_mode ?? OrderChannel::Menu->value,
+                // Orders at the table: the only way the package has, or the
+                // owner's pick of both (Table orders page or WhatsApp, which
+                // needs a number WhatsApp can reach; Restaurant::dineInChannel()).
+                'dine_in' => $restaurant->dineInMode()->value,
                 'whatsapp_number' => WhatsAppLink::internationalNumber($restaurant) !== null,
                 // What a WhatsApp order asks the guest for, per way in.
                 'whatsapp_fields' => $restaurant->whatsappAsks(),
@@ -152,9 +164,14 @@ class UserResource extends JsonResource
             'plan' => collect(Feature::flags())
                 ->mapWithKeys(fn (Feature $flag): array => [$flag->value => $entitlements->can($flag)])
                 ->all(),
+            // The flags an admin turned off for this restaurant (false in
+            // `plan` too), so the dashboard says so instead of offering a
+            // package that may already include them.
+            'turned_off' => $entitlements->turnedOff(),
             // The AI buttons (translate, write a description), while the
             // server has a provider set up and the package gives uses: how
-            // many a day (null for no cap) and how many are left. Null is off.
+            // many a day (null for no cap) and how many are left, and the
+            // month's credits (never what they cost). Null is off.
             'writing_help' => app(WritingHelpUses::class)->forDashboard($restaurant),
         ];
     }
@@ -166,6 +183,8 @@ class UserResource extends JsonResource
     {
         return [
             'slug' => $package?->slug,
+            // Its crown's metal in the dashboard.
+            'tier' => ($package->tier ?? PackageTier::Bronze)->value,
             'name' => [
                 'en' => $package?->getTranslation('name', 'en', false) ?: null,
                 'ar' => $package?->getTranslation('name', 'ar', false) ?: null,

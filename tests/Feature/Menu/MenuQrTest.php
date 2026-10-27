@@ -3,7 +3,11 @@
 namespace Tests\Feature\Menu;
 
 use App\Enums\Feature;
+use App\Services\Qr\QrDesign;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Defer\DeferredCallbackCollection;
+use Illuminate\Support\Facades\Http;
 use Tests\Support\CreatesOwners;
 use Tests\TestCase;
 
@@ -40,7 +44,7 @@ class MenuQrTest extends TestCase
 
         $this->getJson(route('public.qr.options', 'olive'))
             ->assertOk()
-            ->assertJsonPath('data.data', $restaurant->qrUrl())
+            ->assertJsonPath('data.data', QrDesign::url($restaurant))
             ->assertJsonPath('data.dotsOptions.type', 'classy')
             ->assertJsonPath('data.dotsOptions.color', '#C0392B')
             ->assertJsonPath('data.cornersSquareOptions.type', 'dot')
@@ -85,6 +89,27 @@ class MenuQrTest extends TestCase
 
         $this->assertStringContainsString('public', $cache);
         $this->assertStringContainsString('max-age=300', $cache);
+        // Cloudflare keeps it the hour: a save of the restaurant clears it with the menu.
+        $this->assertStringContainsString('s-maxage=3600', $cache);
+    }
+
+    public function test_a_change_to_the_qr_design_clears_its_address_at_cloudflare(): void
+    {
+        config([
+            'app.url' => 'https://qayema.test',
+            'services.cloudflare.zone_id' => 'zone-1',
+            'services.cloudflare.api_token' => 'purge-only-token',
+        ]);
+        $shop = $this->published(['slug' => 'olive']);
+        app(DeferredCallbackCollection::class)->invoke();
+        Http::fake();
+        $this->app->forgetScopedInstances();
+
+        $shop->update(['qr_settings' => ['dot_color' => '#112233']]);
+        app(DeferredCallbackCollection::class)->invoke();
+
+        // A prefix covers every address under it, /olive/qr-options among them.
+        Http::assertSent(fn (Request $request) => $request->data() === ['prefixes' => ['qayema.test/olive']]);
     }
 
     public function test_a_closed_or_unknown_menu_has_no_code(): void

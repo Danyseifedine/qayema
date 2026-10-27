@@ -20,7 +20,7 @@ return [
     'BHD' => ['name' => 'Bahraini Dinar',           'symbol' => 'BD'],
     'OMR' => ['name' => 'Omani Rial',               'symbol' => 'OMR'],
     'JOD' => ['name' => 'Jordanian Dinar',          'symbol' => 'JD'],
-    'LBP' => ['name' => 'Lebanese Pound',           'symbol' => 'L.L.'],
+    'LBP' => ['name' => 'Lebanese Pound',           'symbol' => 'L.L'],
     'EGP' => ['name' => 'Egyptian Pound',           'symbol' => 'E£'],
     'IQD' => ['name' => 'Iraqi Dinar',              'symbol' => 'IQD'],
     'IRR' => ['name' => 'Iranian Rial',             'symbol' => '﷼'],

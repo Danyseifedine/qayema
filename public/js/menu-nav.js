@@ -14,11 +14,17 @@
     var inputs = Array.prototype.slice.call(document.querySelectorAll('[data-menu-search]'));
     var noResults = document.getElementById('menu-no-results');
 
+    /** Measures the tabs again when one changes size (set up below). */
+    var resizeWatcher = null;
+
     /** The chosen category; 'all' is the tab the menu opens on. */
     var active = 'all';
 
     /** The search term, lowercased. The two filters compose. */
     var term = '';
+
+    /** The dishes of the offer whose tab is open (QAYEMA_NAV.showOffer). */
+    var offerDishes = [];
 
     /** Tell the analytics (menu-track.js) what a guest did. */
     function track(detail) {
@@ -34,7 +40,12 @@
             var shown = 0;
 
             Array.prototype.forEach.call(section.querySelectorAll('.dish'), function (dish) {
-                var match = inCategory && (term === '' || (dish.dataset.search || '').indexOf(term) !== -1);
+                // Under an offer's tab, only its dishes, in whichever category.
+                var picked = active === 'offer'
+                    ? offerDishes.indexOf(parseInt(dish.dataset.dish, 10)) !== -1
+                    : inCategory;
+                // An offer's deal dish while the offer is not live (menu-offers.js) never shows.
+                var match = !dish.hasAttribute('data-deal-off') && picked && (term === '' || (dish.dataset.search || '').indexOf(term) !== -1);
                 dish.hidden = !match;
                 if (match) {
                     shown++;
@@ -96,6 +107,11 @@
     }
 
     function select(tab) {
+        // Any other tab takes an offer's tab away.
+        if (tab.dataset.tab !== 'offer') {
+            dropOfferTab();
+        }
+
         tabs.forEach(function (other) {
             other.setAttribute('aria-current', other === tab ? 'true' : 'false');
         });
@@ -132,6 +148,78 @@
         });
     });
 
+    // ---- An offer's dishes, under a tab of its own -------------------------
+    //
+    // A tap on an offer that leads to its dishes (menu-offers.js) adds an
+    // "Offers" tab beside "All" and opens it: only that offer's dishes show,
+    // across the categories. "All" or any category takes the tab away again.
+
+    function dropOfferTab() {
+        var tab = inner ? inner.querySelector('.tab-offer') : null;
+
+        if (tab) {
+            tab.remove();
+            tabs = tabs.filter(function (other) {
+                return other !== tab;
+            });
+        }
+    }
+
+    window.QAYEMA_NAV = {
+        /**
+         * @param {string} label the tab's name ("Offers")
+         * @param {number[]} dishes the offer's dishes
+         */
+        showOffer: function (label, dishes) {
+            var all = inner ? inner.querySelector('.tab[data-tab="all"]') : null;
+
+            if (!all) {
+                return;
+            }
+
+            dropOfferTab();
+            offerDishes = dishes;
+
+            var tab = document.createElement('button');
+            tab.type = 'button';
+            tab.className = 'tab tab-offer';
+            tab.dataset.tab = 'offer';
+            tab.setAttribute('aria-current', 'false');
+            tab.textContent = label;
+            tab.addEventListener('click', function () {
+                select(tab);
+            });
+            inner.insertBefore(tab, all.nextSibling);
+            tabs = Array.prototype.slice.call(inner.querySelectorAll('.tab'));
+            if (resizeWatcher) {
+                resizeWatcher.observe(tab);
+            }
+
+            select(tab);
+
+            // Its dishes in sight, whatever the guest was looking at.
+            var first = sections.filter(function (section) {
+                return !section.hidden;
+            })[0];
+            if (first) {
+                first.scrollIntoView({ block: 'start', behavior: 'smooth' });
+            }
+        },
+    };
+
+    // A deal dish came or went with its offer (menu-offers.js), and its
+    // category's tab with it: filter again, and leave a tab that hid.
+    document.addEventListener('qayema:deals', function () {
+        var tab = currentTab();
+
+        if (tab && tab.hidden && tabs[0]) {
+            select(tabs[0]);
+        } else {
+            apply();
+            movePill();
+        }
+    });
+
     if (pill && tabs.length > 0) {
         movePill();
 
@@ -145,11 +233,11 @@
         // when loaded), so document.fonts.ready has nothing to wait for yet,
         // and the font that lands later changes every tab's width.
         if ('ResizeObserver' in window) {
-            var watcher = new ResizeObserver(movePill);
+            resizeWatcher = new ResizeObserver(movePill);
 
-            watcher.observe(inner);
+            resizeWatcher.observe(inner);
             tabs.forEach(function (tab) {
-                watcher.observe(tab);
+                resizeWatcher.observe(tab);
             });
         } else {
             window.addEventListener('resize', movePill);

@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\ContactMessages\Pages;
 
 use App\Filament\Admin\Actions\ChangePackageAction;
+use App\Filament\Admin\Actions\HandleMessageAction;
 use App\Filament\Admin\Resources\ContactMessages\ContactMessageResource;
 use App\Filament\Admin\Resources\Restaurants\RestaurantResource;
 use Filament\Actions\DeleteAction;
@@ -19,6 +20,7 @@ class ViewContactMessage extends ViewRecord
     {
         return [
             ChangePackageAction::forRequest(),
+            HandleMessageAction::make(),
             DeleteAction::make(),
         ];
     }
@@ -57,6 +59,13 @@ class ViewContactMessage extends ViewRecord
                     TextEntry::make('created_at')
                         ->label('Received at')
                         ->dateTime(),
+
+                    TextEntry::make('handled_at')
+                        ->label('Handled')
+                        ->dateTime()
+                        ->placeholder('Still open')
+                        ->badge()
+                        ->color(fn (mixed $state): string => blank($state) ? 'warning' : 'success'),
                 ]),
 
             Section::make('Message')

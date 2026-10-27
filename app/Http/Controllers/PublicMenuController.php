@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Enums\Ask;
 use App\Enums\OrderChannel;
+use App\Models\Category;
 use App\Models\DiningTable;
+use App\Models\Dish;
+use App\Models\Offer;
 use App\Models\Restaurant;
 use App\Models\Template;
 use App\Services\Menu\MapPoint;
@@ -13,7 +16,10 @@ use App\Services\Menu\MenuLanguages;
 use App\Services\Menu\MenuSeo;
 use App\Services\Menu\MenuToken;
 use App\Services\Menu\OpeningHours;
+use App\Services\Offers\LiveOffers;
 use App\Services\Orders\WhatsAppLink;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -34,6 +40,7 @@ class PublicMenuController extends Controller
 {
     public function __construct(
         private readonly MenuSeo $seo,
+        private readonly LiveOffers $offers,
     ) {}
 
     public function show(Request $request, Restaurant $restaurant): View
@@ -74,10 +81,48 @@ class PublicMenuController extends Controller
 
         $locale = $this->locale($request, $restaurant);
 
+        // The offers the page carries; the phone shows the ones live now
+        // (menu-offers.js). The dishes on a live discount are drawn at their
+        // offer price already, from the offers in hand.
+        $previewOffer = $this->previewOffer($request, $restaurant);
+        $offers = $this->offers->forMenu($restaurant, $previewOffer);
+        // An offer's deal dish is on the page only with its offer (not
+        // paused, not ended, kept on by the package): not drawn at all
+        // otherwise, so it is in no search, count or choice either.
+        $carried = $offers->modelKeys();
+        $restaurant->categories->each(fn (Category $category) => $category->setRelation(
+            'dishes',
+            $category->dishes->reject(fn (Dish $dish): bool => $dish->isDeal() && ! in_array($dish->offer_id, $carried, true))->values(),
+        ));
+        // A build's dish sits above the search, in no category's list.
+        $built = $this->builtDishes($restaurant);
+        // Each offer keeps only its dishes guests can see (a hidden one is
+        // not on the page), with their prices: its badge and "See the
+        // dishes" show only while one is left.
+        $onMenu = $restaurant->categories->flatMap->dishes->keyBy('id');
+        $offers->each(fn (Offer $offer) => $offer->setRelation(
+            'dishes',
+            $offer->dishes->map(fn (Dish $dish): ?Dish => $onMenu->get($dish->id))->filter()->values(),
+        ));
+        $timezone = $restaurant->localTimezone();
+        $now = CarbonImmutable::now();
+        $priced = $restaurant->categories->flatMap->dishes->filter(fn (Dish $dish): bool => $dish->price !== null);
+        $deals = $offers->isEmpty() ? [] : $this->offers->bestAmong(
+            $offers,
+            $priced->mapWithKeys(fn (Dish $dish): array => [$dish->id => (string) $dish->price])->all(),
+            $now,
+            $timezone,
+            // An amount off is in the main currency: a dish in the second one takes it at the rate.
+            $priced->mapWithKeys(fn (Dish $dish): array => [$dish->id => $restaurant->rateOf($dish)])->filter()->all(),
+        );
+
         // The menu route carries no locale middleware, so without this every
         // __() on the page resolves against APP_LOCALE and an Arabic menu
         // prints English.
         app()->setLocale($locale);
+
+        // Live as the page is drawn; the phone checks again.
+        $live = $offers->filter(fn (Offer $offer): bool => $offer->id === $previewOffer || $offer->isLiveAt($now, $timezone))->pluck('id')->all();
 
         // A preview is a dress rehearsal and never takes a real order.
         $channel = $preview === null ? $restaurant->orderChannel() : null;
@@ -126,10 +171,19 @@ class PublicMenuController extends Controller
             'dine_in' => $dineIn && $restaurant->dineInChannel() === OrderChannel::Menu,
             'table' => $table,
             // Each dish's variants and add-ons, for its sheet and the cart.
-            'dish_options' => MenuDishOptions::for($restaurant, $restaurant->categories->flatMap->dishes, $locale),
+            'dish_options' => MenuDishOptions::for($restaurant, $restaurant->categories->flatMap->dishes->concat($built), $locale),
+            // The build dishes, drawn with their icons above the search.
+            'built_dishes' => $built,
             'seo' => $this->seo->for($restaurant, $locale, $preview !== null),
             // What the cart and the tracking send in place of a CSRF token.
             'menu_token' => MenuToken::issue(),
+            'offers' => $offers,
+            'offers_live' => $live,
+            // The deal dishes drawn hidden: their offer is not live as the
+            // page is drawn (menu-offers.js shows them in time).
+            'hidden_deals' => $onMenu->filter(fn (Dish $dish): bool => $dish->isDeal() && ! in_array($dish->offer_id, $live, true))->keys()->all(),
+            'offer_deals' => $deals,
+            'offer_preview' => $previewOffer,
         ]);
     }
 
@@ -200,6 +254,24 @@ class PublicMenuController extends Controller
      * Anyone else's `?preview=` is silently ignored so it can't be used to
      * probe templates or bypass the "no template yet" 404.
      */
+    /**
+     * `?offer=12`: the owner looks at one of their offers on the menu as
+     * guests will, even paused or not started yet, and its pop-up or ad
+     * shows at once. Ignored for anyone else.
+     */
+    private function previewOffer(Request $request, Restaurant $restaurant): ?int
+    {
+        $id = $request->query('offer');
+
+        if ($id === null || ! ctype_digit((string) $id)) {
+            return null;
+        }
+
+        $user = $request->user();
+
+        return $user !== null && (int) $user->restaurant?->id === $restaurant->id ? (int) $id : null;
+    }
+
     private function previewTemplate(Request $request, Restaurant $restaurant): ?Template
     {
         $id = $request->query('preview');
@@ -214,6 +286,36 @@ class PublicMenuController extends Controller
             return null;
         }
 
-        return Template::query()->active()->find((int) $id);
+        return Template::query()->active()->availableTo($restaurant)->find((int) $id);
+    }
+
+    /**
+     * The dishes guests build (Build your own), while the restaurant has it:
+     * those in no category, and any still filed under one from before,
+     * taken out of its list. In the dishes' order. Without the feature a
+     * build's dish stays where it is (one in no category is not drawn).
+     *
+     * @return Collection<int, Dish>
+     */
+    private function builtDishes(Restaurant $restaurant): Collection
+    {
+        if (! $restaurant->showsBuilds()) {
+            return new Collection;
+        }
+
+        $filed = $restaurant->categories->flatMap->dishes->filter(fn (Dish $dish): bool => $dish->builds->isNotEmpty());
+        $restaurant->categories->each(fn (Category $category) => $category->setRelation(
+            'dishes',
+            $category->dishes->filter(fn (Dish $dish): bool => $dish->builds->isEmpty())->values(),
+        ));
+
+        $own = $restaurant->dishes()
+            ->whereNull('category_id')
+            ->where('is_available', true)
+            ->whereHas('builds')
+            ->with(MenuDishOptions::relations($restaurant))
+            ->get();
+
+        return $own->concat($filed)->sortBy([['display_order', 'asc'], ['id', 'asc']])->values();
     }
 }

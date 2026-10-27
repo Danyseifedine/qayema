@@ -27,7 +27,7 @@ class MenuTableTest extends TestCase
     {
         parent::setUp();
 
-        $this->defaultPackageIncludes(Feature::Ordering, Feature::MenuOrdering, Feature::DineIn, Feature::MultipleLanguages);
+        $this->defaultPackageIncludes(Feature::Ordering, Feature::MenuOrdering, Feature::DineIn, Feature::DineInWhatsApp, Feature::MultipleLanguages);
         $this->shop = $this->published(['slug' => 'olive', 'order_mode' => 'menu', 'second_locale' => 'ar']);
         $this->table = DiningTable::factory()->for($this->shop)->create(['name' => 'Terrace 2']);
         Dish::factory()->create([
@@ -67,7 +67,9 @@ class MenuTableTest extends TestCase
     public function test_without_ordering_of_any_kind_the_table_is_not_mentioned(): void
     {
         $this->defaultPackageSets(Feature::Ordering, 0);
+        $this->defaultPackageSets(Feature::MenuOrdering, 0);
         $this->defaultPackageSets(Feature::DineIn, 0);
+        $this->defaultPackageSets(Feature::DineInWhatsApp, 0);
 
         $html = $this->get(route('public.menu', ['olive', 'table' => $this->table->code]))->assertOk()->getContent();
 
@@ -120,7 +122,9 @@ class MenuTableTest extends TestCase
 
     public function test_ordering_at_the_table_alone_still_gives_a_table_its_cart(): void
     {
+        // Neither way of delivery and pickup.
         $this->defaultPackageSets(Feature::Ordering, 0);
+        $this->defaultPackageSets(Feature::MenuOrdering, 0);
 
         $this->get(route('public.menu', ['olive', 'table' => $this->table->code]))
             ->assertOk()

@@ -4,9 +4,11 @@ namespace App\Models;
 
 use App\Services\Menu\MenuCache;
 use App\Support\Color;
+use App\Support\PerRequest;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -15,7 +17,9 @@ use Spatie\Translatable\HasTranslations;
 /**
  * A menu layout. It grants no features. Every active template is open to
  * every restaurant, except one marked `is_premium`, which needs the
- * premium_designs flag (Restaurant::menuTemplate()). The only variable part is
+ * premium_designs flag (Restaurant::menuTemplate()), and one made for a
+ * single restaurant (`restaurant_id`), which only that one sees and may
+ * pick, whatever its package (scopeAvailableTo()). The only variable part is
  * `settings_schema`, the list of knobs the owner may turn. Adding a template
  * is a row plus a Blade view of the same slug.
  */
@@ -24,12 +28,19 @@ class Template extends Model implements HasMedia
     /** @use HasFactory<\Database\Factories\TemplateFactory> */
     use HasFactory, HasTranslations, InteractsWithMedia;
 
-    /** A design reaches every menu drawn with it: Cloudflare forgets them all (MenuCache). */
+    /**
+     * A design reaches every menu drawn with it: Cloudflare forgets them all
+     * (MenuCache), unless a save changed nothing.
+     */
     protected static function booted(): void
     {
         $forget = fn () => app(MenuCache::class)->forgetAll();
 
-        static::saved($forget);
+        static::saved(function (self $template) use ($forget): void {
+            if ($template->wasRecentlyCreated || $template->wasChanged()) {
+                $forget();
+            }
+        });
         static::deleted($forget);
     }
 
@@ -76,6 +87,7 @@ class Template extends Model implements HasMedia
         'settings_schema',
         'is_active',
         'is_premium',
+        'restaurant_id',
         'sort_order',
     ];
 
@@ -85,6 +97,7 @@ class Template extends Model implements HasMedia
             'settings_schema' => 'array',
             'is_active' => 'boolean',
             'is_premium' => 'boolean',
+            'restaurant_id' => 'integer',
             'sort_order' => 'integer',
         ];
     }
@@ -93,6 +106,24 @@ class Template extends Model implements HasMedia
     public function restaurants(): HasMany
     {
         return $this->hasMany(Restaurant::class);
+    }
+
+    /** @return BelongsTo<Restaurant, $this> the one restaurant it was made for; none when it is every restaurant's */
+    public function madeFor(): BelongsTo
+    {
+        return $this->belongsTo(Restaurant::class, 'restaurant_id');
+    }
+
+    /**
+     * The designs this restaurant may see: every restaurant's, and those made
+     * for it.
+     *
+     * @param  Builder<Template>  $query
+     * @return Builder<Template>
+     */
+    public function scopeAvailableTo(Builder $query, Restaurant $restaurant): Builder
+    {
+        return $query->where(fn (Builder $open) => $open->whereNull('restaurant_id')->orWhere('restaurant_id', $restaurant->id));
     }
 
     /**
@@ -106,11 +137,13 @@ class Template extends Model implements HasMedia
 
     /**
      * The design a menu shows when the one its owner chose needs a package
-     * they no longer have: the first active design every package may use.
+     * they no longer have: the first active design every package and every
+     * restaurant may use.
      */
     public static function fallback(): ?self
     {
-        return self::query()->active()->where('is_premium', false)->first();
+        // Asked several times by one save of Appearance: read once a request.
+        return PerRequest::remember('template-fallback', fn (): ?self => self::query()->active()->where('is_premium', false)->whereNull('restaurant_id')->first());
     }
 
     /**

@@ -4,6 +4,7 @@ namespace Tests\Feature\Console;
 
 use App\Enums\Feature;
 use App\Models\FeatureGrant;
+use App\Models\Offer;
 use App\Models\Restaurant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Factory as HttpFactory;
@@ -77,6 +78,20 @@ class ForgetEndedMenusTest extends TestCase
         );
     }
 
+    public function test_menus_whose_offer_started_or_ended_in_the_last_hour_are_cleared(): void
+    {
+        Offer::factory()->create(['restaurant_id' => $this->restaurant('offer-started')->id, 'starts_at' => now()->subMinutes(20)]);
+        Offer::factory()->create(['restaurant_id' => $this->restaurant('offer-ended')->id, 'ends_at' => now()->subMinutes(40)]);
+        Offer::factory()->create(['restaurant_id' => $this->restaurant('offer-later')->id, 'starts_at' => now()->addHour()]);
+        $this->app->forgetScopedInstances();
+        Http::swap(new HttpFactory);
+        Http::fake(fn () => Http::response(['success' => true]));
+
+        $this->artisan('menus:forget-ended')->assertSuccessful()->expectsOutputToContain('Clearing 2 menus');
+
+        $this->assertEqualsCanonicalizing(['qayema.test/offer-started', 'qayema.test/offer-ended'], $this->purged()[0]['prefixes']);
+    }
+
     public function test_nothing_changed_sends_nothing(): void
     {
         $this->restaurant('quiet', ['package_ends_at' => now()->addMonth()]);
@@ -105,7 +120,7 @@ class ForgetEndedMenusTest extends TestCase
     {
         $this->artisan('menus:forget-all')->assertSuccessful()->expectsOutputToContain('Clearing every cached menu');
 
-        $this->assertSame([['purge_everything' => true]], $this->purged());
+        $this->assertSame([['hosts' => ['qayema.test']]], $this->purged());
         Http::assertSent(fn (Request $request) => $request->hasHeader('Authorization', 'Bearer purge-only-token'));
     }
 

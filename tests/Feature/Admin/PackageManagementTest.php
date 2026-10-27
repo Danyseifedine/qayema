@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Enums\Feature;
 use App\Filament\Admin\Resources\ContactMessages\Pages\ViewContactMessage;
 use App\Filament\Admin\Resources\Restaurants\Pages\CreateRestaurant;
 use App\Filament\Admin\Resources\Restaurants\Pages\EditRestaurant;
@@ -68,7 +69,7 @@ class PackageManagementTest extends TestCase
             ->assertHasNoFormErrors();
 
         $this->assertNull($restaurant->fresh()->package_ends_at);
-        $this->assertSame(1000, $restaurant->fresh()->dish_limit);
+        $this->assertSame(1000, $restaurant->fresh()->limitOf(Feature::DishLimit));
     }
 
     public function test_an_end_before_the_start_is_refused(): void
@@ -281,6 +282,32 @@ class PackageManagementTest extends TestCase
         $this->assertSame('pro', $restaurant->package->slug);
         $this->assertTrue($restaurant->package_ends_at->isSameDay(now()->addYear()));
         $this->assertStringStartsWith('Requested on', $restaurant->packageChanges()->first()->note);
+    }
+
+    public function test_a_renewal_request_saves_as_it_opens_for_a_month_from_now(): void
+    {
+        $restaurant = $this->owner([
+            'package_id' => $this->pro()->id,
+            'package_started_at' => now()->subMonths(2),
+            'package_ends_at' => now()->subDays(4),
+        ]);
+        $message = ContactMessage::query()->create([
+            'name' => 'Owner',
+            'email' => 'owner@example.com',
+            'message' => 'Renew please',
+            'ip_address' => '127.0.0.1',
+            'user_id' => $restaurant->user_id,
+            'package_id' => $this->pro()->id,
+        ]);
+        $this->actingAs($this->admin());
+
+        Livewire::test(ViewContactMessage::class, ['record' => $message->id])
+            ->callAction('applyPackage')
+            ->assertHasNoFormErrors();
+
+        $restaurant = $restaurant->fresh();
+        $this->assertTrue($restaurant->package_ends_at->isSameDay(now()->addMonth()));
+        $this->assertTrue($restaurant->menuOnline());
     }
 
     public function test_a_plain_contact_message_has_nothing_to_apply(): void

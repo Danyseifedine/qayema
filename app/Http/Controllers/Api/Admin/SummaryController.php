@@ -12,8 +12,10 @@ use Illuminate\Http\JsonResponse;
 
 /**
  * The admin app's home: how many restaurants, how many new, off, ending
- * soon and ended, how many menu visits today, and what the writing help
- * (AI) spent today. Three queries.
+ * soon and ended, how many menu visits today, who pays and what that adds
+ * up to a month (Restaurant::paying(): a menu switched off or a package
+ * that ended is left out), and what the writing help (AI) spent today and
+ * this month. Six queries.
  */
 class SummaryController extends Controller
 {
@@ -33,6 +35,11 @@ class SummaryController extends Controller
             [$now->copy()->subDays(IndexRestaurantsRequest::NEW_DAYS), $now, $now, $now->copy()->addDays(self::ENDING_DAYS), $now],
         )->first();
 
+        $paying = Restaurant::query()->paying()->toBase()
+            ->selectRaw('count(*) as paying, sum(case when pays_with_whish = 1 then 1 else 0 end) as whish')
+            ->first();
+        $lebanon = now(AdminAlerts::TIMEZONE);
+
         return response()->json(['data' => [
             'restaurants' => (int) $counts->total,
             'new_this_week' => (int) $counts->new,
@@ -41,7 +48,14 @@ class SummaryController extends Controller
             'ended' => (int) $counts->ended,
             // Since midnight in Lebanon, where the admins are.
             'visits_today' => MenuSession::query()->where('viewed_at', '>=', now(AdminAlerts::TIMEZONE)->startOfDay()->utc())->count(),
-            'writing_help_today' => $log->totalsSince(now(AdminAlerts::TIMEZONE)->toDateString()),
+            'writing_help_today' => $log->totalsSince($lebanon->toDateString()),
+            'writing_help_month' => $log->totalsSince($lebanon->copy()->startOfMonth()->toDateString()),
+            // A month, a row per currency, the most first; the Whish part apart.
+            'income' => [
+                'paying' => (int) $paying->paying,
+                'paying_whish' => (int) $paying->whish,
+                'totals' => Restaurant::monthlyIncome()->all(),
+            ],
         ]]);
     }
 }

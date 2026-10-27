@@ -132,6 +132,29 @@ class AdminRestaurantsTest extends TestCase
         $this->getJson('/api/admin/restaurants?filter=gone')->assertUnprocessable()->assertJsonValidationErrors('filter');
     }
 
+    public function test_paying_lists_the_restaurants_paying_now_with_what_they_pay(): void
+    {
+        $this->freezeTime();
+        $pro = $this->ownerOn('pro', ['pays_with_whish' => true]);
+        $deal = $this->ownerOn('free', ['price_cents' => 300]);
+        // Not paying: on Free, switched off, ended, not started yet.
+        $this->ownerOn('free');
+        $this->ownerOn('pro', ['is_active' => false]);
+        $this->ownerOn('pro', ['package_ends_at' => now()->subDay()]);
+        $this->ownerOn('pro', ['package_started_at' => now()->addDay()]);
+
+        $this->getJson('/api/admin/restaurants?filter=paying')
+            ->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonPath('data.0.id', $deal->id)
+            ->assertJsonPath('data.0.package.monthly_price_cents', 300)
+            ->assertJsonPath('data.0.pays_with_whish', false)
+            ->assertJsonPath('data.1.id', $pro->id)
+            ->assertJsonPath('data.1.package.monthly_price_cents', 799)
+            ->assertJsonPath('data.1.package.currency', 'USD')
+            ->assertJsonPath('data.1.pays_with_whish', true);
+    }
+
     public function test_ending_lists_packages_in_force_soonest_first_and_ended_latest_first(): void
     {
         $later = $this->ownerOn('pro', ['package_ends_at' => now()->addDays(20)]);
@@ -196,6 +219,15 @@ class AdminRestaurantsTest extends TestCase
         $history = $restaurant->packageChanges()->sole();
         $this->assertSame('Paid 3 months in cash', $history->note);
         $this->assertSame($this->admin->id, $history->changed_by);
+    }
+
+    public function test_a_link_over_100_characters_is_refused(): void
+    {
+        $this->postJson('/api/admin/restaurants', $this->newRestaurant(['slug' => str_repeat('a', 101)]))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('slug');
+
+        $this->assertSame(0, Restaurant::query()->count());
     }
 
     public function test_a_restaurant_is_opened_in_the_menu_language_chosen(): void
@@ -326,6 +358,66 @@ class AdminRestaurantsTest extends TestCase
             ->assertJsonPath('data.package.ends_at', null);
     }
 
+    public function test_a_package_change_may_set_its_price_and_whish(): void
+    {
+        $restaurant = $this->ownerOn('pro', ['price_cents' => 500]);
+        $premium = Package::findBySlug('premium');
+
+        $this->putJson("/api/admin/restaurants/{$restaurant->id}/package", [
+            'package_id' => $premium->id,
+            'price_cents' => 1250,
+            'pays_with_whish' => true,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.package.name', 'Premium')
+            // The price given wins over the change clearing the old one.
+            ->assertJsonPath('data.package.price_cents', 1250)
+            ->assertJsonPath('data.package.monthly_price_cents', 1250)
+            ->assertJsonPath('data.pays_with_whish', true)
+            ->assertJsonStructure(['data' => ['stats']]);
+
+        $restaurant->refresh();
+        $this->assertSame(1250, $restaurant->price_cents);
+        $this->assertSame(1250, $restaurant->packageChanges()->latest('id')->first()->price_cents);
+
+        // Null back to the package's price, on the same package.
+        $this->putJson("/api/admin/restaurants/{$restaurant->id}/package", ['package_id' => $premium->id, 'price_cents' => null])
+            ->assertOk()
+            ->assertJsonPath('data.package.price_cents', null)
+            ->assertJsonPath('data.package.monthly_price_cents', 1000)
+            ->assertJsonPath('data.pays_with_whish', true);
+    }
+
+    public function test_a_package_change_without_a_price_works_as_before(): void
+    {
+        $restaurant = $this->ownerOn('pro', ['price_cents' => 500, 'pays_with_whish' => true]);
+
+        // The same package keeps its price; another one clears it.
+        $this->putJson("/api/admin/restaurants/{$restaurant->id}/package", ['package_id' => $restaurant->package_id])
+            ->assertJsonPath('data.package.price_cents', 500);
+        $this->putJson("/api/admin/restaurants/{$restaurant->id}/package", ['package_id' => Package::findBySlug('premium')->id])
+            ->assertJsonPath('data.package.price_cents', null)
+            ->assertJsonPath('data.package.monthly_price_cents', 1000)
+            ->assertJsonPath('data.pays_with_whish', true);
+    }
+
+    public function test_a_package_change_refuses_a_bad_price_or_whish(): void
+    {
+        $restaurant = $this->ownerOn('pro');
+        $pro = Package::findBySlug('pro')->id;
+
+        foreach ([-1, 10_000_001, 'ten', 12.5] as $price) {
+            $this->putJson("/api/admin/restaurants/{$restaurant->id}/package", ['package_id' => $pro, 'price_cents' => $price])
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors(['price_cents']);
+        }
+        $this->putJson("/api/admin/restaurants/{$restaurant->id}/package", ['package_id' => $pro, 'pays_with_whish' => 'maybe'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['pays_with_whish']);
+
+        $this->assertNull($restaurant->fresh()->price_cents);
+    }
+
     public function test_adding_a_month_moves_the_end_or_restarts_an_ended_package(): void
     {
         // The test and the request must read the same second.
@@ -371,6 +463,9 @@ class AdminRestaurantsTest extends TestCase
             ->assertJsonPath('data.0.is_default', true)
             ->assertJsonPath('data.3.name', 'Custom')
             ->assertJsonPath('data.3.offered', false)
+            ->assertJsonPath('data.0.price_cents', 0)
+            ->assertJsonPath('data.1.price_cents', Package::findBySlug('pro')->price_cents)
+            ->assertJsonPath('data.1.currency', Package::findBySlug('pro')->currency)
             ->assertJsonCount(4, 'data');
     }
 }

@@ -8,6 +8,7 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -25,7 +26,9 @@ class RestaurantSocialLinksTable
                     ->placeholder('N/A')
                     ->searchable()
                     ->sortable()
-                    ->weight('bold'),
+                    ->weight('bold')
+                    // The restaurant's own page lists only its rows.
+                    ->hidden(fn (mixed $livewire): bool => $livewire instanceof RelationManager),
                 TextColumn::make('platform')
                     ->placeholder('N/A')
                     ->badge()
@@ -60,7 +63,9 @@ class RestaurantSocialLinksTable
                     ->label('Restaurant')
                     ->relationship('restaurant', 'name')
                     ->searchable()
-                    ->preload(),
+                    ->preload()
+                    // The restaurant's own page lists only its rows.
+                    ->hidden(fn (mixed $livewire): bool => $livewire instanceof RelationManager),
             ])
             ->recordActions([ViewAction::make(), EditAction::make(), DeleteAction::make()])
             ->toolbarActions([BulkActionGroup::make([DeleteBulkAction::make()])])

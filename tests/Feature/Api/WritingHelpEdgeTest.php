@@ -6,6 +6,7 @@ use App\Ai\Agents\CategoryDescriptionWriter;
 use App\Ai\Agents\MenuTranslator;
 use App\Ai\Agents\RestaurantDescriptionWriter;
 use App\Enums\Feature;
+use App\Support\MenuTextLimits;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Laravel\Ai\Exceptions\ProviderOverloadedException;
@@ -51,31 +52,31 @@ class WritingHelpEdgeTest extends TestCase
         $restaurant = ['text' => null, 'language' => 'en'];
 
         return [
-            'translate: the longest text' => ['api.writing.translate', [...$translate, 'text' => str_repeat('a', 2000)], null],
-            'translate: a text too long' => ['api.writing.translate', [...$translate, 'text' => str_repeat('a', 2001)], 'text'],
+            'translate: the longest text' => ['api.writing.translate', [...$translate, 'text' => str_repeat('a', MenuTextLimits::LONGEST)], null],
+            'translate: a text too long' => ['api.writing.translate', [...$translate, 'text' => str_repeat('a', MenuTextLimits::LONGEST + 1)], 'text'],
             'translate: no text' => ['api.writing.translate', [...$translate, 'text' => null], 'text'],
             'translate: a text that is not words' => ['api.writing.translate', [...$translate, 'text' => ['Soup']], 'text'],
             'translate: no language from' => ['api.writing.translate', [...$translate, 'from' => null], 'from'],
             'translate: a language from off the menu' => ['api.writing.translate', [...$translate, 'from' => 'de'], 'from'],
             'translate: no language to' => ['api.writing.translate', [...$translate, 'to' => null], 'to'],
             'translate: from the second language to the main one' => ['api.writing.translate', [...$translate, 'from' => 'fr', 'to' => 'en'], null],
-            'translate: a field limit' => ['api.writing.translate', [...$translate, 'max' => 255], null],
+            'translate: a field limit' => ['api.writing.translate', [...$translate, 'max' => MenuTextLimits::DISH_NAME], null],
             'translate: a field limit of none' => ['api.writing.translate', [...$translate, 'max' => 0], 'max'],
-            'translate: a field limit past the longest text' => ['api.writing.translate', [...$translate, 'max' => 2001], 'max'],
+            'translate: a field limit past the longest text' => ['api.writing.translate', [...$translate, 'max' => MenuTextLimits::LONGEST + 1], 'max'],
             'translate: a field limit that is not a number' => ['api.writing.translate', [...$translate, 'max' => 'long'], 'max'],
             'translate: a category description' => ['api.writing.translate', [...$translate, 'fit' => 'category'], null],
             'translate: a restaurant description' => ['api.writing.translate', [...$translate, 'fit' => 'restaurant'], null],
             'translate: a kind of description there is not' => ['api.writing.translate', [...$translate, 'fit' => 'dish'], 'fit'],
-            'category: the longest name' => ['api.writing.category-description', [...$category, 'name' => str_repeat('a', 255)], null],
-            'category: a name too long' => ['api.writing.category-description', [...$category, 'name' => str_repeat('a', 256)], 'name'],
+            'category: the longest name' => ['api.writing.category-description', [...$category, 'name' => str_repeat('a', MenuTextLimits::CATEGORY_NAME)], null],
+            'category: a name too long' => ['api.writing.category-description', [...$category, 'name' => str_repeat('a', MenuTextLimits::CATEGORY_NAME + 1)], 'name'],
             'category: no name' => ['api.writing.category-description', [...$category, 'name' => ''], 'name'],
-            'category: the longest own text' => ['api.writing.category-description', [...$category, 'text' => str_repeat('a', 300)], null],
-            'category: an own text too long' => ['api.writing.category-description', [...$category, 'text' => str_repeat('a', 301)], 'text'],
+            'category: the longest own text' => ['api.writing.category-description', [...$category, 'text' => str_repeat('a', MenuTextLimits::CATEGORY_DESCRIPTION)], null],
+            'category: an own text too long' => ['api.writing.category-description', [...$category, 'text' => str_repeat('a', MenuTextLimits::CATEGORY_DESCRIPTION + 1)], 'text'],
             'category: no language' => ['api.writing.category-description', [...$category, 'language' => null], 'language'],
             'category: in the second language' => ['api.writing.category-description', [...$category, 'language' => 'fr'], null],
             'category: a language off the menu' => ['api.writing.category-description', [...$category, 'language' => 'ar'], 'language'],
-            'restaurant: the longest own text' => ['api.writing.restaurant-description', [...$restaurant, 'text' => str_repeat('a', 2000)], null],
-            'restaurant: an own text too long' => ['api.writing.restaurant-description', [...$restaurant, 'text' => str_repeat('a', 2001)], 'text'],
+            'restaurant: the longest own text' => ['api.writing.restaurant-description', [...$restaurant, 'text' => str_repeat('a', MenuTextLimits::RESTAURANT_DESCRIPTION)], null],
+            'restaurant: an own text too long' => ['api.writing.restaurant-description', [...$restaurant, 'text' => str_repeat('a', MenuTextLimits::RESTAURANT_DESCRIPTION + 1)], 'text'],
             'restaurant: no language' => ['api.writing.restaurant-description', [...$restaurant, 'language' => ''], 'language'],
             'restaurant: a language off the menu' => ['api.writing.restaurant-description', [...$restaurant, 'language' => 'tr'], 'language'],
         ];

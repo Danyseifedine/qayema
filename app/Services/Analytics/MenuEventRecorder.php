@@ -29,6 +29,11 @@ class MenuEventRecorder
         try {
             $dishIds = $this->idsFor($events, 'dish_id', fn (array $ids) => $restaurant->dishes()->whereKey($ids)->pluck('dishes.id'));
             $categoryIds = $this->idsFor($events, 'category_id', fn (array $ids) => $restaurant->categories()->whereKey($ids)->pluck('id'));
+            $offerIds = $this->idsFor(
+                array_map(fn (array $event): array => ['offer_id' => MenuEventType::tryFrom($event['type'])?->carriesOffer() ? ($event['value'] ?? null) : null], $events),
+                'offer_id',
+                fn (array $ids) => $restaurant->offers()->whereKey($ids)->pluck('id'),
+            );
 
             $now = now();
             $rows = [];
@@ -48,6 +53,10 @@ class MenuEventRecorder
                 }
 
                 if ($type->carriesValue() && $value === null) {
+                    continue;
+                }
+
+                if ($type->carriesOffer() && ! isset($offerIds[(int) $value])) {
                     continue;
                 }
 

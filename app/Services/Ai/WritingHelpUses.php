@@ -57,11 +57,20 @@ class WritingHelpUses
         }
     }
 
-    /** `{limit, left}` for the dashboard, null while the restaurant has no writing help. */
+    /**
+     * `{limit, left}` a day and the month's `credits` for the dashboard, null
+     * while the restaurant has no writing help.
+     *
+     * @return array{limit: int|null, left: int|null, credits: array<string, mixed>}|null
+     */
     public function forDashboard(Restaurant $restaurant): ?array
     {
         return WritingHelpSetup::isOnFor($restaurant)
-            ? ['limit' => $this->limit($restaurant), 'left' => $this->left($restaurant)]
+            ? [
+                'limit' => $this->limit($restaurant),
+                'left' => $this->left($restaurant),
+                'credits' => app(WritingHelpCredits::class)->forDashboard($restaurant),
+            ]
             : null;
     }
 

@@ -13,12 +13,12 @@ use App\Models\Order;
 use App\Services\Orders\OrderChanged;
 use App\Services\Orders\OrderClosed;
 use App\Services\Orders\OrderEditor;
+use App\Services\Orders\OrderMovedOn;
 use App\Services\Orders\OrderNews;
 use App\Services\Orders\OrderPulse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Support\Facades\DB;
 
 /**
  * The owner's own orders: read, moved on, changed (what they hold, by the
@@ -45,7 +45,15 @@ class OrderController extends Controller
             ->when($kind === 'table', fn ($query) => $query->atTable())
             ->when($kind === 'away', fn ($query) => $query->away());
 
+        // Unfinished orders first, newest first within each, so one still to
+        // see to is never behind "Show more" however old it is. The id
+        // breaks ties, so pages never repeat or skip an order.
+        $unfinished = [OrderStatus::Placed->value, OrderStatus::Accepted->value, OrderStatus::Ready->value];
         $orders = $ofKind()
+            ->reorder()
+            ->orderByRaw('case when status in (?, ?, ?) then 0 else 1 end', $unfinished)
+            ->latest('placed_at')
+            ->latest('id')
             ->with('items')
             ->when($status, fn ($query, $status) => $query->where('status', $status))
             ->paginate(self::PER_PAGE);
@@ -72,45 +80,31 @@ class OrderController extends Controller
     }
 
     /**
-     * Moves an order on, on the locked row, so it cannot cross a guest's
-     * change (OrderPlacer::change()) or another tab's tap. 409 when the
-     * order is no longer where the owner's screen showed it.
+     * Moves an order on (OrderEditor::move()). 409 when the order is no
+     * longer where the owner's screen showed it.
      */
-    public function update(UpdateOrderRequest $request, Order $order): JsonResponse|OrderResource
+    public function update(UpdateOrderRequest $request, Order $order, OrderEditor $editor): JsonResponse|OrderResource
     {
-        abort_unless($order->restaurant_id === $this->restaurant($request)->id, 403);
+        // Also the 403 for an owner without a restaurant (OrderPolicy).
+        $this->authorize('manage', $order);
 
-        $next = OrderStatus::from($request->validated('status'));
         $seen = $request->validated('guest_updates');
 
-        // Null when it moved (or already stood there); why not, otherwise.
-        $refusal = DB::transaction(function () use ($order, $next, $seen): ?array {
-            $locked = Order::query()->lockForUpdate()->findOrFail($order->id);
-
-            // The same tap twice (a double click, a retry): already done.
-            if ($locked->status === $next) {
-                return null;
-            }
-
-            if (! $locked->status->canMoveTo($next)) {
-                return ['order_moved_on', __('This order has already moved on. The list now shows where it stands.')];
-            }
-
-            if ($seen !== null && $locked->status === OrderStatus::Placed && $next !== OrderStatus::Cancelled && (int) $seen !== $locked->guest_updates) {
-                return ['order_changed', __('The guest just changed this order. Look at it again before taking it on.')];
-            }
-
-            $locked->moveTo($next);
-            OrderNews::fromOwner($locked);
-
-            return null;
-        });
-
-        if ($refusal !== null) {
-            return response()->json(['message' => $refusal[1], 'code' => $refusal[0]], 409);
+        try {
+            $moved = $editor->move($order, OrderStatus::from($request->validated('status')), $seen === null ? null : (int) $seen);
+        } catch (OrderMovedOn) {
+            return $this->refused(__('This order has already moved on. The list now shows where it stands.'), 'order_moved_on');
+        } catch (OrderChanged) {
+            return $this->refused(__('The guest just changed this order. Look at it again before taking it on.'), 'order_changed');
         }
 
-        return new OrderResource($order->refresh()->load('items'));
+        $order->refresh()->load('items');
+
+        if ($moved) {
+            OrderNews::fromOwner($order);
+        }
+
+        return new OrderResource($order);
     }
 
     /**
@@ -120,15 +114,15 @@ class OrderController extends Controller
     public function items(EditOrderItemsRequest $request, Order $order, OrderEditor $editor): JsonResponse|OrderResource
     {
         $restaurant = $this->restaurant($request);
-        abort_unless($order->restaurant_id === $restaurant->id, 403);
+        $this->authorize('manage', $order);
         $order->setRelation('restaurant', $restaurant);
 
         try {
             $edited = $editor->edit($order, $request->kept(), $request->validated('add'), $request->validated('guest_updates'));
         } catch (OrderClosed) {
-            return response()->json(['message' => __('This order was cancelled, so it can no longer be changed.'), 'code' => 'order_closed'], 409);
+            return $this->refused(__('This order was cancelled, so it can no longer be changed.'), 'order_closed');
         } catch (OrderChanged) {
-            return response()->json(['message' => __('The guest just changed this order. Look at it again before taking it on.'), 'code' => 'order_changed'], 409);
+            return $this->refused(__('The guest just changed this order. Look at it again before taking it on.'), 'order_changed');
         }
 
         // The guest following it sees the new version, other tabs too.
@@ -145,12 +139,18 @@ class OrderController extends Controller
     public function destroy(Request $request, Order $order): JsonResponse
     {
         $restaurant = $this->restaurant($request);
-        abort_unless($order->restaurant_id === $restaurant->id, 403);
+        $this->authorize('manage', $order);
         $order->setRelation('restaurant', $restaurant);
 
         $order->delete();
         OrderNews::fromOwner($order);
 
         return response()->json(null, 204);
+    }
+
+    /** The order is no longer where the owner's screen showed it. */
+    private function refused(string $message, string $code): JsonResponse
+    {
+        return response()->json(['message' => $message, 'code' => $code], 409);
     }
 }

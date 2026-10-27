@@ -33,7 +33,7 @@ class EditOrderTest extends TestCase
     {
         parent::setUp();
 
-        $this->defaultPackageIncludes(Feature::Ordering, Feature::MenuOrdering);
+        $this->defaultPackageIncludes(Feature::Ordering, Feature::MenuOrdering, Feature::OrderTracking);
         $this->shop = $this->published(['currency' => 'USD', 'order_mode' => 'menu']);
         $category = Category::factory()->create(['restaurant_id' => $this->shop->id]);
         $this->kebab = Dish::factory()->create([

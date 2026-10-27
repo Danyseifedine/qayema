@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Models\Dish;
 use App\Models\DishAddon;
 use App\Models\DishVariant;
+use App\Models\Offer;
 use App\Models\Restaurant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -29,6 +30,18 @@ class DishFactory extends Factory
             'is_available' => true,
             'display_order' => 0,
         ];
+    }
+
+    /**
+     * The offer's deal dish (Offer::deal()), in its restaurant and linked to
+     * it as its one dish, as the offer API leaves it.
+     */
+    public function dealOf(Offer $offer): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'restaurant_id' => $offer->restaurant_id,
+            'offer_id' => $offer->id,
+        ])->afterCreating(fn (Dish $dish) => $offer->dishes()->sync([$dish->id]));
     }
 
     public function unavailable(): static

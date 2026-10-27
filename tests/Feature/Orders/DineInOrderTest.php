@@ -37,7 +37,7 @@ class DineInOrderTest extends TestCase
     {
         parent::setUp();
 
-        $this->defaultPackageIncludes(Feature::Ordering, Feature::MenuOrdering, Feature::DineIn, Feature::MultipleLanguages);
+        $this->defaultPackageIncludes(Feature::Ordering, Feature::MenuOrdering, Feature::DineIn, Feature::DineInWhatsApp, Feature::OrderTracking, Feature::MultipleLanguages);
         $this->shop = $this->published([
             'slug' => 'olive', 'currency' => 'USD', 'order_mode' => 'menu', 'second_locale' => 'ar',
             'country_code' => 'LB', 'phone' => '70123456',
@@ -142,6 +142,7 @@ class DineInOrderTest extends TestCase
     public function test_not_without_the_package_feature(): void
     {
         $this->defaultPackageSets(Feature::DineIn, 0);
+        $this->defaultPackageSets(Feature::DineInWhatsApp, 0);
 
         $this->postJson(route('public.order', 'olive'), $this->atTable())
             ->assertJsonValidationErrors(['fulfilment']);

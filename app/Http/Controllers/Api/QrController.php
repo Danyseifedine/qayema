@@ -7,6 +7,8 @@ use App\Http\Controllers\Concerns\ResolvesRestaurant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\QrSettingsRequest;
 use App\Models\Restaurant;
+use App\Services\Analytics\MenuTraffic;
+use App\Services\Qr\QrDesign;
 use App\Services\Qr\QrStyle;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -60,18 +62,18 @@ class QrController extends Controller
             // Locked by the owner's own switch rather than the package, so the
             // dashboard can point to Features instead of to an upgrade.
             'switched_off' => $restaurant->isSwitchedOff('qr'),
-            'url' => $restaurant->qrUrl(),
+            'url' => QrDesign::url($restaurant),
             'display_url' => "{$host}/{$restaurant->slug}",
             'card_url' => $unlocked ? route('public.qr', $restaurant->slug) : null,
             // Inlined, not linked: see QrStyle::logoDataUrl().
             'logo_data_url' => $unlocked ? QrStyle::logoDataUrl($restaurant) : null,
             // What a "brand" card is painted with, so the picker can show it.
             'brand_color' => QrStyle::brandColor($restaurant),
-            'settings' => $unlocked ? $restaurant->qrDesign() : $restaurant->qrDefaultDesign(),
+            'settings' => QrDesign::shown($restaurant),
             // What "Reset to simple" goes back to, so the dashboard never
             // keeps its own copy of the defaults.
-            'defaults' => $restaurant->qrDefaultDesign(),
-            'stats' => $restaurant->entitlements()->can(Feature::Analytics) ? $restaurant->qrScans() : null,
+            'defaults' => QrDesign::defaults($restaurant),
+            'stats' => $restaurant->entitlements()->can(Feature::Analytics) ? (new MenuTraffic($restaurant))->qrScans() : null,
         ];
     }
 }

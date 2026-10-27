@@ -24,6 +24,9 @@ final readonly class OrderDetails
         public ?string $longitude = null,
         public ?string $clientToken = null,
         public ?DiningTable $table = null,
+        // The total the guest's cart showed: a higher one is not placed
+        // (PricesChanged). Not an order column.
+        public ?string $seenTotal = null,
     ) {}
 
     /** @return array<string, mixed> the order columns these fill */

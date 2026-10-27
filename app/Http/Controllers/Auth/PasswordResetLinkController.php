@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\ForgotPasswordRequest;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
 use Illuminate\View\View;
 
@@ -21,12 +21,8 @@ class PasswordResetLinkController extends Controller
         return view('portal.auth.forgot-password');
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(ForgotPasswordRequest $request): RedirectResponse
     {
-        $request->validate([
-            'email' => ['required', 'string', 'email', 'max:255'],
-        ]);
-
         $status = Password::sendResetLink($request->only('email'));
 
         // RESET_THROTTLED is the only outcome worth telling the user about:

@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Dish;
 use App\Models\MenuEvent;
 use App\Models\MenuSession;
+use App\Models\Offer;
 use App\Models\Restaurant;
 use App\Models\Template;
 use Illuminate\Foundation\Http\Events\RequestHandled;
@@ -94,6 +95,25 @@ class MenuEventsTest extends TestCase
         ])->assertNoContent();
 
         $this->assertSame(['map'], MenuEvent::query()->pluck('type')->map->value->all());
+    }
+
+    public function test_offer_events_count_only_this_restaurants_offers(): void
+    {
+        $restaurant = $this->published();
+        $mine = Offer::factory()->create(['restaurant_id' => $restaurant->id]);
+        $theirs = Offer::factory()->create();
+
+        $this->send($restaurant, [
+            ['type' => 'offer_shown', 'value' => (string) $mine->id],
+            ['type' => 'offer_tap', 'value' => (string) $mine->id],
+            ['type' => 'offer_shown', 'value' => (string) $theirs->id],
+            ['type' => 'offer_tap', 'value' => 'banner'],
+        ])->assertNoContent();
+
+        $this->assertSame(
+            [['offer_shown', (string) $mine->id], ['offer_tap', (string) $mine->id]],
+            $restaurant->menuEvents()->orderBy('id')->get()->map(fn ($event): array => [$event->type->value, $event->value])->all(),
+        );
     }
 
     public function test_fields_a_type_does_not_carry_are_cleared(): void

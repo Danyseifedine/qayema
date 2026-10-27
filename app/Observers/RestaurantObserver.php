@@ -38,10 +38,15 @@ class RestaurantObserver
         }
     }
 
-    /** Every write to the package fields lands in the history: the first one here. */
+    /**
+     * Every write to the package fields lands in the history: the first one
+     * here. Cloudflare forgets the new link, as the 404 a guest got there
+     * before it existed may be kept.
+     */
     public function created(Restaurant $restaurant): void
     {
         $restaurant->recordPackageChange(null);
+        app(MenuCache::class)->forget($restaurant);
     }
 
     public function updating(Restaurant $restaurant): void
@@ -72,19 +77,32 @@ class RestaurantObserver
     public function saved(Restaurant $restaurant): void
     {
         // What guests see changed: Cloudflare forgets the menu, under the
-        // link it just left too (MenuCache).
-        app(MenuCache::class)->forget($restaurant, (string) ($restaurant->wasChanged('slug') ? $restaurant->getOriginal('slug') : ''));
+        // link it just left too (MenuCache). A save that changed nothing, or
+        // only what the admin keeps for itself (the price, Whish), clears
+        // nothing, as each purge spends Cloudflare's budget.
+        if (array_diff(array_keys($restaurant->getChanges()), Restaurant::ADMIN_ONLY_FIELDS) !== []) {
+            app(MenuCache::class)->forget($restaurant, (string) ($restaurant->wasChanged('slug') ? $restaurant->getOriginal('slug') : ''));
+        }
 
-        // Only an update carries package changes; the insert is recorded in created().
+        // Only an update carries package changes; the insert is recorded in
+        // created(). A new price alone is history too, with no other effect.
+        if (! $restaurant->wasChanged([...Restaurant::PACKAGE_FIELDS, 'price_cents'])) {
+            return;
+        }
+
+        $restaurant->recordPackageChange($restaurant->getOriginal('package_id'));
+
         if (! $restaurant->wasChanged(Restaurant::PACKAGE_FIELDS)) {
             return;
         }
 
         Entitlements::flush($restaurant->id);
-        $restaurant->recordPackageChange($restaurant->getOriginal('package_id'));
         // The loaded package may be the one it just left; what came into
-        // reach is worked out from the new one, just below.
-        $restaurant->load('package');
+        // reach is worked out from the new one, just below (read only when
+        // the one in hand is not it: PackageAssigner hands it over).
+        if (! $restaurant->relationLoaded('package') || $restaurant->package?->id !== $restaurant->package_id) {
+            $restaurant->load('package');
+        }
         $restaurant->switchOnWhatCameIntoReach($restaurant->inReachBeforeSave);
     }
 
@@ -95,7 +113,11 @@ class RestaurantObserver
      */
     public function deleting(Restaurant $restaurant): void
     {
+        // Through the models, so each photo leaves storage with its row.
         $restaurant->dishes()->get()->each->delete();
+        $restaurant->offers()->get()->each->delete();
+        // A design made for it alone goes too, with its thumbnail.
+        $restaurant->ownDesigns()->get()->each->delete();
     }
 
     public function deleted(Restaurant $restaurant): void

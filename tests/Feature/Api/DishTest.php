@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use App\Enums\Feature;
 use App\Models\Category;
 use App\Models\Dish;
+use App\Models\FeatureGrant;
 use App\Models\Restaurant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -123,6 +124,31 @@ class DishTest extends TestCase
             ->assertJsonValidationErrors('name.en');
     }
 
+    public function test_ingredients_are_tidied_into_a_clean_list_in_each_language(): void
+    {
+        [$user, $restaurant] = $this->owner();
+        $restaurant->update(['second_locale' => 'ar']);
+        $category = Category::factory()->create(['restaurant_id' => $restaurant->id]);
+
+        $id = $this->actingAs($user)
+            ->postJson(route('api.dishes.store'), [
+                'name' => ['en' => 'Salad', 'ar' => 'سلطة'],
+                'ingredients' => ['en' => 'onion,..tomato...ect', 'ar' => 'بصل،طماطم... إلخ'],
+                'category_id' => $category->id,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.ingredients.en', 'onion, tomato')
+            ->assertJsonPath('data.ingredients.ar', 'بصل، طماطم')
+            ->json('data.id');
+
+        // Nothing left once tidied (only "etc."): the language is cleared, as a blank one is.
+        $this->actingAs($user)
+            ->patchJson(route('api.dishes.update', $id), ['name' => ['en' => 'Salad'], 'ingredients' => ['en' => 'etc...']])
+            ->assertOk();
+
+        $this->assertNull(Dish::query()->find($id)?->getTranslation('ingredients', 'en', false) ?: null);
+    }
+
     public function test_an_empty_availability_value_does_not_fail_validation(): void
     {
         [$user, $restaurant] = $this->owner();
@@ -168,6 +194,19 @@ class DishTest extends TestCase
             ->assertJsonValidationErrors('name');
 
         $this->assertDatabaseCount('dishes', 1);
+    }
+
+    public function test_store_is_refused_under_a_limit_an_admin_lowered(): void
+    {
+        [$user, $restaurant] = $this->owner();
+        $category = Category::factory()->create(['restaurant_id' => $restaurant->id]);
+        Dish::factory()->count(2)->create(['restaurant_id' => $restaurant->id, 'category_id' => $category->id]);
+        FeatureGrant::factory()->for($restaurant)->setTo(Feature::DishLimit, 2)->create();
+
+        $this->actingAs($user)
+            ->postJson(route('api.dishes.store'), ['name' => ['en' => 'Third'], 'category_id' => $category->id])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('name');
     }
 
     public function test_store_attaches_a_temp_uploaded_image(): void

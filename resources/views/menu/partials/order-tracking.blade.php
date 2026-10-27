@@ -124,13 +124,13 @@
                         <span class="track-line-choices">{{ implode(', ', $item->picks()) }}</span>
                     @endif
                 </span>
-                <span class="track-line-total">{{ $currency }}{{ Price::format($item->line_total) }}</span>
+                <span class="track-line-total">{{ Price::money($item->currency === null ? $currency : config('currencies.'.$item->currency.'.symbol', $item->currency), $item->line_total) }}</span>
             </li>
         @endforeach
     </ul>
     <p class="track-total">
         <span>{{ __('Total') }}</span>
-        <span>{{ $currency }}{{ Price::format($order->total) }}</span>
+        <span>{{ Price::money($currency, $order->total) }}</span>
     </p>
     @if ($order->note !== null)
         <p class="track-note"><strong>{{ __('Note') }}:</strong> {{ $order->note }}</p>

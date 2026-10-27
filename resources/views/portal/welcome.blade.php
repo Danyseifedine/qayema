@@ -83,9 +83,7 @@
           <span class="url" dir="ltr">{{ $dashboardHost }}/analytics</span>
         </div>
         <div class="bw-body">
-          {{-- The dashboard in the site's theme: the toggle swaps them. --}}
-          <img class="shot-dark" src="{{ asset('images/landing/dashboard-'.$shot.'-dark.webp') }}" alt="{{ __('portal.hero.shot_alt') }}" width="1440" height="900" fetchpriority="high" decoding="async">
-          <img class="shot-light" src="{{ asset('images/landing/dashboard-'.$shot.'-light.webp') }}" alt="{{ __('portal.hero.shot_alt') }}" width="1440" height="900" decoding="async">
+          <img src="{{ asset('images/landing/dashboard-'.$shot.'-dark.webp') }}" alt="{{ __('portal.hero.shot_alt') }}" width="1440" height="900" fetchpriority="high" decoding="async">
         </div>
       </div>
     </div>

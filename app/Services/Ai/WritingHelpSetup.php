@@ -4,6 +4,7 @@ namespace App\Services\Ai;
 
 use App\Enums\Feature;
 use App\Models\Restaurant;
+use Laravel\Ai\AiManager;
 
 /**
  * Whether the writing help runs, and on what: read from the config, so
@@ -22,10 +23,14 @@ class WritingHelpSetup
         return $provider !== null && filled(config("ai.providers.{$provider}.key"));
     }
 
-    /** On for this restaurant: on at all, and not 0 uses a day on its package. */
+    /** On for this restaurant: on at all, and neither 0 uses a day nor 0 credits a month. */
     public static function isOnFor(Restaurant $restaurant): bool
     {
-        return self::isOn() && $restaurant->entitlements()->limit(Feature::WritingHelpLimit) !== 0;
+        $entitlements = $restaurant->entitlements();
+
+        return self::isOn()
+            && $entitlements->limit(Feature::WritingHelpLimit) !== 0
+            && $entitlements->limit(Feature::WritingHelpCredits) !== 0;
     }
 
     public static function provider(): ?string
@@ -37,5 +42,22 @@ class WritingHelpSetup
     public static function model(): ?string
     {
         return config('services.writing_help.model') ?: null;
+    }
+
+    /**
+     * The model the calls actually run on: the one set, or else the
+     * provider's cheapest (what #[UseCheapestModel] picks), so the thinking
+     * switch and the price know it is Haiku even with AI_MODEL empty. Null
+     * with no provider.
+     */
+    public static function effectiveModel(): ?string
+    {
+        $provider = self::provider();
+
+        if ($provider === null) {
+            return null;
+        }
+
+        return self::model() ?? app(AiManager::class)->textProvider($provider)->cheapestTextModel();
     }
 }

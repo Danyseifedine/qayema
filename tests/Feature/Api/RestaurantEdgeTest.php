@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api;
 
 use App\Enums\Feature;
+use App\Support\MenuTextLimits;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\CreatesOwners;
 use Tests\TestCase;
@@ -27,8 +28,8 @@ class RestaurantEdgeTest extends TestCase
     {
         $owner = $this->owner();
 
-        $this->actingAs($owner->user)->patchJson(route('api.restaurant.update'), $this->payload(['description' => ['en' => str_repeat('x', 2000)]]))->assertOk();
-        $this->actingAs($owner->user)->patchJson(route('api.restaurant.update'), $this->payload(['description' => ['en' => str_repeat('x', 2001)]]))->assertStatus(422)->assertJsonValidationErrors('description.en');
+        $this->actingAs($owner->user)->patchJson(route('api.restaurant.update'), $this->payload(['description' => ['en' => str_repeat('x', MenuTextLimits::RESTAURANT_DESCRIPTION)]]))->assertOk();
+        $this->actingAs($owner->user)->patchJson(route('api.restaurant.update'), $this->payload(['description' => ['en' => str_repeat('x', MenuTextLimits::RESTAURANT_DESCRIPTION + 1)]]))->assertStatus(422)->assertJsonValidationErrors('description.en');
     }
 
     public function test_a_written_address_is_not_accepted_any_more(): void

@@ -157,8 +157,16 @@ a.fact:hover { color: var(--text); }
 .tabs { position: sticky; top: var(--bar); z-index: 10; margin-top: 8px; background: var(--page); border-bottom: 1px solid var(--line); padding: 8px 0; }
 .tabs-inner { position: relative; display: flex; gap: 4px; overflow-x: auto; padding: 0 16px; scrollbar-width: none; }
 .tabs-inner::-webkit-scrollbar { display: none; }
-.tab { position: relative; z-index: 1; flex-shrink: 0; padding: 8px 14px; border-radius: 8px; border: 0; background: transparent; color: var(--text); font-size: 13.5px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: color .32s cubic-bezier(.2,.9,.3,1); }
+.tab { position: relative; z-index: 1; flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px; padding: 8px 14px; border-radius: 8px; border: 0; background: transparent; color: var(--text); font-size: 13.5px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: color .32s cubic-bezier(.2,.9,.3,1); }
 .tab[aria-current="true"] { color: var(--accent-ink); font-weight: 600; }
+/* A category's icon (App\Support\CategoryIcons) before its tab's name,
+   centred on the letters whatever the design's font: the name's box is
+   trimmed to its capitals and baseline (text-box), not the line box with its
+   room for descenders, which would leave the icon sitting low. The name
+   then sits a pixel lower, which reads better beside the icon. */
+.tab-icon { display: inline-flex; line-height: 0; }
+.tab-icon svg { display: block; width: 18px; height: 18px; }
+.tab-name { text-box: trim-both cap alphabetic; transform: translateY(1px); }
 /* One pill for the whole row, moved by menu-nav.js. It is armed only
    after its first placement so it does not slide in from the left. */
 .tab-pill { position: absolute; top: 0; left: 0; width: 0; height: 100%; border-radius: 8px; background: var(--accent); pointer-events: none; }
@@ -177,15 +185,48 @@ a.fact:hover { color: var(--text); }
    up down the menu. The slot is 4:3, the usual shape of a food photo, so
    only its edges are trimmed; the whole photo is one tap away (its sheet,
    or #pop-photo). */
-.dish-photo-slot { flex-shrink: 0; align-self: center; display: block; width: 96px; height: 72px; }
+.dish-photo-slot { position: relative; flex-shrink: 0; align-self: center; display: block; width: 96px; height: 72px; }
 .dish-photo { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
 /* A photo that opens big (#pop-photo): the slot is the button. */
 .dish-photo-open { padding: 0; border: 0; background: none; border-radius: 8px; cursor: zoom-in; }
 .dish-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .dish-name { font-size: 15px; font-weight: 600; letter-spacing: -0.005em; line-height: 1.3; }
+
+/* What the owner writes can hold a word wider than a phone ("Spaghetti/
+   Linguine/Penne", a long link): it breaks inside the word rather than
+   pushing the whole page sideways. */
+.cover-body h1, .cover-body p, .category-head h2, .category-head p, .dish-name,
+.ingredients, .dish-sheet-head h2, .cart-line-name, .cart-line-choices,
+.track-line-name { overflow-wrap: anywhere; }
 .ingredients { margin: 2px 0 0; font-size: 11.5px; color: var(--muted); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .dish-foot { margin-top: auto; padding-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .price { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* The dishes guests build, above the search: a heading, then cards in the
+   menu's accent, each with its icon large, faint and turned in a corner,
+   its name and a "Build yours" pill. Several are a
+   row swiped sideways; one alone is a wide banner. No price: built first. */
+.builds { margin-top: 18px; }
+.builds-title { margin: 0 0 10px; padding: 0 16px; font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
+.builds-row { display: flex; gap: 10px; padding: 0 16px 4px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-padding-inline: 16px; scrollbar-width: none; }
+.builds-row::-webkit-scrollbar { display: none; }
+.dish.dish-build { position: relative; overflow: hidden; isolation: isolate; flex: 0 0 auto; width: 158px; min-height: 132px; flex-direction: column; align-items: flex-start; gap: 0; padding: 14px; border: 0; border-radius: 18px; background: var(--accent); color: var(--accent-ink); box-shadow: 0 8px 20px -10px color-mix(in srgb, var(--accent) 80%, transparent); scroll-snap-align: start; }
+.dish-build-mark { position: absolute; z-index: -1; inset-inline-end: -18px; top: -14px; width: 92px; height: 92px; opacity: .16; transform: rotate(-14deg); }
+.dish-build-mark svg { display: block; width: 100%; height: 100%; stroke-width: 1.6; }
+.dish-build .dish-name { margin: auto 0 10px; padding-top: 34px; font-size: 16px; font-weight: 700; line-height: 1.25; }
+.dish-build-go { display: inline-flex; align-items: center; gap: 2px; padding: 7px 10px 7px 13px; border: 0; border-radius: 999px; background: var(--bg); color: var(--text); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.dish-build-go .icon { display: inline-flex; width: 15px; height: 15px; }
+.dish-build-go .icon svg { width: 100%; height: 100%; }
+[dir="rtl"] .dish-build-go .icon svg { transform: scaleX(-1); }
+.dish-build-go:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+/* One alone: a banner across the row, its icon large at the end. */
+.dish.dish-build:only-child { flex: 1 1 auto; width: auto; min-height: 0; padding: 18px 20px; }
+.dish-build:only-child .dish-name { margin: 0 0 10px; padding-top: 0; padding-inline-end: 90px; font-size: 18px; }
+.dish-build:only-child .dish-build-mark { width: 130px; height: 130px; top: 50%; inset-inline-end: -10px; margin-top: -65px; opacity: .2; }
+@media (hover: hover) {
+    .dish.has-choices.dish-build { transition: transform .15s ease, box-shadow .15s ease; }
+    .dish.has-choices.dish-build:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -12px color-mix(in srgb, var(--accent) 90%, transparent); }
+}
 
 /* A dish with variants or add-ons: the card opens its sheet. */
 .dish.has-choices { cursor: pointer; transition: border-color .15s ease; }
@@ -231,6 +272,8 @@ a.fact:hover { color: var(--text); }
 .cart-line-total { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .cart-summary { margin-top: 16px; padding: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; }
 .cart-total { display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: 700; }
+/* The rate a total turned the second currency's dishes into the main one at. */
+.cart-rate { margin-top: 4px; font-size: 12px; color: var(--muted); text-align: end; font-variant-numeric: tabular-nums; }
 .cart-total span:last-child { font-variant-numeric: tabular-nums; }
 .place { width: 100%; border: 0; cursor: pointer; border-radius: 12px; background: var(--accent); color: var(--accent-ink); padding: 15px 18px; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; }
 .place.split { justify-content: space-between; }
@@ -462,6 +505,38 @@ dialog.dish-sheet.closing::backdrop { animation: fade-in .22s ease reverse forwa
 .choice-pill:has(input:focus-visible), .choice-row:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 .choice-price { font-size: 12.5px; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
 .choice-rows { display: flex; flex-direction: column; }
+/* "Build your own": the pizza cut as the guest picked, centred, with a
+   picker per part under it across the sheet. */
+.build-group .choice-pills { margin-bottom: 14px; }
+.build-body { clear: both; display: flex; flex-direction: column; align-items: center; gap: 16px; padding-bottom: 12px; }
+.build-pie { flex-shrink: 0; width: 112px; height: 112px; }
+.build-pie circle { fill: color-mix(in srgb, var(--accent) 18%, var(--bg)); stroke: color-mix(in srgb, var(--accent) 65%, var(--text)); stroke-width: 2.5; }
+.build-pie line { stroke: color-mix(in srgb, var(--accent) 65%, var(--text)); stroke-width: 2.5; }
+.build-pie text { fill: var(--text); font-size: 15px; font-weight: 700; text-anchor: middle; dominant-baseline: central; }
+.build-parts { align-self: stretch; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.build-part { display: flex; align-items: center; gap: 10px; }
+/* 16px so an iPhone does not zoom the page in when it opens. */
+/* A part's choice: a button showing it and its price, opening a list of
+   every choice under it (menu-dish.js partPicker), never the browser's own
+   dropdown. */
+.build-pick { position: relative; flex: 1; min-width: 0; }
+.build-pick-button { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 42px; padding: 0 10px 0 12px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--text); font: inherit; font-size: 14px; text-align: start; cursor: pointer; transition: border-color .15s ease; }
+.build-pick-button:hover, .build-pick-button[aria-expanded="true"] { border-color: var(--accent); }
+.build-pick-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.build-pick-number { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: color-mix(in srgb, var(--accent) 22%, var(--bg)); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.build-pick-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.build-pick-price { flex-shrink: 0; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.build-pick-chevron, .build-pick-check { flex-shrink: 0; display: inline-flex; width: 16px; height: 16px; }
+.build-pick-chevron svg, .build-pick-check svg { width: 100%; height: 100%; }
+.build-pick-chevron { color: var(--muted); transform: rotate(90deg); transition: transform .15s ease; }
+.build-pick-button[aria-expanded="true"] .build-pick-chevron { transform: rotate(-90deg); }
+.build-pick-list { position: absolute; z-index: 5; inset-inline: 0; top: calc(100% + 6px); max-height: 240px; margin: 0; padding: 6px; overflow-y: auto; list-style: none; background: var(--bg); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 14px 32px -10px rgba(0, 0, 0, .28); }
+.build-pick-option { display: flex; align-items: center; gap: 8px; padding: 10px; border-radius: 10px; font-size: 14px; cursor: pointer; outline: none; }
+.build-pick-option:hover, .build-pick-option:focus-visible { background: var(--soft); }
+.build-pick-option[aria-selected="true"] { background: color-mix(in srgb, var(--accent) 18%, var(--bg)); }
+.build-pick-option[aria-selected="true"] .build-pick-name { font-weight: 600; }
+.build-pick-check { visibility: hidden; }
+.build-pick-option[aria-selected="true"] .build-pick-check { visibility: visible; color: var(--text); }
 .choice-row { position: relative; display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 6px 0; border-radius: 8px; cursor: pointer; }
 .choice-row + .choice-row { border-top: 1px solid var(--line); }
 .choice-row .choice-name { flex: 1; min-width: 0; font-size: 14px; }
@@ -705,6 +780,135 @@ dialog.photo-pop { width: auto; max-width: min(960px, calc(100% - 32px)); }
 @keyframes track-pulse { from { opacity: 1; } to { opacity: .35; } }
 @keyframes locate-pulse { from { opacity: 1; } to { opacity: .35; } }
 @keyframes toast-in { from { transform: translate(-50%, -24px); opacity: 0; } to { transform: translateX(-50%); opacity: 1; } }
+/* ---- Offers (menu-offers.js decides which are live) ---- */
+.offer-photo { position: relative; display: block; width: 100%; height: 100%; object-fit: cover; }
+/* The small version blurred under the picture: what shows while it loads,
+   and around a picture shown whole (.offer-fit-whole) when its proportions
+   are far from the card's, so it is never cut short or boxed in grey. */
+.offer-photo-blur { position: absolute; top: -10%; left: -10%; width: 120%; height: 120%; object-fit: cover; filter: blur(20px) saturate(1.15); }
+.offer-fit-whole .offer-photo { object-fit: contain; }
+.offer-body { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.dish-badge { display: inline-block; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+.offer-title { margin: 0; font-size: 16px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.3; overflow-wrap: anywhere; }
+.offer-text { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.45; overflow-wrap: anywhere; }
+.offer-go { margin-top: 6px; padding: 8px 14px; border: 0; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-size: 13px; font-weight: 700; text-decoration: none; cursor: pointer; }
+
+/* A card (the banner, the pop-up, the ad), in its shape: the picture fills
+   it, darkened at the foot where the words sit in white; without one, the
+   menu's own colour. Long words stop at a few lines, so no card outgrows
+   its shape. */
+.offer-shape-rectangle { --ratio: 2; }
+.offer-shape-square { --ratio: 1; }
+.offer-shape-tall { --ratio: .75; }
+.offer { position: relative; display: flex; overflow: hidden; aspect-ratio: var(--ratio); border-radius: 14px; background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 88%, #fff), color-mix(in srgb, var(--accent) 84%, #000)); color: var(--accent-ink); }
+.offer-photo-slot { position: absolute; inset: 0; display: block; overflow: hidden; }
+.offer.offer-has-photo { color: #fff; }
+.offer.offer-has-photo:not(.offer-picture-only) .offer-photo-slot::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.12) 0%, rgba(0,0,0,.42) 45%, rgba(0,0,0,.85) 100%); }
+.offer .offer-body { position: relative; justify-content: flex-end; gap: 3px; padding: 14px; }
+.offer .offer-title { font-size: 16.5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.offer .offer-text { color: inherit; opacity: .86; font-size: 12.5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.offer-shape-rectangle .offer-text { -webkit-line-clamp: 1; }
+.offer .offer-go { padding: 6px 12px; font-size: 12.5px; background: #fff; color: #111; }
+.offer:not(.offer-has-photo) .offer-go { background: var(--accent-ink); color: var(--accent); }
+
+/* A picture alone (its words drawn into it): the picture is the whole card
+   and the card is the tap. */
+.offer-picture-only { background: var(--soft); }
+.offer-cover { position: absolute; inset: 0; padding: 0; border: 0; border-radius: inherit; background: none; cursor: pointer; }
+.offer-cover:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+
+/* The banner carousel under the cover: one card at a time, swiped or slid
+   on by menu-offers.js, a dot per live card. It takes the height of the
+   card shown (menu-offers.js), gliding between a rectangle and a square. */
+.offers-banner { margin-top: 14px; }
+.offers-track { display: flex; align-items: flex-start; gap: 12px; padding: 0 16px; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-padding-inline: 16px; scrollbar-width: none; transition: height .35s ease; }
+.offers-track::-webkit-scrollbar { display: none; }
+.offer-banner { flex: 0 0 100%; scroll-snap-align: start; scroll-snap-stop: always; }
+.offers-dots { display: flex; align-items: center; justify-content: center; gap: 2px; height: 26px; }
+/* A dot is small, its button big enough to tap. */
+.offers-dot { position: relative; width: 14px; height: 26px; padding: 0; border: 0; background: none; cursor: pointer; transition: width .25s ease; }
+.offers-dot::before { content: ""; position: absolute; inset-inline: 4px; top: 10px; height: 6px; border-radius: 999px; background: color-mix(in srgb, var(--text) 24%, transparent); transition: background-color .25s ease; }
+.offers-dot[aria-current="true"] { width: 26px; }
+.offers-dot[aria-current="true"]::before { background: var(--accent); }
+.offers-count { font-size: 12px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* The pop-up: the card in its shape over the menu, closed by the guest,
+   never taller than the screen. */
+dialog.offer-pop { --ratio: 1; max-width: none; width: min(calc(100% - 32px), 380px, calc(80dvh * var(--ratio))); }
+dialog.offer-pop:has(.offer-shape-tall) { --ratio: .75; }
+.offer-popup { border-radius: 18px; box-shadow: 0 20px 50px rgba(0,0,0,.3); }
+.offer-popup .offer-body { padding: 18px; }
+.offer-popup .offer-title { font-size: 20px; -webkit-line-clamp: 3; }
+.offer-popup .offer-text { font-size: 13.5px; -webkit-line-clamp: 3; }
+
+/* The ad: a rectangle above the dock that cannot be skipped: its seconds
+   count down in a small ring, then a small X takes their place. The X is
+   small to see, but its tap reaches past it. */
+.offer-ad-wrap { position: fixed; z-index: 40; inset-inline: 12px; bottom: calc(12px + var(--dock, 0px) + env(safe-area-inset-bottom)); max-width: 440px; margin-inline: auto; animation: ad-in .35s cubic-bezier(.2,.9,.3,1.1); }
+.offer-ad-wrap.leaving { animation: ad-out .25s ease forwards; }
+.offer-ad-wrap .offer { box-shadow: 0 14px 36px rgba(0,0,0,.22); }
+.offer-ad-timer, .offer-ad-close { position: absolute; top: 10px; inset-inline-end: 10px; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.offer-ad-timer { background: rgba(0,0,0,.55); color: #fff; }
+.offer-ad-count { position: relative; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+.offer-ad-close { padding: 0; border: 0; background: var(--bg); color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,.25); cursor: pointer; animation: fade-in .2s ease; }
+.offer-ad-close::before { content: ""; position: absolute; inset: -8px; }
+.offer-ad-close .icon { width: 14px; height: 14px; }
+.offer-ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.offer-ring circle { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 100.53; animation: offer-ring var(--offer-seconds, 6s) linear forwards; }
+
+/* A dish on a live discount: its offer price, the old one struck through. */
+.price-group { display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 0 6px; }
+.price-was { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.dish-badge { padding: 1px 6px; font-size: 10.5px; line-height: 1.5; }
+/* On the photo's corner, over it: no room taken from the name. */
+.dish-photo-slot .dish-badge { position: absolute; top: 4px; inset-inline-start: 4px; z-index: 1; box-shadow: 0 1px 4px rgba(0,0,0,.25); pointer-events: none; }
+/* Without a photo, beside the price. */
+.price-group .dish-badge { align-self: center; }
+
+/* Only one offer's dishes ("See the dishes"), until the bar is closed. */
+/* An offer's deal dish while the offer is not live, and a category with
+   nothing else (its tab too); menu-offers.js shows them in time. */
+.dish[data-deal-off], .category[data-deal-off], .tab[data-deal-off] { display: none !important; }
+
+/* On a wide screen a banner is as wide as the cover above it and a strip
+   in height: its picture sharp on the far side, in its own shape, over its
+   blurred copy filling the rest, and the words on the near side, where a
+   wash keeps them readable. A picture alone (its words drawn in) shows
+   whole in the middle. Its shape keeps the picture's proportions, never
+   the card's: a square banner is a square picture in the strip. */
+@media (min-width: 1024px) {
+    .offers-track { padding: 0 32px; scroll-padding-inline: 32px; }
+    .offer-banner { --strip: clamp(220px, 19vw, 280px); flex-basis: 100%; aspect-ratio: auto; height: var(--strip); }
+    .offer-banner .offer-photo-slot { display: flex; justify-content: flex-end; }
+    .offer-banner:not(.offer-picture-only) .offer-photo {
+        width: min(calc(var(--strip) * var(--ratio)), 62%);
+        flex-shrink: 0;
+        -webkit-mask-image: linear-gradient(to right, transparent 0, #000 22%);
+        mask-image: linear-gradient(to right, transparent 0, #000 22%);
+    }
+    [dir="rtl"] .offer-banner:not(.offer-picture-only) .offer-photo {
+        -webkit-mask-image: linear-gradient(to left, transparent 0, #000 22%);
+        mask-image: linear-gradient(to left, transparent 0, #000 22%);
+    }
+    .offer-banner.offer-picture-only .offer-photo-slot { justify-content: center; }
+    .offer-banner.offer-picture-only .offer-photo { width: auto; max-width: 100%; aspect-ratio: var(--ratio); object-fit: contain; }
+    .offer-banner.offer-has-photo:not(.offer-picture-only) .offer-photo-slot::after {
+        background: linear-gradient(to right, rgba(0,0,0,.82) 0%, rgba(0,0,0,.6) 32%, rgba(0,0,0,.1) 62%, transparent 100%);
+    }
+    [dir="rtl"] .offer-banner.offer-has-photo:not(.offer-picture-only) .offer-photo-slot::after {
+        background: linear-gradient(to left, rgba(0,0,0,.82) 0%, rgba(0,0,0,.6) 32%, rgba(0,0,0,.1) 62%, transparent 100%);
+    }
+    .offer-banner .offer-body { justify-content: center; max-width: min(46%, 440px); padding: 28px 32px; gap: 6px; }
+    .offer-banner .offer-title { font-size: 26px; line-height: 1.2; -webkit-line-clamp: 2; }
+    .offer-banner .offer-text { font-size: 14.5px; -webkit-line-clamp: 3; }
+    .offer-banner .offer-go { margin-top: 10px; padding: 9px 16px; font-size: 14px; }
+    /* The ad in the menu's bottom corner, clear of the dishes' middle. */
+    .offer-ad-wrap { inset-inline: 32px auto; bottom: 24px; width: 380px; margin-inline: 0; }
+}
+
+@keyframes offer-ring { to { stroke-dashoffset: 100.53; } }
+@keyframes ad-in { from { transform: translateY(24px); opacity: 0; } }
+@keyframes ad-out { to { transform: translateY(24px); opacity: 0; } }
 @keyframes toast-out { to { transform: translate(-50%, -16px); opacity: 0; } }
 @keyframes count-pop { 0%, 100% { transform: scale(1); } 45% { transform: scale(1.32); } }
 
@@ -755,7 +959,9 @@ dialog.photo-pop { width: auto; max-width: min(960px, calc(100% - 32px)); }
     .wrap { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; min-height: calc(100dvh - var(--bar)); }
     .wrap.with-cart { grid-template-columns: minmax(0, 1fr) 360px; }
 
-    .cover { margin: 24px 32px 0; height: 200px; border-radius: 14px; }
+    /* As tall as a banner strip below it (.offer-banner), so the two line
+       up and a whole photo (the cover is kept whole) shows more than a sliver. */
+    .cover { margin: 24px 32px 0; height: clamp(220px, 19vw, 280px); border-radius: 14px; }
     /* Across the menu column, its words lined up with the content's. */
     .order-bar-link { padding-inline-start: 32px; }
     .order-bar-close { margin-inline-end: 24px; }
@@ -771,6 +977,12 @@ dialog.photo-pop { width: auto; max-width: min(960px, calc(100% - 32px)); }
     .category { scroll-margin-top: calc(var(--bar) + 72px); }
     .category-head { padding: 22px 32px 10px; }
     .dishes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 32px; }
+    .builds { margin-top: 22px; }
+    .builds-title { padding: 0 32px; }
+    /* Room for them all: cards fill the column, a banner spans it. */
+    .builds-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; padding: 0 32px 4px; overflow: visible; }
+    .dish.dish-build { width: auto; }
+    .dish.dish-build:only-child { grid-column: 1 / -1; }
 
     /* Stuck under the bar, the window's height, and scrolling on its own
        only when the cart is longer than that. */

@@ -3,17 +3,20 @@
 namespace App\Services\Packages;
 
 use App\Enums\Feature;
+use App\Enums\GrantMode;
 use App\Models\Restaurant;
 use Illuminate\Support\Facades\Cache;
 
 /**
  * What a restaurant is entitled to.
  *
- * The rule is one line: **effective value = the package's value + every active
- * grant**. Limits add up, flags switch on, and an unlimited limit stays
- * unlimited however many grants sit on it. Nothing else participates. The
- * package counts from its start date, and still after it ended (the menu
- * goes offline instead, Restaurant::effectivePackage()).
+ * The rule: **effective value = the package's value + every active added
+ * grant**, unless an admin set the feature for this restaurant (a set
+ * grant), which has the last word. Added grants: limits add up, flags switch
+ * on, and an unlimited limit stays unlimited. Set grants: the limit is their
+ * value (null unlimited, lower or higher than the package), the flag on or
+ * off. The package counts from its start date, and still after it ended (the
+ * menu goes offline instead, Restaurant::effectivePackage()).
  */
 class Entitlements
 {
@@ -72,6 +75,26 @@ class Entitlements
 
         // Null is unlimited, which for a flag means on.
         return $value === null || (int) $value > 0;
+    }
+
+    /**
+     * The on/off features an admin turned off for this restaurant (a set
+     * grant at 0, the newest per feature), so the owner is told why rather
+     * than offered a package that may already include them.
+     *
+     * @return list<string>
+     */
+    public function turnedOff(): array
+    {
+        return $this->activeGrants()
+            ->where('mode', GrantMode::Set)
+            ->filter(fn ($grant): bool => ! $grant->feature->isLimit())
+            ->sortBy('id')
+            ->keyBy(fn ($grant): string => $grant->feature->value)
+            ->filter(fn ($grant): bool => (int) $grant->value === 0)
+            ->keys()
+            ->values()
+            ->all();
     }
 
     /**
@@ -135,7 +158,11 @@ class Entitlements
     /** @return \Illuminate\Support\Collection<int, \App\Models\FeatureGrant> */
     private function activeGrants(): \Illuminate\Support\Collection
     {
-        return $this->grants ??= $this->restaurant->featureGrants()->active()->get();
+        // A list that loaded every row's grants with the page (the admin's
+        // restaurants) is not asked again per row; what has ended is left out.
+        return $this->grants ??= $this->restaurant->relationLoaded('activeFeatureGrants')
+            ? $this->restaurant->activeFeatureGrants->filter(fn (\App\Models\FeatureGrant $grant): bool => $grant->ends_at === null || $grant->ends_at->isFuture())->values()
+            : $this->restaurant->featureGrants()->active()->get();
     }
 
     /** Where a restaurant's answer is kept, under the current version (flushAll()). */
@@ -150,7 +177,18 @@ class Entitlements
      */
     private function resolve(): array
     {
-        $package = $this->restaurant->effectivePackage();
+        return self::valuesFrom($this->restaurant->effectivePackage(), $this->activeGrants());
+    }
+
+    /**
+     * Every feature from a package and the grants in force, already read:
+     * the package's value, the added grants on top, a set grant the last word.
+     *
+     * @param  \Illuminate\Support\Collection<int, \App\Models\FeatureGrant>  $grants
+     * @return array<string, int|null>
+     */
+    public static function valuesFrom(?\App\Models\Package $package, \Illuminate\Support\Collection $grants): array
+    {
         $values = [];
 
         foreach (Feature::cases() as $feature) {
@@ -159,7 +197,10 @@ class Entitlements
                 : $package->featureValue($feature);
         }
 
-        foreach ($this->activeGrants() as $grant) {
+        $adds = $grants->where('mode', GrantMode::Add);
+        $sets = $grants->where('mode', GrantMode::Set);
+
+        foreach ($adds as $grant) {
             $feature = $grant->feature;
             $current = $values[$feature->value];
 
@@ -171,6 +212,13 @@ class Entitlements
             $values[$feature->value] = $feature->isLimit()
                 ? $current + (int) $grant->value
                 : max($current, (int) $grant->value);
+        }
+
+        // An admin's set value has the last word, the newest when several.
+        foreach ($sets->sortBy('id') as $grant) {
+            $values[$grant->feature->value] = $grant->feature->isLimit()
+                ? $grant->value
+                : min(1, (int) $grant->value);
         }
 
         return $values;

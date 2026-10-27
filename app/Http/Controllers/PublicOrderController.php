@@ -11,6 +11,7 @@ use App\Services\Orders\OrderChanged;
 use App\Services\Orders\OrderLocked;
 use App\Services\Orders\OrderNews;
 use App\Services\Orders\OrderPlacer;
+use App\Services\Orders\PricesChanged;
 use App\Services\Orders\WhatsAppLink;
 use Illuminate\Http\JsonResponse;
 
@@ -59,7 +60,11 @@ class PublicOrderController extends Controller
             return response()->json(['message' => __('We are closed right now, so we cannot take your order.')], 422);
         }
 
-        $order = $placer->place($restaurant, $request->validated('items'), $locale, $request->details());
+        try {
+            $order = $placer->place($restaurant, $request->validated('items'), $locale, $request->details());
+        } catch (PricesChanged $changed) {
+            return $this->pricesChanged($changed);
+        }
         OrderNews::fromGuest($order);
 
         return response()->json([
@@ -68,8 +73,11 @@ class PublicOrderController extends Controller
                 'total' => (string) $order->total,
                 'channel' => $channel->value,
                 'whatsapp_url' => $channel === OrderChannel::WhatsApp ? WhatsAppLink::forOrder($restaurant, $order) : null,
-                // The guest's page for following it, in their language.
-                'tracking_url' => $order->trackingUrl($locale),
+                // The guest's page for following it, in their language, while
+                // the package tracks orders.
+                'tracking_url' => $restaurant->tracksOrders() ? $order->trackingUrl($locale) : null,
+                // What sold out while it sat in the cart, so the guest is told.
+                'unavailable' => $order->leftOut,
             ],
         ], 201);
     }
@@ -80,6 +88,7 @@ class PublicOrderController extends Controller
      */
     public function update(PlaceOrderRequest $request, Restaurant $restaurant, string $token, OrderPlacer $placer): JsonResponse
     {
+        // Without order tracking, PlaceOrderRequest has already answered 404.
         abort_unless($restaurant->menuOnline(), 404);
         $order = $restaurant->orders()->where('tracking_token', $token)->firstOrFail();
 
@@ -105,6 +114,8 @@ class PublicOrderController extends Controller
             return response()->json(['message' => __('The restaurant has already accepted your order, so it can no longer be changed. Call them if you need to.')], 409);
         } catch (OrderChanged) {
             return response()->json(['message' => __('Your order was changed from another page meanwhile. Open it to see it as it is now, then try again.')], 409);
+        } catch (PricesChanged $changed) {
+            return $this->pricesChanged($changed);
         }
 
         return response()->json([
@@ -118,6 +129,18 @@ class PublicOrderController extends Controller
                 'unavailable' => $change->unavailable,
             ],
         ]);
+    }
+
+    /**
+     * The cart costs more than the guest saw: nothing is placed, and the
+     * page is given each dish's price now to show before they send again.
+     */
+    private function pricesChanged(PricesChanged $changed): JsonResponse
+    {
+        return response()->json([
+            'message' => __('Some prices changed since you opened the menu (an offer may have ended). Check your cart, then send it again.'),
+            'prices' => (object) $changed->prices,
+        ], 409);
     }
 
     /** No hours written down means no hours to keep. */

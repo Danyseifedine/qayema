@@ -7,12 +7,14 @@ use App\Filament\Admin\Resources\Restaurants\Pages\EditRestaurant;
 use App\Filament\Admin\Resources\Restaurants\Pages\ListRestaurants;
 use App\Filament\Admin\Resources\Restaurants\RelationManagers\PackageChangesRelationManager;
 use App\Filament\Admin\Resources\Restaurants\RestaurantResource;
+use App\Models\MenuDay;
 use App\Models\MenuSession;
 use App\Models\Package;
 use App\Models\PackageChange;
 use App\Models\Restaurant;
 use App\Models\Template;
 use App\Models\User;
+use App\Support\MenuTextLimits;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -40,7 +42,7 @@ class RestaurantAdminEdgeTest extends TestCase
         Livewire::test(ListRestaurants::class)
             ->assertCanSeeTableRecords([$restaurant])
             ->assertTableColumnStateSet('dish_limit', '150', $restaurant)
-            ->assertTableColumnStateSet('unique_visitors', 3, $restaurant)
+            ->assertTableColumnStateSet('total_views', 3, $restaurant)
             ->assertTableColumnStateSet('qr_scans', 1, $restaurant)
             ->assertSee('Busy Bistro')
             ->assertSee('Until '.now()->addDays(3)->toFormattedDateString());
@@ -53,7 +55,8 @@ class RestaurantAdminEdgeTest extends TestCase
         $restaurant->addMedia(UploadedFile::fake()->image('logo.png', 64, 64))->toMediaCollection('logo');
         $this->actingAs($this->admin());
 
-        $html = Livewire::test(ListRestaurants::class)->html();
+        // The logo column is off until the admin shows it.
+        $html = Livewire::test(ListRestaurants::class)->toggleAllTableColumns()->html();
 
         $this->assertStringContainsString('alt="Logo of Busy Bistro"', $html);
         $this->assertDoesNotMatchRegularExpression('/<a[^>]*fi-ta-col[^>]*>\s*<div[^>]*fi-ta-image/', $html);
@@ -137,6 +140,19 @@ class RestaurantAdminEdgeTest extends TestCase
             ->filterTable('has_views')
             ->assertCanSeeTableRecords([$active])
             ->assertCanNotSeeTableRecords([$inactive]);
+    }
+
+    public function test_traffic_whose_raw_visits_are_gone_still_counts_as_traffic(): void
+    {
+        $pruned = $this->owner();
+        MenuDay::factory()->for($pruned)->visitedBy(['a', 'b'])->create();
+        $quiet = $this->owner();
+        $this->actingAs($this->admin());
+
+        Livewire::test(ListRestaurants::class)
+            ->filterTable('has_views')
+            ->assertCanSeeTableRecords([$pruned])
+            ->assertCanNotSeeTableRecords([$quiet]);
     }
 
     public function test_the_created_today_and_this_week_filters(): void
@@ -248,6 +264,38 @@ class RestaurantAdminEdgeTest extends TestCase
             ->assertHasFormErrors(['slug']);
 
         $this->assertNotSame('taken-slug', $restaurant->fresh()->slug);
+    }
+
+    public function test_the_edit_form_keeps_to_the_menus_text_limits(): void
+    {
+        $restaurant = $this->owner();
+        $this->actingAs($this->admin());
+
+        Livewire::test(EditRestaurant::class, ['record' => $restaurant->id])
+            ->fillForm(['name.en' => str_repeat('a', MenuTextLimits::RESTAURANT_NAME + 1), 'description.en' => str_repeat('a', MenuTextLimits::RESTAURANT_DESCRIPTION + 1)])
+            ->call('save')
+            ->assertHasFormErrors(['name.en' => 'max', 'description.en' => 'max']);
+    }
+
+    /** The same rules as the owner's dashboard (AvailableSlug::rules()), so no link the owner cannot keep. */
+    public function test_the_edit_form_refuses_a_link_the_owners_dashboard_would_refuse(): void
+    {
+        $restaurant = $this->owner(['slug' => 'olive-grove']);
+        $this->actingAs($this->admin());
+
+        Livewire::test(EditRestaurant::class, ['record' => $restaurant->id])
+            ->fillForm(['slug' => str_repeat('a', 101)])
+            ->call('save')
+            ->assertHasFormErrors(['slug' => 'max']);
+
+        $this->assertSame('olive-grove', $restaurant->fresh()->slug);
+
+        Livewire::test(EditRestaurant::class, ['record' => $restaurant->id])
+            ->fillForm(['slug' => str_repeat('a', 100)])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(str_repeat('a', 100), $restaurant->fresh()->slug);
     }
 
     public function test_renaming_a_restaurant_keeps_its_address(): void

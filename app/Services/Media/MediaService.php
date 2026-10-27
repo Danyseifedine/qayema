@@ -14,6 +14,7 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\MediaCollections\Exceptions\DiskCannotBeAccessed;
 use Spatie\MediaLibrary\MediaCollections\Exceptions\DiskDoesNotExist;
 use Spatie\MediaLibrary\MediaCollections\Exceptions\FileCannotBeAdded;
+use Spatie\MediaLibrary\MediaCollections\Filesystem;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Throwable;
 
@@ -126,6 +127,30 @@ class MediaService
     }
 
     /**
+     * Make a copy of an image another model holds this model's one image
+     * (an offer's picture as its deal dish's photo): fetched from wherever
+     * it is stored, then stored through replace(), so it reaches the media
+     * disk (or the local fallback) with this model's own conversions.
+     */
+    public function copy(Media $source, HasMedia $model, string $collection, string $mediaName): Media
+    {
+        $dir = $this->tempRoot();
+        $this->ensureDir($dir);
+        $path = $dir.'/copy_'.uniqid().'.'.(pathinfo((string) $source->file_name, PATHINFO_EXTENSION) ?: 'webp');
+
+        try {
+            app(Filesystem::class)->copyFromMediaLibrary($source, $path);
+
+            return $this->replace($model, $path, $collection, $mediaName);
+        } finally {
+            // Moved into the library when stored; left only by a failure.
+            if (is_file($path)) {
+                @unlink($path);
+            }
+        }
+    }
+
+    /**
      * Store on the configured media disk (R2), and fall back to local storage
      * when that disk cannot take the file.
      *
@@ -143,8 +168,12 @@ class MediaService
         // cleans that row up for a failure that comes back as `false`. The
         // transaction covers the ones that throw instead, so a failed attempt
         // never leaves a row pointing at a file that is not there.
+        // Its size is kept with it, so a page can fit it to a box without
+        // downloading it first (Offer::pictureRatio()).
+        $size = @getimagesize($path);
+        $properties = $size === false ? [] : ['width' => $size[0], 'height' => $size[1]];
         $attempt = fn (string $onDisk): Media => DB::transaction(
-            fn (): Media => $model->addMedia($path)->usingName($mediaName)->toMediaCollection($collection, $onDisk)
+            fn (): Media => $model->addMedia($path)->usingName($mediaName)->withCustomProperties($properties)->toMediaCollection($collection, $onDisk)
         );
 
         try {

@@ -35,6 +35,8 @@ return [
     'catalog' => [
         [
             'slug' => 'free',
+            // Its crown's metal in the dashboard (App\Enums\PackageTier).
+            'tier' => 'bronze',
             'name' => ['en' => 'Free', 'ar' => 'مجاني'],
             'description' => [
                 'en' => 'Everything you need to take one menu live.',
@@ -44,6 +46,9 @@ return [
             'is_contact_only' => false,
             'is_default' => true,
             'sort_order' => 0,
+            // Its AI a month, in US cents (null for no cap): owners get it as
+            // credits (App\Services\Ai\WritingHelpCredits), never as money.
+            'ai_budget_cents' => 5,
             'features' => [
                 'dish_limit' => 40,
                 'category_limit' => 8,
@@ -60,10 +65,16 @@ return [
                 'menu_ordering' => 0,
                 'analytics' => 0,
                 'advanced_analytics' => 0,
+                'offers' => 0,
+                'dine_in_whatsapp' => 0,
+                'order_tracking' => 0,
+                'offer_schedules' => 0,
+                'offer_discounts' => 0,
             ],
         ],
         [
             'slug' => 'pro',
+            'tier' => 'silver',
             'name' => ['en' => 'Pro', 'ar' => 'برو'],
             'description' => [
                 'en' => 'Your own look, two languages and your numbers.',
@@ -73,6 +84,7 @@ return [
             'is_contact_only' => false,
             'is_default' => false,
             'sort_order' => 1,
+            'ai_budget_cents' => 75,
             'features' => [
                 'dish_limit' => 150,
                 'category_limit' => 15,
@@ -89,10 +101,16 @@ return [
                 'menu_ordering' => 0,
                 'analytics' => 1,
                 'advanced_analytics' => 0,
+                'offers' => 0,
+                'dine_in_whatsapp' => 0,
+                'order_tracking' => 0,
+                'offer_schedules' => 0,
+                'offer_discounts' => 0,
             ],
         ],
         [
             'slug' => 'premium',
+            'tier' => 'gold',
             'name' => ['en' => 'Premium', 'ar' => 'مميّز'],
             'description' => [
                 'en' => 'Everything, with ordering and the QR studio.',
@@ -105,6 +123,7 @@ return [
             'is_featured' => true,
             // Shown as unlimited; 1,000 each holds as fair use (Package::isFairUse).
             'fair_use' => ['dish_limit', 'category_limit'],
+            'ai_budget_cents' => 150,
             'features' => [
                 'dish_limit' => 1000,
                 'category_limit' => 1000,
@@ -121,10 +140,19 @@ return [
                 'menu_ordering' => 1,
                 'analytics' => 1,
                 'advanced_analytics' => 1,
+                'offers' => 1,
+                'dine_in_whatsapp' => 1,
+                'order_tracking' => 1,
+                'offer_schedules' => 1,
+                'offer_discounts' => 1,
+                'offer_banner_limit' => 3,
+                'offer_popup_limit' => 1,
+                'offer_ad_limit' => 1,
             ],
         ],
         [
             'slug' => 'custom',
+            'tier' => 'gold',
             'name' => ['en' => 'Custom', 'ar' => 'مخصّص'],
             'description' => [
                 'en' => 'Built around what your group needs. Talk to us.',
@@ -140,6 +168,7 @@ return [
             'is_contact_only' => true,
             'is_default' => false,
             'sort_order' => 3,
+            'ai_budget_cents' => 150,
             'features' => [
                 'dish_limit' => null,
                 'category_limit' => null,
@@ -156,6 +185,14 @@ return [
                 'menu_ordering' => 1,
                 'analytics' => 1,
                 'advanced_analytics' => 1,
+                'offers' => 1,
+                'dine_in_whatsapp' => 1,
+                'order_tracking' => 1,
+                'offer_schedules' => 1,
+                'offer_discounts' => 1,
+                'offer_banner_limit' => 3,
+                'offer_popup_limit' => 1,
+                'offer_ad_limit' => 1,
             ],
         ],
     ],

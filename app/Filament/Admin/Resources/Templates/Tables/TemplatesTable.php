@@ -32,6 +32,10 @@ class TemplatesTable
                     ->placeholder('N/A')
                     ->badge()
                     ->color('gray'),
+                TextColumn::make('madeFor.name')
+                    ->label('Only for')
+                    ->placeholder('Every restaurant')
+                    ->toggleable(),
                 TextColumn::make('restaurants_count')
                     ->label('Restaurants')
                     ->counts('restaurants')

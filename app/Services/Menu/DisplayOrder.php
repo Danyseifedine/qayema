@@ -11,18 +11,30 @@ use Illuminate\Support\Facades\DB;
  *
  * Reordering used to run one UPDATE per row, so dragging a dish on a menu of
  * three hundred cost three hundred round trips inside one transaction. This
- * builds a single `CASE` expression instead, so any list is one statement.
+ * builds a single `CASE` expression instead, so any list is one statement
+ * (after one read of which ids the owner really has).
  */
 class DisplayOrder
 {
     /**
-     * @param  HasMany<covariant \Illuminate\Database\Eloquent\Model, \Illuminate\Database\Eloquent\Model>  $relation  the owner's scope, which keeps a tampered id out
-     * @param  array<int, int>  $orderedIds  the ids to renumber, in their new order
-     * @param  array<string, mixed>  $extra  columns to set on the same rows
+     * Ids the owner does not have (unknown, or another restaurant's) are
+     * dropped before numbering, so a tampered payload touches nothing and
+     * leaves no gap in the owner's order.
+     *
+     * @param  HasMany<covariant \Illuminate\Database\Eloquent\Model, covariant \Illuminate\Database\Eloquent\Model>  $relation  the owner's scope, which keeps a tampered id out
+     * @param  array<int, int>  $ids  the ids to renumber, in their new order
      */
-    public static function apply(HasMany $relation, array $orderedIds, array $extra = []): void
+    public static function apply(HasMany $relation, array $ids): void
     {
-        $orderedIds = array_values($orderedIds);
+        if ($ids === []) {
+            return;
+        }
+
+        $owned = $relation->newQuery()->whereIn('id', $ids)->pluck('id')->flip();
+
+        // Keep the client's order, drop anything it does not own. `flip()` makes
+        // that check a hash lookup rather than a scan per id.
+        $orderedIds = array_values(array_filter($ids, static fn (int|string $id): bool => $owned->has($id)));
 
         if ($orderedIds === []) {
             return;
@@ -42,7 +54,7 @@ class DisplayOrder
             // pointless work when the order is exactly what is being rewritten.
             ->reorder()
             ->whereIn('id', $orderedIds)
-            ->update([...$extra, 'display_order' => DB::raw('case id '.implode(' ', $cases).' end')]);
+            ->update(['display_order' => DB::raw('case id '.implode(' ', $cases).' end')]);
 
         // One statement saves no model, so ClearsMenuCache never hears it.
         if ($relation->getParent() instanceof Restaurant) {

@@ -13,6 +13,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class RestaurantSocialLinkResource extends Resource
 {
@@ -20,11 +21,16 @@ class RestaurantSocialLinkResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedLink;
 
+    /** Found through its restaurant; the top bar's search would only repeat names. */
+    protected static bool $isGloballySearchable = false;
+
     protected static ?string $recordTitleAttribute = 'platform';
 
-    protected static ?string $navigationLabel = 'Social Links';
+    protected static ?string $navigationLabel = 'Social links';
 
-    protected static ?int $navigationSort = 6;
+    protected static UnitEnum|string|null $navigationGroup = 'Menu content';
+
+    protected static ?int $navigationSort = 3;
 
     public static function form(Schema $schema): Schema
     {

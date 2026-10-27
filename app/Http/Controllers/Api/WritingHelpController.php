@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\DescribeCategoryRequest;
 use App\Http\Requests\DescribeRestaurantRequest;
 use App\Http\Requests\TranslateMenuTextRequest;
+use App\Http\Requests\TranslateMenuTextsRequest;
 use App\Models\Restaurant;
 use App\Services\Ai\WritingHelp;
 use App\Services\Ai\WritingHelpSetup;
@@ -42,6 +43,22 @@ class WritingHelpController extends Controller
         );
 
         return $this->answer($restaurant, $text);
+    }
+
+    /**
+     * Every piece a dish's save leaves in one language, translated in one
+     * go: one use of the day, however many pieces.
+     */
+    public function translateMany(TranslateMenuTextsRequest $request): JsonResponse
+    {
+        $restaurant = $this->restaurant($request);
+        abort_unless(WritingHelpSetup::isOnFor($restaurant), 404);
+
+        /** @var list<array{text: string, from: string, to: string, max?: int|null}> $items */
+        $items = $request->validated('items');
+        $texts = $this->help->translateMany($items);
+
+        return response()->json(['data' => ['texts' => $texts, 'left' => $this->uses->left($restaurant)]]);
     }
 
     public function categoryDescription(DescribeCategoryRequest $request): JsonResponse

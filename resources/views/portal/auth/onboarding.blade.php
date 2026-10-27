@@ -16,6 +16,13 @@
         ->values()->all();
 
     $currencySymbols = collect(config('currencies', []))->map(fn ($c) => $c['symbol'] ?? '$')->all();
+    // The second currency: none, or any of the list (the main one is refused).
+    $secondCurrencyOptions = [['value' => '', 'label' => __('owner.onboarding.second_currency_none'), 'flag' => '', 'meta' => ''], ...$currencyOptions];
+    // What people pay in, by the phone's country: the second currency a
+    // menu priced in dollars is suggested.
+    $countryCurrencies = collect(config('countries', []))->map(fn ($country) => $country['currency'] ?? null)->filter()->all();
+    // The saved rate as the owner wrote it (1 USD = 89,000 LBP).
+    $savedRate = $restaurant ? \App\Services\Portal\OnboardingService::writtenRate($restaurant) : null;
 
     // The language the menu is written in, suggested from this page's
     // language until the owner has chosen one.
@@ -34,9 +41,9 @@
 @endphp
 
 @push('styles')
-<link rel="stylesheet" href="{{ asset('portal/css/components/ui.css') }}?v={{ @filemtime(public_path('portal/css/components/ui.css')) ?: '1' }}">
-<link rel="stylesheet" href="{{ asset('portal/css/pages/login.css') }}?v={{ @filemtime(public_path('portal/css/pages/login.css')) ?: '1' }}">
-<link rel="stylesheet" href="{{ asset('portal/css/pages/onboarding.css') }}?v={{ @filemtime(public_path('portal/css/pages/onboarding.css')) ?: '1' }}">
+<link rel="stylesheet" href="{{ \App\Support\Asset::versioned('portal/css/components/ui.css') }}">
+<link rel="stylesheet" href="{{ \App\Support\Asset::versioned('portal/css/pages/login.css') }}">
+<link rel="stylesheet" href="{{ \App\Support\Asset::versioned('portal/css/pages/onboarding.css') }}">
 @endpush
 
 @section('content')
@@ -53,12 +60,6 @@
                 </a>
             </div>
             <div class="left-top-right">
-                <button class="theme-tog" type="button" aria-label="theme">
-                    <span class="knob">
-                        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-                        <svg class="moon" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
-                    </span>
-                </button>
                 {{-- Language switcher, available on every step --}}
                 <div class="lang-picker" x-data="{ open: false }" @click.outside="open = false">
                     <button class="lang-trigger" @click="open = !open" :aria-expanded="open" type="button">
@@ -120,6 +121,7 @@
                     <x-ui.field name="name" :label="__('owner.onboarding.name_label')" required>
                         <x-ui.input name="name" x-model="s1.name"
                             :placeholder="__('owner.onboarding.name_placeholder')"
+                            :maxlength="\App\Support\MenuTextLimits::RESTAURANT_NAME"
                             @input="onNameInput()"
                             autofocus required />
                         <div class="ui-helps">
@@ -187,6 +189,7 @@
             <div x-show="step === 2" x-cloak
                  @change="onContactChange($event)"
                  @combo-change="onCurrencyChange($event)"
+                 @phone-country-change="onCountryChange($event)"
                  @input="errors.phone = ''">
                 <h1 class="title">{!! __('owner.onboarding.step2_heading', ['em' => '<span class="it">'.__('owner.onboarding.step2_em').'</span>']) !!}</h1>
                 <p class="lead">{{ __('owner.onboarding.step2_desc') }}</p>
@@ -212,6 +215,37 @@
                             <p class="ui-help error" x-show="errors.currency" x-text="errors.currency" x-cloak></p>
                         </div>
                     </x-ui.field>
+
+                    {{-- Suggested from the main currency and the phone's country
+                         (onboarding's suggestSecond()): dollars beside the
+                         local money, or the local money beside dollars. --}}
+                    <x-ui.field name="second_currency" :label="__('owner.onboarding.second_currency_label')"
+                                :optional="__('owner.onboarding.optional')">
+                        <x-ui.combo name="second_currency"
+                            :options="$secondCurrencyOptions"
+                            :value="$restaurant?->second_currency ?? ''"
+                            :placeholder="__('owner.onboarding.second_currency_none')"
+                            :up="true" />
+                        <div class="ui-helps">
+                            <p class="ui-help">{{ __('owner.onboarding.second_currency_hint') }}</p>
+                            <p class="ui-help error" x-show="errors.second_currency" x-text="errors.second_currency" x-cloak></p>
+                        </div>
+                    </x-ui.field>
+
+                    <div x-show="s2.second" x-cloak>
+                        <x-ui.field name="rate" :label="__('owner.onboarding.rate_label')" required>
+                            <div class="ui-input-wrap rate-wrap" dir="ltr" :class="errors.rate ? 'error' : ''">
+                                <span class="prefix" x-text="'1 ' + rateFrom + ' ='"></span>
+                                <input id="rate" name="rate" type="number" inputmode="decimal" min="0" step="any"
+                                       class="ui-input with-prefix" x-model="s2.rate" @input="errors.rate = ''">
+                                <span class="prefix rate-to" x-text="rateTo"></span>
+                            </div>
+                            <div class="ui-helps">
+                                <p class="ui-help">{{ __('owner.onboarding.rate_hint') }}</p>
+                                <p class="ui-help error" x-show="errors.rate" x-text="errors.rate" x-cloak></p>
+                            </div>
+                        </x-ui.field>
+                    </div>
                 </div>
             </div>
 
@@ -221,9 +255,12 @@
                 <p class="lead">{{ __('owner.onboarding.step3_desc') }}</p>
                 <div class="fields">
                     <x-ui.field :label="__('owner.onboarding.logo_label')" required>
-                        <x-ui.dropzone name="logo" context="logo"
-                            :value="$restaurant?->getFirstMediaUrl('logo') ?: null"
-                            :hint="__('owner.onboarding.logo_hint')" />
+                        {{-- A file picked or dropped answers "upload a logo" at once. --}}
+                        <div @change="if ($event.target.type === 'file') errors.logo = ''" @drop="errors.logo = ''">
+                            <x-ui.dropzone name="logo" context="logo"
+                                :value="$restaurant?->getFirstMediaUrl('logo') ?: null"
+                                :hint="__('owner.onboarding.logo_hint')" />
+                        </div>
                         <div class="ui-helps">
                             <p class="ui-help">{{ __('owner.onboarding.logo_field_hint') }}</p>
                             <p class="ui-help error" x-show="errors.logo" x-text="errors.logo" x-cloak></p>
@@ -385,6 +422,7 @@ window._onb = {
         stepData:   @json($stepData),
         currencySymbols: @json($currencySymbols),
         currencyCodes: @json(array_keys(config('currencies', []))),
+        countryCurrencies: @json($countryCurrencies),
         routes: {
             advance:    @json(route('onboarding.advance')),
             checkSlug:  @json(route('onboarding.check-slug')),
@@ -396,6 +434,8 @@ window._onb = {
             country_code:       @json($restaurant?->country_code ?? ''),
             phone:              @json($restaurant?->phone ?? ''),
             currency:           @json($restaurant?->currency ?? 'USD'),
+            second_currency:    @json($restaurant?->second_currency ?? ''),
+            rate:               @json($savedRate ?? ''),
             hasLogo:            @json($restaurant?->hasMedia('logo') ?? false),
         },
         i18n: {
@@ -405,6 +445,8 @@ window._onb = {
             phoneInvalid:     @json(__('owner.onboarding.phone_invalid')),
             currencyRequired: @json(__('owner.onboarding.currency_required')),
             currencyInvalid:  @json(__('owner.onboarding.currency_invalid')),
+            secondSame:       @json(__('owner.onboarding.second_currency_same')),
+            rateRequired:     @json(__('owner.onboarding.rate_required')),
             logoRequired:     @json(__('owner.onboarding.logo_required')),
             somethingWrong:   @json(__('owner.onboarding.something_wrong')),
             slugRequired:     @json(__('owner.onboarding.slug_required')),
@@ -418,6 +460,19 @@ document.addEventListener('alpine:init', () => {
     const _o = window._onb;
 
     const dom = (name) => document.querySelector(`[name="${name}"]`)?.value ?? '';
+
+    // The second currency onboarding suggests: dollars beside the local
+    // money, or, for a menu priced in dollars, the money of the phone's
+    // country (config/countries.php).
+    const suggestSecond = (main, cc) => {
+        if (main !== 'USD') return 'USD';
+        const local = (_o.countryCurrencies || {})[cc];
+        return local && local !== 'USD' ? local : '';
+    };
+    // The rate it starts on, as the owner reads it: 1 USD = 89,000 LBP for
+    // that pair (the dashboard's default too); any other is typed.
+    const defaultRate = (main, second) =>
+        (main === 'USD' && second === 'LBP') || (main === 'LBP' && second === 'USD') ? '89000' : '';
 
     Alpine.data('wizard', () => ({
         step:       _o.step,
@@ -492,15 +547,56 @@ document.addEventListener('alpine:init', () => {
         /* Step 2: currency tracked for right-panel display only */
         selectedCurrency: _o.existing.currency || 'USD',
         get currencySymbol() {
-            return (_o.currencySymbols && _o.currencySymbols[this.selectedCurrency]) || '$';
+            // A sign stays on the number ("$24"), letters get a small space ("L.L 24"), as App\Support\Price::symbol().
+            var symbol = (_o.currencySymbols && _o.currencySymbols[this.selectedCurrency]) || '$';
+            return symbol.length > 1 ? symbol + ' ' : symbol;
+        },
+        /* The second currency: suggested from the main one and the phone's
+           country until the owner picks one, with its rate written the way
+           people say it: the dollar is the 1 (1 USD = 89,000 LBP), else
+           1 second = X main. The server turns it into main per one second. */
+        s2: { second: _o.existing.second_currency || '', rate: _o.existing.rate || '' },
+        // Decided once step 2 was saved (its phone is there): "none" included, never suggested over.
+        secondPicked: !!_o.existing.second_currency || !!_o.existing.phone,
+        countryCode: _o.existing.country_code || 'LB',
+        get rateFrom() {
+            return this.selectedCurrency === 'USD' || this.s2.second === 'USD' ? 'USD' : this.s2.second;
+        },
+        get rateTo() {
+            return this.rateFrom === this.selectedCurrency ? this.s2.second : this.selectedCurrency;
+        },
+        setSecond(code) {
+            this.s2.second = code;
+            this.s2.rate = defaultRate(this.selectedCurrency, code);
+            this.errors.second_currency = '';
+            this.errors.rate = '';
+            window.dispatchEvent(new CustomEvent('combo-set', { detail: { name: 'second_currency', value: code } }));
+        },
+        suggestSecond() {
+            if (!this.secondPicked) this.setSecond(suggestSecond(this.selectedCurrency, this.countryCode));
         },
         onContactChange(e) {
-            if (e.target && e.target.name === 'currency') { this.selectedCurrency = e.target.value || 'USD'; this.errors.currency = ''; }
             if (e.target && (e.target.name === 'phone' || e.target.name === 'country_code')) { this.errors.phone = ''; }
         },
+        onCountryChange(e) {
+            this.countryCode = (e.detail && e.detail.value) || '';
+            this.errors.phone = '';
+            this.suggestSecond();
+        },
         onCurrencyChange(e) {
-            this.selectedCurrency = (e.detail && e.detail.value) || 'USD';
+            const value = (e.detail && e.detail.value) || '';
+            if (e.detail && e.detail.name === 'second_currency') {
+                // The owner's own pick (none included) stays from here on.
+                this.secondPicked = true;
+                this.setSecond(value);
+                return;
+            }
+            this.selectedCurrency = value || 'USD';
             this.errors.currency = '';
+            // The pair changed: a picked second currency keeps, its rate starts again;
+            // one that is now the main one goes.
+            if (this.s2.second === this.selectedCurrency) this.secondPicked = false;
+            if (this.secondPicked) this.setSecond(this.s2.second); else this.suggestSecond();
         },
         /* Step 3: a logo already saved on the restaurant satisfies the requirement.
            The dropzone is a self-contained component, so the wizard tracks this
@@ -518,7 +614,7 @@ document.addEventListener('alpine:init', () => {
                     this._snap[1] = JSON.stringify({ name: this.s1.name.trim(), lang: this.s1.main_locale, slug: this.s1.slug });
                     break;
                 case 2:
-                    this._snap[2] = JSON.stringify({ cc: dom('country_code'), phone: dom('phone'), currency: dom('currency') });
+                    this._snap[2] = JSON.stringify({ cc: dom('country_code'), phone: dom('phone'), currency: dom('currency'), second: this.s2.second, rate: this.s2.rate });
                     break;
                 case 3:
                     this._snap[3] = `${dom('logo_key')}|${dom('cover_image_key')}`;
@@ -529,13 +625,16 @@ document.addEventListener('alpine:init', () => {
         _isUnchanged() {
             switch (this.step) {
                 case 1: return this._snap[1] === JSON.stringify({ name: this.s1.name.trim(), lang: this.s1.main_locale, slug: this.s1.slug });
-                case 2: return this._snap[2] === JSON.stringify({ cc: dom('country_code'), phone: dom('phone'), currency: dom('currency') });
+                case 2: return this._snap[2] === JSON.stringify({ cc: dom('country_code'), phone: dom('phone'), currency: dom('currency'), second: this.s2.second, rate: this.s2.rate });
                 case 3: return this._snap[3] === `${dom('logo_key')}|${dom('cover_image_key')}`;
                 default: return false;
             }
         },
 
         init() {
+            // A new restaurant starts on the suggested second currency.
+            this.$nextTick(() => this.suggestSecond());
+
             // Capture snapshot when step changes (use $nextTick so DOM components have rendered)
             this.$watch('step', step => this.$nextTick(() => this._captureSnap(step)));
             this.$nextTick(() => this._captureSnap(this.step));
@@ -598,6 +697,8 @@ document.addEventListener('alpine:init', () => {
                 const currency = dom('currency');
                 if (!currency) { this.errors.currency = _o.i18n.currencyRequired; return; }
                 if (!(_o.currencyCodes || []).includes(currency)) { this.errors.currency = _o.i18n.currencyInvalid; return; }
+                if (this.s2.second && this.s2.second === currency) { this.errors.second_currency = _o.i18n.secondSame; return; }
+                if (this.s2.second && !(parseFloat(this.s2.rate) > 0)) { this.errors.rate = _o.i18n.rateRequired; return; }
             }
             // Step 3 (branding): a logo is required (an existing one counts).
             if (this.step === 3 && !this.hasLogo && !dom('logo_key')) { this.errors.logo = _o.i18n.logoRequired; return; }
@@ -614,7 +715,11 @@ document.addEventListener('alpine:init', () => {
                 if (this.step === 1) {
                     body = { ...body, ...this.s1 };
                 } else if (this.step === 2) {
-                    body = { ...body, country_code: dom('country_code'), phone: dom('phone'), currency: dom('currency') };
+                    body = {
+                        ...body, country_code: dom('country_code'), phone: dom('phone'), currency: dom('currency'),
+                        second_currency: this.s2.second || null, rate: this.s2.second ? this.s2.rate : null,
+                        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    };
                 } else if (this.step === 3) {
                     body = { ...body, logo_key: dom('logo_key'), cover_image_key: dom('cover_image_key') };
                 }

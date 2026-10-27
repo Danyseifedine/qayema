@@ -7,6 +7,9 @@
       $placeholder : shown while nothing is selected
       $name        : form field name (hidden input emitted for submission)
       $up          : open the list above the field
+
+    Picking dispatches `combo-change` ({value, name}); a `combo-set` event on
+    the window with this field's name and a value sets it from outside.
 --}}
 @props([
     'name'        => null,
@@ -43,12 +46,14 @@
              this.open = false;
              this.q = '';
              this.$nextTick(() => this.$el.dispatchEvent(
-                 new CustomEvent('combo-change', { detail: { value: this.val }, bubbles: true })
+                 new CustomEvent('combo-change', { detail: { value: this.val, name: @js($name) }, bubbles: true })
              ));
          },
 
          clear() { this.val = ''; this.q = ''; },
      }"
+     {{-- Set from outside (a suggestion): `combo-set` with this field's name. --}}
+     @combo-set.window="if ($event.detail.name === @js($name)) { val = $event.detail.value ?? '' }"
      :class="open ? 'open' : ''"
      @click.outside="open = false; q = ''">
 
@@ -67,7 +72,7 @@
 
         {{-- Placeholder display when nothing is selected --}}
         <template x-if="!selectedItem && !q">
-            <span style="font-size:14.5px;padding:6px 4px;color:rgba(15,15,16,.38);pointer-events:none;user-select:none">{{ $placeholder }}</span>
+            <span style="font-size:14.5px;padding:6px 4px;color:rgba(245,241,232,.40);pointer-events:none;user-select:none">{{ $placeholder }}</span>
         </template>
 
         {{-- Named by the field's label (x-ui.field's for="{{ $name }}"). --}}

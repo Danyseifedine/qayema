@@ -6,6 +6,7 @@ use App\Enums\Feature;
 use App\Enums\OrderStatus;
 use App\Models\Category;
 use App\Models\Dish;
+use App\Models\FeatureGrant;
 use App\Models\Order;
 use App\Models\Restaurant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -218,7 +219,10 @@ class PlaceOrderTest extends TestCase
                 ['dish_id' => $bowl->id, 'quantity' => 1],
                 ['dish_id' => $soldOut->id, 'quantity' => 1],
             ],
-        ])->assertCreated();
+        ])->assertCreated()
+            // Named, so the menu tells the guest it was left off.
+            ->assertJsonPath('data.unavailable', ['Sold Out'])
+            ->assertJsonPath('data.total', '14.00');
 
         $this->assertCount(1, Order::firstOrFail()->items);
     }
@@ -285,6 +289,17 @@ class PlaceOrderTest extends TestCase
         $shop = $this->shop();
         $bowl = $this->dish($shop, 'House Bowl', '14.00');
         $shop->update(['package_started_at' => now()->subYear(), 'package_ends_at' => now()->subDays(4)]);
+
+        $this->postJson(route('public.order', $shop->slug), [
+            'items' => [['dish_id' => $bowl->id, 'quantity' => 1]],
+        ])->assertNotFound();
+    }
+
+    public function test_ordering_an_admin_turned_off_takes_no_orders_whatever_the_package(): void
+    {
+        $shop = $this->shop();
+        $bowl = $this->dish($shop, 'House Bowl', '14.00');
+        FeatureGrant::factory()->for($shop)->setTo(Feature::Ordering, 0)->create();
 
         $this->postJson(route('public.order', $shop->slug), [
             'items' => [['dish_id' => $bowl->id, 'quantity' => 1]],

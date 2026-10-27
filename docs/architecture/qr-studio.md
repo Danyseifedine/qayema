@@ -12,8 +12,9 @@ with the design**, so a printed code keeps working whatever is saved.
   its own flag then.
 - `restaurants.qr_settings` is a **flat design we own** (`dot_style`,
   `dot_color`, `dot_gradient`, …), not the drawing library's option tree.
-  `Restaurant::qrDesign()` merges it over `qrDefaultDesign()` (the simple QR)
-  and drops any key the defaults no longer know.
+  `QrDesign::saved()` merges it over `QrDesign::defaults()` (the simple QR)
+  and drops any key the defaults no longer know; `QrDesign::shown()` is the
+  saved one while the studio is on, the simple one otherwise.
 - `App\Services\Qr\QrStyle::options()` is the one place a design becomes
   `qr-code-styling` options. The dashboard mirrors it in
   `src/features/qr/utils/qr-options.ts`; both are tested against the same
@@ -26,7 +27,7 @@ with the design**, so a printed code keeps working whatever is saved.
   fetches its options from `GET /{slug}/qr-options` on first open (the logo is
   inlined, too heavy for every menu page): the studio design, or the plain
   code without the studio, exactly as the dashboard shows it. Every code
-  encodes `Restaurant::qrUrl()` (`?qr=1`, which counts the visit as a scan).
+  encodes `QrDesign::url()` (`?qr=1`, which counts the visit as a scan).
 - The logo is sent **inline as a data URL** (`QrStyle::logoDataUrl()`), not as
   its CDN link: a browser only draws a cross-origin image into a PNG when that
   domain sends CORS headers, and R2 does not by default.

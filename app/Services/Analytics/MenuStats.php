@@ -4,13 +4,10 @@ namespace App\Services\Analytics;
 
 use App\Enums\MenuEventType;
 use App\Enums\OrderChannel;
-use App\Enums\OrderStatus;
 use App\Models\Category;
 use App\Models\Dish;
 use App\Models\MenuDay;
-use App\Models\OrderItem;
 use App\Models\Restaurant;
-use App\Services\Menu\MenuLanguages;
 use App\Support\HyperLogLog;
 use Carbon\CarbonImmutable;
 use DateTimeImmutable;
@@ -55,35 +52,17 @@ class MenuStats
 
     private const TOP_SEARCHES = 8;
 
-    private readonly string $timezone;
+    private readonly StatsRange $at;
 
-    private readonly CarbonImmutable $today;
-
-    /** Start of the range, in the restaurant's timezone; null for "all". */
-    private readonly ?CarbonImmutable $from;
-
-    /**
-     * For "all" with days added up before MenuDays::boundary(): the boundary,
-     * where the raw rows take over from `menu_days`. Null otherwise.
-     */
-    private readonly ?CarbonImmutable $historyUntil;
+    private readonly MenuOrderStats $orders;
 
     /** @var Collection<int, MenuDay>|null the days before, read once */
     private ?Collection $history = null;
 
-    public function __construct(private readonly Restaurant $restaurant, private readonly string $range)
+    public function __construct(Restaurant $restaurant, private readonly string $range)
     {
-        $this->timezone = $restaurant->localTimezone();
-        $this->today = CarbonImmutable::now($this->timezone)->startOfDay();
-
-        $days = self::RANGES[$range] ?? null;
-        $this->from = $days === null ? null : $this->today->subDays($days - 1);
-
-        $boundary = MenuDays::boundary($restaurant);
-        $this->historyUntil = $this->from === null
-            && $restaurant->menuDays()->where('day', '<', $boundary->toDateString())->exists()
-            ? $boundary
-            : null;
+        $this->at = StatsRange::of($restaurant, $range);
+        $this->orders = new MenuOrderStats($this->at);
     }
 
     public static function isBasicRange(string $range): bool
@@ -98,15 +77,15 @@ class MenuStats
     {
         // Every range ends now, so today's views are a part of it: counted
         // in the same pass. The orders and those done, likewise, in one.
-        $visits = $this->visitTotals($this->inRange($this->restaurant->menuSessions(), 'viewed_at'), $this->today, countVisitors: $this->historyUntil === null);
-        $orders = $this->takesOrders() ? $this->orderTotals($this->from) : null;
+        $visits = MenuTraffic::count($this->inRange($this->at->restaurant->menuSessions(), 'viewed_at'), $this->at->today, countVisitors: $this->at->historyUntil === null);
+        $orders = $this->takesOrders() ? $this->orders->totals($this->at->from) : null;
 
         return [
             'totals' => [
                 'views' => $visits['views'] + $this->history()->sum('views'),
-                'unique_visitors' => $this->historyUntil === null
+                'unique_visitors' => $this->at->historyUntil === null
                     ? $visits['unique_visitors']
-                    : $this->visitorsWithHistory($this->inRange($this->restaurant->menuSessions(), 'viewed_at')->distinct()->pluck('session_id'), 'visitorSketch'),
+                    : $this->visitorsWithHistory($this->inRange($this->at->restaurant->menuSessions(), 'viewed_at')->distinct()->pluck('session_id'), 'visitorSketch'),
                 'qr_scans' => $visits['qr_scans'] + $this->history()->sum('qr_scans'),
                 'views_today' => $visits['since'],
                 'orders' => $orders['kept'] ?? null,
@@ -133,7 +112,7 @@ class MenuStats
     public function teaser(): array
     {
         return [
-            'views' => $this->inRange($this->restaurant->menuSessions(), 'viewed_at')->count(),
+            'views' => $this->inRange($this->at->restaurant->menuSessions(), 'viewed_at')->count(),
         ];
     }
 
@@ -142,7 +121,7 @@ class MenuStats
      */
     public function advanced(): array
     {
-        $visits = $this->inRange($this->restaurant->menuSessions(), 'viewed_at');
+        $visits = $this->inRange($this->at->restaurant->menuSessions(), 'viewed_at');
 
         return [
             ...$this->busyTimes(),
@@ -155,7 +134,7 @@ class MenuStats
             'funnel' => $this->takesOrders() ? $this->funnel($visits) : null,
             // Orders at the table may be placed in the menu whatever the
             // channel of delivery and pickup.
-            'menu_orders' => $this->channel() === OrderChannel::Menu || $this->restaurant->dineInChannel() === OrderChannel::Menu ? $this->menuOrders() : null,
+            'menu_orders' => $this->channel() === OrderChannel::Menu || $this->at->restaurant->dineInChannel() === OrderChannel::Menu ? $this->orders->menuOrders() : null,
         ];
     }
 
@@ -173,16 +152,16 @@ class MenuStats
             return $this->hoursOfToday();
         }
 
-        $start = $this->from ?? $this->firstVisitDay();
-        $start = $start->max($this->today->subDays(self::MAX_SERIES_DAYS - 1));
+        $start = $this->at->from ?? $this->firstVisitDay();
+        $start = $start->max($this->at->today->subDays(self::MAX_SERIES_DAYS - 1));
 
         $days = [];
 
-        for ($date = $start; $date->lte($this->today); $date = $date->addDay()) {
+        for ($date = $start; $date->lte($this->at->today); $date = $date->addDay()) {
             $days[$date->toDateString()] = ['date' => $date->toDateString(), 'views' => 0, 'qr_scans' => 0];
         }
 
-        foreach ($this->hourly($this->historyUntil?->max($start) ?? $start) as $bucket) {
+        foreach ($this->hourly($this->at->historyUntil?->max($start) ?? $start) as $bucket) {
             $day = $bucket['day'];
 
             if (isset($days[$day])) {
@@ -206,14 +185,14 @@ class MenuStats
     /** @return array<int, array{date: string, views: int, qr_scans: int}> */
     private function hoursOfToday(): array
     {
-        $day = $this->today->toDateString();
+        $day = $this->at->today->toDateString();
         $hours = [];
 
-        for ($hour = 0; $hour <= CarbonImmutable::now($this->timezone)->hour; $hour++) {
+        for ($hour = 0; $hour <= CarbonImmutable::now($this->at->timezone)->hour; $hour++) {
             $hours[$hour] = ['date' => sprintf('%sT%02d:00', $day, $hour), 'views' => 0, 'qr_scans' => 0];
         }
 
-        foreach ($this->hourly($this->today) as $bucket) {
+        foreach ($this->hourly($this->at->today) as $bucket) {
             if ($bucket['day'] === $day && isset($hours[$bucket['hour']])) {
                 $hours[$bucket['hour']]['views'] += $bucket['views'];
                 $hours[$bucket['hour']]['qr_scans'] += $bucket['qr_scans'];
@@ -225,15 +204,15 @@ class MenuStats
 
     private function firstVisitDay(): CarbonImmutable
     {
-        if ($this->historyUntil !== null) {
-            return CarbonImmutable::parse($this->history()->min('day'), $this->timezone)->startOfDay();
+        if ($this->at->historyUntil !== null) {
+            return CarbonImmutable::parse($this->history()->min('day'), $this->at->timezone)->startOfDay();
         }
 
-        $first = $this->restaurant->menuSessions()->min('viewed_at');
+        $first = $this->at->restaurant->menuSessions()->min('viewed_at');
 
         return $first === null
-            ? $this->today
-            : CarbonImmutable::parse($first, 'UTC')->setTimezone($this->timezone)->startOfDay();
+            ? $this->at->today
+            : CarbonImmutable::parse($first, 'UTC')->setTimezone($this->at->timezone)->startOfDay();
     }
 
     /**
@@ -244,36 +223,21 @@ class MenuStats
      */
     private function previous(): ?array
     {
-        if ($this->from === null) {
+        if ($this->at->from === null) {
             return null;
         }
 
-        [$start, $end] = $this->previousPeriod();
+        [$start, $end] = $this->at->previousPeriod();
 
-        $visits = $this->restaurant->menuSessions()
+        $visits = $this->at->restaurant->menuSessions()
             ->where('viewed_at', '>=', $start->utc())
             ->where('viewed_at', '<', $end->utc());
 
         return [
             // Today is not in the period before.
-            ...Arr::except($this->visitTotals($visits), 'since'),
-            'orders' => $this->takesOrders() ? $this->orderCount($start, $end) : null,
+            ...Arr::only(MenuTraffic::count($visits, $this->at->today), ['views', 'unique_visitors', 'qr_scans']),
+            'orders' => $this->takesOrders() ? $this->orders->count($start, $end) : null,
         ];
-    }
-
-    /**
-     * The period before this one: as many days before its start; for today,
-     * yesterday up to this time of day, so a morning is not set against a
-     * whole day.
-     *
-     * @return array{0: CarbonImmutable, 1: CarbonImmutable}
-     */
-    private function previousPeriod(): array
-    {
-        $days = (int) self::RANGES[$this->range];
-        $start = $this->from->subDays($days);
-
-        return [$start, $this->range === 'today' ? CarbonImmutable::now($this->timezone)->subDay() : $this->from];
     }
 
     // ---- Advanced ------------------------------------------------------
@@ -334,7 +298,7 @@ class MenuStats
 
         $actions = [];
 
-        foreach (MenuEventType::cases() as $type) {
+        foreach (MenuEventType::guestActions() as $type) {
             $actions[$type->value] = (int) ($counts[$type->value] ?? 0);
         }
 
@@ -383,13 +347,13 @@ class MenuStats
             ->selectRaw("{$column} as id, COUNT(*) as total")
             ->groupBy($column);
 
-        $counts = ($this->historyUntil === null ? $query->orderByDesc('total')->orderBy($column)->limit(self::TOP) : $query)
+        $counts = ($this->at->historyUntil === null ? $query->orderByDesc('total')->orderBy($column)->limit(self::TOP) : $query)
             ->pluck('total', 'id')
             ->map(fn ($total): int => (int) $total)
             ->all();
 
         $top = array_slice($this->withHistory($counts, $field), 0, self::TOP, true);
-        $names = $this->names($model, array_keys($top));
+        $names = $this->at->names($model, array_keys($top));
 
         return array_values(array_filter(array_map(
             fn ($id, int $count): ?array => isset($names[$id]) ? ['name' => $names[$id], 'count' => $count] : null,
@@ -410,7 +374,7 @@ class MenuStats
             ->selectRaw('value, COUNT(*) as total')
             ->groupBy('value');
 
-        $counts = ($this->historyUntil === null ? $query->orderByDesc('total')->orderBy('value')->limit(self::TOP_SEARCHES) : $query)
+        $counts = ($this->at->historyUntil === null ? $query->orderByDesc('total')->orderBy('value')->limit(self::TOP_SEARCHES) : $query)
             ->pluck('total', 'value')
             ->map(fn ($total): int => (int) $total)
             ->all();
@@ -436,158 +400,15 @@ class MenuStats
         $carted = $this->events()->where('type', MenuEventType::DishAdd->value);
 
         return [
-            'visitors' => $this->historyUntil === null
+            'visitors' => $this->at->historyUntil === null
                 ? (clone $visits)->distinct('session_id')->count('session_id')
                 : $this->visitorsWithHistory((clone $visits)->distinct()->pluck('session_id'), 'visitorSketch'),
-            'carted' => $this->historyUntil === null
+            'carted' => $this->at->historyUntil === null
                 ? $carted->distinct('session_id')->count('session_id')
                 : $this->visitorsWithHistory($carted->distinct()->pluck('session_id'), 'cartedSketch'),
-            'ordered' => $this->orderCount($this->from, null),
+            'ordered' => $this->orders->count($this->at->from, null),
             'channel' => $this->channel()->value,
         ];
-    }
-
-    /**
-     * The orders placed in the menu, which are real orders with a total, a
-     * status and lines, unlike a WhatsApp tap: what they came to, how they
-     * ended, how fast the restaurant took them on, when guests order and
-     * what they order most.
-     *
-     * Money counts only the orders in the restaurant's current currency, so
-     * a switch of currency never adds dollars to pounds; every other number
-     * counts them all. Cancelled orders are left out of the money, the
-     * guests and the times, and counted on their own in `statuses`.
-     *
-     * @return array<string, mixed>
-     */
-    private function menuOrders(): array
-    {
-        $currency = (string) $this->restaurant->currency;
-        $statuses = array_fill_keys(array_column(OrderStatus::cases(), 'value'), 0);
-        $fulfilment = [];
-        $hours = array_fill(0, 24, 0);
-        $weekdays = array_fill(0, 7, 0);
-        $phones = [];
-        $waits = [];
-        $cents = 0;
-        $paid = 0;
-
-        $orders = $this->menuOrdersInRange($this->from, null)
-            ->get(['status', 'fulfilment', 'currency', 'total', 'guest_phone', 'placed_at', 'accepted_at', 'ready_at', 'closed_at']);
-
-        foreach ($orders as $order) {
-            $statuses[$order->status->value]++;
-
-            if ($order->status === OrderStatus::Cancelled) {
-                continue;
-            }
-
-            if ($order->fulfilment !== null) {
-                $fulfilment[$order->fulfilment->value] = ($fulfilment[$order->fulfilment->value] ?? 0) + 1;
-            }
-
-            $placed = CarbonImmutable::instance($order->placed_at)->setTimezone($this->timezone);
-            $hours[$placed->hour]++;
-            $weekdays[$placed->dayOfWeekIso - 1]++;
-
-            if ($order->guest_phone) {
-                $phones[$order->guest_phone] = ($phones[$order->guest_phone] ?? 0) + 1;
-            }
-
-            // Taken on: accepted, or moved straight to ready or done. A
-            // restaurant that skips "accepted" still answered the order.
-            $answered = $order->accepted_at ?? $order->ready_at ?? ($order->status === OrderStatus::Done ? $order->closed_at : null);
-
-            if ($answered !== null) {
-                $waits[] = max(0, (int) round($order->placed_at->diffInSeconds($answered, true) / 60));
-            }
-
-            if ($order->currency === $currency) {
-                $cents += $this->cents($order->total);
-                $paid++;
-            }
-        }
-
-        arsort($fulfilment);
-
-        return [
-            'currency' => $currency,
-            'sales' => $this->money($cents),
-            'average' => $paid > 0 ? $this->money(intdiv($cents + intdiv($paid, 2), $paid)) : null,
-            // Null for "All time", which has no period before it.
-            'previous_sales' => $this->from === null ? null : $this->previousSales($currency),
-            'statuses' => $statuses,
-            'fulfilment' => array_map(
-                fn (string $key, int $count): array => ['key' => $key, 'count' => $count],
-                array_keys($fulfilment),
-                $fulfilment,
-            ),
-            'guests' => count($phones),
-            'returning_guests' => count(array_filter($phones, fn (int $count): bool => $count > 1)),
-            'minutes_to_accept' => $this->median($waits),
-            'hours' => $hours,
-            'weekdays' => $weekdays,
-            'top_ordered' => $this->topDishesOrdered($currency),
-        ];
-    }
-
-    /** What the menu's orders came to in the period just before this one. */
-    private function previousSales(string $currency): float
-    {
-        [$start, $end] = $this->previousPeriod();
-
-        $total = $this->menuOrdersInRange($start, $end)
-            ->where('status', '!=', OrderStatus::Cancelled->value)
-            ->where('currency', $currency)
-            ->pluck('total')
-            ->sum(fn ($total): int => $this->cents($total));
-
-        return $this->money($total);
-    }
-
-    /**
-     * The dishes guests ordered most, by how many they ordered, with what
-     * they came to. Lines name the dish as it was ordered, in the guest's
-     * language; the list names it as the owner reads it today, and leaves
-     * out a dish deleted since, like the dishes most added.
-     *
-     * @return array<int, array{name: string, quantity: int, sales: float}>
-     */
-    private function topDishesOrdered(string $currency): array
-    {
-        $orders = fn () => $this->menuOrdersInRange($this->from, null)
-            ->where('status', '!=', OrderStatus::Cancelled->value)
-            ->select('id')
-            ->getQuery();
-
-        $rows = OrderItem::query()
-            ->whereIn('order_id', $orders())
-            ->whereNotNull('dish_id')
-            ->selectRaw('dish_id, SUM(quantity) as quantity')
-            ->groupBy('dish_id')
-            ->orderByDesc('quantity')
-            ->orderBy('dish_id')
-            ->limit(self::TOP)
-            ->get();
-
-        $names = $this->names(Dish::class, $rows->pluck('dish_id'));
-
-        $sales = OrderItem::query()
-            ->whereIn('order_id', $orders()->where('currency', $currency))
-            ->whereIn('dish_id', array_keys($names))
-            ->get(['dish_id', 'line_total'])
-            ->groupBy('dish_id')
-            ->map(fn ($lines): int => $lines->sum(fn (OrderItem $line): int => $this->cents($line->line_total)));
-
-        return $rows
-            ->filter(fn ($row) => isset($names[$row->dish_id]))
-            ->map(fn ($row) => [
-                'name' => $names[$row->dish_id],
-                'quantity' => (int) $row->quantity,
-                'sales' => $this->money($sales[$row->dish_id] ?? 0),
-            ])
-            ->values()
-            ->all();
     }
 
     // ---- Building blocks -------------------------------------------------
@@ -604,7 +425,7 @@ class MenuStats
      */
     private function channel(): ?OrderChannel
     {
-        return $this->restaurant->orderChannel();
+        return $this->at->restaurant->orderChannel();
     }
 
     /**
@@ -617,9 +438,9 @@ class MenuStats
     private function hourly(?CarbonImmutable $from): array
     {
         $utc = new DateTimeZone('UTC');
-        $local = new DateTimeZone($this->timezone);
+        $local = new DateTimeZone($this->at->timezone);
 
-        return $this->restaurant->menuSessions()
+        return $this->at->restaurant->menuSessions()
             ->when($from, fn ($query) => $query->where('viewed_at', '>=', $from->utc()))
             ->selectRaw('SUBSTR(viewed_at, 1, 13) as bucket, COUNT(*) as views, SUM(CASE WHEN via_qr THEN 1 ELSE 0 END) as qr_scans')
             ->groupBy('bucket')
@@ -633,54 +454,6 @@ class MenuStats
             ->all();
     }
 
-    /**
-     * Views, distinct visitors and QR scans of some visits, in one pass over
-     * them rather than three counts; with `$since`, the views from then on
-     * too (today's).
-     *
-     * @return array{views: int, unique_visitors: int, qr_scans: int, since: int}
-     */
-    private function visitTotals(HasMany $visits, ?CarbonImmutable $since = null, bool $countVisitors = true): array
-    {
-        // Without the distinct count when the caller counts visitors with
-        // sketches: the costliest part of the pass, for a number unused.
-        $visitors = $countVisitors ? 'count(distinct session_id)' : '0';
-
-        $totals = $visits->toBase()
-            ->selectRaw(
-                "count(*) as views, {$visitors} as visitors, sum(case when via_qr then 1 else 0 end) as scans, sum(case when viewed_at >= ? then 1 else 0 end) as since",
-                [($since ?? $this->today)->utc()->toDateTimeString()],
-            )
-            ->first();
-
-        return [
-            'views' => (int) $totals->views,
-            'unique_visitors' => (int) $totals->visitors,
-            'qr_scans' => (int) $totals->scans,
-            'since' => (int) $totals->since,
-        ];
-    }
-
-    /**
-     * The current channel's orders from `$from`: those not cancelled, and
-     * those done, in one pass.
-     *
-     * @return array{kept: int, done: int}
-     */
-    private function orderTotals(?CarbonImmutable $from): array
-    {
-        $totals = $this->ordersInRange($from, null)
-            ->where('channel', $this->channel())
-            ->toBase()
-            ->selectRaw(
-                'sum(case when status != ? then 1 else 0 end) as kept, sum(case when status = ? then 1 else 0 end) as done',
-                [OrderStatus::Cancelled->value, OrderStatus::Done->value],
-            )
-            ->first();
-
-        return ['kept' => (int) ($totals->kept ?? 0), 'done' => (int) ($totals->done ?? 0)];
-    }
-
     private function inRange(HasMany $query, string $column): HasMany
     {
         return $query->when($this->rawFrom(), fn ($query, CarbonImmutable $from) => $query->where($column, '>=', $from->utc()));
@@ -689,7 +462,7 @@ class MenuStats
     /** Where the raw rows start counting: the range's start, or for "all" with history, the boundary. */
     private function rawFrom(): ?CarbonImmutable
     {
-        return $this->from ?? $this->historyUntil;
+        return $this->at->from ?? $this->at->historyUntil;
     }
 
     /**
@@ -699,13 +472,10 @@ class MenuStats
      */
     private function history(): Collection
     {
-        return $this->history ??= $this->historyUntil === null
+        return $this->history ??= $this->at->historyUntil === null
             ? new Collection
             // Everything but the sketches, which come merged (MenuDays::mergedSketch()).
-            : $this->restaurant->menuDays()
-                ->where('day', '<', $this->historyUntil->toDateString())
-                ->orderBy('day')
-                ->get(['id', 'day', 'views', 'qr_scans', 'hours', 'languages', 'actions', 'dishes_added', 'categories_opened', 'searches', 'missed_searches']);
+            : MenuTraffic::history($this->at->restaurant, $this->at->historyUntil, ['id', 'day', 'views', 'qr_scans', 'hours', 'languages', 'actions', 'dishes_added', 'categories_opened', 'searches', 'missed_searches']);
     }
 
     /**
@@ -737,97 +507,11 @@ class MenuStats
      */
     private function visitorsWithHistory(iterable $rawIds, string $sketch): int
     {
-        return HyperLogLog::of($rawIds)->merge(MenuDays::mergedSketch($this->restaurant, $this->historyUntil, $sketch))->count();
+        return MenuTraffic::visitors($this->at->restaurant, $rawIds, $this->at->historyUntil, $sketch);
     }
 
     private function events(): HasMany
     {
-        return $this->inRange($this->restaurant->menuEvents(), 'occurred_at');
-    }
-
-    private function ordersInRange(?CarbonImmutable $from, ?CarbonImmutable $until): HasMany
-    {
-        // reorder(): the relation sorts by placed_at, which a grouped query
-        // cannot carry.
-        return $this->restaurant->orders()
-            ->reorder()
-            ->when($from, fn ($query) => $query->where('placed_at', '>=', $from->utc()))
-            ->when($until, fn ($query) => $query->where('placed_at', '<', $until->utc()));
-    }
-
-    private function menuOrdersInRange(?CarbonImmutable $from, ?CarbonImmutable $until): HasMany
-    {
-        return $this->ordersInRange($from, $until)->where('channel', OrderChannel::Menu);
-    }
-
-    /** A decimal amount as whole cents, so sums never drift on floats. */
-    private function cents(mixed $amount): int
-    {
-        return (int) round((float) $amount * 100);
-    }
-
-    private function money(int $cents): float
-    {
-        return round($cents / 100, 2);
-    }
-
-    /**
-     * The middle value, which one forgotten order left open for a day
-     * cannot drag the way it drags an average; null with none.
-     *
-     * @param  array<int, int>  $values
-     */
-    private function median(array $values): ?int
-    {
-        if ($values === []) {
-            return null;
-        }
-
-        sort($values);
-        $middle = intdiv(count($values), 2);
-
-        return count($values) % 2 === 1
-            ? $values[$middle]
-            : (int) round(($values[$middle - 1] + $values[$middle]) / 2);
-    }
-
-    /** Orders of the current channel, cancelled ones left out, or only those of one status. */
-    private function orderCount(?CarbonImmutable $from, ?CarbonImmutable $until, ?OrderStatus $status = null): int
-    {
-        return $this->ordersInRange($from, $until)
-            ->where('channel', $this->channel())
-            ->when(
-                $status,
-                fn ($query, OrderStatus $status) => $query->where('status', $status->value),
-                fn ($query) => $query->where('status', '!=', OrderStatus::Cancelled->value),
-            )
-            ->count();
-    }
-
-    /**
-     * Current names, in the owner's language, for dishes or categories.
-     *
-     * @param  class-string<Dish|Category>  $model
-     * @param  iterable<int|null>  $ids
-     * @return array<int, string>
-     */
-    private function names(string $model, iterable $ids): array
-    {
-        $ids = collect($ids)->filter()->unique()->values();
-
-        if ($ids->isEmpty()) {
-            return [];
-        }
-
-        $read = MenuLanguages::reader($this->restaurant, MenuLanguages::default($this->restaurant));
-
-        return $model::query()
-            ->where('restaurant_id', $this->restaurant->id)
-            ->whereKey($ids->all())
-            ->get()
-            ->mapWithKeys(fn (Dish|Category $row) => [
-                $row->getKey() => $read($row, 'name'),
-            ])
-            ->all();
+        return $this->inRange($this->at->restaurant->menuEvents(), 'occurred_at');
     }
 }

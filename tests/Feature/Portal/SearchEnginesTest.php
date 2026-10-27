@@ -66,6 +66,21 @@ class SearchEnginesTest extends TestCase
         $this->assertNotContains(url('/empty'), $urls);
     }
 
+    /** It reads every restaurant, so it is built once an hour and kept by Cloudflare as long. */
+    public function test_the_sitemap_is_built_once_an_hour_and_kept_at_the_edge(): void
+    {
+        $this->dish($this->published(['slug' => 'olive']));
+
+        $response = $this->get('/sitemap.xml')->assertOk();
+        $this->assertSame('max-age=0, public, s-maxage=3600', $response->headers->get('Cache-Control'));
+
+        $this->dish($this->published(['slug' => 'cedar']));
+        $this->assertNotContains(url('/cedar'), array_map('strval', $this->sitemap()->xpath('//s:url/s:loc')));
+
+        $this->travel(61)->minutes();
+        $this->assertContains(url('/cedar'), array_map('strval', $this->sitemap()->xpath('//s:url/s:loc')));
+    }
+
     public function test_in_production_every_address_names_the_one_site_address(): void
     {
         // qayema.com and www.qayema.com both answer; Google must see one.

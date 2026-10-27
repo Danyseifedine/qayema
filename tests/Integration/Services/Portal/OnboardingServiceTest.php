@@ -192,6 +192,18 @@ class OnboardingServiceTest extends TestCase
         $this->assertNull($restaurant->fresh()->country_code);
     }
 
+    public function test_step_two_sets_a_timezone_once_and_never_overwrites_it(): void
+    {
+        $restaurant = $this->owner(['timezone' => null]);
+
+        $this->service()->saveContact($restaurant, 'AE', '501234567', 'AED', 'Asia/Dubai');
+        $this->assertSame('Asia/Dubai', $restaurant->fresh()->timezone);
+
+        // Going back to step 2 keeps the timezone already chosen.
+        $this->service()->saveContact($restaurant->fresh(), 'LB', '70123456', 'USD', 'Europe/Paris');
+        $this->assertSame('Asia/Dubai', $restaurant->fresh()->timezone);
+    }
+
     public function test_step_three_promotes_both_uploads_into_their_collections(): void
     {
         $restaurant = $this->owner();

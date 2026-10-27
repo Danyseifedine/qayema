@@ -163,12 +163,6 @@ parameters:
 			path: app/Filament/Admin/Resources/Restaurants/Pages/EditRestaurant.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$feature\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Filament/Admin/Resources/Restaurants/RelationManagers/FeatureGrantsRelationManager.php
-
-		-
 			message: '#^Access to an undefined property App\\Models\\Restaurant\:\:\$qr_scans\.$#'
 			identifier: property.notFound
 			count: 1
@@ -176,12 +170,6 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property App\\Models\\Restaurant\:\:\$total_views\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Filament/Admin/Resources/Restaurants/Tables/RestaurantsTable.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Restaurant\:\:\$unique_visitors\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Filament/Admin/Resources/Restaurants/Tables/RestaurantsTable.php
@@ -283,25 +271,7 @@ parameters:
 			path: app/Filament/Admin/Resources/Users/Pages/ViewUser.php
 
 		-
-			message: '#^Using nullsafe property access "\?\-\>category_limit" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Filament/Admin/Resources/Users/Pages/ViewUser.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>dish_limit" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Filament/Admin/Resources/Users/Pages/ViewUser.php
-
-		-
 			message: '#^Using nullsafe property access "\?\-\>dishes_count" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Filament/Admin/Resources/Users/Pages/ViewUser.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>social_link_limit" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Filament/Admin/Resources/Users/Pages/ViewUser.php
@@ -320,12 +290,6 @@ parameters:
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>dishes_count" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Filament/Admin/Resources/Users/Tables/UsersTable.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>menu_sessions_count" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Filament/Admin/Resources/Users/Tables/UsersTable.php
@@ -353,18 +317,6 @@ parameters:
 			identifier: deadCode.unreachable
 			count: 1
 			path: app/Http/Controllers/Api/AuthController.php
-
-		-
-			message: '#^Parameter \#1 \$relation of static method App\\Services\\Menu\\DisplayOrder\:\:apply\(\) expects Illuminate\\Database\\Eloquent\\Relations\\HasMany\<covariant Illuminate\\Database\\Eloquent\\Model, Illuminate\\Database\\Eloquent\\Model\>, Illuminate\\Database\\Eloquent\\Relations\\HasMany\<App\\Models\\Category, App\\Models\\Restaurant\> given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Http/Controllers/Api/CategoryController.php
-
-		-
-			message: '#^Parameter \#1 \$relation of static method App\\Services\\Menu\\DisplayOrder\:\:apply\(\) expects Illuminate\\Database\\Eloquent\\Relations\\HasMany\<covariant Illuminate\\Database\\Eloquent\\Model, Illuminate\\Database\\Eloquent\\Model\>, Illuminate\\Database\\Eloquent\\Relations\\HasMany\<App\\Models\\Dish, App\\Models\\Restaurant\> given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Http/Controllers/Api/DishController.php
 
 		-
 			message: '#^Access to an undefined property Laravel\\Socialite\\Contracts\\User\:\:\$expiresIn\.$#'
@@ -412,19 +364,7 @@ parameters:
 			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
-			path: app/Http/Requests/StoreDishRequest.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
 			path: app/Http/Requests/StoreSocialLinkRequest.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Http/Requests/UpdateDishRequest.php
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
@@ -505,12 +445,6 @@ parameters:
 			path: app/Models/Restaurant.php
 
 		-
-			message: '#^Using nullsafe property access "\?\-\>value" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Models/Restaurant.php
-
-		-
 			message: '#^Class App\\Models\\RestaurantSocialLink uses generic trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory but does not specify its types\: TFactory$#'
 			identifier: missingType.generics
 			count: 1
@@ -583,54 +517,6 @@ parameters:
 			path: app/Services/Ai/WritingHelpLog.php
 
 		-
-			message: '#^Method App\\Services\\Ai\\WritingHelpUses\:\:forDashboard\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Services/Ai/WritingHelpUses.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$closed_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/Analytics/MenuStats.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$currency\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/Analytics/MenuStats.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$fulfilment\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/Analytics/MenuStats.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$guest_phone\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/Analytics/MenuStats.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$placed_at\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Services/Analytics/MenuStats.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Services/Analytics/MenuStats.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$total\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/Analytics/MenuStats.php
-
-		-
 			message: '#^Method App\\Services\\Analytics\\MenuStats\:\:breakdown\(\) has parameter \$visits with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany but does not specify its types\: TRelatedModel, TDeclaringModel$#'
 			identifier: missingType.generics
 			count: 1
@@ -663,30 +549,6 @@ parameters:
 		-
 			message: '#^Method App\\Services\\Analytics\\MenuStats\:\:inRange\(\) should return Illuminate\\Database\\Eloquent\\Relations\\HasMany but returns Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\.$#'
 			identifier: return.type
-			count: 1
-			path: app/Services/Analytics/MenuStats.php
-
-		-
-			message: '#^Method App\\Services\\Analytics\\MenuStats\:\:menuOrdersInRange\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Services/Analytics/MenuStats.php
-
-		-
-			message: '#^Method App\\Services\\Analytics\\MenuStats\:\:ordersInRange\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Services/Analytics/MenuStats.php
-
-		-
-			message: '#^Method App\\Services\\Analytics\\MenuStats\:\:ordersInRange\(\) should return Illuminate\\Database\\Eloquent\\Relations\\HasMany but returns Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\Order\>\.$#'
-			identifier: return.type
-			count: 1
-			path: app/Services/Analytics/MenuStats.php
-
-		-
-			message: '#^Method App\\Services\\Analytics\\MenuStats\:\:visitTotals\(\) has parameter \$visits with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany but does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
 			count: 1
 			path: app/Services/Analytics/MenuStats.php
 

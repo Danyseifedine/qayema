@@ -10,7 +10,7 @@ use App\Http\Resources\RestaurantResource;
 /**
  * The menu's link, /{slug}. Changing it keeps the old one working: the
  * restaurant's save hook records it (PreviousSlug) and a visit to it
- * forwards here (App\Support\FormerMenuLink), so printed QR codes do not
+ * forwards here (App\Services\Menu\FormerMenuLink), so printed QR codes do not
  * break.
  */
 class RestaurantSlugController extends Controller
