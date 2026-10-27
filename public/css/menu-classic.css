@@ -495,8 +495,9 @@ dialog.dish-sheet.closing::backdrop { animation: fade-in .22s ease reverse forwa
 .choice-tag { flex-shrink: 0; padding: 3px var(--tag-inset); border-radius: 999px; background: var(--soft); color: var(--muted); font-size: 11px; font-weight: 600; }
 .choice-pills, .choice-rows { clear: both; }
 /* Equal tiles in an even grid, so options line up whatever their names; the
-   extra price sits under the name instead of widening the tile. */
-.choice-pills { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+   extra price sits under the name instead of widening the tile. Auto-fit
+   stretches them across the row: two take half each, three a third. */
+.choice-pills { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
 .choice-pill { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 54px; padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--bg); font-size: 14px; font-weight: 500; line-height: 1.25; text-align: center; overflow-wrap: break-word; hyphens: auto; cursor: pointer; transition: border-color .15s ease, background-color .15s ease, transform .12s ease; }
 .choice-pill:active { transform: scale(.97); }
 /* Mixed toward the text so a pale accent still reads as picked. */
