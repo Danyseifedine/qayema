@@ -87,15 +87,16 @@ class OrderEditor
                 throw new OrderChanged;
             }
 
-            foreach ($locked->items()->get() as $item) {
-                $quantity = (int) ($keep[$item->id] ?? 0);
+            // The lines left out go in one statement; a kept line is written
+            // only when its quantity changed.
+            [$kept, $gone] = $locked->items()->get()->partition(fn (OrderItem $item): bool => (int) ($keep[$item->id] ?? 0) >= 1);
 
-                if ($quantity < 1) {
-                    $item->delete();
+            if ($gone->isNotEmpty()) {
+                $locked->items()->whereKey($gone->modelKeys())->delete();
+            }
 
-                    continue;
-                }
-
+            foreach ($kept as $item) {
+                $quantity = (int) $keep[$item->id];
                 $item->update([
                     'quantity' => $quantity,
                     'line_total' => bcmul((string) $item->unit_price, (string) $quantity, 2),
@@ -116,10 +117,6 @@ class OrderEditor
                 ]);
             }
 
-            if ($locked->status === OrderStatus::Placed) {
-                $locked->moveTo(OrderStatus::Accepted);
-            }
-
             // Lines priced in the second currency count in the main one at the
             // rate the order was placed at (today's for its first such line).
             $rate = $lines->contains(fn (OrderItem $line): bool => $line->currency !== null)
@@ -134,9 +131,16 @@ class OrderEditor
                 ), '0.00'),
                 'exchange_rate' => $rate,
                 'owner_updated_at' => now(),
-            ])->save();
+            ]);
 
-            return $locked->load('items');
+            // Taken on with the same write.
+            if ($locked->status === OrderStatus::Placed) {
+                $locked->moveTo(OrderStatus::Accepted);
+            } else {
+                $locked->save();
+            }
+
+            return $locked->setRelation('items', $lines);
         });
     }
 }

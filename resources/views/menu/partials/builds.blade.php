@@ -19,9 +19,18 @@
                     $dishRate = $restaurant->rateOf($dish);
                     $dishCurrency = $dishRate === null ? $currency : config('currencies.'.$dish->currency.'.symbol', $dish->currency);
                     $buildIcon = CategoryIcons::svg($dish->icon) ?? CategoryIcons::svg('chef-hat');
+                    // An offer's discount comes off what is built too: its "from"
+                    // price is the part it comes off (base-extra), as on a dish card.
+                    $basePrice = $dish->price === null ? '0.00' : (string) $dish->price;
+                    $baseExtra = bcsub((string) ($offer_references[$dish->id] ?? $basePrice), $basePrice, 2);
+                    $deal = $offer_deals[$dish->id] ?? null;
+                    $pair = $deal === null ? ($offer_pairs[$dish->id] ?? null) : null;
                 @endphp
                 <article class="dish has-choices dish-build" data-dish="{{ $dish->id }}" data-name="{{ $dishName }}"
-                         data-price="{{ $dish->price ?? '0.00' }}" data-choices data-ingredients=""
+                         data-price="{{ $basePrice }}" data-full-price="{{ $basePrice }}" data-base-extra="{{ $baseExtra }}" data-extra="0.00"
+                         @if ($deal) data-deal-type="{{ $deal->discount_type->value }}" data-deal-value="{{ (float) $deal->discount_value }}" data-deal-by="{{ $deal->id }}" @endif
+                         @if ($pair) data-pair-offer="{{ $pair->id }}" data-pair-value="{{ (float) $pair->discount_value }}" @endif
+                         data-choices data-ingredients=""
                          @if ($dishRate !== null) data-currency="{{ $dishCurrency }}" data-rate="{{ Price::rate($dishRate) }}" @endif>
                     <span class="dish-build-mark" aria-hidden="true">{!! $buildIcon !!}</span>
                     <span class="dish-name">{{ $dishName }}</span>

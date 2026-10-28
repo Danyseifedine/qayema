@@ -51,7 +51,10 @@ class PackagesEndingSoon extends TableWidget
                     ->label('Package')
                     ->badge()
                     ->color(fn (Restaurant $record): string => $record->packageExpired() ? 'danger' : 'warning')
-                    ->description(fn (Restaurant $record): string => RestaurantsTable::packageDates($record)),
+                    ->description(fn (Restaurant $record): string => RestaurantsTable::packageDates($record))
+                    // "Ended …, menu offline …" on two lines, so Change package stays in view.
+                    ->wrap()
+                    ->width('14rem'),
                 TextColumn::make('package_ends_at')
                     ->label('Ends')
                     ->since()

@@ -43,7 +43,15 @@
         currency: @js($currency),
         // Each banner dot's name for a screen reader.
         // The tab an offer's dishes open under (menu-nav.js).
-        strings: { showing: @js(__('Offer: :offer')), tab: @js(__('Offers')) },
+        // A pair deal's badge on its dishes ("Buy 2, 2nd 50% off", "Buy 2, 2nd free"), and
+        // the toast's title for a tap outside an offer's hours.
+        strings: {
+            showing: @js(__('Offer: :offer')),
+            tab: @js(__('Offers')),
+            secondOff: @js(__('Buy 2, 2nd :percent% off')),
+            secondFree: @js(__('Buy 2, 2nd free')),
+            notNow: @js(__('Not available right now')),
+        },
         offers: @js($offers->map(fn ($offer) => [
             'id' => $offer->id,
             'title' => $text($offer, 'title') ?: __('Offers'),
@@ -51,6 +59,10 @@
             'active' => $offer->is_active,
             'schedule' => $offer->schedule($restaurant->localTimezone())->toArray(),
             'discount' => $offer->hasDiscount() ? ['type' => $offer->discount_type->value, 'value' => (float) $offer->discount_value] : null,
+            // On the menu all day inside its dates, its deal in its hours only.
+            'shown_always' => $offer->shows_outside_hours,
+            // When it runs, said to a guest who taps it outside that time.
+            'hours' => $offer->schedule($restaurant->localTimezone())->describe($locale),
             'dishes' => $offer->dishes->pluck('id')->map(fn ($id) => (int) $id)->values()->all(),
             'show_again' => $offer->show_again,
             'delay' => $offer->delay_seconds,

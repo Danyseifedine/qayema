@@ -30,6 +30,9 @@ class MenuTraffic
      */
     public const LIST_RAW_DAYS = 7;
 
+    /** @var Collection<int, MenuDay>|null */
+    private ?Collection $days = null;
+
     public function __construct(private readonly Restaurant $restaurant) {}
 
     /**
@@ -42,7 +45,7 @@ class MenuTraffic
     {
         $today = CarbonImmutable::now($this->restaurant->localTimezone())->startOfDay();
         $boundary = MenuDays::boundary($this->restaurant);
-        $history = self::history($this->restaurant, $boundary, ['id', 'day', 'views', 'qr_scans']);
+        $history = $this->days($boundary);
         $from = $history->isEmpty() ? null : $boundary;
 
         $visits = function () use ($from): HasMany {
@@ -84,7 +87,7 @@ class MenuTraffic
         $now = CarbonImmutable::now($this->restaurant->localTimezone());
         $since = fn (CarbonImmutable $start): string => $start->utc()->toDateTimeString();
         $boundary = MenuDays::boundary($this->restaurant);
-        $history = self::history($this->restaurant, $boundary, ['id', 'day', 'qr_scans']);
+        $history = $this->days($boundary);
 
         $counts = $this->restaurant->menuSessions()
             ->where('via_qr', true)
@@ -105,6 +108,17 @@ class MenuTraffic
             'month' => (int) ($counts->month ?? 0),
             'total' => (int) ($counts->total ?? 0) + $history->sum('qr_scans'),
         ];
+    }
+
+    /**
+     * The days added up before `$boundary`, read once for totals() and
+     * qrScans() (the admin's restaurant page asks both).
+     *
+     * @return Collection<int, MenuDay>
+     */
+    private function days(CarbonImmutable $boundary): Collection
+    {
+        return $this->days ??= self::history($this->restaurant, $boundary, ['id', 'day', 'views', 'qr_scans']);
     }
 
     /**

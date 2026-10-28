@@ -65,15 +65,11 @@ class PublicMenuController extends Controller
         }
 
         $restaurant->load([
-            'categories' => fn ($query) => $query->orderBy('display_order')->orderBy('id'),
-            'categories.dishes' => fn ($query) => $query->where('is_available', true)
-                ->orderBy('display_order')
-                ->orderBy('id'),
-            'categories.dishes.media',
-            ...MenuDishOptions::relations($restaurant, 'categories.dishes.'),
+            'categories' => fn ($query) => $query->orderBy('id'),
             'socialLinks',
             'media',
         ]);
+        $dishes = $this->dishes($restaurant);
 
         // Each design keeps the colours its owner chose for it, so a preview
         // of another design shows those, or its defaults if there are none.
@@ -90,39 +86,46 @@ class PublicMenuController extends Controller
         // paused, not ended, kept on by the package): not drawn at all
         // otherwise, so it is in no search, count or choice either.
         $carried = $offers->modelKeys();
-        $restaurant->categories->each(fn (Category $category) => $category->setRelation(
-            'dishes',
-            $category->dishes->reject(fn (Dish $dish): bool => $dish->isDeal() && ! in_array($dish->offer_id, $carried, true))->values(),
-        ));
         // A build's dish sits above the search, in no category's list.
-        $built = $this->builtDishes($restaurant);
+        $built = $this->file($restaurant, $dishes->reject(fn (Dish $dish): bool => $dish->isDeal() && ! in_array($dish->offer_id, $carried, true)));
+        // Each dish's variants and add-ons, for its sheet and the cart.
+        $dishOptions = MenuDishOptions::for($restaurant, $restaurant->categories->flatMap->dishes->concat($built), $locale);
         // Each offer keeps only its dishes guests can see (a hidden one is
-        // not on the page), with their prices: its badge and "See the
-        // dishes" show only while one is left.
-        $onMenu = $restaurant->categories->flatMap->dishes->keyBy('id');
+        // not on the page, a build's dish above the search is), with their
+        // prices: its badge and "See the dishes" show only while one is left.
+        $onMenu = $restaurant->categories->flatMap->dishes->concat($built)->keyBy('id');
         $offers->each(fn (Offer $offer) => $offer->setRelation(
             'dishes',
             $offer->dishes->map(fn (Dish $dish): ?Dish => $onMenu->get($dish->id))->filter()->values(),
         ));
         $timezone = $restaurant->localTimezone();
         $now = CarbonImmutable::now();
-        $priced = $restaurant->categories->flatMap->dishes->filter(fn (Dish $dish): bool => $dish->price !== null);
+        // What each dish costs at least before add-ons (its price, cheapest
+        // variants and cheapest builds, the "from" price of a dish with
+        // choices): the part a discount comes off on its card.
+        $variantsOn = $restaurant->showsVariants();
+        $references = $onMenu->map(fn (Dish $dish): ?string => $dishOptions[$dish->id]['lowest'] ?? LiveOffers::referencePrice($dish, $variantsOn))->filter()->all();
         $deals = $offers->isEmpty() ? [] : $this->offers->bestAmong(
             $offers,
-            $priced->mapWithKeys(fn (Dish $dish): array => [$dish->id => (string) $dish->price])->all(),
+            $references,
             $now,
             $timezone,
             // An amount off is in the main currency: a dish in the second one takes it at the rate.
-            $priced->mapWithKeys(fn (Dish $dish): array => [$dish->id => $restaurant->rateOf($dish)])->filter()->all(),
+            $onMenu->map(fn (Dish $dish): ?string => $restaurant->rateOf($dish))->filter()->all(),
         );
+        // "The second at 50% off": a badge on each of its dishes (a straight
+        // discount on a dish wins).
+        $pairs = $offers->isEmpty() ? [] : array_diff_key($this->offers->pairsAmong($offers, $now, $timezone), $deals);
 
         // The menu route carries no locale middleware, so without this every
         // __() on the page resolves against APP_LOCALE and an Arabic menu
         // prints English.
         app()->setLocale($locale);
 
-        // Live as the page is drawn; the phone checks again.
+        // Live as the page is drawn (its deal works), and shown (on the menu,
+        // which one shown outside its hours is all day); the phone checks again.
         $live = $offers->filter(fn (Offer $offer): bool => $offer->id === $previewOffer || $offer->isLiveAt($now, $timezone))->pluck('id')->all();
+        $shown = $offers->filter(fn (Offer $offer): bool => $offer->id === $previewOffer || $offer->isShownAt($now, $timezone))->pluck('id')->all();
 
         // A preview is a dress rehearsal and never takes a real order.
         $channel = $preview === null ? $restaurant->orderChannel() : null;
@@ -170,8 +173,7 @@ class PublicMenuController extends Controller
             // earlier scan is offered only then.
             'dine_in' => $dineIn && $restaurant->dineInChannel() === OrderChannel::Menu,
             'table' => $table,
-            // Each dish's variants and add-ons, for its sheet and the cart.
-            'dish_options' => MenuDishOptions::for($restaurant, $restaurant->categories->flatMap->dishes->concat($built), $locale),
+            'dish_options' => $dishOptions,
             // The build dishes, drawn with their icons above the search.
             'built_dishes' => $built,
             'seo' => $this->seo->for($restaurant, $locale, $preview !== null),
@@ -179,10 +181,13 @@ class PublicMenuController extends Controller
             'menu_token' => MenuToken::issue(),
             'offers' => $offers,
             'offers_live' => $live,
+            'offers_shown' => $shown,
             // The deal dishes drawn hidden: their offer is not live as the
             // page is drawn (menu-offers.js shows them in time).
             'hidden_deals' => $onMenu->filter(fn (Dish $dish): bool => $dish->isDeal() && ! in_array($dish->offer_id, $live, true))->keys()->all(),
             'offer_deals' => $deals,
+            'offer_pairs' => $pairs,
+            'offer_references' => $references,
             'offer_preview' => $previewOffer,
         ]);
     }
@@ -250,11 +255,6 @@ class PublicMenuController extends Controller
     }
 
     /**
-     * The template to preview, when the request is the owner asking for one.
-     * Anyone else's `?preview=` is silently ignored so it can't be used to
-     * probe templates or bypass the "no template yet" 404.
-     */
-    /**
      * `?offer=12`: the owner looks at one of their offers on the menu as
      * guests will, even paused or not started yet, and its pop-up or ad
      * shows at once. Ignored for anyone else.
@@ -272,6 +272,11 @@ class PublicMenuController extends Controller
         return $user !== null && (int) $user->restaurant?->id === $restaurant->id ? (int) $id : null;
     }
 
+    /**
+     * The template to preview, when the request is the owner asking for one.
+     * Anyone else's `?preview=` is silently ignored so it can't be used to
+     * probe templates or bypass the "no template yet" 404.
+     */
     private function previewTemplate(Request $request, Restaurant $restaurant): ?Template
     {
         $id = $request->query('preview');
@@ -290,32 +295,46 @@ class PublicMenuController extends Controller
     }
 
     /**
-     * The dishes guests build (Build your own), while the restaurant has it:
-     * those in no category, and any still filed under one from before,
-     * taken out of its list. In the dishes' order. Without the feature a
-     * build's dish stays where it is (one in no category is not drawn).
+     * The dishes guests can order, read in one go with what they show (in
+     * the dishes' order): those filed under a category, and while the
+     * restaurant has Build your own, the dishes guests build in no category.
      *
      * @return Collection<int, Dish>
      */
-    private function builtDishes(Restaurant $restaurant): Collection
+    private function dishes(Restaurant $restaurant): Collection
     {
-        if (! $restaurant->showsBuilds()) {
-            return new Collection;
-        }
+        $builds = $restaurant->showsBuilds();
 
-        $filed = $restaurant->categories->flatMap->dishes->filter(fn (Dish $dish): bool => $dish->builds->isNotEmpty());
+        return $restaurant->dishes()
+            ->where('is_available', true)
+            ->where(fn ($query) => $query->whereNotNull('category_id')->when($builds, fn ($query) => $query->orWhereHas('builds')))
+            ->orderBy('id')
+            ->with(['media', ...MenuDishOptions::relations($restaurant)])
+            ->get();
+    }
+
+    /**
+     * Puts each category's dishes in its list, and returns the dishes guests
+     * build (Build your own), while the restaurant has it: those in no
+     * category, and any still filed under one from before, kept out of its
+     * list. Without the feature a build's dish stays where it is (one in no
+     * category is not drawn).
+     *
+     * @param  Collection<int, Dish>  $dishes  from dishes()
+     * @return Collection<int, Dish>
+     */
+    private function file(Restaurant $restaurant, Collection $dishes): Collection
+    {
+        $built = $restaurant->showsBuilds()
+            ? $dishes->filter(fn (Dish $dish): bool => $dish->builds->isNotEmpty())->values()
+            : new Collection;
+        $filed = $dishes->diff($built)->groupBy('category_id');
+
         $restaurant->categories->each(fn (Category $category) => $category->setRelation(
             'dishes',
-            $category->dishes->filter(fn (Dish $dish): bool => $dish->builds->isEmpty())->values(),
+            new Collection($filed->get($category->id)?->values()->all() ?? []),
         ));
 
-        $own = $restaurant->dishes()
-            ->whereNull('category_id')
-            ->where('is_available', true)
-            ->whereHas('builds')
-            ->with(MenuDishOptions::relations($restaurant))
-            ->get();
-
-        return $own->concat($filed)->sortBy([['display_order', 'asc'], ['id', 'asc']])->values();
+        return $built;
     }
 }

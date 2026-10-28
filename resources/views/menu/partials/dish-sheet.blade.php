@@ -13,8 +13,14 @@
         <div class="dish-sheet-scroll">
             <img class="dish-sheet-photo" data-dish-photo alt="" hidden>
             <div class="dish-sheet-head">
-                <h2 id="dish-sheet-title" data-dish-title></h2>
-                <span class="dish-sheet-price" data-dish-price></span>
+                {{-- Opening the sheet focuses its title, not the close button,
+                     which would wear a focus ring after a tap. --}}
+                <h2 id="dish-sheet-title" data-dish-title tabindex="-1" autofocus></h2>
+                {{-- On a live offer: the price before it struck out, and the card's badge. --}}
+                <div class="dish-sheet-prices">
+                    <span class="dish-sheet-price" data-dish-price></span>
+                    <s class="price-was" data-dish-was hidden></s>
+                </div>
                 <p class="dish-sheet-ingredients" data-dish-ingredients></p>
             </div>
             <div data-dish-groups></div>
@@ -45,6 +51,8 @@
             pieces: @js(__(':count pieces')),
             part: @js(__('Part :number')),
             size: @js(__('Size')),
+            split: @js(__('Parts')),
+            howMany: @js(__('How many')),
         },
     };
 </script>

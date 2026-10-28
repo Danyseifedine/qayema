@@ -168,6 +168,17 @@ trait HasPackage
         return $this->packageStatus() === PackageStatus::Expired;
     }
 
+    /**
+     * Whole days left in the package, rounded up ("ends today" is 0); null
+     * when it runs forever or is not in force (ended, or yet to start).
+     */
+    public function packageDaysLeft(): ?int
+    {
+        return $this->packageStatus() === PackageStatus::Active && $this->package_ends_at !== null
+            ? (int) max(0, ceil(now()->diffInSeconds($this->package_ends_at) / 86400))
+            : null;
+    }
+
     /** Days an ended package keeps the menu online (config/package.php). */
     public static function graceDays(): int
     {

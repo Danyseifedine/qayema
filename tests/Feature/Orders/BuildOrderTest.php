@@ -169,7 +169,9 @@ class BuildOrderTest extends TestCase
             'items' => [$this->pizza(['d'.$this->margherita->id, 'd'.$this->pepperoni->id])],
         ])->assertCreated()->json('data.whatsapp_url'), PHP_URL_QUERY));
 
-        $this->assertStringContainsString('Your pizza: ½ Margherita + ½ Pepperoni', $message);
+        // Named by what was built, in plain words: the dish's own name and the build's say nothing more.
+        $this->assertStringContainsString("\n\n*1 Half Margherita, Half Pepperoni*   \$15\n\n", $message);
+        $this->assertStringNotContainsString('Build your pizza', $message);
     }
 
     public function test_the_guests_cart_comes_back_with_what_was_built(): void

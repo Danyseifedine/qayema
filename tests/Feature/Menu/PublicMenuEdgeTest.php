@@ -100,4 +100,32 @@ class PublicMenuEdgeTest extends TestCase
         $this->get('/exact-slug-2')->assertNotFound();
         $this->get('/EXACT-SLUG')->assertNotFound();
     }
+
+    public function test_every_tab_name_is_set_alike_with_or_without_an_icon(): void
+    {
+        $restaurant = $this->published(['default_locale' => 'en']);
+        foreach ([['Pizzas', 'pizza'], ['Breakfast', null]] as [$name, $icon]) {
+            $category = Category::factory()->create(['restaurant_id' => $restaurant->id, 'name' => ['en' => $name], 'icon' => $icon]);
+            Dish::factory()->create(['restaurant_id' => $restaurant->id, 'category_id' => $category->id]);
+        }
+
+        $html = $this->get(route('public.menu', $restaurant->slug))->assertOk()->getContent();
+
+        // The name sits in the same box, so a tab with no icon lines up with one that has.
+        $this->assertStringContainsString('<span class="tab-name">All</span>', $html);
+        $this->assertStringContainsString('<span class="tab-name">Pizzas</span>', $html);
+        $this->assertStringContainsString('<span class="tab-name">Breakfast</span>', $html);
+        $this->assertSame(1, substr_count($html, 'class="tab-icon"'));
+    }
+
+    public function test_the_map_pop_up_opens_on_its_link_not_the_map_frame(): void
+    {
+        $restaurant = $this->published(['default_locale' => 'en', 'google_maps_url' => 'https://maps.google.com/?q=33.8938,35.5018']);
+
+        $html = $this->get(route('public.menu', $restaurant->slug))->assertOk()->getContent();
+
+        // Focus in the frame would swallow Escape.
+        $this->assertMatchesRegularExpression('/<a class="pop-go" href="[^"]+"[^>]*data-track="map" autofocus>/', $html);
+        $this->assertStringContainsString('<iframe class="pop-map"', $html);
+    }
 }

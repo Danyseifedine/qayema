@@ -33,12 +33,12 @@ erDiagram
         bigint user_id FK "UK - one restaurant per owner"
         bigint template_id FK "nullable, set null - null until chosen"
         bigint package_id FK "nullable, set null - the package assigned"
-        timestamp package_started_at "nullable = always; future = scheduled"
-        timestamp package_ends_at "nullable = forever; past = back on the default"
+        datetime package_started_at "nullable = always; future = scheduled"
+        datetime package_ends_at "nullable = forever; past = back on the default"
         json name "translatable"
         json description "translatable, nullable"
         varchar slug UK "the public menu URL"
-        varchar google_maps_url "nullable"
+        varchar google_maps_url "nullable, 2048"
         char country_code "2, nullable"
         varchar phone "30, nullable"
         json opening_hours "nullable - one range per weekday"
@@ -79,7 +79,7 @@ erDiagram
         bigint id PK
         bigint restaurant_id FK "cascade"
         varchar platform
-        varchar url
+        varchar url "500"
         timestamps created_updated
     }
 
@@ -160,7 +160,7 @@ erDiagram
         varchar source "admin, purchase"
         varchar reference "nullable - UK with restaurant+feature"
         varchar note "nullable - why it was given"
-        timestamp ends_at "nullable = never expires"
+        datetime ends_at "nullable = never expires"
         timestamps created_updated
     }
 
@@ -169,8 +169,8 @@ erDiagram
         bigint restaurant_id FK "cascade"
         bigint from_package_id FK "nullable, set null - null on creation"
         bigint to_package_id FK "nullable, set null"
-        timestamp starts_at "nullable"
-        timestamp ends_at "nullable = forever"
+        datetime starts_at "nullable"
+        datetime ends_at "nullable = forever"
         bigint changed_by FK "nullable, set null - the admin"
         varchar note "nullable"
         timestamp created_at
@@ -258,7 +258,7 @@ erDiagram
         bigint id PK
         varchar ip "indexed"
         varchar reason "nullable"
-        timestamp expires_at "nullable = permanent"
+        datetime expires_at "nullable = permanent"
         timestamps created_updated
     }
 

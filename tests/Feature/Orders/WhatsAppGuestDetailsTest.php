@@ -89,7 +89,7 @@ class WhatsAppGuestDetailsTest extends TestCase
 
         $response = $this->order(['name' => 'Rami'])->assertCreated();
         $this->assertSame('Rami', Order::query()->sole()->guest_name);
-        $this->assertStringStartsWith("text=*New order · Olive*\nName: Rami\n\n", $this->message($response));
+        $this->assertStringStartsWith("text=*New order · Olive*\n\nName: Rami\n\n", $this->message($response));
     }
 
     public function test_an_optional_phone_may_be_left_empty_but_not_wrong(): void
@@ -124,7 +124,7 @@ class WhatsAppGuestDetailsTest extends TestCase
         $this->assertSame(Fulfilment::Delivery, $order->fulfilment);
         $this->assertSame('Hamra, Bliss St', $order->address);
         $this->assertStringContainsString(
-            "*Delivery*\nAddress: Hamra, Bliss St\nLocation: https://www.google.com/maps?q=33.8959,35.4784\n",
+            "*Delivery*\n\nAddress: Hamra, Bliss St\nLocation: https://www.google.com/maps?q=33.8959,35.4784\n\n",
             $this->message($delivery),
         );
     }
@@ -150,7 +150,7 @@ class WhatsAppGuestDetailsTest extends TestCase
             ->assertJsonMissingValidationErrors(['name', 'address', 'fulfilment']);
 
         $response = $this->order(['table' => $table->code, 'phone_country' => 'LB', 'phone' => '70123456'])->assertCreated();
-        $this->assertStringStartsWith("text=*New order · Olive*\n*Table 4*\nPhone: +96170123456\n\n", $this->message($response));
+        $this->assertStringStartsWith("text=*New order · Olive*\n*Table 4*\n\nPhone: +96170123456\n\n", $this->message($response));
     }
 
     public function test_the_menu_tells_the_cart_what_to_ask(): void

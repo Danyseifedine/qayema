@@ -16,9 +16,12 @@ use App\Services\Orders\OrderEditor;
 use App\Services\Orders\OrderMovedOn;
 use App\Services\Orders\OrderNews;
 use App\Services\Orders\OrderPulse;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
 
 /**
  * The owner's own orders: read, moved on, changed (what they hold, by the
@@ -49,23 +52,34 @@ class OrderController extends Controller
         // see to is never behind "Show more" however old it is. The id
         // breaks ties, so pages never repeat or skip an order.
         $unfinished = [OrderStatus::Placed->value, OrderStatus::Accepted->value, OrderStatus::Ready->value];
-        $orders = $ofKind()
-            ->reorder()
-            ->orderByRaw('case when status in (?, ?, ?) then 0 else 1 end', $unfinished)
-            ->latest('placed_at')
-            ->latest('id')
-            ->with('items')
-            ->when($status, fn ($query, $status) => $query->where('status', $status))
-            ->paginate(self::PER_PAGE);
+        // The list's total and what is still waiting, in one pass.
+        $counts = $ofKind()->toBase()->selectRaw(
+            ($status === null ? 'count(*)' : 'sum(case when status = ? then 1 else 0 end)').' as total, sum(case when status = ? then 1 else 0 end) as open',
+            [...($status === null ? [] : [$status]), OrderStatus::Placed->value],
+        )->first();
+        $total = (int) $counts?->total;
+        $page = Paginator::resolveCurrentPage();
+        $orders = new LengthAwarePaginator(
+            $total === 0 ? new Collection : $ofKind()
+                ->reorder()
+                ->orderByRaw('case when status in (?, ?, ?) then 0 else 1 end', $unfinished)
+                ->latest('placed_at')
+                ->latest('id')
+                ->with('items')
+                ->when($status, fn ($query, $status) => $query->where('status', $status))
+                ->forPage($page, self::PER_PAGE)
+                ->get(),
+            $total,
+            self::PER_PAGE,
+            $page,
+            ['path' => Paginator::resolveCurrentPath()],
+        );
 
         return OrderResource::collection($orders)->additional([
             'meta' => [
                 // The count the owner actually cares about: what is still
                 // waiting, whatever page they are looking at.
-                // Filtered to those already, the page's own total is it.
-                'open' => $status === OrderStatus::Placed->value
-                    ? $orders->total()
-                    : $ofKind()->where('status', OrderStatus::Placed)->count(),
+                'open' => (int) $counts?->open,
             ],
         ]);
     }

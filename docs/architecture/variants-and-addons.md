@@ -42,4 +42,4 @@ cheese; the guest picks any). Every option and add-on has a `price` that is
   prices `unit_price` = dish + options + add-ons, merges identical lines and
   snapshots `order_items.options` `{variants: [{name, choice, price}], addons:
   [{name, price}]}`. `OrderItem::choices()` is the readable form used by the
-  WhatsApp message and the admin's orders list.
+  admin's orders list; the WhatsApp message lists only what was picked.

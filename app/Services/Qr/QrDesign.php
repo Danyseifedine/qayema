@@ -18,7 +18,15 @@ class QrDesign
      */
     public static function url(Restaurant $restaurant): string
     {
-        return rtrim((string) config('app.url'), '/').'/'.$restaurant->slug.'?qr=1';
+        return $restaurant->publicUrl().'?qr=1';
+    }
+
+    /** The menu's address as printed under a QR code, e.g. qayema.com/olive-house. */
+    public static function displayUrl(Restaurant $restaurant): string
+    {
+        $base = rtrim((string) config('app.url'), '/');
+
+        return (parse_url($base, PHP_URL_HOST) ?: $base).'/'.$restaurant->slug;
     }
 
     /**

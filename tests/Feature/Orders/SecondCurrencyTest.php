@@ -135,7 +135,7 @@ class SecondCurrencyTest extends TestCase
         $this->assertStringContainsString('data-currency="$" data-rate="89000"', $html);
         $this->assertStringContainsString('<span class="price">$5</span>', $html);
         $this->assertStringContainsString('<span class="price">L.L 450,000</span>', $html);
-        $this->assertStringContainsString('1 $ = L.L 89,000', $html);
+        $this->assertStringContainsString("rateNote: '\$1 = L.L 89,000'", $html);
     }
 
     public function test_an_amount_off_in_pounds_comes_off_a_dollar_dish_at_the_rate(): void
@@ -217,11 +217,16 @@ class SecondCurrencyTest extends TestCase
         $order->items()->create(['name' => 'Burger', 'unit_price' => '5.00', 'quantity' => 1, 'line_total' => '5.00', 'currency' => 'USD']);
         $order->items()->create(['name' => 'Kafta', 'unit_price' => '450000.00', 'quantity' => 1, 'line_total' => '450000.00']);
 
-        $text = rawurldecode((string) WhatsAppLink::forOrder($this->shop, $order->load('items')));
+        $text = rawurldecode((string) WhatsAppLink::forOrder($this->shop, $order->load('items'), 'en'));
 
-        $this->assertStringContainsString('$5', $text);
-        $this->assertStringContainsString('L.L 450,000', $text);
-        $this->assertStringContainsString('L.L 895,000', $text);
-        $this->assertStringContainsString('1 $ = L.L 89,000', $text);
+        // The rate under the total, the dollar first, as the menu's cart writes it.
+        $this->assertStringEndsWith(implode("\n", [
+            '*1 Burger*   $5',
+            '',
+            '*1 Kafta*   L.L 450,000',
+            '',
+            '*Total: L.L 895,000*',
+            '$1 = L.L 89,000',
+        ]), $text);
     }
 }

@@ -260,12 +260,18 @@
                 {{-- Above the fold, so never lazy: it is what the page waits on. --}}
                 <img class="cover-photo" src="{{ $cover }}" alt="" fetchpriority="high" decoding="async"
                      @if ($coverPhone) srcset="{{ $coverPhone }} 960w, {{ $cover }} {{ (int) $coverMedia->getCustomProperty('width', 1920) }}w" sizes="(min-width: 1024px) 1000px, 100vw" @endif>
+            @else
+                {{-- No cover yet: the default banner in its place. --}}
+                <img class="cover-photo" src="{{ Asset::versioned('images/menu/default-banner.webp') }}" alt="" fetchpriority="high" decoding="async">
             @endif
             <span class="cover-shade"></span>
+            {{-- Owner text in <bdi>: a name or a line not yet written in this
+                 language shows in the main one, and its own direction keeps
+                 its full stop at its end ("Grills." not ".Grills" in Arabic). --}}
             <div class="cover-body">
-                <h1>{{ $name }}</h1>
+                <h1><bdi>{{ $name }}</bdi></h1>
                 @if ($description)
-                    <p>{{ $description }}</p>
+                    <p><bdi>{{ $description }}</bdi></p>
                 @endif
             </div>
         </div>
@@ -310,15 +316,13 @@
             <nav class="tabs" aria-label="{{ __('Categories') }}">
                 <div class="tabs-inner">
                     <span class="tab-pill" aria-hidden="true"></span>
-                    <button type="button" class="tab" data-tab="all" aria-current="true">{{ __('All') }}</button>
+                    <button type="button" class="tab" data-tab="all" aria-current="true"><span class="tab-name">{{ __('All') }}</span></button>
                     @foreach ($visible as $category)
                         <button type="button" class="tab" data-tab="category-{{ $category->id }}" aria-current="false" @if ($dealsOnly($category)) hidden data-deal-off @endif>
                             @if ($categoryIcon = CategoryIcons::svg($category->icon))
                                 <span class="tab-icon">{!! $categoryIcon !!}</span>
-                                <span class="tab-name">{{ $text($category, 'name') }}</span>
-                            @else
-                                {{ $text($category, 'name') }}
                             @endif
+                            <span class="tab-name">{{ $text($category, 'name') }}</span>
                         </button>
                     @endforeach
                 </div>
@@ -330,9 +334,9 @@
                 <section class="category" id="category-{{ $category->id }}" @if ($dealsOnly($category)) hidden data-deal-off @endif>
                     @php $categoryDescription = $text($category, 'description'); @endphp
                     <div class="category-head">
-                        <h2>{{ $text($category, 'name') }}</h2>
+                        <h2><bdi>{{ $text($category, 'name') }}</bdi></h2>
                         @if ($categoryDescription)
-                            <p>{{ $categoryDescription }}</p>
+                            <p><bdi>{{ $categoryDescription }}</bdi></p>
                         @endif
                     </div>
                     <div class="dishes">
@@ -344,37 +348,53 @@
                                 // remade card picture is fetched again.
                                 $photoMedia = $dish->getFirstMedia('image');
                                 $photo = $photoMedia?->getUrl();
-                                $image = $photoMedia?->getAvailableUrl(['thumb']);
+                                // A dish without a photo shows the plate picture on its
+                                // card and in the cart, never as a big photo of its own.
+                                $image = $photoMedia?->getAvailableUrl(['thumb']) ?? Asset::versioned('images/menu/default-dish-image.webp');
                                 $ingredients = $text($dish, 'ingredients');
                                 $dishName = $text($dish, 'name');
                                 $choices = $dish_options[$dish->id] ?? null;
                                 // A dish with no price of its own may be priced by its
                                 // variants (Small $7, Large $12): it starts at 0.
                                 $basePrice = $dish->price !== null ? (string) $dish->price : ($choices ? '0.00' : null);
-                                // On a live offer: its price, with the dish's own struck through.
-                                $deal = $dish->price !== null ? ($offer_deals[$dish->id] ?? null) : null;
+                                $shownPrice = $choices['lowest'] ?? $dish->price;
+                                // A discount comes off its price, cheapest variants and
+                                // cheapest builds (the part over its own price is
+                                // base-extra); the rest of the "from" price keeps its price (extra).
+                                $reference = $basePrice === null ? null : ($offer_references[$dish->id] ?? $basePrice);
+                                $baseExtra = $reference === null ? '0.00' : bcsub($reference, $basePrice, 2);
+                                $extra = $reference === null ? '0.00' : bcsub((string) $shownPrice, $reference, 2);
+                                // On a live offer: its price, with the full one struck through;
+                                // on a pair deal ("the second at 50% off") a badge only.
+                                $deal = $basePrice !== null ? ($offer_deals[$dish->id] ?? null) : null;
+                                $pair = $basePrice !== null && $deal === null ? ($offer_pairs[$dish->id] ?? null) : null;
                                 // Priced in the second currency: its own symbol, and the
                                 // rate the cart turns it into the main one at.
                                 $dishRate = $restaurant->rateOf($dish);
                                 $dishCurrency = $dishRate === null ? $currency : config('currencies.'.$dish->currency.'.symbol', $dish->currency);
-                                $offerPrice = $deal?->discounted((string) $dish->price, $dishRate);
-                                $shownPrice = $choices['lowest'] ?? $dish->price;
+                                $offerPrice = $deal?->discounted((string) $reference, $dishRate);
                             @endphp
                             {{-- A dish with choices opens its sheet (menu-dish.js) when tapped. --}}
                             <article @class(['dish', 'has-choices' => $choices]) data-dish="{{ $dish->id }}" data-name="{{ $dishName }}"
                                      data-image="{{ $image }}" data-photo="{{ $photo }}"
-                                     data-price="{{ $offerPrice ?? $basePrice ?? '' }}"
-                                     @if ($dish->price !== null) data-full-price="{{ $dish->price }}" data-extra="{{ bcsub((string) $shownPrice, (string) $dish->price, 2) }}" @endif
+                                     data-price="{{ $basePrice ?? '' }}"
+                                     @if ($basePrice !== null) data-full-price="{{ $basePrice }}" data-base-extra="{{ $baseExtra }}" data-extra="{{ $extra }}" @endif
+                                     @if ($deal) data-deal-type="{{ $deal->discount_type->value }}" data-deal-value="{{ (float) $deal->discount_value }}" data-deal-by="{{ $deal->id }}" @endif
+                                     @if ($pair) data-pair-offer="{{ $pair->id }}" data-pair-value="{{ (float) $pair->discount_value }}" @endif
                                      @if ($choices) data-choices data-ingredients="{{ $ingredients }}" @endif
                                      @if ($dishRate !== null) data-currency="{{ $dishCurrency }}" data-rate="{{ App\Support\Price::rate($dishRate) }}" @endif
                                      @if ($dish->isDeal()) data-deal-offer="{{ $dish->offer_id }}" @endif
                                      @if (in_array($dish->id, $hidden_deals, true)) hidden data-deal-off @endif
                                      data-search="{{ Str::lower($dishName.' '.$ingredients) }}">
-                                @if ($image && $choices)
+                                @if (! $photoMedia)
+                                    <span class="dish-photo-slot">
+                                        <img class="dish-photo dish-photo-default" src="{{ $image }}" alt="" width="72" height="72" loading="lazy" decoding="async">
+                                    </span>
+                                @elseif ($choices)
                                     <span class="dish-photo-slot">
                                         <img class="dish-photo" src="{{ $image }}" alt="{{ $dishName }}" width="72" height="72" loading="lazy" decoding="async">
                                     </span>
-                                @elseif ($image)
+                                @else
                                     {{-- Opens the full photo (#pop-photo, menu-nav.js); a dish with
                                          choices shows it at the top of its sheet instead. --}}
                                     <button type="button" class="dish-photo-slot dish-photo-open" data-photo-open aria-haspopup="dialog" aria-label="{{ __('View photo') }}">
@@ -382,14 +402,14 @@
                                     </button>
                                 @endif
                                 <div class="dish-body">
-                                    <span class="dish-name">{{ $dishName }}</span>
+                                    <span class="dish-name"><bdi>{{ $dishName }}</bdi></span>
                                     @if ($ingredients)
-                                        <p class="ingredients">{{ $ingredients }}</p>
+                                        <p class="ingredients"><bdi>{{ $ingredients }}</bdi></p>
                                     @endif
                                     <div class="dish-foot">
                                         @if ($basePrice !== null)
                                             <span class="price-group">
-                                                <span class="price">{{ Price::money($dishCurrency, $deal ? bcadd($offerPrice, bcsub((string) $shownPrice, (string) $dish->price, 2), 2) : $shownPrice) }}</span>
+                                                <span class="price">{{ Price::money($dishCurrency, $deal ? bcadd($offerPrice, $extra, 2) : $shownPrice) }}</span>
                                                 @if ($deal)
                                                     <s class="price-was">{{ Price::money($dishCurrency, $shownPrice) }}</s>
                                                 @endif
@@ -543,7 +563,9 @@
             @endif
             <h2>{{ __('Find us') }}</h2>
             <p class="pop-note">{{ __('We will open our location in your maps app.') }}</p>
-            <a class="pop-go" href="{{ $restaurant->google_maps_url }}" target="_blank" rel="noopener" data-pop-close data-track="map">
+            {{-- Focused when it opens: the map frame would take the focus
+                 first, and Escape pressed in it never reaches the dialog. --}}
+            <a class="pop-go" href="{{ $restaurant->google_maps_url }}" target="_blank" rel="noopener" data-pop-close data-track="map" autofocus>
                 {{ __('Open in Maps') }}
             </a>
             <button type="button" class="pop-done" data-pop-close>{{ __('Close') }}</button>

@@ -27,4 +27,12 @@ class OfferDiscountTest extends TestCase
     {
         $this->assertSame(1250, OfferDiscount::None->apply(1250, 30));
     }
+
+    public function test_a_pair_deal_takes_its_share_off_the_second_dish_up_to_all_of_it(): void
+    {
+        $this->assertSame(625, OfferDiscount::Second->apply(1250, 50));
+        $this->assertSame(0, OfferDiscount::Second->apply(1250, 100));
+        $this->assertTrue(OfferDiscount::Second->isPair());
+        $this->assertFalse(OfferDiscount::Percent->isPair());
+    }
 }

@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources;
 
-use App\Enums\PackageStatus;
 use App\Models\Restaurant;
 use App\Services\Ai\WritingHelpCredits;
 use App\Services\Ai\WritingHelpLog;
@@ -55,7 +54,7 @@ class AdminRestaurantResource extends JsonResource
             // What guests get: on, and not past the grace days of an ended
             // package (Restaurant::menuOnline()).
             'menu_online' => $this->menuOnline(),
-            'public_url' => rtrim((string) config('app.url'), '/').'/'.$this->slug,
+            'public_url' => $this->publicUrl(),
             'logo_url' => MediaUrl::of($this->resource, 'logo'),
             'created_at' => $this->created_at?->toIso8601String(),
             'owner' => $this->user === null ? null : [
@@ -77,9 +76,7 @@ class AdminRestaurantResource extends JsonResource
                 'offline_at' => $this->offlineAt()?->toIso8601String(),
                 // Whole days left, rounded up ("ends today" is 0), like the
                 // dashboard's; null when it runs forever or is not in force.
-                'days_left' => $status === PackageStatus::Active && $this->package_ends_at !== null
-                    ? (int) max(0, ceil(now()->diffInSeconds($this->package_ends_at) / 86400))
-                    : null,
+                'days_left' => $this->packageDaysLeft(),
                 'in_force' => $inForce === null ? null : ['id' => $inForce->id, 'name' => (string) $inForce->name],
                 // Its own price when an admin set one (null: the package's),
                 // and what it pays a month either way, in the package's currency.
@@ -102,7 +99,7 @@ class AdminRestaurantResource extends JsonResource
     /**
      * Visits (today in the restaurant's own day, and ever), QR scans, and
      * its writing help (AI uses today and over the last WritingHelpLog::DAYS
-     * days, with their tokens) and this month's AI credits: four queries.
+     * days, with their tokens) and this month's AI credits: five queries.
      *
      * @return array<string, mixed>
      */

@@ -73,7 +73,7 @@ class ViewUser extends ViewRecord
 
                     TextEntry::make('onboarding_step')
                         ->label('Wizard step')
-                        ->formatStateUsing(fn ($state) => "Step {$state} of 6")
+                        ->formatStateUsing(fn (): string => 'Step '.$user->currentOnboardingStep().' of '.User::ONBOARDING_STEPS)
                         ->visible(fn () => is_null($user->onboarding_completed_at)),
                 ]),
 

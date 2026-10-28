@@ -34,7 +34,6 @@ class OfferScheduleTest extends TestCase
     {
         $this->assertTrue(self::schedule()->isLiveAt(self::at('2026-11-10 03:17')));
         $this->assertNull(self::schedule()->nextStart(self::at('2026-11-10 03:17')));
-        $this->assertFalse(self::schedule()->hasEnded(self::at('2026-11-10 03:17')));
     }
 
     public function test_dates_include_the_start_and_leave_out_the_end(): void
@@ -45,7 +44,7 @@ class OfferScheduleTest extends TestCase
         $this->assertTrue($schedule->isLiveAt(self::at('2026-11-01 00:00')));
         $this->assertTrue($schedule->isLiveAt(self::at('2026-11-15 23:59')));
         $this->assertFalse($schedule->isLiveAt(self::at('2026-11-16 00:00')));
-        $this->assertTrue($schedule->hasEnded(self::at('2026-11-16 00:00')));
+        $this->assertNull($schedule->nextStart(self::at('2026-11-16 00:00')));
     }
 
     public function test_every_sunday_all_day(): void
@@ -132,7 +131,8 @@ class OfferScheduleTest extends TestCase
             'endsAt' => self::at('2026-11-15 00:00'),
         ]);
 
-        $this->assertTrue($schedule->hasEnded(self::at('2026-11-09 00:00')));
+        $this->assertFalse($schedule->isLiveAt(self::at('2026-11-09 00:00')));
+        $this->assertNull($schedule->nextStart(self::at('2026-11-09 00:00')));
     }
 
     public function test_it_follows_the_local_clock_across_the_change_to_winter_time(): void
@@ -173,6 +173,17 @@ class OfferScheduleTest extends TestCase
             'month_days' => [],
             'windows' => null,
         ], $schedule->toArray());
+    }
+
+    public function test_dates_alone_say_when_it_is_within_them_and_it_has_no_hours(): void
+    {
+        $dates = new OfferSchedule('Asia/Beirut', self::at('2026-11-01 00:00'), self::at('2026-11-30 00:00'));
+
+        $this->assertTrue($dates->isWithinDates(self::at('2026-11-10 03:00')));
+        $this->assertFalse($dates->isWithinDates(self::at('2026-11-30 00:00')));
+        $this->assertFalse($dates->hasHours());
+        $this->assertTrue((new OfferSchedule('Asia/Beirut', repeat: OfferRepeat::Weekly, weekdays: ['sun']))->hasHours());
+        $this->assertTrue((new OfferSchedule('Asia/Beirut', windows: [['from' => '17:00', 'to' => '19:00']]))->hasHours());
     }
 
     /**

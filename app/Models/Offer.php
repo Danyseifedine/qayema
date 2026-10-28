@@ -95,6 +95,7 @@ class Offer extends Model implements HasMedia
         'weekdays',
         'month_days',
         'time_windows',
+        'shows_outside_hours',
         'is_active',
         'display_order',
     ];
@@ -111,6 +112,7 @@ class Offer extends Model implements HasMedia
         'ad_seconds' => 6,
         'discount_type' => 'none',
         'repeat' => 'always',
+        'shows_outside_hours' => false,
         'is_active' => true,
         'display_order' => 0,
     ];
@@ -132,6 +134,7 @@ class Offer extends Model implements HasMedia
             'weekdays' => 'array',
             'month_days' => 'array',
             'time_windows' => 'array',
+            'shows_outside_hours' => 'boolean',
             'is_active' => 'boolean',
             'display_order' => 'integer',
         ];
@@ -246,9 +249,22 @@ class Offer extends Model implements HasMedia
         return in_array($shape, ['rectangle', 'square', 'tall'], true) ? $shape : 'rectangle';
     }
 
+    /** A discount of any kind: off each dish, or off every second one (a pair deal). */
     public function hasDiscount(): bool
     {
         return ! $this->discountOff && $this->discount_type !== OfferDiscount::None && (float) $this->discount_value > 0;
+    }
+
+    /** A discount off each of its dishes (a percent or an amount). */
+    public function hasStraightDiscount(): bool
+    {
+        return $this->hasDiscount() && ! $this->discount_type->isPair();
+    }
+
+    /** "The second at 50% off": every second dish of the offer a guest orders is cheaper. */
+    public function hasPairDeal(): bool
+    {
+        return $this->hasDiscount() && $this->discount_type->isPair();
     }
 
     /** Its picture's width over height, from the size kept at upload; null when unknown. */
@@ -310,10 +326,27 @@ class Offer extends Model implements HasMedia
         );
     }
 
-    /** Switched on and live by its schedule at `$at`. */
+    /** Switched on and live by its schedule at `$at`: its deal works. */
     public function isLiveAt(CarbonImmutable $at, string $timezone): bool
     {
         return $this->is_active && $this->schedule($timezone)->isLiveAt($at);
+    }
+
+    /**
+     * On the menu at `$at` (its banner, pop-up and ad): live, or, with
+     * `shows_outside_hours`, anywhere inside its dates, the deal itself
+     * still working only in its hours. Twinned by isShown() in
+     * menu-offers.js.
+     */
+    public function isShownAt(CarbonImmutable $at, string $timezone): bool
+    {
+        if (! $this->is_active) {
+            return false;
+        }
+
+        $schedule = $this->schedule($timezone);
+
+        return $this->shows_outside_hours ? $schedule->isWithinDates($at) : $schedule->isLiveAt($at);
     }
 
     /** live, scheduled (it will be), ended (it never will be again) or paused (switched off). */

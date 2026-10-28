@@ -68,7 +68,7 @@ class PlaceOrderTest extends TestCase
         $this->assertStringNotContainsString('150,000,000.00', $message);
     }
 
-    public function test_the_whatsapp_message_is_in_the_menus_main_language_whatever_the_guest_read(): void
+    public function test_the_whatsapp_message_is_in_the_language_the_guest_read(): void
     {
         $shop = $this->shop(['second_locale' => 'fr', 'country_code' => 'LB', 'phone' => '70123456']);
         $dish = $this->dish($shop, 'Bread', '2.00');
@@ -79,12 +79,12 @@ class PlaceOrderTest extends TestCase
             'locale' => 'fr',
         ])->assertCreated();
 
-        // The owner reads it: in English, the language they wrote the menu in.
+        // Labels and dish names both, as the guest picked them.
         $message = rawurldecode((string) parse_url($response->json('data.whatsapp_url'), PHP_URL_QUERY));
-        $this->assertStringContainsString('*New order', $message);
-        $this->assertStringContainsString('*1 × Bread*', $message);
-        $this->assertStringNotContainsString('Pain', $message);
-        $this->assertSame('Bread', $shop->orders()->first()->items()->first()->name);
+        $this->assertStringContainsString('*Nouvelle commande', $message);
+        $this->assertStringContainsString('*1 Pain*', $message);
+        $this->assertStringNotContainsString('Bread', $message);
+        $this->assertSame('Pain', $shop->orders()->first()->items()->first()->name);
     }
 
     public function test_a_missing_choice_is_explained_wholly_in_the_guests_language_on_whatsapp_too(): void

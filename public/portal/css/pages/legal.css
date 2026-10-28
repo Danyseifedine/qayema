@@ -151,11 +151,13 @@
 .legal-table td { padding: 8px 12px; color: var(--text); }
 .legal-table thead tr { border-bottom: 1px solid var(--line); }
 .legal-table tbody tr:not(:last-child) { border-bottom: 1px solid var(--line-2); }
-.legal-table code { font-size: 12px; background: var(--line-2); padding: 2px 6px; border-radius: 4px; }
+.legal-table code { font-size: 12px; background: var(--line-2); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
 
 /* Responsive */
 @media (max-width: 768px) {
   .legal-layout { grid-template-columns: 1fr; gap: 32px; }
+  /* A long cookie or storage name breaks rather than widening the phone's page. */
+  .legal-table th, .legal-table td { padding: 8px 6px; }
   .legal-toc { position: static; }
   .legal-hero { padding: 56px 0 40px; }
 }

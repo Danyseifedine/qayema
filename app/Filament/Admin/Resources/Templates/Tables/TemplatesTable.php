@@ -24,12 +24,12 @@ class TemplatesTable
                     ->label('Preview')
                     ->toggleable(),
                 TextColumn::make('name')
-                    ->placeholder('N/A')
+                    ->placeholder('-')
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
                 TextColumn::make('slug')
-                    ->placeholder('N/A')
+                    ->placeholder('-')
                     ->badge()
                     ->color('gray'),
                 TextColumn::make('madeFor.name')
@@ -45,7 +45,7 @@ class TemplatesTable
                 ToggleColumn::make('is_premium')
                     ->label('Premium'),
                 TextColumn::make('created_at')
-                    ->placeholder('N/A')
+                    ->placeholder('-')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

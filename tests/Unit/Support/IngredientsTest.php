@@ -40,4 +40,11 @@ class IngredientsTest extends TestCase
 
         $this->assertCount(Ingredients::MAX_ITEMS, Ingredients::split($typed));
     }
+
+    public function test_each_language_lists_with_its_own_separator(): void
+    {
+        $this->assertSame('، ', Ingredients::separator('ar'));
+        $this->assertSame('、', Ingredients::separator('zh'));
+        $this->assertSame(', ', Ingredients::separator('fr'));
+    }
 }

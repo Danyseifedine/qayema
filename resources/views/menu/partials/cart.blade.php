@@ -46,10 +46,12 @@
         orderUrl: @js(route('public.order', $restaurant->slug)),
         locale: @js($locale),
         currency: @js($currency),
+        // How a line's choices are listed in the menu's language ("، " in Arabic).
+        listSeparator: @js(App\Support\Ingredients::separator($locale)),
         // Under a total that turned dishes priced in the second currency
-        // into the main one: the rate it used ("1 $ = L.L.89,000").
+        // into the main one: the rate it used ("$1 = L.L 89,000").
         rateNote: @js($restaurant->second_currency !== null && $restaurant->exchange_rate !== null
-            ? '1 '.config('currencies.'.$restaurant->second_currency.'.symbol', $restaurant->second_currency).' = '.App\Support\Price::money($currency, App\Support\Price::toMain('1', (string) $restaurant->exchange_rate))
+            ? App\Support\Price::money(config('currencies.'.$restaurant->second_currency.'.symbol', $restaurant->second_currency), '1').' = '.App\Support\Price::money($currency, App\Support\Price::toMain('1', (string) $restaurant->exchange_rate))
             : null),
         storageKey: @js('qayema-cart-'.$restaurant->slug),
         mode: @js($order_channel->value),
@@ -80,12 +82,18 @@
         strings: {
             empty: @js(__('Nothing added yet.')),
             each: @js(__('each')),
-            item: @js(__('item')),
-            items: @js(__('items')),
+            // "5 items" in each plural form the language has ("صنفان" for
+            // two in Arabic), by a number that takes it; the cart picks the
+            // form with Intl.PluralRules.
+            items: @js(collect([0, 1, 2, 3, 11, 100])->mapWithKeys(fn (int $count): array => [$count => str_replace((string) $count, ':count', trans_choice(':count item|:count items', $count))])),
             place: @js(__('Place order')),
             placing: @js(__('Sending…')),
             total: @js(__('Total')),
             failed: @js(__('That did not send. Please try again.')),
+            // Refusals the server answers before it knows the guest's language.
+            expired: @js(__('This page was open for too long. Refresh it and try again.')),
+            tooMany: @js(__('Too many requests. Please slow down.')),
+            refresh: @js(__('This menu was just updated. Please refresh the page to order.')),
             remove: @js(__('Remove')),
             add: @js(__('Add')),
             options: @js(__('See options')),
@@ -97,6 +105,9 @@
             forTable: @js(__('This order is for :table.')),
             goneFromCart: @js(__('Taken off your cart')),
             goneFromCartBody: @js(__(':dishes is not available right now.')),
+            // A line some of whose dishes a pair deal makes cheaper.
+            pairOff: @js(__(':count at :percent% off')),
+            pairFree: @js(__(':count free')),
             @if ($asksDetails)
             how: @js(__('How would you like it?')),
             delivery: @js(__('Delivery')),

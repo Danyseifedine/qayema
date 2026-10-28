@@ -8,12 +8,19 @@ Features page, `PUT /api/features/ordering`), and every order records the way
 it came in (`orders.channel`, `App\Enums\OrderChannel`):
 
 - **WhatsApp** (`ordering` flag, Premium and Custom): the order is stored and
-  the guest is sent to WhatsApp with it written out (`WhatsAppLink`): in
-  WhatsApp's bold, no emoji, no order number, the table first when there is
-  one, each dish with its choices under it, the total, then the note; in the
-  menu's **main language** (labels and line names, `OrderPlacer` names a
-  WhatsApp order's lines in it), since the owner reads it, while anything the
-  guest is told stays in theirs. Before WhatsApp opens the cart can ask the
+  the guest is sent to WhatsApp with it written out (`WhatsAppLink`), kept
+  plain for the staff who read it: WhatsApp's bold, no emoji, no order
+  number, a blank line between the parts (the table or delivery/pickup
+  first, what the guest gave, each dish, the total with the rate when a
+  line was in the second currency, the note). Each dish is `*2 Burger*
+  $16` (no "×" anywhere) with a `• ` line per choice, only what was picked ("Large", "Extra
+  cheese"); a built dish is named by what was built, its size first (`*1
+  Large: Half Margherita, Half Pepperoni*`; the same choice added up, so two
+  quarters are "Half Margherita" and one choice all over is just its name;
+  scoops each named, "Vanilla, Vanilla, Chocolate"). It is written in the **guest's
+  language**, the one they had the menu in (labels, the restaurant's name,
+  line names and offer titles: `OrderPlacer` names every order's lines in
+  it). Before WhatsApp opens the cart can ask the
   guest's name, phone and (delivery and pickup only) a delivery address, each
   off, optional or required as the owner set it (`restaurants.whatsapp_fields`,
   `Restaurant::whatsappAsks()`, `App\Enums\Ask`, `PUT /api/features/whatsapp-fields`;
@@ -79,7 +86,10 @@ choice) and `ordering.whatsapp_number`.
   session for a guest and checks no CSRF token; the menu's own POST/PUT
   requests carry the page's `X-Menu-Token` instead (`MenuToken`, signed with
   the app key and the time, good for a day; `VerifyMenuToken` answers a
-  missing or stale one with 419 `menu_expired`, which the cart shows). A
+  missing or stale one with 419 `menu_expired`, which the cart shows in
+  the menu's language, as it does a 429 and a bare 404, since those answer
+  before the guest's language is known; no connection, or an answer that
+  is not ours (a proxy's error page), says "That did not send"). A
   test sends it with `Tests\Support\SendsMenuToken` (`freshMenuToken()`
   after moving the clock). The page
   sends `mode`, the way it was built for; a mismatch (the owner switched while
@@ -99,8 +109,9 @@ choice) and `ordering.whatsapp_number`.
   still allows pinch zoom; Android would not, so it never gets it).
 - The cart's details form (`public/js/menu-cart.js`) is built once per panel
   and never redrawn, so typing survives cart changes. What the guest types is
-  kept in their browser (`qayema-guest-{slug}`) until the order goes, then the
-  form starts over, empty.
+  kept in their browser (`qayema-guest-{slug}`) until the order goes (to
+  WhatsApp too), then the form starts over, empty. A table order in the menu
+  with no choice to make (dine-in the only kind) says which table it goes to.
 - **Tracking** (the `order_tracking` flag, Premium and Custom,
   `Restaurant::tracksOrders()`). Without it an order placed in the menu is
   still sent and reaches the dashboard live, but the guest is only told its
@@ -120,7 +131,8 @@ choice) and `ordering.whatsapp_number`.
   delivered or picked up, or cancelled, with the times (`accepted_at`,
   `ready_at`, `closed_at`, set by `Order::moveTo()`); a skipped step shows as
   passed with no time. Choices show as the guest picked them ("Large, + Extra
-  cheese", `OrderItem::picks()`); the owner and WhatsApp keep "Size: Large".
+  cheese", `OrderItem::picks()`); the owner keeps "Size: Large", WhatsApp
+  only "Large".
   The short reference never opens it. The "Order sent" toast and a bar at the
   top of the menu (`qayema-order-{slug}` in the guest's browser, live status)
   open the sheet; the bar goes once the order is done, an hour after a

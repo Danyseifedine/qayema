@@ -12,6 +12,7 @@
 @use('App\Services\Menu\MenuLanguages')
 @use('App\Services\Menu\OpeningHours')
 @use('App\Services\Orders\WhatsAppLink')
+@use('App\Support\Ingredients')
 @use('App\Support\MenuIcons')
 @use('App\Support\Price')
 @php
@@ -119,9 +120,14 @@
             <li>
                 <span class="track-qty">{{ $item->quantity }}×</span>
                 <span class="track-line-name">
-                    {{ $item->name }}
+                    <bdi>{{ $item->name }}</bdi>
                     @if ($item->picks() !== [])
-                        <span class="track-line-choices">{{ implode(', ', $item->picks()) }}</span>
+                        <span class="track-line-choices">{{ Ingredients::join($item->picks(), $locale) }}</span>
+                    @endif
+                    {{-- Bought on an offer: which one, and what it would have
+                         cost (a pair deal's second dish is a line of its own). --}}
+                    @if ($item->offer_title !== null && $item->full_price !== null && bccomp((string) $item->full_price, (string) $item->unit_price, 2) > 0)
+                        <span class="track-line-offer">{{ $item->offer_title }}<s>{{ Price::money($item->currency === null ? $currency : config('currencies.'.$item->currency.'.symbol', $item->currency), bcmul((string) $item->full_price, (string) $item->quantity, 2)) }}</s></span>
                     @endif
                 </span>
                 <span class="track-line-total">{{ Price::money($item->currency === null ? $currency : config('currencies.'.$item->currency.'.symbol', $item->currency), $item->line_total) }}</span>

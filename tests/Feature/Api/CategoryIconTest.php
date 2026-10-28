@@ -90,7 +90,7 @@ class CategoryIconTest extends TestCase
         // A category without one has none, and no heading draws one.
         $this->assertSame(1, substr_count($html, 'class="tab-icon"'));
         $this->assertSame(1, substr_count($html, $drawing));
-        $this->assertStringContainsString('<h2>Pizza</h2>', $html);
+        $this->assertStringContainsString('<h2><bdi>Pizza</bdi></h2>', $html);
     }
 
     public function test_a_restaurant_can_hold_categories_with_and_without_icons(): void

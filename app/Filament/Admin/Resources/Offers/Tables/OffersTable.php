@@ -50,6 +50,7 @@ class OffersTable
                     ->state(fn (Offer $record): ?string => match (true) {
                         ! $record->hasDiscount() => null,
                         $record->discount_type === OfferDiscount::Percent => '-'.Number::format((float) $record->discount_value).'% on '.$record->dishes_count.' '.str('dish')->plural((int) $record->dishes_count),
+                        $record->discount_type === OfferDiscount::Second => ((float) $record->discount_value >= 100 ? '2nd free' : '2nd -'.Number::format((float) $record->discount_value).'%').' on '.$record->dishes_count.' '.str('dish')->plural((int) $record->dishes_count),
                         default => '-'.Number::currency((float) $record->discount_value, $record->restaurant->currency ?? 'USD').' on '.$record->dishes_count.' '.str('dish')->plural((int) $record->dishes_count),
                     })
                     ->placeholder('-'),

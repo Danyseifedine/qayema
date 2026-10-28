@@ -112,6 +112,25 @@ class TrackOrderTest extends TestCase
             ->assertRedirect(route('public.menu', ['restaurant' => 'olive', 'lang' => 'ar', 'track' => $order->tracking_token]));
     }
 
+    public function test_a_line_bought_on_an_offer_names_it_and_its_price_before(): void
+    {
+        $order = $this->order($this->shop());
+        // A pair deal's second dish: a line of its own at half price.
+        OrderItem::factory()->for($order)->create([
+            'name' => 'Kafta',
+            'quantity' => 1,
+            'unit_price' => '6.25',
+            'full_price' => '12.50',
+            'line_total' => '6.25',
+            'offer_title' => 'Grill pair',
+        ]);
+
+        $html = (string) $this->sheet($order)->json('data.html');
+
+        $this->assertStringContainsString('<span class="track-line-offer">Grill pair<s>$12.50</s></span>', $html);
+        $this->assertSame(1, substr_count($html, 'track-line-offer'));
+    }
+
     public function test_accepted_on_its_way_then_delivered(): void
     {
         $order = $this->order($this->shop());
@@ -171,7 +190,10 @@ class TrackOrderTest extends TestCase
     {
         $order = $this->order($this->shop());
 
-        $this->assertStringContainsString('بانتظار أن يقبل المطعم طلبك.', (string) $this->sheet($order, ['lang' => 'ar'])->json('data.html'));
+        $html = (string) $this->sheet($order, ['lang' => 'ar'])->json('data.html');
+        $this->assertStringContainsString('بانتظار أن يقبل المطعم طلبك.', $html);
+        // The choices listed with the Arabic comma.
+        $this->assertStringContainsString('Large، + Extra garlic', $html);
     }
 
     public function test_only_its_own_link_opens_it(): void

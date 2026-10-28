@@ -72,18 +72,29 @@ class UserAdminTest extends TestCase
     public function test_the_view_page_of_an_owner_mid_onboarding_hides_the_restaurant_sections(): void
     {
         $user = $this->userWithoutRestaurant();
-        $user->forceFill(['onboarding_step' => 2])->save();
+        $user->forceFill(['onboarding_step' => 1])->save();
         $this->actingAs($this->admin());
 
         Livewire::test(ViewUser::class, ['record' => $user->getRouteKey()])
             ->assertOk()
             ->assertSee($user->email)
             ->assertSee('Not completed')
-            ->assertSee('Step 2 of 6')
+            ->assertSee('Step 2 of 3')
             ->assertDontSee('Menu link')
             ->assertDontSee('Traffic &amp; Analytics', false)
             ->assertDontSee('Total Views')
             ->assertDontSee('Available Dishes');
+    }
+
+    public function test_an_owner_who_has_not_started_the_wizard_reads_step_one_of_three(): void
+    {
+        $user = $this->userWithoutRestaurant();
+        $user->forceFill(['onboarding_step' => 0])->save();
+        $this->actingAs($this->admin());
+
+        Livewire::test(ViewUser::class, ['record' => $user->getRouteKey()])
+            ->assertSee('Step 1 of 3')
+            ->assertDontSee('of 6');
     }
 
     public function test_the_view_page_of_an_inactive_menu_without_visits_or_limits(): void
@@ -486,7 +497,7 @@ class UserAdminTest extends TestCase
             ->assertTableColumnFormattedStateSet('restaurant.is_active', 'Active', $onboarded->user)
             ->assertTableColumnFormattedStateSet('restaurant.is_active', 'Inactive', $inactive->user)
             ->assertSee('Completed 1 day ago')
-            ->assertSee('Step 3 of 6')
+            ->assertSee('Step 3 of 3')
             ->assertSee(route('filament.admin.resources.restaurants.edit', ['record' => $onboarded->id]), false);
     }
 

@@ -32,7 +32,7 @@ return [
         'category_limit' => 'How many categories the menu can hold.',
         'social_link_limit' => 'How many social links the menu can show.',
         'writing_help_credits' => 'AI credits the restaurant gets each month, back on the 1st. What each action costs is set in Settings, AI credits; a package\'s come from its AI budget.',
-        'multiple_languages' => 'A second language on the menu, next to English.',
+        'multiple_languages' => 'A second language on the menu, next to its main one.',
         'variants' => 'Choices on a dish, like size or spice level, each with its own extra price.',
         'addons' => 'Extras guests can add to a dish, like extra cheese.',
         'appearance' => 'Colours, fonts and the other settings of the design in use.',

@@ -10,6 +10,7 @@ use App\Models\RestaurantSocialLink;
 use App\Services\Menu\MenuToken;
 use App\Support\MenuIcons;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Js;
 use Tests\Support\CreatesOwners;
 use Tests\Support\SendsMenuToken;
 use Tests\TestCase;
@@ -65,9 +66,9 @@ class MenuOrderingTest extends TestCase
             // The URL reaches the page through @js, which escapes its slashes.
             ->assertSee(trim(json_encode(route('public.order', $shop->slug)), '"'), false)
             ->assertSee('Place order')
-            // The cart counts in words, so both halves of one/many must ship.
-            ->assertSee("item: 'item'", false)
-            ->assertSee("items: 'items'", false);
+            // The cart counts in words, each plural form by a number that takes it.
+            // (JSON inside JSON.parse(), its quotes written \u0022.)
+            ->assertSee('\u00221\u0022:\u0022:count item\u0022,\u00222\u0022:\u0022:count items\u0022', false);
     }
 
     public function test_the_cart_lives_in_the_header(): void
@@ -363,6 +364,19 @@ class MenuOrderingTest extends TestCase
             ->assertSee("locate: 'Use my current location'", false)
             ->assertSee("addressUrl: '", false)
             ->assertSee("sent: 'Order sent'", false);
+    }
+
+    public function test_an_arabic_cart_lists_choices_and_says_its_refusals_in_arabic(): void
+    {
+        $shop = $this->shop(true, ['second_locale' => 'ar']);
+
+        $this->get(route('public.menu', ['restaurant' => $shop->slug, 'lang' => 'ar']))
+            ->assertOk()
+            ->assertSee("listSeparator: '\u060c '", false)
+            // The page's token and the rate limit answer before the server
+            // knows the guest's language, so the page carries these.
+            ->assertSee('expired: '.Js::from(__('This page was open for too long. Refresh it and try again.', [], 'ar')), false)
+            ->assertSee('tooMany: '.Js::from(__('Too many requests. Please slow down.', [], 'ar')), false);
     }
 
     public function test_in_the_menu_without_the_package_flag_the_cart_goes_to_whatsapp(): void

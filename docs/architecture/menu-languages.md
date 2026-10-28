@@ -37,6 +37,9 @@ nothing to do with menus.
   opens the default), hreflang and the switcher list only those, and a
   one-language menu (in any language) has no switcher. `dir` comes from the
   catalogue; fonts come from the language's script (see Templates → fonts).
+  The menu's search (`fold()` in `public/js/menu-nav.js`) ignores case,
+  accents and Arabic short vowels and treats every alef as a bare one, ة as
+  ه and ى as ي, so a guest finds "كنافة" by typing "كنافه".
 - The admin forms (restaurant, category, dish and its choices) edit the
   restaurant's main language: one input per language, only the main one
   shown (`App\Filament\Admin\Schemas\Components\MenuTextInputs`). The
@@ -47,12 +50,15 @@ nothing to do with menus.
   (its name field is labelled with it), and a new one may send it; the
   app's list of languages (`lib/core/menu_languages.dart`) mirrors
   `config('locales.menu')`.
-- The menu's own words live in `lang/{code}.json` (same keys as `ar.json`).
+- The menu's own words live in `lang/{code}.json` (same keys as `ar.json`;
+  `tests/Integration/View/MenuTranslationsTest` checks every string a guest
+  can see is in each one, with its :placeholders). Owner text on the menu
+  sits in `<bdi>`, so a line shown in the main language keeps its own
+  direction on an Arabic page.
   The non-Arabic ones were written by Claude and still want a native read.
 - The cart sends the guest's language with an order; any error and the
-  line names of an order placed in the menu come back in it. A WhatsApp
-  message (labels and line names) is in the menu's main language: the
-  owner reads it.
+  line names of an order come back in it. A WhatsApp message (labels,
+  the restaurant's name and line names) is written in it too.
 - Onboarding's first step asks "Your menu is written in" (suggested from the
   page's language); the name typed there is saved in it, the menu opens in
   it, and the second language starts as Arabic (English for an Arabic

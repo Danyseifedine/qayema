@@ -63,7 +63,7 @@ class DiningTable extends Model
     /** What this table's QR code opens: the menu, at this table, counted as a scan. */
     public function menuUrl(): string
     {
-        return rtrim((string) config('app.url'), '/').'/'.$this->restaurant->slug.'?'.http_build_query([
+        return $this->restaurant->publicUrl().'?'.http_build_query([
             'table' => $this->code,
             'qr' => 1,
         ]);

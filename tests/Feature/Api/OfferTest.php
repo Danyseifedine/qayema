@@ -362,6 +362,58 @@ class OfferTest extends TestCase
         $offer('150000')->assertCreated()->assertJsonPath('data.discount_value', '150000.00');
     }
 
+    public function test_an_amount_off_stays_below_a_dish_priced_by_its_sizes(): void
+    {
+        $restaurant = $this->premium(['currency' => 'USD']);
+        $pizza = Dish::factory()->withVariants(['Size' => ['Small' => 6, 'Large' => 12]])->create(['restaurant_id' => $restaurant->id, 'name' => ['en' => 'Pizza'], 'price' => null]);
+        $offer = fn (string $value) => $this->actingAs($restaurant->user)->postJson(route('api.offers.store'), $this->payload([
+            'discount_type' => 'amount',
+            'discount_value' => $value,
+            'dish_ids' => [$pizza->id],
+        ]));
+
+        // Its smallest size is the least it costs.
+        $offer('6')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['discount_value' => 'Pizza costs $6: a discount must take off less than that.']);
+        $offer('5')->assertCreated();
+    }
+
+    public function test_a_pair_deal_takes_up_to_all_of_the_second_dish(): void
+    {
+        $restaurant = $this->premium();
+        $dish = Dish::factory()->create(['restaurant_id' => $restaurant->id]);
+        $offer = fn (int $value) => $this->actingAs($restaurant->user)->postJson(route('api.offers.store'), $this->payload([
+            'discount_type' => 'second',
+            'discount_value' => $value,
+            'dish_ids' => [$dish->id],
+        ]));
+
+        $offer(101)->assertJsonValidationErrors(['discount_value' => 'A discount can take off at most 100%.']);
+        $offer(100)
+            ->assertCreated()
+            ->assertJsonPath('data.discount_type', 'second')
+            ->assertJsonPath('data.discount_value', '100.00');
+        $this->actingAs($restaurant->user)->postJson(route('api.offers.store'), $this->payload(['discount_type' => 'second', 'discount_value' => 50]))
+            ->assertJsonValidationErrors(['dish_ids']);
+    }
+
+    public function test_it_shows_outside_its_hours_only_when_it_has_hours(): void
+    {
+        $restaurant = $this->premium();
+        $store = fn (array $overrides) => $this->actingAs($restaurant->user)->postJson(route('api.offers.store'), $this->payload($overrides));
+
+        $store(['repeat' => 'weekly', 'weekdays' => ['wed'], 'time_windows' => [['from' => '17:00', 'to' => '19:00']], 'shows_outside_hours' => true])
+            ->assertCreated()
+            ->assertJsonPath('data.shows_outside_hours', true);
+        // Dates alone have no hours to be outside of.
+        $store(['ends_at' => '2030-01-01T00:00', 'shows_outside_hours' => true])
+            ->assertCreated()
+            ->assertJsonPath('data.shows_outside_hours', false);
+        $store(['shows_outside_hours' => false])->assertCreated()->assertJsonPath('data.shows_outside_hours', false);
+        $store(['shows_outside_hours' => 'often'])->assertJsonValidationErrors(['shows_outside_hours']);
+    }
+
     public function test_the_schedule_is_checked_whole(): void
     {
         $restaurant = $this->premium();

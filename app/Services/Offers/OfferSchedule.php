@@ -27,6 +27,9 @@ final class OfferSchedule
 
     public const MAX_WINDOWS = 3;
 
+    /** How a language lists days and hours ("Wednesday, Friday"); a comma and a space otherwise. */
+    private const LIST_SEPARATORS = ['ar' => '، ', 'zh' => '、'];
+
     /** How far ahead nextStart() looks: a little over a year. */
     private const LOOK_AHEAD_DAYS = 400;
 
@@ -45,13 +48,85 @@ final class OfferSchedule
         public readonly ?array $windows = null,
     ) {}
 
-    public function isLiveAt(CarbonImmutable $at): bool
+    /** Inside its dates at `$at`, whatever the day or the hour. */
+    public function isWithinDates(CarbonImmutable $at): bool
     {
-        if ($this->startsAt !== null && $at->lessThan($this->startsAt)) {
-            return false;
+        return ($this->startsAt === null || $at->greaterThanOrEqualTo($this->startsAt))
+            && ($this->endsAt === null || $at->lessThan($this->endsAt));
+    }
+
+    /** It runs on some days or at some hours only, rather than all day every day of its dates. */
+    public function hasHours(): bool
+    {
+        return $this->repeat !== OfferRepeat::Always || ($this->windows !== null && $this->windows !== []);
+    }
+
+    /**
+     * When it runs, for a guest who taps it outside that time, in `$locale`:
+     * "Available Wednesday, 5:00 PM to 7:00 PM." (the days, then the hours;
+     * day names and times in the language's own way). Null when it runs all
+     * day every day of its dates: nothing to say.
+     */
+    public function describe(string $locale): ?string
+    {
+        if (! $this->hasHours()) {
+            return null;
         }
 
-        if ($this->endsAt !== null && $at->greaterThanOrEqualTo($this->endsAt)) {
+        // 1 January 2024 was a Monday, as DAYS starts.
+        $monday = CarbonImmutable::create(2024, 1, 1)->locale($locale);
+        $days = match ($this->repeat) {
+            OfferRepeat::Weekly => self::listIn($locale, array_map(
+                fn (string $day): string => $monday->addDays((int) array_search($day, self::DAYS, true))->dayName,
+                array_values(array_filter(self::DAYS, fn (string $day): bool => in_array($day, $this->weekdays, true))),
+            )),
+            OfferRepeat::Monthly => __('days :days of the month', ['days' => self::listIn($locale, array_map('strval', $this->sortedMonthDays()))], $locale),
+            OfferRepeat::Always => __('every day', [], $locale),
+        };
+
+        $windows = $this->windows ?? [];
+        usort($windows, fn (array $a, array $b): int => strcmp($a['from'], $b['from']));
+        $time = fn (string $value): string => $monday->setTimeFromTimeString($value)->isoFormat('LT');
+        $hours = self::listIn($locale, array_map(
+            fn (array $window): string => __(':from to :to', ['from' => $time($window['from']), 'to' => $time($window['to'])], $locale),
+            $windows,
+        ));
+
+        $when = $hours === '' ? $days : __(':days, :times', ['days' => $days, 'times' => $hours], $locale);
+
+        return __('Available :when.', ['when' => $when], $locale);
+    }
+
+    /**
+     * Items as a language lists them, the last joined with its "and"
+     * ("Wednesday, Friday and Sunday"), so the days and the hours after
+     * them read as two lists.
+     *
+     * @param  array<int, string>  $items
+     */
+    private static function listIn(string $locale, array $items): string
+    {
+        $last = array_pop($items);
+
+        if ($items === []) {
+            return (string) $last;
+        }
+
+        return __(':items and :last', ['items' => implode(self::LIST_SEPARATORS[$locale] ?? ', ', $items), 'last' => $last], $locale);
+    }
+
+    /** @return array<int, int> */
+    private function sortedMonthDays(): array
+    {
+        $days = array_map('intval', $this->monthDays);
+        sort($days);
+
+        return $days;
+    }
+
+    public function isLiveAt(CarbonImmutable $at): bool
+    {
+        if (! $this->isWithinDates($at)) {
             return false;
         }
 
@@ -130,12 +205,6 @@ final class OfferSchedule
         }
 
         return null;
-    }
-
-    /** Never live again from `$at` on: past its end, or no day left in reach. */
-    public function hasEnded(CarbonImmutable $at): bool
-    {
-        return ! $this->isLiveAt($at) && $this->nextStart($at) === null;
     }
 
     /**

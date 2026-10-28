@@ -6,6 +6,8 @@ use App\Enums\BuildShape;
 use App\Models\Dish;
 use App\Models\DishBuild;
 use App\Models\DishBuildChoice;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 
 /**
@@ -58,7 +60,7 @@ class DishBuildsSync
             $kept[] = $build->id;
         }
 
-        $dish->builds()->whereNotIn('id', $kept)->delete();
+        $this->deleteLeftOut($dish->builds(), $saved, $kept);
         $dish->unsetRelation('builds');
     }
 
@@ -96,8 +98,25 @@ class DishBuildsSync
             $kept[] = $choice->id;
         }
 
-        $build->choices()->whereNotIn('id', $kept)->delete();
+        $this->deleteLeftOut($build->choices(), $saved, $kept);
         $build->unsetRelation('choices');
+    }
+
+    /**
+     * Deletes the saved rows the input left out, in one statement, and asks
+     * nothing when every one was kept (the usual save).
+     *
+     * @param  HasMany<covariant Model, covariant Model>  $relation
+     * @param  Collection<int, covariant Model>  $saved
+     * @param  array<int, int>  $kept
+     */
+    private function deleteLeftOut(HasMany $relation, Collection $saved, array $kept): void
+    {
+        $gone = array_values(array_diff($saved->pluck('id')->all(), $kept));
+
+        if ($gone !== []) {
+            $relation->whereKey($gone)->delete();
+        }
     }
 
     /**

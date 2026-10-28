@@ -57,8 +57,10 @@ grill of two meats and "pick two sides" are others.
   - The dashboard twins this in `features/orders/utils/order-edit.ts`
     (`choicesAt()`, `firstSize()`, a size dropdown in `BuildPicker`); the
     Build your own editor lists a sized dish with its sizes ("Small $8.00 ·
-    Large $12.00"), asks no part prices for it, and counts it at its
-    cheapest size in "From".
+    Large $12.00"), asks no part prices for it, and its card's "From" is
+    the menu's (`cheapestOffered()`: only at a size with two choices or
+    more, "Guests can't see it yet" when no size has two). Both leave out
+    an offer's deal dish, as the server does.
 - **Price** (`App\Services\Menu\BuildPrice`, in whole cents; twinned by
   `public/js/menu-build.js`: change one, change both):
   - **split:** a part pays the price its choice sets for that part size
@@ -70,7 +72,9 @@ grill of two meats and "pick two sides" are others.
   - The build's price adds to the dish's, beside variants and add-ons. A dish
     with no price of its own is priced by its builds (`MenuDishOptions`
     `priced`; the card's "from" is `BuildPrice::cheapest()`).
-  - An offer's discount comes off the dish's own price only, as with variants.
+  - An offer's discount on the dish comes off its own price, the variants
+    picked and what was built (the halves); add-ons keep their price
+    (docs/architecture/offers.md).
 - **Writing:** the dashboard's Build your own page (its own section, no
   longer the dish form) sends a dish's whole list: `PATCH /api/dishes/{id}`
   with only `builds`, which changes nothing else on the dish (`[]` removes
@@ -101,8 +105,9 @@ grill of two meats and "pick two sides" are others.
   sizes: [{key, name}], choices: [{key, name, price, part_prices, sizes:
   {key: price}}]}]` to `#dish-options` (`price` null for a sized dish).
   `menu-dish.js` draws each build in the dish sheet:
-  - the sizes as pills, when there is more than one;
-  - the part counts as pills;
+  - the sizes as pills, when there is more than one, under "Size";
+  - the part counts as pills, under "Parts" (split) or "How many" (pieces);
+  - the build's name above the parts when it is not the dish's own;
   - a picker per part (`partPicker()`: a button with the choice and its
     price opening a listbox of every choice, never the browser's dropdown;
     Escape closes only the list);
@@ -122,8 +127,9 @@ grill of two meats and "pick two sides" are others.
     share}], price, build_id, keys, size?, size_key?}]`. `builds` appears only on lines that
     have them, so older snapshots read the same.
   - `OrderItem::built()` words it: "½ Margherita + ½ Pepperoni", "2 ×
-    Vanilla, Chocolate". `choices()` gives "Your pizza: …" for WhatsApp, the
-    admin and the dashboard; `picks()` is the guest's own order page.
+    Vanilla, Chocolate". `choices()` gives "Your pizza: …" for the
+    admin and the dashboard; WhatsApp names the line by it instead ("Large:
+    Half Margherita, Half Pepperoni", `WhatsAppLink`); `picks()` is the guest's own order page.
   - The guest's cart comes back with its builds (`build_id`, `keys`) to change
     an order.
 - **Tests:**
@@ -131,6 +137,8 @@ grill of two meats and "pick two sides" are others.
     match);
   - `tests/Feature/Api/DishBuildTest.php` (saving, builds alone included);
   - `tests/Feature/Menu/MenuDishBuildsTest.php` (the page data);
+  - `tests/Feature/Menu/BuildChoicesEdgeTest.php` (deal dishes, the other
+    currency, sizes that share none);
   - `tests/Feature/Orders/BuildOrderTest.php` (ordering);
   - `tests/Feature/Admin/DishBuildAdminTest.php`.
 

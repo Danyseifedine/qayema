@@ -4,14 +4,24 @@
  * every minute, in the restaurant's timezone: the twin of
  * App\Services\Offers\OfferSchedule (change one, change both).
  *
- * - Banner cards show while their offer is live; the carousel hides
- *   while none is.
+ * - An offer is shown (banner card, pop-up, ad) while it is live, or, when
+ *   it shows outside its hours (shown_always), all the time between its
+ *   dates. Its deal (prices, its own dish) runs only while it is live.
+ *   Outside its hours a tap on it does nothing but say when it runs (a
+ *   toast with its `hours`). The carousel hides while no card shows.
  * - The banner is a carousel: one card at a time, a dot per live card, and
  *   it slides on by itself while on screen, unless the guest is touching
  *   it or asked the phone for less motion.
  * - A dish on a live discount shows its offer price, the old one struck
- *   through and a badge; its data-price is the price the cart charges
- *   (menu-cart.js reads it, and is told to draw again: qayema:prices).
+ *   through and a badge. The discount takes off the dish's own price and
+ *   its cheapest variants (data-base-extra), never its other choices. The
+ *   dish carries the deal (data-deal-type, -value, and data-deal-by, the
+ *   offer; data-deal-offer is an offer's own dish) for the cart
+ *   and the dish sheet to price each line (menu-cart.js is told to draw
+ *   again: qayema:prices); data-price stays the dish's own full price.
+ * - A dish on a live "buy one, get the second X% off" offer (type second)
+ *   carries data-pair-offer and data-pair-value and a badge; the cart pairs
+ *   the units. A dish with a discount of its own is never paired.
  * - One offer over the menu a visit: the first live one in the owner's
  *   order that this guest has not seen as often as it allows (show_again).
  *   Its pop-up shows after its delay; an offer that is also an ad shows the
@@ -142,17 +152,35 @@
         return offer.id === config.preview || (offer.active && scheduleLive(offer.schedule, ms));
     }
 
+    /** Between its dates, whatever the day and hour. */
+    function inDates(schedule, ms) {
+        return (schedule.starts === null || ms >= schedule.starts) && (schedule.ends === null || ms < schedule.ends);
+    }
+
+    /**
+     * On the menu for the guest: live, or switched on and between its dates
+     * when it shows outside its hours too.
+     */
+    function isShown(offer, ms) {
+        return isLive(offer, ms) || (offer.active && offer.shown_always && inDates(offer.schedule, ms));
+    }
+
     /**
      * OfferDiscount::apply(), in whole cents, half up, never below nothing.
      * An amount off is in the main currency: a dish priced in the second
-     * one (`rate`) takes it off at the rate (Offer::discounted()).
+     * one (`rate`) takes it off at the rate (Offer::discounted()). The
+     * second of a pair (type second) takes its share off, as a percent.
      */
     function discounted(cents, discount, rate) {
-        if (discount.type === 'percent') {
+        if (discount.type === 'percent' || discount.type === 'second') {
             return Math.max(0, Math.round((cents * (100 - discount.value)) / 100));
         }
 
         return Math.max(0, cents - Math.round((discount.value * 100) / (rate || 1)));
+    }
+
+    function centsOf(price) {
+        return Math.round((parseFloat(price || '0') || 0) * 100);
     }
 
     /** As App\Support\Price and the cart's money(): no decimals on a whole amount. */
@@ -169,6 +197,12 @@
     }
 
     function badgeOf(discount) {
+        if (discount.type === 'second') {
+            return discount.value >= 100
+                ? config.strings.secondFree || 'Buy 2, 2nd free'
+                : (config.strings.secondOff || 'Buy 2, 2nd :percent% off').replace(':percent', String(discount.value));
+        }
+
         return discount.type === 'percent' ? '-' + discount.value + '%' : '-' + money(Math.round(discount.value * 100));
     }
 
@@ -182,9 +216,27 @@
     var rows = Array.prototype.slice.call(document.querySelectorAll('[data-offers-row]'));
     var dishes = Array.prototype.slice.call(document.querySelectorAll('.dish[data-full-price]'));
 
-    /** Each dish on a live discount: the cents it costs now and the offer giving it. */
+    /**
+     * The price a dish's deal is judged on: its own price and its cheapest
+     * variants, what the card shows before any choice (LiveOffers::reference()).
+     */
+    function referenceOf(dish) {
+        return centsOf(dish.dataset.fullPrice) + centsOf(dish.dataset.baseExtra);
+    }
+
+    function rateOf(dish) {
+        return parseFloat(dish.dataset.rate || '') || null;
+    }
+
+    /**
+     * What is live on each dish now: `straight`, dish id => the discount
+     * leaving it cheapest ({cents, discount, offer}); `pair`, dish id => the
+     * first pair offer in the owner's order ({discount, offer}) for a dish
+     * with no discount of its own.
+     */
     function deals(ms) {
-        var best = {};
+        var straight = {};
+        var pair = {};
 
         offers.forEach(function (offer) {
             if (!offer.discount || !(offer.active && scheduleLive(offer.schedule, ms))) {
@@ -198,7 +250,13 @@
                     return;
                 }
 
-                var cents = discounted(Math.round(parseFloat(dish.dataset.fullPrice) * 100), offer.discount, parseFloat(dish.dataset.rate || '') || null);
+                if (offer.discount.type === 'second') {
+                    pair[id] = pair[id] || { discount: offer.discount, offer: offer.id };
+
+                    return;
+                }
+
+                var cents = discounted(referenceOf(dish), offer.discount, rateOf(dish));
 
                 // Taking the whole price, it does not apply: no dish is ever
                 // free (LiveOffers::bestAmong()).
@@ -206,58 +264,91 @@
                     return;
                 }
 
-                if (!best[id] || cents < best[id].cents) {
-                    best[id] = { cents: cents, offer: offer };
+                if (!straight[id] || cents < straight[id].cents) {
+                    straight[id] = { cents: cents, discount: offer.discount, offer: offer.id };
                 }
             });
         });
 
-        return best;
+        Object.keys(straight).forEach(function (id) {
+            delete pair[id];
+        });
+
+        return { straight: straight, pair: pair };
     }
 
-    // Prices the server gave when it refused a cart that cost more than the
-    // page showed (menu-cart.js): they win over what this phone works out,
-    // whose clock may be wrong. Dish id => price, "12.50".
-    var serverPrices = {};
+    // What the server said when it refused a cart that cost more than the
+    // page showed (menu-cart.js): its deal on each dish wins over what this
+    // phone works out, whose clock may be wrong. Dish id => {offer, type,
+    // value}, or null for no deal.
+    var serverDeals = {};
 
     document.addEventListener('qayema:server-prices', function (event) {
-        Object.keys(event.detail || {}).forEach(function (id) {
-            serverPrices[id] = String(event.detail[id]);
+        var detail = event.detail || {};
+        var prices = detail.prices || {};
+        var given = detail.deals || {};
+
+        // Each dish's own price now: a price that went up is kept.
+        Object.keys(prices).forEach(function (id) {
+            Array.prototype.forEach.call(document.querySelectorAll('.dish[data-dish="' + id + '"][data-full-price]'), function (dish) {
+                dish.dataset.fullPrice = String(prices[id]);
+                dish.dataset.price = String(prices[id]);
+            });
+        });
+        Object.keys(given).forEach(function (id) {
+            serverDeals[id] = given[id];
         });
         paint();
     });
 
-    /**
-     * The server's word on a dish, as a deal (or none) like deals() gives. A
-     * price above the page's is the dish's own price gone up.
-     */
-    function serverDeal(dish, deal) {
-        var cents = Math.round(parseFloat(serverPrices[dish.dataset.dish]) * 100);
-        var full = Math.round(parseFloat(dish.dataset.fullPrice) * 100);
-
-        if (cents >= full) {
-            dish.dataset.fullPrice = (cents / 100).toFixed(2);
-
-            return null;
+    /** The server's word on a dish as the deals() pieces: [straight, pair]. */
+    function serverDeal(dish, given) {
+        if (!given) {
+            return [null, null];
         }
 
-        return { cents: cents, offer: deal ? deal.offer : null };
+        var discount = { type: given.type, value: Number(given.value) };
+
+        if (discount.type === 'second') {
+            return [null, { discount: discount, offer: given.offer }];
+        }
+
+        var cents = discounted(referenceOf(dish), discount, rateOf(dish));
+
+        return [cents > 0 ? { cents: cents, discount: discount, offer: given.offer } : null, null];
     }
 
-    function paintDish(dish, deal) {
-        var full = Math.round(parseFloat(dish.dataset.fullPrice) * 100);
-        var extra = Math.round(parseFloat(dish.dataset.extra || '0') * 100);
+    /** Sets a data attribute, or takes it away for null. */
+    function mark(dish, name, value) {
+        if (value === null || value === undefined) {
+            delete dish.dataset[name];
+        } else {
+            dish.dataset[name] = String(value);
+        }
+    }
+
+    function stateOf(dish) {
+        return [dish.dataset.dealType, dish.dataset.dealValue, dish.dataset.dealBy, dish.dataset.pairOffer, dish.dataset.pairValue, dish.dataset.fullPrice].join('|');
+    }
+
+    /** A dish's deal on its card and in its data; says whether its price changed. */
+    function paintDish(dish, deal, pair) {
+        var before = stateOf(dish);
+        var reference = referenceOf(dish);
+        var extra = centsOf(dish.dataset.extra);
         var label = dish.querySelector('.price');
         var group = label && label.parentNode;
         var was = group && group.querySelector('.price-was');
         var badge = dish.querySelector('.dish-badge');
-        var price = deal ? (deal.cents / 100).toFixed(2) : dish.dataset.fullPrice;
-        var changed = dish.dataset.price !== price;
 
-        dish.dataset.price = price;
+        mark(dish, 'dealType', deal ? deal.discount.type : null);
+        mark(dish, 'dealValue', deal ? deal.discount.value : null);
+        mark(dish, 'dealBy', deal ? deal.offer : null);
+        mark(dish, 'pairOffer', pair ? pair.offer : null);
+        mark(dish, 'pairValue', pair ? pair.discount.value : null);
 
         if (label) {
-            label.textContent = money((deal ? deal.cents : full) + extra, dish.dataset.currency);
+            label.textContent = money((deal ? deal.cents : reference) + extra, dish.dataset.currency);
         }
 
         if (deal && group && !was) {
@@ -268,39 +359,47 @@
 
         if (was) {
             if (deal) {
-                was.textContent = money(full + extra, dish.dataset.currency);
+                was.textContent = money(reference + extra, dish.dataset.currency);
             } else {
                 was.remove();
             }
         }
 
-        // A price the server gave may come with no offer known here to name.
-        var named = deal && deal.offer;
+        var shown = deal || pair;
 
-        // On the photo's corner, taking no room on the card; a dish without
-        // a photo has it beside its price.
-        if (named && !badge) {
+        // Beside the price, never over the photo; a build's card has no price,
+        // so above its name.
+        if (shown && !badge) {
             badge = document.createElement('span');
             badge.className = 'dish-badge';
-            (dish.querySelector('.dish-photo-slot') || group || dish).appendChild(badge);
+            if (group) {
+                group.appendChild(badge);
+            } else {
+                dish.insertBefore(badge, dish.querySelector('.dish-name'));
+            }
         }
 
         if (badge) {
-            if (named) {
-                // Left to right, so "-$2" keeps its sign in front on an Arabic menu.
+            if (shown) {
+                // Left to right, so "-$2" keeps its sign in front on an
+                // Arabic menu; a pair's words read in the menu's own way.
                 var text = document.createElement('bdi');
-                text.dir = 'ltr';
-                text.textContent = badgeOf(deal.offer.discount);
+                if (deal) {
+                    text.dir = 'ltr';
+                }
+                text.textContent = badgeOf(shown.discount);
+                badge.classList.toggle('dish-badge-pair', !deal);
                 badge.replaceChildren(text);
             } else {
                 badge.remove();
             }
         }
 
-        return changed;
+        return stateOf(dish) !== before;
     }
 
-    var dealDishes = Array.prototype.slice.call(document.querySelectorAll('.dish[data-deal-offer]'));
+    // An offer's own dish; never one on a discount, which an offer's dish never is.
+    var dealDishes = Array.prototype.slice.call(document.querySelectorAll('.dish[data-deal-offer]:not([data-deal-type])'));
 
     /**
      * Each deal dish shown while its offer is live and hidden otherwise
@@ -357,7 +456,7 @@
 
         cards.forEach(function (card) {
             var offer = byId[card.dataset.offer];
-            card.hidden = !(offer && isLive(offer, now));
+            card.hidden = !(offer && isShown(offer, now));
         });
 
         rows.forEach(function (row) {
@@ -366,15 +465,15 @@
             });
         });
 
-        var best = deals(now);
+        var live = deals(now);
         var changed = false;
 
         dishes.forEach(function (dish) {
-            var deal = best[dish.dataset.dish] || null;
-            if (serverPrices[dish.dataset.dish] !== undefined) {
-                deal = serverDeal(dish, deal);
-            }
-            changed = paintDish(dish, deal) || changed;
+            var id = dish.dataset.dish;
+            var pieces = serverDeals[id] !== undefined
+                ? serverDeal(dish, serverDeals[id])
+                : [live.straight[id] || null, live.pair[id] || null];
+            changed = paintDish(dish, pieces[0], pieces[1]) || changed;
         });
 
         if (changed || dealsChanged) {
@@ -402,6 +501,7 @@
         var ratio = img.naturalWidth / img.naturalHeight;
         var apart = Math.max(ratio / box, box / ratio);
         card.classList.toggle('offer-fit-whole', apart > (card.classList.contains('offer-picture-only') ? 1.05 : 1.35));
+        card.style.setProperty('--picture', String(ratio));
     }
 
     Array.prototype.forEach.call(document.querySelectorAll('.offer-photo[data-fit="auto"]'), function (img) {
@@ -751,12 +851,12 @@
     }
 
     /**
-     * Its ad, after the ad's own wait: still live, and not while something
+     * Its ad, after the ad's own wait: still shown, and not while something
      * else is open over the menu (it waits for that to close).
      */
     function adAfterWait(offer) {
         window.setTimeout(function show() {
-            if (!isLive(offer, Date.now())) {
+            if (!isShown(offer, Date.now())) {
                 return;
             }
 
@@ -774,7 +874,7 @@
         var now = Date.now();
         var pick = null;
 
-        // The owner's preview first; otherwise the first live one in order.
+        // The owner's preview first; otherwise the first shown one in order.
         var preview = config.preview !== null ? byId[config.preview] : null;
         var candidates = preview ? [preview] : offers;
 
@@ -782,7 +882,7 @@
             var offer = candidates[i];
             var overlay = offer.placements.indexOf('popup') !== -1 || offer.placements.indexOf('ad') !== -1;
 
-            if (overlay && isLive(offer, now) && due(offer)) {
+            if (overlay && isShown(offer, now) && due(offer)) {
                 pick = offer;
             }
         }
@@ -796,8 +896,8 @@
         var wait = popup ? pick.delay : pick.ad_delay;
 
         window.setTimeout(function () {
-            // Still live when its delay is up, and nothing else over the menu.
-            if (!isLive(pick, Date.now()) || document.querySelector('dialog[open]')) {
+            // Still shown when its delay is up, and nothing else over the menu.
+            if (!isShown(pick, Date.now()) || document.querySelector('dialog[open]')) {
                 return;
             }
 
@@ -813,17 +913,82 @@
 
     // ---- Taps ---------------------------------------------------------------
 
-    document.addEventListener('click', function (event) {
-        var go = event.target.closest('[data-offer-go]');
+    var CLOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
 
-        if (!go) {
+    /**
+     * A note at the top of the screen, in the cart's toast look: an offer
+     * shown outside its hours says when it runs. Gone by itself, or on a tap.
+     */
+    function sayWhen(offer) {
+        var old = document.querySelector('.menu-toast');
+        if (old) {
+            old.remove();
+        }
+
+        var note = document.createElement('div');
+        note.className = 'menu-toast menu-toast-info';
+        note.setAttribute('role', 'status');
+
+        var markBox = document.createElement('span');
+        markBox.className = 'menu-toast-mark';
+        var glyph = document.createElement('span');
+        glyph.className = 'icon';
+        glyph.innerHTML = CLOCK;
+        markBox.appendChild(glyph);
+        note.appendChild(markBox);
+
+        var text = document.createElement('div');
+        text.className = 'menu-toast-text';
+        var title = document.createElement('strong');
+        title.textContent = config.strings.notNow || '';
+        text.appendChild(title);
+        if (offer.hours) {
+            var body = document.createElement('span');
+            body.textContent = offer.hours;
+            text.appendChild(body);
+        }
+        note.appendChild(text);
+
+        var timer;
+        function dismiss() {
+            window.clearTimeout(timer);
+            note.classList.add('leaving');
+            window.setTimeout(function () {
+                note.remove();
+            }, 250);
+        }
+
+        note.addEventListener('click', dismiss);
+        document.body.appendChild(note);
+        timer = window.setTimeout(dismiss, 6000);
+    }
+
+    document.addEventListener('click', function (event) {
+        var card = event.target.closest('[data-offer]');
+        var offer = card && byId[card.dataset.offer];
+
+        if (!offer || event.target.closest('[data-offer-close]')) {
             return;
         }
 
-        var card = go.closest('[data-offer]');
-        var offer = card && byId[card.dataset.offer];
+        // Shown outside its hours: a tap says when it runs, and does
+        // nothing else (no dishes, no link). A pop-up closes first, or its
+        // backdrop would cover the note.
+        if (!isLive(offer, Date.now())) {
+            event.preventDefault();
+            track('offer_tap', offer);
+            var open = card.closest('dialog');
+            if (open) {
+                open.close();
+            }
+            sayWhen(offer);
 
-        if (!offer) {
+            return;
+        }
+
+        var go = event.target.closest('[data-offer-go]');
+
+        if (!go) {
             return;
         }
 

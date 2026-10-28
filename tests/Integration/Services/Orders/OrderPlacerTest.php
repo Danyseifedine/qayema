@@ -113,20 +113,20 @@ class OrderPlacerTest extends TestCase
         $this->assertSame(['فلافل', 'Fries'], $order->items->pluck('name')->all(), 'A dish without an Arabic name falls back to English.');
     }
 
-    public function test_lines_sent_to_whatsapp_are_named_in_the_menus_main_language(): void
+    public function test_lines_sent_to_whatsapp_are_named_in_the_guests_language_too(): void
     {
         $this->defaultPackageIncludes(Feature::MultipleLanguages);
-        $restaurant = $this->owner(['main_locale' => 'ar', 'second_locale' => 'en', 'default_locale' => 'en']);
+        $restaurant = $this->owner(['main_locale' => 'en', 'second_locale' => 'ar', 'default_locale' => 'en']);
         $falafel = $this->dish($restaurant, ['en' => 'Falafel', 'ar' => 'فلافل'], '3.00');
         $fries = $this->dish($restaurant, ['en' => 'Fries'], '2.00');
 
         $order = $this->placer()->place($restaurant, [
             ['dish_id' => $falafel->id, 'quantity' => 1],
             ['dish_id' => $fries->id, 'quantity' => 1],
-        ], locale: 'en');
+        ], locale: 'ar', details: new OrderDetails(channel: OrderChannel::WhatsApp));
 
-        // The owner reads the message; a dish not yet written in the main
-        // language keeps the name it has.
+        // The message is written in Arabic for an Arabic guest; a dish not
+        // written in Arabic keeps the name it has.
         $this->assertSame(['فلافل', 'Fries'], $order->items->pluck('name')->all());
     }
 

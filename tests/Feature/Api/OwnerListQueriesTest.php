@@ -176,4 +176,25 @@ class OwnerListQueriesTest extends TestCase
         // The lines are one insert however many: nothing grows with the cart.
         $this->assertSame($few, $many);
     }
+
+    /** The queries the owner taking `$lines` lines off a new order costs, keeping one. */
+    private function queriesToTakeOff(int $lines): int
+    {
+        $order = Order::factory()->inMenu()->create(['restaurant_id' => $this->shop->id]);
+        $items = OrderItem::factory()->count($lines + 1)->create(['order_id' => $order->id]);
+        $this->actingAs($this->shop->user)->getJson(route('api.user'))->assertOk();
+
+        return $this->counting(fn () => $this->actingAs($this->shop->user)->putJson(route('api.orders.items', $order), [
+            'items' => $items->map(fn (OrderItem $item, int $i): array => ['id' => $item->id, 'quantity' => $i === 0 ? $item->quantity : 0])->all(),
+            'add' => [],
+        ])->assertOk());
+    }
+
+    public function test_an_owners_edit_costs_the_same_however_many_lines_go(): void
+    {
+        $this->defaultPackageIncludes(Feature::Ordering, Feature::MenuOrdering);
+
+        // The lines taken off go in one statement, and taking the order on is the same write as its new total.
+        $this->assertSame($this->queriesToTakeOff(1), $this->queriesToTakeOff(6));
+    }
 }

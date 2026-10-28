@@ -72,7 +72,7 @@ class PublicOrderController extends Controller
                 'reference' => $order->reference,
                 'total' => (string) $order->total,
                 'channel' => $channel->value,
-                'whatsapp_url' => $channel === OrderChannel::WhatsApp ? WhatsAppLink::forOrder($restaurant, $order) : null,
+                'whatsapp_url' => $channel === OrderChannel::WhatsApp ? WhatsAppLink::forOrder($restaurant, $order, $locale) : null,
                 // The guest's page for following it, in their language, while
                 // the package tracks orders.
                 'tracking_url' => $restaurant->tracksOrders() ? $order->trackingUrl($locale) : null,
@@ -133,13 +133,15 @@ class PublicOrderController extends Controller
 
     /**
      * The cart costs more than the guest saw: nothing is placed, and the
-     * page is given each dish's price now to show before they send again.
+     * page is given each dish's price now, and the deal it has, to show
+     * before they send again.
      */
     private function pricesChanged(PricesChanged $changed): JsonResponse
     {
         return response()->json([
             'message' => __('Some prices changed since you opened the menu (an offer may have ended). Check your cart, then send it again.'),
             'prices' => (object) $changed->prices,
+            'deals' => (object) $changed->deals,
         ], 409);
     }
 

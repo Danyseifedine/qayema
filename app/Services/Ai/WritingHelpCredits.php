@@ -69,7 +69,7 @@ class WritingHelpCredits
     {
         $month = WritingHelpDay::query()
             ->where('restaurant_id', $restaurant->id)
-            ->whereDate('day', '>=', now($restaurant->localTimezone())->startOfMonth()->toDateString())
+            ->where('day', '>=', now($restaurant->localTimezone())->startOfMonth()->toDateString())
             ->selectRaw('COALESCE(SUM(credits), 0) AS credits, COALESCE(SUM(cost), 0) AS cost')
             ->first();
 

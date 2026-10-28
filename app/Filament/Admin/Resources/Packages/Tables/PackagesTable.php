@@ -11,6 +11,7 @@ use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Table;
 
 class PackagesTable
@@ -29,10 +30,14 @@ class PackagesTable
                 TextColumn::make('price_cents')
                     ->label('Price')
                     ->badge()
-                    ->color(fn (int $state): string => $state === 0 ? 'gray' : 'success')
-                    ->formatStateUsing(fn (int $state): string => $state === 0 ? 'Free' : number_format($state / 100, 2))
-                    // A null price is never formatted: Filament shows the placeholder instead.
-                    ->placeholder('Contact us')
+                    ->color(fn (Package $record): string => $record->price_cents > 0 ? 'success' : 'gray')
+                    // No price is "Contact us", a badge like the others rather
+                    // than the faint placeholder text.
+                    ->state(fn (Package $record): string => match (true) {
+                        $record->price_cents === null => 'Contact us',
+                        $record->price_cents === 0 => 'Free',
+                        default => number_format($record->price_cents / 100, 2),
+                    })
                     ->sortable(),
                 ToggleColumn::make('is_active')
                     ->label('Active')
@@ -59,6 +64,9 @@ class PackagesTable
                     ->visible(fn (Package $record): bool => PackageResource::canDelete($record))
                     ->modalDescription(fn (Package $record): string => PackageResource::deleteWarning($record)),
             ])
+            // A column per feature makes the table far wider than the screen:
+            // the actions go first, where they are always in view.
+            ->recordActionsPosition(RecordActionsPosition::BeforeColumns)
             ->defaultSort('sort_order');
     }
 
@@ -77,13 +85,15 @@ class PackagesTable
                 $columns[] = IconColumn::make("feature_{$feature->value}")
                     ->label($feature->label())
                     ->boolean()
-                    ->getStateUsing(fn (Package $record): bool => ($record->featureValue($feature) ?? 1) > 0);
+                    ->getStateUsing(fn (Package $record): bool => ($record->featureValue($feature) ?? 1) > 0)
+                    ->toggleable();
 
                 continue;
             }
 
             $columns[] = TextColumn::make("feature_{$feature->value}")
                 ->label($feature->label())
+                ->toggleable()
                 // The admin sees the number that holds, and when owners are
                 // shown "Unlimited" instead.
                 ->getStateUsing(fn (Package $record): string => match (true) {

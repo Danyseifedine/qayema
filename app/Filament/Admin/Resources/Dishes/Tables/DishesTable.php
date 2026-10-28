@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\Dishes\Tables;
 
 use App\Models\Dish;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -28,28 +29,30 @@ class DishesTable
                     ->label('Image')
                     ->circular()
                     ->limit(3)
-                    ->placeholder('N/A')
+                    ->placeholder('-')
                     ->toggleable(),
                 TextColumn::make('name')
-                    ->placeholder('N/A')
+                    ->placeholder('-')
                     ->searchable()
                     ->sortable()
-                    ->weight('bold'),
+                    ->weight('bold')
+                    ->wrap()
+                    ->width('14rem'),
                 TextColumn::make('restaurant.name')
                     ->label('Restaurant')
-                    ->placeholder('N/A')
+                    ->placeholder('-')
                     ->searchable()
                     ->sortable()
                     // The restaurant's own page lists only its rows.
                     ->hidden(fn (mixed $livewire): bool => $livewire instanceof RelationManager),
                 TextColumn::make('category.name')
                     ->label('Category')
-                    ->placeholder('N/A')
+                    ->placeholder('-')
                     ->searchable()
                     ->sortable()
                     ->toggleable(),
                 TextColumn::make('price')
-                    ->placeholder('N/A')
+                    ->placeholder('-')
                     // In the dish's own currency: the second one, or its restaurant's main one.
                     ->money(fn (Dish $record): string => $record->currency ?? $record->restaurant->currency)
                     ->sortable()
@@ -68,11 +71,11 @@ class DishesTable
                     ->label('Available'),
                 TextColumn::make('display_order')
                     ->label('Order')
-                    ->placeholder('N/A')
+                    ->placeholder('-')
                     ->sortable()
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')
-                    ->placeholder('N/A')
+                    ->placeholder('-')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -98,10 +101,13 @@ class DishesTable
                     ->options([1 => 'Available', 0 => 'Unavailable']),
             ])
             ->recordActions([
-                ViewAction::make(),
                 EditAction::make(),
-                DeleteAction::make()
-                    ->modalDescription('The dish and its photo are deleted for good.'),
+                // The rarer ones behind "more", so a row fits the screen.
+                ActionGroup::make([
+                    ViewAction::make(),
+                    DeleteAction::make()
+                        ->modalDescription('The dish and its photo are deleted for good.'),
+                ]),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

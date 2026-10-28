@@ -17,7 +17,8 @@ admin sees them under Menu content → Offers and on each restaurant's page.
   is optional (kept as the picture's alt text), a picture is required
   (`StoreOfferRequest`; `UpdateOfferRequest` counts the one it keeps), and
   the picture fills the card in each place's shape, the card itself the
-  tap (`.offer-picture-only`, `.offer-cover`).
+  tap (`.offer-picture-only`, `.offer-cover`). Words without a picture
+  sit on the menu's colour with a large faint mark (`.offer-mark`).
 - **Where it shows** (`placements`, `App\Enums\OfferPlacement`, one or
   more of the three; there is no Offers section any more, migration
   `drop_the_offers_section`):
@@ -49,7 +50,9 @@ admin sees them under Menu content → Offers and on each restaurant's page.
   proportions than `Offer::CROPS_UP_TO` (1.35x; a picture alone
   `PICTURE_ALONE_CROPS_UP_TO`, 1.05x, so its words are never cut) shows
   whole on that blurred copy (`.offer-fit-whole`,
-  `Offer::showsPictureWhole()`) instead of cropped. An upload from before
+  `Offer::showsPictureWhole()`) instead of cropped. Shown whole, the card carries
+  the picture's proportions (`--picture`, `Offer::pictureRatio()`), and a
+  wide screen's banner strip draws it at them, the strip's height. An upload from before
   sizes were kept carries `data-fit="auto"` and `menu-offers.js` judges it
   once loaded. **Twins:** `fitPicture()` in `menu-offers.js` and the
   dashboard's `picture-fit.ts` (its previews and step 2's notes, plus a
@@ -61,18 +64,44 @@ admin sees them under Menu content → Offers and on each restaurant's page.
   together.
 - **A tap** (`action`): nothing, `dishes` (the menu shows only the
   offer's dishes under an "Offers" tab, added beside "All" in the
-  category bar, `menu-nav.js` `QAYEMA_NAV.showOffer()`; "All" or any
-  category takes the tab away) or `link`
+  category bar, `menu-nav.js` `QAYEMA_NAV.showOffer()`, the build cards
+  above the search kept to the offer's own too; "All" or any category
+  takes the tab away) or `link`
   (`action_url`, https only, a new tab).
-- **Discount** (`discount_type` none, percent 1 to 90, or amount; and
-  `discount_value`): off each linked dish's own price while live.
-  Variants and add-ons keep their prices. Two offers on one dish: the
-  guest gets the lower price. `App\Enums\OfferDiscount::apply()` works in
-  whole cents, half up, never below nothing. **No dish is ever free:** an
-  amount must be below the cheapest chosen dish's own price
-  (`StoreOfferRequest`, dishes priced only by choices left out), and one
-  that a price cut later makes take the whole price does not apply to
-  that dish (`LiveOffers::bestAmong()`, `deals()` in `menu-offers.js`,
+- **Discount** (`discount_type` none, percent 1 to 90, amount, or
+  `second` 1 to 100; and `discount_value`), while live:
+  - **percent / amount** (a straight discount): off each linked dish's
+    own price **with the variants picked and what was built** (a Large, a
+    pizza's halves; `base`), add-ons added after at their own prices. Two
+    offers on one dish: the guest gets the lower price, compared on the
+    dish's reference price (`LiveOffers::referencePrice()`: its own price,
+    none 0, plus the cheapest option of each variant a guest must pick,
+    while variants show, plus the least its builds add,
+    `MenuDishOptions::buildsFloor()`, while builds show; on the menu the
+    dish's "from" price, `lowest`), so a dish priced only by its sizes, or
+    a Build your own dish, is discounted too. A build's dish above the
+    search carries the same card attributes and badge (`menu.partials.builds`).
+  - **second** (a pair deal, `OfferDiscount::isPair()`): "the second at
+    50% off" (100 is free). Any dishes of the offer pair up, counted one
+    by one in the order the cart sent them (the order the guest added
+    them; a line's extra dishes right after it): every second one (2nd,
+    4th...) takes the share off its base (builds included), add-ons
+    still charged. `OrderPlacer::paired()` splits such a line into its full
+    dishes, then the cheaper ones as a line of their own with
+    `offer_id`, `offer_title` and `full_price`; the guest's cart comes
+    back as one line (`PublicOrderTrackingController::cart()`). The cart
+    says "1 at 50% off" on the line and strikes out what it would cost
+    without the offer; the tracking sheet names the offer under a
+    discounted line, with its price before, struck out. A dish on
+    a live straight discount is never counted in a pair; a dish on two
+    pair deals counts in the first in the owner's order
+    (`LiveOffers::pairsAmong()`). `App\Enums\OfferDiscount::apply()` works in
+  whole cents, half up, never below nothing. **No dish is ever free on a
+  straight discount** (a pair deal's second dish may be): an amount must
+  be below the cheapest chosen dish's reference price (`StoreOfferRequest`;
+  a dish priced only by its sizes counts at its smallest), and one that
+  a price cut later makes take the whole price does not apply to that
+  dish or line (`LiveOffers::bestAmong()`, `deals()` in `menu-offers.js`,
   `discountedCents()` in the dashboard).
 - `is_active` pauses it; `display_order` is the owner's order (drag,
   `DisplayOrder::apply`). At most `Offer::MAX_PER_RESTAURANT` (30).
@@ -86,7 +115,7 @@ admin sees them under Menu content → Offers and on each restaurant's page.
   package." on `repeat` for any dates, repeat or hours; "Discounts are not
   on your package." on `discount_type`) and set aside on the menu and in
   orders by `OfferRules::applyTo()` (from `LiveOffers::forMenu()` and
-  `bestFor()`), never written back: an offer with a schedule
+  `dealsFor()`), never written back: an offer with a schedule
   (`Offer::hasSchedule()`) stays off the menu, one whose every place is
   off the package too (`keepsOff()`), the rest show only in their places
   on the package (`showOnlyIn()`) and without a discount the package lacks
@@ -194,6 +223,19 @@ written by `App\Services\Offers\DealDish` in the offer's transaction.
 
 ## The schedule
 
+**Shown versus live:** an offer's deal (its prices, pair deal and deal
+dish) works only while it is live. With `shows_outside_hours` (stored true
+only when the schedule has a repeat or hours, `OfferController::fill()`)
+its banner, pop-up and ad still show all day inside its dates
+(`Offer::isShownAt()`, twinned by `menu-offers.js`); a tap outside its
+hours runs no action but shows a toast ("Not available right now",
+"Available Wednesday and Friday, 5:00 PM to 7:00 PM.",
+`OfferSchedule::describe()`, day names and times in the menu's language
+through Carbon, a list separator per language and the last of each list
+after its "and", `:items and :last`); a tap in a pop-up closes it first,
+so its backdrop does not cover the toast. `OfferResource` sends `shows_outside_hours`;
+its `status` and `next_start` stay the deal's.
+
 `App\Services\Offers\OfferSchedule`, in `restaurants.timezone`. Live
 means switched on AND inside `[starts_at, ends_at)` (UTC; either may be
 open) AND today matches `repeat` (`always`, `weekly` with `weekdays`
@@ -208,11 +250,14 @@ The dashboard sends and receives dates as the restaurant's local
 "2026-11-01T18:00" (`StoreOfferRequest::LOCAL_FORMAT`); an end date with
 no time is the next midnight, shown back as "until" that day.
 
-**Twins, change all three together:** `OfferSchedule` (server, prices),
+**Twins, change all three together:** `OfferSchedule` (server, prices;
+`isShownAt()` too),
 `public/js/menu-offers.js` (the guest's phone) and the dashboard's
 `offer-schedule.ts` (the sentence and status); `OfferDiscount::apply()`
 and `discountedCents()` in the dashboard and `discounted()` in
-`menu-offers.js`.
+`menu-offers.js`; a line's price (the base, the never-free check, the
+pairs in the order sent, each split part counted in the main currency on
+its own) in `OrderPlacer` and `menu-cart.js`.
 
 ## On the menu
 
@@ -223,10 +268,27 @@ and `offers-overlay` (through
 `menu.partials.scripts`: the dialogs, the ad, the bar, `QAYEMA_OFFERS`
 and `menu-offers.js`). Cards live when the page was drawn are shown,
 others carry `hidden`; the phone judges again on load and every minute.
-A dish on a live discount is drawn at its offer price (`data-price`,
-which the cart charges, `data-full-price`, `data-extra` for its
-cheapest choice, the old price struck through and a badge), computed
-from the offers in hand (`LiveOffers::bestAmong()`, no query). Each
+A dish card carries `data-price` and `data-full-price` (its own full
+price, "0.00" for one priced by its choices), `data-base-extra` (its
+cheapest variants and builds, the discounted part of its "from" price) and
+`data-extra` (the rest); on a live straight discount
+`data-deal-type`, `data-deal-value` and `data-deal-by` (the offer;
+`data-deal-offer` is a deal dish's own offer), and on a pair deal
+`data-pair-offer` and `data-pair-value`. The card shows the discounted
+base plus the extra with the full price struck through and a badge after
+them, "-20%" (a pair deal a badge only, "Buy 2, 2nd 50% off" or "Buy 2,
+2nd free"); the badge sits beside the price, never over the photo, and on
+a build's card above its name, from the offers in hand
+(`LiveOffers::bestAmong()`, `pairsAmong()`, no query); the dish's sheet
+shows the same for the choices picked (its price, the price before struck
+out, a copy of the card's badge; `menu-dish.js`); the cart prices
+each line from those (`menu-cart.js`). An amount never splits from its sign
+("L.L 1,250,000"): too long for the room beside the add button or stepper,
+the button moves under the price; in the cart the price before sits above
+the price now; on a wide screen the cards go one a row when two would be
+narrower than 340px (`menu-classic.css`,
+`e2e/specs/public/offer-prices-layout.spec.ts`). Banner cards are drawn visible
+when shown (`offers_shown`). Each
 offer keeps only its dishes on the page (a hidden one is not): with none
 left, no "See the dishes". The offer's own card (banner, pop-up, ad)
 never shows the discount; the dishes it takes off show it. When a price changes on the phone,
@@ -244,16 +306,19 @@ not started, and opens its pop-up or ad at once; it is in
 
 ## Orders
 
-`OrderPlacer` asks `LiveOffers::bestFor()` per cart, on the server's
-clock: a dish on a live discount is charged its offer price, and the
-line keeps `offer_id`, `offer_title` (in the line's language) and
-`full_price` (its unit price before the discount, choices included).
+`OrderPlacer` asks `LiveOffers::dealsFor()` per cart (one query), on the
+server's clock: a dish on a live straight discount is charged its offer
+price, a pair deal's second dishes their own line, and the line keeps
+`offer_id`, `offer_title` (in the line's language) and `full_price` (its
+unit price before the discount, choices included).
 The order card on the dashboard says "Grill week, was $25.00". The
 server's price always wins, and the guest is never charged more than
 they saw: the cart sends `seen_total`, and a cart that costs more (an
 offer ended while it sat there, a price went up, the phone's clock is
 wrong) is not placed. `OrderPlacer` throws `PricesChanged`, the guest gets
-a 409 with each dish's own price now (`prices`), `menu-offers.js` keeps
+a 409 with each dish's own price now (`prices`) and the deal the server
+gives it (`deals`: `{offer, type, value}` or null, every dish of the
+cart), `menu-offers.js` keeps
 those over its own sums (`qayema:server-prices`) and the guest sends
 again. A cheaper cart goes through.
 

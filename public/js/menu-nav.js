@@ -11,6 +11,7 @@
     var pill = document.querySelector('.tab-pill');
     var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
     var sections = Array.prototype.slice.call(document.querySelectorAll('.category'));
+    var builds = document.querySelector('.builds');
     var inputs = Array.prototype.slice.call(document.querySelectorAll('[data-menu-search]'));
     var noResults = document.getElementById('menu-no-results');
 
@@ -22,6 +23,34 @@
 
     /** The search term, lowercased. The two filters compose. */
     var term = '';
+
+    /** The term as fold() writes it, which is what is matched. */
+    var folded = '';
+
+    /** Each dish's searchable text, folded once. */
+    var searchable = new WeakMap();
+
+    /**
+     * Text as a search compares it: lowercased, without accents ("creme"
+     * finds "Crème"), and in Arabic without the short vowels and tatweel,
+     * every alef as a bare alef, ة as ه and ى as ي, so "كنافه" finds
+     * "كنافة" and "ارز" finds "أرز", the way guests type on a phone.
+     */
+    function fold(text) {
+        return text.toLowerCase().normalize('NFD')
+            .replace(/[\u0300-\u036f\u0610-\u061a\u064b-\u065f\u0670\u06d6-\u06ed\u0640]/g, '')
+            .replace(/\u0671/g, '\u0627')
+            .replace(/\u0629/g, '\u0647')
+            .replace(/\u0649/g, '\u064a');
+    }
+
+    function searchTextOf(dish) {
+        if (!searchable.has(dish)) {
+            searchable.set(dish, fold(dish.dataset.search || ''));
+        }
+
+        return searchable.get(dish);
+    }
 
     /** The dishes of the offer whose tab is open (QAYEMA_NAV.showOffer). */
     var offerDishes = [];
@@ -45,7 +74,7 @@
                     ? offerDishes.indexOf(parseInt(dish.dataset.dish, 10)) !== -1
                     : inCategory;
                 // An offer's deal dish while the offer is not live (menu-offers.js) never shows.
-                var match = !dish.hasAttribute('data-deal-off') && picked && (term === '' || (dish.dataset.search || '').indexOf(term) !== -1);
+                var match = !dish.hasAttribute('data-deal-off') && picked && (folded === '' || searchTextOf(dish).indexOf(folded) !== -1);
                 dish.hidden = !match;
                 if (match) {
                     shown++;
@@ -55,6 +84,21 @@
             section.hidden = shown === 0;
             anyShown = anyShown || shown > 0;
         });
+
+        // The dishes guests build sit above the tabs: under an offer's tab
+        // only the offer's own stay, and they count as something shown.
+        if (builds) {
+            var built = 0;
+            Array.prototype.forEach.call(builds.querySelectorAll('.dish'), function (dish) {
+                var match = active !== 'offer' || offerDishes.indexOf(parseInt(dish.dataset.dish, 10)) !== -1;
+                dish.hidden = !match;
+                if (match) {
+                    built++;
+                }
+            });
+            builds.hidden = built === 0;
+            anyShown = anyShown || (active === 'offer' && built > 0);
+        }
 
         if (noResults) {
             noResults.style.display = anyShown ? 'none' : 'block';
@@ -185,7 +229,10 @@
             tab.className = 'tab tab-offer';
             tab.dataset.tab = 'offer';
             tab.setAttribute('aria-current', 'false');
-            tab.textContent = label;
+            var name = document.createElement('span');
+            name.className = 'tab-name';
+            name.textContent = label;
+            tab.appendChild(name);
             tab.addEventListener('click', function () {
                 select(tab);
             });
@@ -198,7 +245,7 @@
             select(tab);
 
             // Its dishes in sight, whatever the guest was looking at.
-            var first = sections.filter(function (section) {
+            var first = (builds && !builds.hidden ? [builds] : []).concat(sections).filter(function (section) {
                 return !section.hidden;
             })[0];
             if (first) {
@@ -483,6 +530,7 @@
     inputs.forEach(function (input) {
         input.addEventListener('input', function () {
             term = input.value.trim().toLowerCase();
+            folded = fold(term);
 
             inputs.forEach(function (other) {
                 if (other !== input) {

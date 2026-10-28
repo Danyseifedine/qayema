@@ -268,13 +268,13 @@ class DineInOrderTest extends TestCase
             ->assertJsonPath('data.channel', 'whatsapp');
 
         $text = rawurldecode((string) parse_url((string) $response->json('data.whatsapp_url'), PHP_URL_QUERY));
-        // The guest read Arabic; the owner wrote the menu in English.
-        $this->assertStringStartsWith("text=*New order · Olive*\n*Table 4*\n\n*1 × Kebab*   \$6\n", $text);
+        // The guest read Arabic, so the staff get it in Arabic, the table as the owner named it.
+        $this->assertStringStartsWith("text=*طلب جديد · زيتون*\n*الطاولة: Table 4*\n\n*1 كباب*   \$6\n", $text);
 
         $order = Order::query()->sole();
         $this->assertSame(OrderChannel::WhatsApp, $order->channel);
         $this->assertSame('Table 4', $order->table_name);
-        $this->assertSame('Kebab', $order->items->sole()->name);
+        $this->assertSame('كباب', $order->items->sole()->name);
         // Not listed on the dashboard's Table orders page.
         $this->assertSame(0, $this->shop->orders()->inMenu()->count());
     }

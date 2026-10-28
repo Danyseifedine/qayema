@@ -8,6 +8,7 @@ use App\Models\DishVariant;
 use App\Models\DishVariantOption;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Writes a dish's variants and add-ons from the dish form: the list as sent
@@ -38,7 +39,7 @@ class DishOptionsSync
                 $kept[] = $variant->id;
             }
 
-            $dish->variants()->whereNotIn('id', $kept)->delete();
+            $this->deleteLeftOut($dish->variants(), $saved, $kept);
         }
 
         if ($addons !== null) {
@@ -52,7 +53,7 @@ class DishOptionsSync
                 $kept[] = $addon->id;
             }
 
-            $dish->addons()->whereNotIn('id', $kept)->delete();
+            $this->deleteLeftOut($dish->addons(), $saved, $kept);
         }
 
         $dish->unsetRelation('variants')->unsetRelation('addons');
@@ -75,7 +76,24 @@ class DishOptionsSync
             $kept[] = $option->id;
         }
 
-        $variant->options()->whereNotIn('id', $kept)->delete();
+        $this->deleteLeftOut($variant->options(), $saved, $kept);
+    }
+
+    /**
+     * Deletes the saved rows the input left out, in one statement, and asks
+     * nothing when every one was kept (the usual save).
+     *
+     * @param  HasMany<covariant Model, covariant Model>  $relation
+     * @param  Collection<int, covariant Model>  $saved
+     * @param  array<int, int>  $kept
+     */
+    private function deleteLeftOut(HasMany $relation, Collection $saved, array $kept): void
+    {
+        $gone = array_values(array_diff($saved->pluck('id')->all(), $kept));
+
+        if ($gone !== []) {
+            $relation->whereKey($gone)->delete();
+        }
     }
 
     /**

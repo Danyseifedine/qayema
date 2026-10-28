@@ -6,6 +6,7 @@ use App\Enums\Feature;
 use App\Models\Category;
 use App\Models\Dish;
 use App\Models\DishAddon;
+use App\Models\DishBuild;
 use App\Models\DishVariant;
 use App\Models\DishVariantOption;
 use App\Models\Offer;
@@ -219,6 +220,33 @@ class MenuSpeedTest extends TestCase
         $this->app->forgetScopedInstances();
 
         $this->assertSame($small, $this->queriesForTheMenu(), 'A query per deal dish or offer crept in.');
+    }
+
+    public function test_dishes_guests_build_are_read_with_the_rest(): void
+    {
+        $this->defaultPackageIncludes(Feature::BuildYourOwn, Feature::Variants, Feature::Addons);
+        $addBuilds = function (int $count): void {
+            foreach (range(1, $count) as $ignored) {
+                $category = Category::factory()->create(['restaurant_id' => $this->shop->id]);
+                Dish::factory()->count(2)->create(['restaurant_id' => $this->shop->id, 'category_id' => $category->id, 'price' => 5]);
+                // One in no category, one still filed under a category.
+                foreach ([null, $category->id] as $filed) {
+                    $pizza = Dish::factory()->create(['restaurant_id' => $this->shop->id, 'category_id' => $filed, 'price' => null]);
+                    DishBuild::factory()->for($pizza)->create(['category_id' => $category->id]);
+                }
+            }
+        };
+        $addBuilds(1);
+        $this->menu();
+        $this->app->forgetScopedInstances();
+        $small = $this->queriesForTheMenu();
+
+        $addBuilds(4);
+        $this->app->forgetScopedInstances();
+
+        $this->assertSame($small, $this->queriesForTheMenu(), 'A query per dish guests build crept in.');
+        // The menu's dishes and the builds' are one read: 12 in October 2026.
+        $this->assertLessThanOrEqual(12, $small);
     }
 
     public function test_the_package_is_read_once_per_view(): void

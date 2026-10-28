@@ -20,13 +20,13 @@ class BlockedIpsTable
             ->columns([
                 TextColumn::make('ip')
                     ->label('IP Address')
-                    ->placeholder('N/A')
+                    ->placeholder('-')
                     ->searchable()
                     ->sortable()
                     ->copyable()
                     ->weight('bold'),
                 TextColumn::make('reason')
-                    ->placeholder('N/A')
+                    ->placeholder('-')
                     ->searchable()
                     ->wrap()
                     ->toggleable(),
@@ -37,7 +37,7 @@ class BlockedIpsTable
                     ->sortable(),
                 TextColumn::make('created_at')
                     ->label('Blocked At')
-                    ->placeholder('N/A')
+                    ->placeholder('-')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

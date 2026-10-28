@@ -4,6 +4,9 @@ namespace App\Services\Offers;
 
 use App\Enums\Feature;
 use App\Enums\OfferDiscount;
+use App\Models\Dish;
+use App\Models\DishVariant;
+use App\Models\DishVariantOption;
 use App\Models\Offer;
 use App\Models\Restaurant;
 use Carbon\CarbonImmutable;
@@ -69,21 +72,22 @@ class LiveOffers
     }
 
     /**
-     * For each of these dishes on a live discount at `$at`, the offer that
-     * leaves it cheapest: when two offers cover a dish, the guest gets the
-     * better one. One query whatever the cart holds.
+     * The deals on these dishes at `$at`, from one query whatever the cart
+     * holds: the best straight discount per dish (bestAmong(): when two
+     * offers cover a dish, the guest gets the better one) and the pair deal
+     * per dish (pairsAmong()).
      *
      * @param  array<int, int>  $dishIds
-     * @param  array<int, string>  $prices  dish id => its own price ("12.50"), to compare the offers on
+     * @param  array<int, string>  $prices  dish id => its reference price ("12.50", referencePrice()), to compare the offers on
      * @param  array<int, string>  $rates  dish id => its rate, for a dish priced in the second currency
-     * @return array<int, Offer> dish id => offer
+     * @return array{0: array<int, Offer>, 1: array<int, Offer>} straight deals, pair deals, by dish id
      */
-    public function bestFor(Restaurant $restaurant, array $dishIds, array $prices, CarbonImmutable $at, array $rates = []): array
+    public function dealsFor(Restaurant $restaurant, array $dishIds, array $prices, CarbonImmutable $at, array $rates = []): array
     {
         $rules = OfferRules::for($restaurant);
 
         if ($dishIds === [] || ! $restaurant->entitlements()->can(Feature::Offers) || ! $rules->allowsDiscounts()) {
-            return [];
+            return [[], []];
         }
 
         $offers = $rules->applyTo($restaurant->offers()
@@ -94,16 +98,18 @@ class LiveOffers
             ->whereHas('dishes', fn (Builder $dishes) => $dishes->whereIn('dishes.id', $dishIds))
             ->with(['dishes' => fn ($dishes) => $dishes->select('dishes.id')->whereIn('dishes.id', $dishIds)])
             ->get());
+        $timezone = $restaurant->localTimezone();
 
-        return $this->bestAmong($offers, $prices, $at, $restaurant->localTimezone(), $rates);
+        return [$this->bestAmong($offers, $prices, $at, $timezone, $rates), $this->pairsAmong($offers, $at, $timezone)];
     }
 
     /**
      * The same choice among offers already in hand (the menu page's), so
-     * drawing the discounted prices costs no query.
+     * drawing the discounted prices costs no query. Straight discounts only:
+     * a pair deal makes no single dish cheaper.
      *
      * @param  iterable<Offer>  $offers  each with its `dishes` loaded
-     * @param  array<int, string>  $prices  dish id => its own price
+     * @param  array<int, string>  $prices  dish id => its reference price
      * @param  array<int, string>  $rates  dish id => its rate, for a dish priced in the second currency
      * @return array<int, Offer> dish id => offer
      */
@@ -112,7 +118,7 @@ class LiveOffers
         $best = [];
 
         foreach ($offers as $offer) {
-            if (! $offer->hasDiscount() || ! $offer->isLiveAt($at, $timezone)) {
+            if (! $offer->hasStraightDiscount() || ! $offer->isLiveAt($at, $timezone)) {
                 continue;
             }
 
@@ -135,5 +141,58 @@ class LiveOffers
         }
 
         return $best;
+    }
+
+    /**
+     * Each dish on a live pair deal at `$at` ("the second at 50% off"), the
+     * first such offer in the owner's order when two name it. Whether a
+     * dish on a straight discount takes it is the caller's to decide (the
+     * straight one wins).
+     *
+     * @param  iterable<Offer>  $offers  each with its `dishes` loaded, in the owner's order
+     * @return array<int, Offer> dish id => offer
+     */
+    public function pairsAmong(iterable $offers, CarbonImmutable $at, string $timezone): array
+    {
+        $pairs = [];
+
+        foreach ($offers as $offer) {
+            if (! $offer->hasPairDeal() || ! $offer->isLiveAt($at, $timezone)) {
+                continue;
+            }
+
+            foreach ($offer->dishes as $dish) {
+                $pairs[$dish->id] ??= $offer;
+            }
+        }
+
+        return $pairs;
+    }
+
+    /**
+     * What a dish costs at least before add-ons, to compare discounts on:
+     * its own price (none: 0), while variants show the cheapest option of
+     * each variant a guest must pick (two options or more), and the least
+     * its builds add (`$builds`, MenuDishOptions::buildsFloor(), while builds
+     * show). Null when none of them prices it. Needs `variants.options`
+     * loaded when they show.
+     */
+    public static function referencePrice(Dish $dish, bool $variantsOn, string $builds = '0.00'): ?string
+    {
+        $price = $dish->price === null ? null : (string) $dish->price;
+        $cheapest = $variantsOn
+            ? $dish->variants
+                ->filter(fn (DishVariant $variant): bool => $variant->options->count() >= 2)
+                ->map(fn (DishVariant $variant): string => (string) $variant->options->min(fn (DishVariantOption $option): float => (float) $option->price))
+            : collect();
+        $built = bccomp($builds, '0', 2) > 0;
+
+        if ($price === null && $cheapest->isEmpty() && ! $built) {
+            return null;
+        }
+
+        $sum = $cheapest->reduce(fn (string $sum, string $option): string => bcadd($sum, number_format((float) $option, 2, '.', ''), 2), $price ?? '0.00');
+
+        return $built ? bcadd($sum, $builds, 2) : $sum;
     }
 }

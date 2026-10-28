@@ -157,13 +157,15 @@ a.fact:hover { color: var(--text); }
 .tabs { position: sticky; top: var(--bar); z-index: 10; margin-top: 8px; background: var(--page); border-bottom: 1px solid var(--line); padding: 8px 0; }
 .tabs-inner { position: relative; display: flex; gap: 4px; overflow-x: auto; padding: 0 16px; scrollbar-width: none; }
 .tabs-inner::-webkit-scrollbar { display: none; }
-.tab { position: relative; z-index: 1; flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px; padding: 8px 14px; border-radius: 8px; border: 0; background: transparent; color: var(--text); font-size: 13.5px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: color .32s cubic-bezier(.2,.9,.3,1); }
+.tab { position: relative; z-index: 1; flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px; min-height: 36px; padding: 8px 14px; border-radius: 8px; border: 0; background: transparent; color: var(--text); font-size: 13.5px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: color .32s cubic-bezier(.2,.9,.3,1); }
 .tab[aria-current="true"] { color: var(--accent-ink); font-weight: 600; }
 /* A category's icon (App\Support\CategoryIcons) before its tab's name,
    centred on the letters whatever the design's font: the name's box is
    trimmed to its capitals and baseline (text-box), not the line box with its
    room for descenders, which would leave the icon sitting low. The name
-   then sits a pixel lower, which reads better beside the icon. */
+   then sits a pixel lower, which reads better beside the icon. Every tab's
+   name is trimmed alike, so a tab with no icon lines up with those beside
+   it, and the tab keeps the height of a line of text. */
 .tab-icon { display: inline-flex; line-height: 0; }
 .tab-icon svg { display: block; width: 18px; height: 18px; }
 .tab-name { text-box: trim-both cap alphabetic; transform: translateY(1px); }
@@ -199,8 +201,12 @@ a.fact:hover { color: var(--text); }
 .ingredients, .dish-sheet-head h2, .cart-line-name, .cart-line-choices,
 .track-line-name { overflow-wrap: anywhere; }
 .ingredients { margin: 2px 0 0; font-size: 11.5px; color: var(--muted); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.dish-foot { margin-top: auto; padding-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.price { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.dish-foot { margin-top: auto; padding-top: 8px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+/* The button keeps the end of the row; only a price wider than the room
+   beside it ("L.L 12,500,000" by a stepper) sends it under the price. */
+.dish-foot > .dish-action, .dish-foot > .dish-more { margin-inline-start: auto; }
+/* An amount never splits from its sign ("L.L 1,250,000"). */
+.price { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* The dishes guests build, above the search: a heading, then cards in the
    menu's accent, each with its icon large, faint and turned in a corner,
@@ -210,17 +216,23 @@ a.fact:hover { color: var(--text); }
 .builds-title { margin: 0 0 10px; padding: 0 16px; font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
 .builds-row { display: flex; gap: 10px; padding: 0 16px 4px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-padding-inline: 16px; scrollbar-width: none; }
 .builds-row::-webkit-scrollbar { display: none; }
-.dish.dish-build { position: relative; overflow: hidden; isolation: isolate; flex: 0 0 auto; width: 158px; min-height: 132px; flex-direction: column; align-items: flex-start; gap: 0; padding: 14px; border: 0; border-radius: 18px; background: var(--accent); color: var(--accent-ink); box-shadow: 0 8px 20px -10px color-mix(in srgb, var(--accent) 80%, transparent); scroll-snap-align: start; }
+.dish.dish-build { position: relative; overflow: hidden; isolation: isolate; flex: 0 0 auto; width: max-content; min-width: 158px; max-width: 220px; min-height: 132px; flex-direction: column; align-items: flex-start; gap: 0; padding: 14px; border: 0; border-radius: 18px; background: var(--accent); color: var(--accent-ink); box-shadow: 0 8px 20px -10px color-mix(in srgb, var(--accent) 80%, transparent); scroll-snap-align: start; }
 .dish-build-mark { position: absolute; z-index: -1; inset-inline-end: -18px; top: -14px; width: 92px; height: 92px; opacity: .16; transform: rotate(-14deg); }
 .dish-build-mark svg { display: block; width: 100%; height: 100%; stroke-width: 1.6; }
 .dish-build .dish-name { margin: auto 0 10px; padding-top: 34px; font-size: 16px; font-weight: 700; line-height: 1.25; }
-.dish-build-go { display: inline-flex; align-items: center; gap: 2px; padding: 7px 10px 7px 13px; border: 0; border-radius: 999px; background: var(--bg); color: var(--text); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+/* An offer on a build's dish: its badge above the name, light on the accent. */
+.dish-build .dish-badge { align-self: flex-start; margin-bottom: 8px; background: var(--bg); color: var(--text); box-shadow: none; }
+.dish-build:has(.dish-badge) .dish-name { padding-top: 6px; }
+/* One line whatever the language: a longer word is cut short, never wrapped. */
+.dish-build-go { display: inline-flex; align-items: center; gap: 2px; max-width: 100%; padding-block: 7px; padding-inline: 13px 10px; border: 0; border-radius: 999px; background: var(--bg); color: var(--text); font: inherit; font-size: 12.5px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.dish-build-go > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .dish-build-go .icon { display: inline-flex; width: 15px; height: 15px; }
 .dish-build-go .icon svg { width: 100%; height: 100%; }
-[dir="rtl"] .dish-build-go .icon svg { transform: scaleX(-1); }
+/* The chevron points the way the menu reads. */
+[dir="rtl"] .dish-build-go .icon { transform: scaleX(-1); }
 .dish-build-go:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
 /* One alone: a banner across the row, its icon large at the end. */
-.dish.dish-build:only-child { flex: 1 1 auto; width: auto; min-height: 0; padding: 18px 20px; }
+.dish.dish-build:only-child { flex: 1 1 auto; width: auto; max-width: none; min-height: 0; padding: 18px 20px; }
 .dish-build:only-child .dish-name { margin: 0 0 10px; padding-top: 0; padding-inline-end: 90px; font-size: 18px; }
 .dish-build:only-child .dish-build-mark { width: 130px; height: 130px; top: 50%; inset-inline-end: -10px; margin-top: -65px; opacity: .2; }
 @media (hover: hover) {
@@ -268,8 +280,14 @@ a.fact:hover { color: var(--text); }
 .cart-line-name { font-size: 14px; font-weight: 600; letter-spacing: -0.005em; line-height: 1.3; }
 .cart-line-choices { font-size: 12px; color: var(--text); opacity: .78; margin-top: 2px; line-height: 1.4; }
 .cart-line-each { font-size: 12px; color: var(--muted); margin-top: 2px; }
+/* The second of a pair on a "buy one, get the second" offer. */
+.cart-line-pair { display: inline-block; max-width: 100%; margin-top: 4px; padding: 1px 7px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-size: 11.5px; font-weight: 700; line-height: 1.5; overflow-wrap: anywhere; }
 .cart-line-foot { margin-top: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.cart-line-total { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+/* The price before an offer and the price now each stay whole ("L.L
+   1,875,000" never splits from its sign); short of room, the old one sits
+   above the new. */
+.cart-line-total { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: baseline; column-gap: 6px; white-space: nowrap; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.cart-line-was { font-size: 12.5px; font-weight: 500; color: var(--muted); }
 .cart-summary { margin-top: 16px; padding: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; }
 .cart-total { display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: 700; }
 /* The rate a total turned the second currency's dishes into the main one at. */
@@ -326,7 +344,10 @@ a.fact:hover { color: var(--text); }
 .track-qty { color: var(--muted); font-variant-numeric: tabular-nums; }
 .track-line-name { flex: 1; min-width: 0; font-weight: 500; }
 .track-line-choices { display: block; font-size: 12.5px; font-weight: 400; color: var(--muted); }
-.track-line-total { font-variant-numeric: tabular-nums; }
+.track-line-total { font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* A line bought on an offer: its name and the price before it. */
+.track-line-offer { display: block; margin-top: 3px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.track-line-offer s { margin-inline-start: 4px; font-weight: 500; white-space: nowrap; }
 .track-total { display: flex; justify-content: space-between; margin: 8px 0 0; padding-top: 10px; border-top: 1px solid var(--line); font-size: 15px; font-weight: 700; }
 .track-total span:last-child { font-variant-numeric: tabular-nums; }
 .track-note { margin: 10px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--soft); font-size: 13px; color: var(--muted); }
@@ -407,6 +428,9 @@ textarea.cart-input { min-height: 62px; }
 .menu-toast.leaving { animation: toast-out .25s ease forwards; }
 .menu-toast-mark { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; background: #17803d; color: #fff; display: flex; align-items: center; justify-content: center; }
 .menu-toast-mark .icon { width: 16px; height: 16px; }
+/* An offer shown outside its hours, saying when it runs: a word, not a success. */
+.menu-toast-info { cursor: pointer; }
+.menu-toast-info .menu-toast-mark { background: var(--accent); color: var(--accent-ink); }
 .menu-toast-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding-top: 4px; font-size: 13px; line-height: 1.45; color: var(--muted); }
 .menu-toast-text strong { font-size: 14.5px; color: var(--text); }
 .menu-toast-link { align-self: flex-start; margin-top: 4px; font-size: 13px; font-weight: 700; color: var(--text); text-decoration: underline; text-underline-offset: 2px; }
@@ -478,13 +502,19 @@ dialog.dish-sheet.closing::backdrop { animation: fade-in .22s ease reverse forwa
 .dish-sheet-body { position: relative; display: flex; flex-direction: column; max-height: 92dvh; }
 .dish-sheet-close { position: absolute; top: 12px; inset-inline-end: 12px; z-index: 2; width: 36px; height: 36px; border: 0; border-radius: 999px; background: var(--bg); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,.2); cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .dish-sheet-close .icon { width: 18px; height: 18px; }
+.dish-sheet-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .dish-sheet-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 12px; }
 .dish-sheet-photo { display: block; width: 100%; height: auto; max-height: 60vh; object-fit: contain; }
 .dish-sheet-head { padding: 18px 18px 4px; }
 /* Without a photo, the title sits clear of the close button. */
 .dish-sheet-photo[hidden] + .dish-sheet-head { padding-top: 22px; padding-inline-end: 60px; }
 .dish-sheet-head h2 { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.25; }
-.dish-sheet-price { display: block; margin-top: 4px; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+/* Focused only so the sheet opens on it (a screen reader reads it first). */
+.dish-sheet-head h2:focus { outline: none; }
+.dish-sheet-prices { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin-top: 4px; }
+.dish-sheet-price { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dish-sheet-prices .price-was { font-size: 13px; }
+.dish-sheet-prices .dish-badge { align-self: center; }
 .dish-sheet-ingredients { margin: 8px 0 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
 
 .choice-group { --tag-inset: 9px; min-width: 0; margin: 0; padding: 16px 18px 4px; border: 0; }
@@ -505,6 +535,8 @@ dialog.dish-sheet.closing::backdrop { animation: fade-in .22s ease reverse forwa
 .choice-pill input, .choice-row input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .choice-pill:has(input:focus-visible), .choice-row:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 .choice-price { font-size: 12.5px; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+/* "+$1.50" and "$12.50" keep their signs in front in a right-to-left menu. */
+.choice-price, .build-pick-price, .cart-line-was, .track-line-offer s { unicode-bidi: plaintext; }
 .choice-rows { display: flex; flex-direction: column; }
 /* "Build your own": the pizza cut as the guest picked, centred, with a
    picker per part under it across the sheet. */
@@ -802,7 +834,10 @@ dialog.photo-pop { width: auto; max-width: min(960px, calc(100% - 32px)); }
 .offer-shape-square { --ratio: 1; }
 .offer-shape-tall { --ratio: .75; }
 .offer { position: relative; display: flex; overflow: hidden; aspect-ratio: var(--ratio); border-radius: 14px; background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 88%, #fff), color-mix(in srgb, var(--accent) 84%, #000)); color: var(--accent-ink); }
-.offer-photo-slot { position: absolute; inset: 0; display: block; overflow: hidden; }
+/* Clipped by a path too: the blurred copy is drawn on a layer of its own,
+   which overflow alone lets show a line of itself past a card of a
+   fractional height (a tall pop-up), under the darkened foot. */
+.offer-photo-slot { position: absolute; inset: 0; display: block; overflow: hidden; clip-path: inset(0); }
 .offer.offer-has-photo { color: #fff; }
 .offer.offer-has-photo:not(.offer-picture-only) .offer-photo-slot::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.12) 0%, rgba(0,0,0,.42) 45%, rgba(0,0,0,.85) 100%); }
 .offer .offer-body { position: relative; justify-content: flex-end; gap: 3px; padding: 14px; }
@@ -811,6 +846,16 @@ dialog.photo-pop { width: auto; max-width: min(960px, calc(100% - 32px)); }
 .offer-shape-rectangle .offer-text { -webkit-line-clamp: 1; }
 .offer .offer-go { padding: 6px 12px; font-size: 12.5px; background: #fff; color: #111; }
 .offer:not(.offer-has-photo) .offer-go { background: var(--accent-ink); color: var(--accent); }
+/* Words without a picture: a soft light in the far corner and a large faint
+   mark there, the way a build's card wears its icon. */
+.offer:not(.offer-has-photo) { background: radial-gradient(90% 120% at 100% 0%, rgba(255,255,255,.28), transparent 60%), linear-gradient(135deg, color-mix(in srgb, var(--accent) 88%, #fff), color-mix(in srgb, var(--accent) 80%, #000)); }
+[dir="rtl"] .offer:not(.offer-has-photo) { background: radial-gradient(90% 120% at 0% 0%, rgba(255,255,255,.28), transparent 60%), linear-gradient(225deg, color-mix(in srgb, var(--accent) 88%, #fff), color-mix(in srgb, var(--accent) 80%, #000)); }
+.offer-mark { position: absolute; top: 9%; inset-inline-end: 5%; height: 50%; aspect-ratio: 1; opacity: .2; transform: rotate(-10deg); pointer-events: none; }
+.offer-mark svg { display: block; width: 100%; height: 100%; stroke-width: 1.3; }
+/* A square or tall card has room above its words: the mark in the middle
+   of it, clear of a pop-up's X; an ad's keeps clear of its countdown. */
+.offer-shape-square .offer-mark, .offer-shape-tall .offer-mark { top: 12%; inset-inline: 0; height: 42%; margin-inline: auto; }
+.offer-ad .offer-mark { inset-inline-end: 16%; }
 
 /* A picture alone (its words drawn into it): the picture is the whole card
    and the card is the tap. */
@@ -857,16 +902,17 @@ dialog.offer-pop:has(.offer-shape-tall) { --ratio: .75; }
 .offer-ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
 .offer-ring circle { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 100.53; animation: offer-ring var(--offer-seconds, 6s) linear forwards; }
 
-/* A dish on a live discount: its offer price, the old one struck through. */
-.price-group { display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 0 6px; }
-.price-was { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.dish-badge { padding: 1px 6px; font-size: 10.5px; line-height: 1.5; }
-/* On the photo's corner, over it: no room taken from the name. */
-.dish-photo-slot .dish-badge { position: absolute; top: 4px; inset-inline-start: 4px; z-index: 1; box-shadow: 0 1px 4px rgba(0,0,0,.25); pointer-events: none; }
-/* Without a photo, beside the price. */
+/* A dish on a live discount: its offer price, the old one struck through,
+   and the badge after them ("-20%", "Buy 2, 2nd 50% off"), never over the
+   photo. Too long for the line, it moves under the price. */
+.price-group { flex: 1 1 0; display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 4px 6px; min-width: min-content; }
+.price-was { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dish-badge { padding: 2px 8px; font-size: 11px; line-height: 1.45; }
 .price-group .dish-badge { align-self: center; }
+/* A pair deal is words: never wider than the card, onto a second line
+   rather than cut (its percent is what matters). */
+.dish-badge-pair { max-width: 100%; border-radius: 9px; overflow-wrap: anywhere; background: color-mix(in srgb, var(--accent) 22%, var(--bg)); color: var(--text); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent); }
 
-/* Only one offer's dishes ("See the dishes"), until the bar is closed. */
 /* An offer's deal dish while the offer is not live, and a category with
    nothing else (its tab too); menu-offers.js shows them in time. */
 .dish[data-deal-off], .category[data-deal-off], .tab[data-deal-off] { display: none !important; }
@@ -891,6 +937,9 @@ dialog.offer-pop:has(.offer-shape-tall) { --ratio: .75; }
         -webkit-mask-image: linear-gradient(to left, transparent 0, #000 22%);
         mask-image: linear-gradient(to left, transparent 0, #000 22%);
     }
+    /* A picture far from its shape (shown whole) is drawn at its own
+       proportions, the strip's height, rather than boxed small in the shape. */
+    .offer-banner.offer-fit-whole:not(.offer-picture-only) .offer-photo { width: min(calc(var(--strip) * var(--picture, var(--ratio))), 62%); }
     .offer-banner.offer-picture-only .offer-photo-slot { justify-content: center; }
     .offer-banner.offer-picture-only .offer-photo { width: auto; max-width: 100%; aspect-ratio: var(--ratio); object-fit: contain; }
     .offer-banner.offer-has-photo:not(.offer-picture-only) .offer-photo-slot::after {
@@ -903,6 +952,9 @@ dialog.offer-pop:has(.offer-shape-tall) { --ratio: .75; }
     .offer-banner .offer-title { font-size: 26px; line-height: 1.2; -webkit-line-clamp: 2; }
     .offer-banner .offer-text { font-size: 14.5px; -webkit-line-clamp: 3; }
     .offer-banner .offer-go { margin-top: 10px; padding: 9px 16px; font-size: 14px; }
+    /* Words alone have the strip to themselves, the mark in its far half. */
+    .offer-banner:not(.offer-has-photo) .offer-body { max-width: min(62%, 600px); }
+    .offer-banner .offer-mark { top: 50%; inset-inline-end: 7%; height: 84%; transform: translateY(-50%) rotate(-10deg); }
     /* The ad in the menu's bottom corner, clear of the dishes' middle. */
     .offer-ad-wrap { inset-inline: 32px auto; bottom: 24px; width: 380px; margin-inline: 0; }
 }
@@ -947,7 +999,12 @@ dialog.offer-pop:has(.offer-shape-tall) { --ratio: .75; }
     img.brand-mark { height: 44px; max-width: 160px; }
     span.brand-mark { width: 38px; height: 38px; font-size: 16px; }
     .brand-name { font-size: 16px; }
-    .facts-row { display: flex; }
+    /* When the bar runs short, the name gives way first, down to a few
+       letters and an ellipsis (the cover below spells it out); then a fact
+       with no room left wraps onto a second line that is cut off, so it
+       drops out whole, the last first, instead of running under the search. */
+    .brand { display: grid; grid-auto-flow: column; grid-template-columns: auto; grid-auto-columns: minmax(6em, max-content); min-width: auto; flex-shrink: 1000; }
+    .facts-row { display: flex; flex: 1 1 auto; flex-wrap: wrap; row-gap: 20px; height: 20px; overflow: hidden; }
     .field.topbar-search { display: flex; min-width: 220px; padding: 8px 14px; border-radius: 8px; }
     .top-action { display: flex; }
     .field.topbar-search input { font-size: 13px; }
@@ -977,12 +1034,14 @@ dialog.offer-pop:has(.offer-shape-tall) { --ratio: .75; }
     /* Clear of the bar and the tabs stuck under it. */
     .category { scroll-margin-top: calc(var(--bar) + 72px); }
     .category-head { padding: 22px 32px 10px; }
-    .dishes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 32px; }
+    /* Two cards a row when each still has room for a long price and its
+       stepper (an LBP menu beside the cart at 1024px), one otherwise. */
+    .dishes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, max(340px, calc((100% - 12px) / 2))), 1fr)); gap: 12px; padding: 0 32px; }
     .builds { margin-top: 22px; }
     .builds-title { padding: 0 32px; }
     /* Room for them all: cards fill the column, a banner spans it. */
     .builds-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; padding: 0 32px 4px; overflow: visible; }
-    .dish.dish-build { width: auto; }
+    .dish.dish-build { width: auto; max-width: none; }
     .dish.dish-build:only-child { grid-column: 1 / -1; }
 
     /* Stuck under the bar, the window's height, and scrolling on its own

@@ -7,7 +7,10 @@
  * App\Services\Menu\MenuDishOptions). Picking is all this file does: a menu
  * that takes orders hands the result to menu-cart.js as a `qayema:add`
  * event, and one that does not just shows the choices and their prices. The
- * price shown here is a preview; the server prices every order itself.
+ * price shown here is a preview; the server prices every order itself. A
+ * live offer's discount (data-deal-type on the dish, menu-offers.js) comes
+ * off the dish's own price and the variants picked, never the add-ons or
+ * builds, as the cart and the server take it.
  */
 (function () {
     'use strict';
@@ -32,6 +35,7 @@
     var title = sheet.querySelector('[data-dish-title]');
     var ingredients = sheet.querySelector('[data-dish-ingredients]');
     var priceTag = sheet.querySelector('[data-dish-price]');
+    var wasTag = sheet.querySelector('[data-dish-was]');
     var groups = sheet.querySelector('[data-dish-groups]');
     var foot = sheet.querySelector('[data-dish-foot]');
 
@@ -72,6 +76,20 @@
         return glyph;
     }
 
+    /**
+     * OfferDiscount::apply(), in whole cents, half up, never below nothing
+     * (twin of discounted() in menu-cart.js). An amount off is in the main
+     * currency: a dish priced in the second one takes it off at the rate.
+     */
+    function discounted(cents, type, value, rate) {
+        if (type === 'percent' || type === 'second') {
+            return Math.max(0, Math.round((cents * (100 - value)) / 100));
+        }
+
+        return Math.max(0, cents - Math.round((value * 100) / (rate || 1)));
+    }
+
+    /** One of what is picked: `unit` with a live discount off, `full` without it. */
     function unitPrice() {
         var total = state.base;
         state.data.variants.forEach(function (variant) {
@@ -81,15 +99,30 @@
                 }
             });
         });
-        state.data.addons.forEach(function (addon) {
-            if (state.addons[addon.id]) {
-                total += parseFloat(addon.price) || 0;
-            }
-        });
+
+        // What was built (a pizza's halves) is discounted with them.
         (state.data.builds || []).forEach(function (build) {
             total += window.QAYEMA_BUILD.price(build.shape, chosenOf(build));
         });
-        return total;
+
+        // The dish's own price, its variants and what was built, less a live
+        // discount; a discount that would leave nothing does not apply.
+        var full = total;
+        var type = state.dish.dataset.dealType;
+        if (type) {
+            var off = discounted(Math.round(total * 100), type, parseFloat(state.dish.dataset.dealValue) || 0, parseFloat(state.dish.dataset.rate || '') || null);
+            if (off > 0) {
+                total = off / 100;
+            }
+        }
+
+        state.data.addons.forEach(function (addon) {
+            if (state.addons[addon.id]) {
+                total += parseFloat(addon.price) || 0;
+                full += parseFloat(addon.price) || 0;
+            }
+        });
+        return { unit: total, full: full };
     }
 
     /** A build's choices at the size picked (all of them for a build with no sizes). */
@@ -116,18 +149,20 @@
     }
 
     /**
-     * What a choice adds, or "Free" for one with no price. `full` is for the
-     * first variant of a dish with no price of its own: its options are the
-     * prices themselves (Small $7.00), not extras.
+     * What a choice adds, or "Free" for an add-on with no price. `full` is for
+     * the first variant of a dish with no price of its own: its options are the
+     * prices themselves (Small $7.00), not extras. A variant's option that adds
+     * nothing is the dish's own price, so it says nothing (null).
      */
-    function priceLabel(price, full) {
+    function priceLabel(price, full, variant) {
         var amount = parseFloat(price) || 0;
         if (full) {
             return element('span', 'choice-price', money(amount));
         }
-        return amount > 0
-            ? element('span', 'choice-price', extra(amount))
-            : element('span', 'choice-price is-free', strings.free);
+        if (amount > 0) {
+            return element('span', 'choice-price', extra(amount));
+        }
+        return variant ? null : element('span', 'choice-price is-free', strings.free);
     }
 
     function variantGroup(variant, full) {
@@ -149,7 +184,10 @@
 
             label.appendChild(input);
             label.appendChild(element('span', 'choice-name', option.name));
-            label.appendChild(priceLabel(option.price, full));
+            var price = priceLabel(option.price, full, true);
+            if (price) {
+                label.appendChild(price);
+            }
             pills.appendChild(label);
         });
 
@@ -185,6 +223,22 @@
 
         set.appendChild(rows);
         return set;
+    }
+
+    /**
+     * A heading inside a build, drawn like a variant's legend (a fieldset
+     * has one legend, and the build's names the whole group).
+     */
+    function heading(name, tag, id) {
+        var node = element('div', 'choice-legend');
+        var text = node.appendChild(element('span', 'choice-title', name));
+        if (id) {
+            text.id = id;
+        }
+        if (tag) {
+            node.appendChild(element('span', 'choice-tag', tag));
+        }
+        return node;
     }
 
     /** "Whole", "Half & half", "Thirds", "Quarters", "5 parts"; "3 pieces". */
@@ -231,9 +285,10 @@
      * A build: its size (when its choices are priced by size and it has more
      * than one), how many parts (when it allows more than one count), the
      * pizza cut that way for a split one, and a choice for each part with
-     * what that part costs at that size. No heading of its own: the sheet's title is the
-     * dish's name, which the build shares; the group is named for a screen
-     * reader. Drawn again when the count changes.
+     * what that part costs at that size. Each row of pills has its heading,
+     * as a variant does; the build's name heads the parts only when it is
+     * not the sheet's title (the dish's name, which a build usually shares).
+     * Drawn again when the count changes.
      */
     function buildGroup(build) {
         var set = element('fieldset', 'choice-group build-group');
@@ -241,9 +296,10 @@
         set.setAttribute('aria-label', build.name);
 
         if ((build.sizes || []).length > 1) {
+            set.appendChild(heading(strings.size, strings.pickOne, 'build-size-title-' + build.id));
             var sizes = element('div', 'choice-pills build-sizes');
             sizes.setAttribute('role', 'radiogroup');
-            sizes.setAttribute('aria-label', strings.size);
+            sizes.setAttribute('aria-labelledby', 'build-size-title-' + build.id);
             build.sizes.forEach(function (size) {
                 var label = element('label', 'choice-pill');
                 var input = document.createElement('input');
@@ -270,7 +326,10 @@
         }
 
         if (build.parts.length > 1) {
+            set.appendChild(heading(build.shape === 'split' ? strings.split : strings.howMany, strings.pickOne, 'build-count-title-' + build.id));
             var counts = element('div', 'choice-pills');
+            counts.setAttribute('role', 'radiogroup');
+            counts.setAttribute('aria-labelledby', 'build-count-title-' + build.id);
             build.parts.forEach(function (count) {
                 var label = element('label', 'choice-pill');
                 var input = document.createElement('input');
@@ -295,6 +354,9 @@
             set.appendChild(counts);
         }
 
+        if (build.name && build.name !== state.dish.dataset.name) {
+            set.appendChild(heading(build.name));
+        }
         var body = element('div', 'build-body');
         if (build.shape === 'split') {
             body.appendChild(pie(picked.parts.length));
@@ -503,8 +565,12 @@
 
     /** Only the numbers change as the guest picks, so nothing jumps. */
     function refresh() {
-        var unit = unitPrice();
+        var price = unitPrice();
+        var unit = price.unit;
         priceTag.textContent = money(unit);
+        // As the card: what it would cost without the offer, struck out.
+        wasTag.hidden = !(price.full > unit);
+        wasTag.textContent = wasTag.hidden ? '' : money(price.full);
 
         if (state.total) {
             state.total.textContent = money(unit * state.quantity);
@@ -525,6 +591,7 @@
 
         state = {
             id: dish.dataset.dish,
+            dish: dish,
             data: data,
             base: parseFloat(dish.dataset.price || '0') || 0,
             symbol: dish.dataset.currency || '',
@@ -550,7 +617,10 @@
             };
         });
 
-        title.textContent = dish.dataset.name || '';
+        // Isolated, so a name in the other script (an English fallback in
+        // an Arabic menu) keeps its punctuation in place.
+        title.textContent = '';
+        title.appendChild(element('bdi', null, dish.dataset.name || ''));
         ingredients.textContent = dish.dataset.ingredients || '';
         ingredients.hidden = !dish.dataset.ingredients;
 
@@ -587,6 +657,16 @@
         });
         if (data.addons.length > 0) {
             groups.appendChild(addonGroup(data.addons));
+        }
+
+        // The card's offer badge ("-20%", "Buy 2, 2nd 50% off") after the price.
+        var shownBadge = wasTag.parentNode.querySelector('.dish-badge');
+        var cardBadge = dish.querySelector('.dish-badge');
+        if (shownBadge) {
+            shownBadge.remove();
+        }
+        if (cardBadge) {
+            wasTag.parentNode.appendChild(cardBadge.cloneNode(true));
         }
 
         drawFoot();
@@ -686,5 +766,12 @@
             return;
         }
         close();
+    });
+
+    // An offer began or ended while the sheet is open (menu-offers.js).
+    document.addEventListener('qayema:prices', function () {
+        if (state && sheet.open) {
+            refresh();
+        }
     });
 })();

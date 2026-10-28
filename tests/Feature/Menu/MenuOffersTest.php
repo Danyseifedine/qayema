@@ -77,9 +77,14 @@ class MenuOffersTest extends TestCase
         $pictured->addMedia(UploadedFile::fake()->image('offer.jpg', 1200, 800))->toMediaCollection('image');
         $plain = $this->offer(['title' => ['en' => 'Plain']]);
 
-        $this->menu()
+        $html = $this->menu()
             ->assertSee('<article class="offer offer-banner offer-shape-rectangle offer-has-photo" data-offer="'.$pictured->id.'"', false)
-            ->assertSee('<article class="offer offer-banner offer-shape-rectangle" data-offer="'.$plain->id.'"', false);
+            ->assertSee('<article class="offer offer-banner offer-shape-rectangle" data-offer="'.$plain->id.'"', false)
+            ->getContent();
+
+        // Words without a picture wear the faint mark, never a grey box; the pictured card does not.
+        $this->assertSame(1, substr_count((string) $html, 'class="offer-mark"'));
+        $this->assertMatchesRegularExpression('/data-offer="'.$plain->id.'"[^>]*>\s*<span class="offer-mark"/', (string) $html);
     }
 
     public function test_a_picture_alone_is_the_whole_card_and_the_tap(): void
@@ -139,11 +144,16 @@ class MenuOffersTest extends TestCase
         $older = $this->offer(['title' => ['en' => 'Older']]);
         $older->addMedia(UploadedFile::fake()->image('older.jpg', 800, 800))->toMediaCollection('image');
 
-        $this->menu()
+        $html = $this->menu()
             ->assertSee('<article class="offer offer-banner offer-shape-rectangle offer-has-photo offer-fit-whole" data-offer="'.$tall->id.'"', false)
             ->assertSee('<article class="offer offer-banner offer-shape-rectangle offer-has-photo" data-offer="'.$wide->id.'"', false)
             ->assertSee('<article class="offer offer-banner offer-shape-rectangle offer-has-photo offer-picture-only offer-fit-whole" data-offer="'.$alone->id.'"', false)
-            ->assertSee('data-fit="auto"', false);
+            ->assertSee('data-fit="auto"', false)
+            ->getContent();
+
+        // Shown whole, it carries its own proportions, for a wide screen's
+        // banner strip to draw it at them; the others need none.
+        $this->assertSame(['0.5', '1.7778'], preg_match_all('/style="--picture: ([\d.]+)"/', $html, $found) ? $found[1] : []);
     }
 
     public function test_the_carousel_has_room_for_dots_only_with_more_than_one_banner(): void
@@ -219,12 +229,95 @@ class MenuOffersTest extends TestCase
         $offer = $this->offer(['discount_type' => 'percent', 'discount_value' => 20, 'action' => 'dishes']);
         $offer->dishes()->attach($this->kafta);
 
+        // The cart takes the discount off from the deal's type and value.
         $this->menu()
-            ->assertSee('data-price="10.00"', false)
-            ->assertSee('data-full-price="12.50"', false)
+            ->assertSee('data-price="12.50"', false)
+            ->assertSee('data-full-price="12.50" data-base-extra="0.00" data-extra="0.00"', false)
+            ->assertSee('data-deal-type="percent" data-deal-value="20" data-deal-by="'.$offer->id.'"', false)
             ->assertSee('<span class="price">$10</span>', false)
             ->assertSee('<s class="price-was">$12.50</s>', false)
             ->assertSee('See the dishes');
+    }
+
+    public function test_a_dish_priced_by_its_sizes_shows_its_cheapest_size_discounted(): void
+    {
+        $this->defaultPackageIncludes(Feature::Variants);
+        $pizza = Dish::factory()->withVariants(['Size' => ['Small' => 8, 'Large' => 12]])->create([
+            'restaurant_id' => $this->restaurant->id,
+            'category_id' => $this->kafta->category_id,
+            'name' => ['en' => 'Pizza'],
+            'price' => null,
+        ]);
+        $offer = $this->offer(['discount_type' => 'percent', 'discount_value' => 25]);
+        $offer->dishes()->attach($pizza);
+
+        $this->menu()
+            ->assertSee('data-price="0.00"', false)
+            ->assertSee('data-full-price="0.00" data-base-extra="8.00" data-extra="0.00"', false)
+            ->assertSee('data-deal-by="'.$offer->id.'"', false)
+            ->assertSee('<span class="price">$6</span>', false)
+            ->assertSee('<s class="price-was">$8</s>', false);
+    }
+
+    public function test_a_pair_deal_marks_its_dishes_and_leaves_their_price(): void
+    {
+        $offer = $this->offer(['discount_type' => 'second', 'discount_value' => 50]);
+        $offer->dishes()->attach($this->kafta);
+
+        $this->menu()
+            ->assertSee('data-pair-offer="'.$offer->id.'" data-pair-value="50"', false)
+            ->assertDontSee('data-deal-type', false)
+            ->assertDontSee('class="price-was"', false)
+            ->assertSee('\u0022discount\u0022:{\u0022type\u0022:\u0022second\u0022,\u0022value\u0022:50}', false)
+            ->assertSee("secondOff: 'Buy 2, 2nd :percent% off'", false)
+            ->assertSee("secondFree: 'Buy 2, 2nd free'", false);
+    }
+
+    public function test_a_straight_discount_beats_a_pair_deal_on_the_card(): void
+    {
+        $pair = $this->offer(['discount_type' => 'second', 'discount_value' => 50]);
+        $pair->dishes()->attach($this->kafta);
+        $straight = $this->offer(['discount_type' => 'percent', 'discount_value' => 10]);
+        $straight->dishes()->attach($this->kafta);
+
+        $this->menu()
+            ->assertSee('data-deal-by="'.$straight->id.'"', false)
+            ->assertDontSee('data-pair-offer', false);
+    }
+
+    public function test_an_offer_shown_outside_its_hours_is_drawn_but_its_deal_waits(): void
+    {
+        // A Tuesday noon; the deal runs on Wednesdays from 5 to 7 PM.
+        $this->travelTo(CarbonImmutable::parse('2026-11-10 12:00', 'Asia/Beirut'));
+        $offer = $this->offer([
+            'discount_type' => 'percent',
+            'discount_value' => 20,
+            'repeat' => OfferRepeat::Weekly,
+            'weekdays' => ['wed'],
+            'time_windows' => [['from' => '17:00', 'to' => '19:00']],
+            'shows_outside_hours' => true,
+        ]);
+        $offer->dishes()->attach($this->kafta);
+
+        $html = $this->menu()
+            ->assertDontSee('data-deal-type', false)
+            ->assertSee('\u0022shown_always\u0022:true', false)
+            ->assertSee('Available Wednesday, 5:00 PM to 7:00 PM.')
+            ->assertSee("notNow: 'Not available right now'", false)
+            ->getContent();
+
+        $this->assertStringNotContainsString('data-offer="'.$offer->id.'"  hidden', $html);
+        $this->assertDoesNotMatchRegularExpression('/class="offers-banner"[^>]*hidden/', $html);
+    }
+
+    public function test_without_showing_outside_its_hours_it_waits_hidden(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-11-10 12:00', 'Asia/Beirut'));
+        $offer = $this->offer(['repeat' => OfferRepeat::Weekly, 'weekdays' => ['wed']]);
+
+        $html = $this->menu()->assertSee('\u0022shown_always\u0022:false', false)->getContent();
+
+        $this->assertStringContainsString('data-offer="'.$offer->id.'"  hidden', $html);
     }
 
     public function test_outside_its_days_the_dish_keeps_its_price(): void

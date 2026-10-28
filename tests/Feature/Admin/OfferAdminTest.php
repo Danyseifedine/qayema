@@ -45,9 +45,13 @@ class OfferAdminTest extends TestCase
             'time_windows' => [['from' => '18:00', 'to' => '22:00']],
         ]);
         $paused = Offer::factory()->paused()->create(['restaurant_id' => $restaurant->id]);
+        $half = Offer::factory()->secondOff(50)->create(['restaurant_id' => $restaurant->id]);
+        $free = Offer::factory()->secondOff(100)->create(['restaurant_id' => $restaurant->id]);
 
         Livewire::test(ListOffers::class)
             ->assertCanSeeTableRecords([$live, $later, $paused])
+            ->assertTableColumnStateSet('discount', '2nd -50% on 0 dishes', $half)
+            ->assertTableColumnStateSet('discount', '2nd free on 0 dishes', $free)
             ->assertTableColumnStateSet('status', 'live', $live)
             ->assertTableColumnStateSet('status', 'scheduled', $later)
             ->assertTableColumnStateSet('status', 'paused', $paused)

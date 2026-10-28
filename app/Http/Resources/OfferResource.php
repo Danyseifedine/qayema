@@ -58,6 +58,8 @@ class OfferResource extends JsonResource
             'weekdays' => array_values((array) $this->weekdays),
             'month_days' => array_map('intval', array_values((array) $this->month_days)),
             'time_windows' => $this->time_windows === null ? null : array_values($this->time_windows),
+            // On the menu all the time, its deal working only in its hours.
+            'shows_outside_hours' => $this->shows_outside_hours,
             'is_active' => $this->is_active,
             // live, scheduled, ended, paused, or off (kept off the menu, `kept_off`).
             'status' => $standing['status'],

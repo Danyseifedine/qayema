@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\User;
 use App\Services\Analytics\MenuTraffic;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -29,7 +30,7 @@ class UsersTable
                 ->with(['restaurant' => fn ($restaurant) => MenuTraffic::withTotals($restaurant->withCount('dishes')->getQuery())]))
             ->columns([
                 TextColumn::make('name')
-                    ->placeholder('N/A')
+                    ->placeholder('-')
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
@@ -42,13 +43,13 @@ class UsersTable
 
                 TextColumn::make('email')
                     ->label('Email')
-                    ->placeholder('N/A')
+                    ->placeholder('-')
                     ->searchable()
                     ->sortable()
                     ->copyable(),
 
                 TextColumn::make('role')
-                    ->placeholder('N/A')
+                    ->placeholder('-')
                     ->badge()
                     ->color(fn (UserRole|string $state): string => match ($state instanceof UserRole ? $state : null) {
                         UserRole::Admin => 'danger',
@@ -71,7 +72,7 @@ class UsersTable
                     ->falseColor('warning')
                     ->tooltip(fn (User $record): string => $record->onboarding_completed_at
                         ? 'Completed '.$record->onboarding_completed_at->diffForHumans()
-                        : 'Step '.$record->onboarding_step.' of 6')
+                        : 'Step '.$record->currentOnboardingStep().' of '.User::ONBOARDING_STEPS)
                     ->getStateUsing(fn (User $record): bool => ! is_null($record->onboarding_completed_at)),
 
                 TextColumn::make('restaurant.name')
@@ -95,7 +96,7 @@ class UsersTable
                     ->placeholder('-')
                     ->badge()
                     ->color('info')
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('restaurant.is_active')
                     ->label('Menu Active')
@@ -103,7 +104,7 @@ class UsersTable
                     ->badge()
                     ->color(fn ($state): string => $state ? 'success' : 'danger')
                     ->formatStateUsing(fn ($state): string => $state ? 'Active' : 'Inactive')
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('created_at')
                     ->label('Joined')
@@ -129,41 +130,44 @@ class UsersTable
 
                 Filter::make('joined_today')
                     ->label('Joined today')
-                    ->query(fn (Builder $query) => $query->whereDate('created_at', today())),
+                    ->query(fn (Builder $query) => $query->where('created_at', '>=', today())),
 
                 Filter::make('joined_this_week')
                     ->label('Joined this week')
                     ->query(fn (Builder $query) => $query->where('created_at', '>=', now()->startOfWeek())),
             ])
             ->recordActions([
-                // The owner's public menu, in a new tab, as guests see it.
-                Action::make('menu')
-                    ->label('Menu')
-                    ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
-                    ->color('gray')
-                    ->url(fn (User $record): ?string => $record->restaurant?->slug
-                        ? route('public.menu', $record->restaurant->slug)
-                        : null)
-                    ->openUrlInNewTab()
-                    ->visible(fn (User $record): bool => filled($record->restaurant?->slug))
-                    ->tooltip(fn (User $record): ?string => $record->restaurant?->is_active === false
-                        ? 'The menu is switched off, so guests see nothing there.'
-                        : null),
-                Action::make('impersonate')
-                    ->label('Impersonate')
-                    ->icon(Heroicon::OutlinedUserCircle)
-                    ->url(fn (User $record): string => route('impersonate', $record->getKey()))
-                    ->openUrlInNewTab(false)
-                    ->visible(fn (User $record): bool => auth()->id() !== $record->getKey() && $record->canBeImpersonated()),
-                ViewAction::make(),
                 EditAction::make(),
-                DeleteAction::make()
-                    ->requiresConfirmation()
-                    ->modalHeading('Delete user')
-                    ->modalDescription('This permanently deletes the user, their restaurant, all categories and dishes (including images), social links, statistics, profile media, and their sessions.')
-                    ->action(function (User $record): void {
-                        $record->delete();
-                    }),
+                // The rarer ones behind "more", so a row fits the screen.
+                ActionGroup::make([
+                    // The owner's public menu, in a new tab, as guests see it.
+                    Action::make('menu')
+                        ->label('Open menu')
+                        ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
+                        ->color('gray')
+                        ->url(fn (User $record): ?string => $record->restaurant?->slug
+                            ? route('public.menu', $record->restaurant->slug)
+                            : null)
+                        ->openUrlInNewTab()
+                        ->visible(fn (User $record): bool => filled($record->restaurant?->slug))
+                        ->tooltip(fn (User $record): ?string => $record->restaurant?->is_active === false
+                            ? 'The menu is switched off, so guests see nothing there.'
+                            : null),
+                    Action::make('impersonate')
+                        ->label('Log in as owner')
+                        ->icon(Heroicon::OutlinedUserCircle)
+                        ->url(fn (User $record): string => route('impersonate', $record->getKey()))
+                        ->openUrlInNewTab(false)
+                        ->visible(fn (User $record): bool => auth()->id() !== $record->getKey() && $record->canBeImpersonated()),
+                    ViewAction::make(),
+                    DeleteAction::make()
+                        ->requiresConfirmation()
+                        ->modalHeading('Delete user')
+                        ->modalDescription('This permanently deletes the user, their restaurant, all categories and dishes (including images), social links, statistics, profile media, and their sessions.')
+                        ->action(function (User $record): void {
+                            $record->delete();
+                        }),
+                ]),
             ])
             ->defaultSort('created_at', 'desc');
     }

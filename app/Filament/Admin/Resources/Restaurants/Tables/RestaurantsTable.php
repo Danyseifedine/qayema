@@ -61,17 +61,20 @@ class RestaurantsTable
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('name')
-                    ->placeholder('N/A')
+                    ->placeholder('-')
                     ->description(fn (Restaurant $record): string => '/'.$record->slug)
                     // The whole JSON, so a name matches in whichever language
                     // the owner wrote it.
                     ->searchable(query: fn ($query, string $search) => $query
                         ->where('name', 'like', "%{$search}%"))
-                    ->weight('bold'),
+                    ->weight('bold')
+                    // A long name takes two lines, so the row's actions stay in view.
+                    ->wrap()
+                    ->width('14rem'),
 
                 TextColumn::make('user.name')
                     ->label('Owner')
-                    ->placeholder('N/A')
+                    ->placeholder('-')
                     ->description(fn (Restaurant $record): ?string => $record->user->email ?? $record->user->username)
                     ->searchable(['name', 'email', 'username'])
                     ->sortable(),
@@ -86,6 +89,8 @@ class RestaurantsTable
                         PackageStatus::Active => $record->package_ends_at !== null && $record->package_ends_at->lte(now()->addDays(7)) ? 'warning' : 'success',
                     })
                     ->description(fn (Restaurant $record): string => self::packageDates($record))
+                    ->wrap()
+                    ->width('11rem')
                     ->toggleable(),
 
                 // What it pays a month: its own price, marked, or the package's.
@@ -154,7 +159,7 @@ class RestaurantsTable
                 TextColumn::make('categories_count')
                     ->label('Categories')
                     ->counts('categories')
-                    ->placeholder('N/A')
+                    ->placeholder('-')
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('total_views')
@@ -176,7 +181,7 @@ class RestaurantsTable
                     ->label('Active'),
 
                 TextColumn::make('created_at')
-                    ->placeholder('N/A')
+                    ->placeholder('-')
                     ->dateTime()
                     ->sortable()
                     ->since()
@@ -201,7 +206,7 @@ class RestaurantsTable
 
                 Filter::make('created_today')
                     ->label('Created today')
-                    ->query(fn (Builder $query) => $query->whereDate('created_at', today())),
+                    ->query(fn (Builder $query) => $query->where('created_at', '>=', today())),
 
                 Filter::make('created_this_week')
                     ->label('Created this week')

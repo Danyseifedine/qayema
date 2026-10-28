@@ -99,6 +99,7 @@ class MenuOrderTest extends TestCase
         $this->postJson(route('public.order', $shop->slug), $order)
             ->assertStatus(409)
             ->assertJsonPath('prices.'.$dish, '6.00')
+            ->assertJsonPath('deals.'.$dish, null)
             ->assertJsonPath('message', 'Some prices changed since you opened the menu (an offer may have ended). Check your cart, then send it again.');
         $this->assertSame(0, Order::query()->count());
 

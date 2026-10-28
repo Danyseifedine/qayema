@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Middleware\CacheMenuForGuests;
 use App\Models\Restaurant;
 use App\Services\Menu\MenuFonts;
+use App\Services\Menu\MenuLanguages;
 use App\Services\Qr\QrDesign;
 use App\Services\Qr\QrStyle;
 use App\Support\Color;
@@ -23,19 +24,20 @@ class QrCardController extends Controller
     {
         abort_unless($restaurant->menuOnline() && $restaurant->hasQrStudio(), 404);
 
-        $base = rtrim((string) config('app.url'), '/');
-        $host = (string) (parse_url($base, PHP_URL_HOST) ?: $base);
         $url = QrDesign::url($restaurant);
         $design = QrDesign::saved($restaurant);
         $accent = QrStyle::brandColor($restaurant);
         // The card's text is the owner's own, in any of the menu's languages,
         // so it carries every font the menu uses.
         $fonts = MenuFonts::allFamilies($restaurant);
+        // The card's own words (its default call to action, the print
+        // button) in the language the menu opens in.
+        app()->setLocale(MenuLanguages::default($restaurant));
 
         return view('menu.qr-card', [
             'card' => [
                 'url' => $url,
-                'display_url' => "{$host}/{$restaurant->slug}",
+                'display_url' => QrDesign::displayUrl($restaurant),
                 'design' => $design,
                 'options' => QrStyle::options($design, $url, $design['logo'] ? QrStyle::logoDataUrl($restaurant) : null),
                 'accent' => $accent,

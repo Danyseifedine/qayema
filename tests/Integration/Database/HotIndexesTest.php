@@ -9,7 +9,7 @@ use Tests\TestCase;
 
 /**
  * The indexes the busiest reads lean on: the order pulse read from one
- * index, and no index on `menu_sessions.session_id` alone (every read of it
+ * index, a restaurant's orders over time by channel, and no index on `menu_sessions.session_id` alone (every read of it
  * names the restaurant, so the counting index serves it). Each migration also
  * goes back down cleanly.
  */
@@ -56,5 +56,28 @@ class HotIndexesTest extends TestCase
 
         $this->assertNotContains(['session_id'], $this->indexes('menu_sessions'));
         $this->assertContains(['restaurant_id', 'channel', 'status', 'fulfilment', 'guest_updated_at'], $this->indexes('orders'));
+    }
+
+    public function test_orders_over_time_are_read_by_channel_and_status_has_no_index_of_its_own(): void
+    {
+        $this->assertContains(['restaurant_id', 'channel', 'placed_at'], $this->indexes('orders'));
+        $this->assertNotContains(['restaurant_id', 'placed_at'], $this->indexes('orders'));
+        $this->assertNotContains(['restaurant_id', 'status'], $this->indexes('orders'));
+    }
+
+    public function test_the_order_indexes_go_down_and_up_again(): void
+    {
+        $migration = $this->migration('2026_10_28_000004_fit_the_order_indexes_to_their_reads');
+
+        $migration->down();
+
+        $this->assertContains(['restaurant_id', 'placed_at'], $this->indexes('orders'));
+        $this->assertContains(['restaurant_id', 'status'], $this->indexes('orders'));
+        $this->assertNotContains(['restaurant_id', 'channel', 'placed_at'], $this->indexes('orders'));
+
+        $migration->up();
+
+        $this->assertContains(['restaurant_id', 'channel', 'placed_at'], $this->indexes('orders'));
+        $this->assertNotContains(['restaurant_id', 'status'], $this->indexes('orders'));
     }
 }

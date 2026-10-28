@@ -99,16 +99,26 @@ class MenuStylesheetTest extends TestCase
     }
 
     /**
-     * A dish's discount sits on its photo's corner, over the picture, so the
-     * card keeps its height; without a photo it is beside the price.
+     * A dish's discount sits beside its price, never over its photo (where
+     * it hid the dish and ran off the photo in Arabic); a build's card, with
+     * no price, has it above its name instead of over it.
      */
-    public function test_a_dish_discount_takes_no_room_on_its_card(): void
+    public function test_a_dish_discount_sits_beside_its_price(): void
     {
         $css = (string) file_get_contents(public_path('css/menu-classic.css'));
         $js = (string) file_get_contents(public_path('js/menu-offers.js'));
 
-        $this->assertMatchesRegularExpression('/\.dish-photo-slot\s*\{\s*position:\s*relative;/', $css);
-        $this->assertMatchesRegularExpression('/\.dish-photo-slot \.dish-badge\s*\{[^}]*position:\s*absolute;[^}]*inset-inline-start:/', $css);
-        $this->assertStringContainsString("(dish.querySelector('.dish-photo-slot') || group || dish).appendChild(badge)", $js);
+        $this->assertStringNotContainsString('.dish-photo-slot .dish-badge', $css);
+        // It wraps under the price; a price too wide for the room beside the
+        // button sends the button under it, and an amount never splits from
+        // its sign ("L.L 1,250,000"), on the card or in the cart.
+        $this->assertMatchesRegularExpression('/\.price-group\s*\{[^}]*flex-wrap:\s*wrap;[^}]*min-width:\s*min-content;/', $css);
+        $this->assertMatchesRegularExpression('/\.dish-foot\s*\{[^}]*flex-wrap:\s*wrap;/', $css);
+        $this->assertMatchesRegularExpression('/\.price\s*\{[^}]*white-space:\s*nowrap;/', $css);
+        $this->assertMatchesRegularExpression('/\.cart-line-total\s*\{[^}]*flex-wrap:\s*wrap;[^}]*white-space:\s*nowrap;/', $css);
+        $this->assertMatchesRegularExpression('/\.dish-build \.dish-badge\s*\{(?![^}]*position:\s*absolute)[^}]*\}/', $css);
+        $this->assertStringContainsString('group.appendChild(badge)', $js);
+        $this->assertStringContainsString("dish.insertBefore(badge, dish.querySelector('.dish-name'))", $js);
+        $this->assertStringNotContainsString("querySelector('.dish-photo-slot') || group", $js);
     }
 }

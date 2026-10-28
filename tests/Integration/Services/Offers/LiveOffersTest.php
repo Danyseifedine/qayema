@@ -91,7 +91,7 @@ class LiveOffersTest extends TestCase
         $this->offerOn($dish);
 
         $this->assertCount(0, app(LiveOffers::class)->forMenu($restaurant));
-        $this->assertSame([], app(LiveOffers::class)->bestFor($restaurant, [$dish->id], [$dish->id => '12.50'], CarbonImmutable::now()));
+        $this->assertSame([], app(LiveOffers::class)->dealsFor($restaurant, [$dish->id], [$dish->id => '12.50'], CarbonImmutable::now())[0]);
     }
 
     /** The admin set one part of offers for this restaurant (0 leaves it out). */
@@ -126,7 +126,7 @@ class LiveOffersTest extends TestCase
 
         $this->assertSame([$always->id], app(LiveOffers::class)->forMenu($restaurant)->pluck('id')->all());
         // Live by its days, but its package runs no schedule: nothing off.
-        $this->assertSame([], app(LiveOffers::class)->bestFor($restaurant, [$dish->id], [$dish->id => '12.50'], CarbonImmutable::now()));
+        $this->assertSame([], app(LiveOffers::class)->dealsFor($restaurant, [$dish->id], [$dish->id => '12.50'], CarbonImmutable::now())[0]);
         $this->assertTrue($weekly->hasSchedule());
         $this->assertFalse($always->hasSchedule());
     }
@@ -144,7 +144,7 @@ class LiveOffersTest extends TestCase
         $this->assertSame([OfferPlacement::Banner], $shown->first()->placementList());
         // Never saved that way: the offer keeps both places.
         $this->assertSame(['banner', 'popup'], $both->fresh()->placements);
-        $this->assertSame([], app(LiveOffers::class)->bestFor($restaurant, [$dish->id], [$dish->id => '12.50'], CarbonImmutable::now()));
+        $this->assertSame([], app(LiveOffers::class)->dealsFor($restaurant, [$dish->id], [$dish->id => '12.50'], CarbonImmutable::now())[0]);
         $this->assertNotNull($popupOnly->id);
     }
 
@@ -187,7 +187,7 @@ class LiveOffersTest extends TestCase
         $this->offerOn($dish, ['is_active' => false]);
         $this->offerOn($dish, ['starts_at' => now()->addHour()]);
 
-        $this->assertSame([], app(LiveOffers::class)->bestFor($restaurant, [$dish->id], [$dish->id => '12.50'], CarbonImmutable::now()));
+        $this->assertSame([], app(LiveOffers::class)->dealsFor($restaurant, [$dish->id], [$dish->id => '12.50'], CarbonImmutable::now())[0]);
     }
 
     public function test_the_guest_gets_the_better_of_two_offers(): void
@@ -198,12 +198,12 @@ class LiveOffersTest extends TestCase
         $better = Offer::factory()->amountOff(3)->create(['restaurant_id' => $restaurant->id]);
         $better->dishes()->attach($dish);
 
-        $best = app(LiveOffers::class)->bestFor($restaurant, [$dish->id], [$dish->id => '10.00'], CarbonImmutable::now());
+        $best = app(LiveOffers::class)->dealsFor($restaurant, [$dish->id], [$dish->id => '10.00'], CarbonImmutable::now())[0];
 
         $this->assertSame($better->id, $best[$dish->id]->id);
     }
 
-    public function test_choices_keep_their_price_and_count_in_the_full_price(): void
+    public function test_the_variant_picked_shares_the_discount_and_counts_in_the_full_price(): void
     {
         $restaurant = $this->premium();
         $dish = Dish::factory()->withVariants(['Size' => ['Small' => 0, 'Large' => 3]])->for($restaurant)->create(['price' => '10.00']);
@@ -212,8 +212,8 @@ class LiveOffersTest extends TestCase
 
         $line = app(OrderPlacer::class)->place($restaurant, [['dish_id' => $dish->id, 'quantity' => 1, 'options' => [$large->id]]])->items->first();
 
-        // Half of the dish's 10.00, and the 3.00 for Large as it is.
-        $this->assertSame('8.00', $line->unit_price);
+        // Half of the dish's 10.00 with its 3.00 for Large.
+        $this->assertSame('6.50', $line->unit_price);
         $this->assertSame('13.00', $line->full_price);
     }
 }

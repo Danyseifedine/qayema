@@ -46,6 +46,12 @@ class OfferFactory extends Factory
         return $this->state(fn (): array => ['discount_type' => OfferDiscount::Amount, 'discount_value' => $amount]);
     }
 
+    /** "The second at :percent% off" (100: free). */
+    public function secondOff(float $percent): static
+    {
+        return $this->state(fn (): array => ['discount_type' => OfferDiscount::Second, 'discount_value' => $percent]);
+    }
+
     public function paused(): static
     {
         return $this->state(fn (): array => ['is_active' => false]);

@@ -80,7 +80,7 @@ class WritingHelpLog
         $today = now($restaurant->localTimezone())->toDateString();
         $days = WritingHelpDay::query()
             ->where('restaurant_id', $restaurant->id)
-            ->whereDate('day', '>', now($restaurant->localTimezone())->subDays(self::DAYS)->toDateString())
+            ->where('day', '>', now($restaurant->localTimezone())->subDays(self::DAYS)->toDateString())
             ->get(['day', 'uses', 'input_tokens', 'output_tokens', 'cost']);
 
         return [
@@ -102,7 +102,7 @@ class WritingHelpLog
         return WritingHelpDay::query()
             ->selectRaw("COALESCE(SUM({$expression}), 0)")
             ->whereColumn('writing_help_days.restaurant_id', 'restaurants.id')
-            ->whereDate('day', '>', now()->subDays(self::DAYS)->toDateString());
+            ->where('day', '>', now()->subDays(self::DAYS)->toDateString());
     }
 
     /**
@@ -120,7 +120,7 @@ class WritingHelpLog
     {
         $today = now()->toDateString();
         $totals = WritingHelpDay::query()
-            ->whereDate('day', '>', now()->subDays(self::DAYS)->toDateString())
+            ->where('day', '>', now()->subDays(self::DAYS)->toDateString())
             ->selectRaw('COALESCE(SUM(uses), 0) AS uses, COALESCE(SUM(input_tokens + output_tokens), 0) AS tokens, COUNT(DISTINCT restaurant_id) AS restaurants, COALESCE(SUM(cost), 0) AS cost, COALESCE(SUM(CASE WHEN day = ? THEN cost ELSE 0 END), 0) AS cost_today', [$today])
             ->selectRaw('COALESCE(SUM(credits), 0) AS credits, COALESCE(SUM(translation_uses), 0) AS translation_uses, COALESCE(SUM(translation_cost), 0) AS translation_cost, COALESCE(SUM(description_uses), 0) AS description_uses, COALESCE(SUM(description_cost), 0) AS description_cost')
             ->first();
@@ -149,7 +149,7 @@ class WritingHelpLog
     public function totalsSince(string $day): array
     {
         $totals = WritingHelpDay::query()
-            ->whereDate('day', '>=', $day)
+            ->where('day', '>=', $day)
             ->selectRaw('COALESCE(SUM(uses), 0) AS uses, COALESCE(SUM(input_tokens), 0) AS input_tokens, COALESCE(SUM(output_tokens), 0) AS output_tokens, COUNT(DISTINCT restaurant_id) AS restaurants, COALESCE(SUM(cost), 0) AS cost')
             ->selectRaw('COALESCE(SUM(credits), 0) AS credits, COALESCE(SUM(translation_uses), 0) AS translation_uses, COALESCE(SUM(translation_cost), 0) AS translation_cost, COALESCE(SUM(description_uses), 0) AS description_uses, COALESCE(SUM(description_cost), 0) AS description_cost')
             ->first();
@@ -178,7 +178,7 @@ class WritingHelpLog
     public function byRestaurantSince(string $day, int $limit): Collection
     {
         return WritingHelpDay::query()
-            ->whereDate('day', '>=', $day)
+            ->where('day', '>=', $day)
             ->groupBy('restaurant_id')
             ->selectRaw('restaurant_id, SUM(uses) AS uses, SUM(input_tokens) AS input_tokens, SUM(output_tokens) AS output_tokens, SUM(cost) AS cost')
             ->orderByRaw('SUM(input_tokens + output_tokens) DESC')

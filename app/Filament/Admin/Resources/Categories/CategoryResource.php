@@ -32,6 +32,13 @@ class CategoryResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
+    /**
+     * What deleting a category does, for every delete button: the public
+     * menu lists dishes by category, so its dishes leave the menu until the
+     * owner moves them (the dashboard lists them under "No category").
+     */
+    public const DELETE_WARNING = 'The category is deleted. Its dishes are kept without a category, and leave the menu until they are moved to another one.';
+
     public static function form(Schema $schema): Schema
     {
         return CategoryForm::configure($schema);

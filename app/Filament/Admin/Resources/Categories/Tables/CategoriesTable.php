@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\Categories\Tables;
 
+use App\Filament\Admin\Resources\Categories\CategoryResource;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -19,28 +20,28 @@ class CategoriesTable
         return $table
             ->columns([
                 TextColumn::make('name')
-                    ->placeholder('N/A')
+                    ->placeholder('-')
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
                 TextColumn::make('restaurant.name')
                     ->label('Restaurant')
-                    ->placeholder('N/A')
+                    ->placeholder('-')
                     ->searchable()
                     ->sortable()
                     // The restaurant's own page lists only its rows.
                     ->hidden(fn (mixed $livewire): bool => $livewire instanceof RelationManager),
                 TextColumn::make('dishes_count')
                     ->label('Dishes')
-                    ->placeholder('N/A')
+                    ->placeholder('-')
                     ->counts('dishes')
                     ->sortable(),
                 TextColumn::make('display_order')
                     ->label('Order')
-                    ->placeholder('N/A')
+                    ->placeholder('-')
                     ->sortable(),
                 TextColumn::make('created_at')
-                    ->placeholder('N/A')
+                    ->placeholder('-')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -57,13 +58,13 @@ class CategoriesTable
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
-                // Its dishes stay on the menu, under "No category".
                 DeleteAction::make()
-                    ->modalDescription('The category is deleted. Its dishes stay on the menu, without a category.'),
+                    ->modalDescription(CategoryResource::DELETE_WARNING),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->modalDescription(CategoryResource::DELETE_WARNING),
                 ]),
             ])
             ->defaultSort('display_order');

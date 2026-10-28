@@ -54,16 +54,13 @@ class QrController extends Controller
     {
         $unlocked = $restaurant->hasQrStudio();
 
-        $base = rtrim((string) config('app.url'), '/');
-        $host = (string) (parse_url($base, PHP_URL_HOST) ?: $base);
-
         return [
             'unlocked' => $unlocked,
             // Locked by the owner's own switch rather than the package, so the
             // dashboard can point to Features instead of to an upgrade.
             'switched_off' => $restaurant->isSwitchedOff('qr'),
             'url' => QrDesign::url($restaurant),
-            'display_url' => "{$host}/{$restaurant->slug}",
+            'display_url' => QrDesign::displayUrl($restaurant),
             'card_url' => $unlocked ? route('public.qr', $restaurant->slug) : null,
             // Inlined, not linked: see QrStyle::logoDataUrl().
             'logo_data_url' => $unlocked ? QrStyle::logoDataUrl($restaurant) : null,

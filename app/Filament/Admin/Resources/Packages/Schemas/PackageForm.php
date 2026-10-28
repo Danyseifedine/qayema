@@ -122,7 +122,7 @@ class PackageForm
                 ])->columnSpan(['lg' => 2]),
                 Group::make([
                     Section::make('Limits')
-                        ->description('How many of each item a restaurant on this package may create, and its AI writing help a day and a month. Grants on a single restaurant stack on top of these.')
+                        ->description('How many of each item a restaurant on this package may create, and its AI budget a month. Grants on a single restaurant stack on top of these.')
                         ->schema([
                             ...self::limitFields(),
                             self::aiBudgetField(),

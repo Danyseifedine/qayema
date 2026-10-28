@@ -53,16 +53,13 @@ class ListContactMessages extends ListRecords
     {
         return $table
             ->columns([
+                // The email under the name, as on the Restaurants list, so a
+                // row fits the screen with its actions.
                 TextColumn::make('name')
-                    ->searchable()
+                    ->description(fn (ContactMessage $record): ?string => $record->email)
+                    ->searchable(['name', 'email'])
                     ->sortable()
                     ->weight('bold'),
-
-                TextColumn::make('email')
-                    ->placeholder('-')
-                    ->searchable()
-                    ->sortable()
-                    ->copyable(),
 
                 TextColumn::make('package.name')
                     ->label('Requested package')
@@ -72,6 +69,9 @@ class ListContactMessages extends ListRecords
 
                 TextColumn::make('message')
                     ->limit(60)
+                    // Two lines rather than a row wider than the screen.
+                    ->wrap()
+                    ->width('16rem')
                     ->tooltip(fn (ContactMessage $record): string => $record->message)
                     ->searchable(),
 
@@ -85,12 +85,13 @@ class ListContactMessages extends ListRecords
                     ->sortable()
                     ->since(),
 
+                // "Open" is a badge of its own: as a placeholder it was faint
+                // grey text, never the amber the colour asks for.
                 TextColumn::make('handled_at')
                     ->label('Handled')
-                    ->since()
-                    ->placeholder('Open')
+                    ->state(fn (ContactMessage $record): string => $record->handled_at?->diffForHumans() ?? 'Open')
                     ->badge()
-                    ->color(fn (mixed $state): string => blank($state) ? 'warning' : 'success')
+                    ->color(fn (ContactMessage $record): string => $record->handled_at === null ? 'warning' : 'success')
                     ->sortable()
                     ->toggleable(),
             ])

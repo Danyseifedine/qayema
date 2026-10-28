@@ -9,6 +9,7 @@ use App\Http\Requests\Concerns\SharedFieldRules;
 use App\Models\Dish;
 use App\Models\Offer;
 use App\Services\Menu\MenuLanguages;
+use App\Services\Offers\LiveOffers;
 use App\Services\Offers\OfferRules;
 use App\Services\Offers\OfferSchedule;
 use App\Support\Ingredients;
@@ -98,8 +99,13 @@ class StoreOfferRequest extends FormRequest
                 'numeric',
                 'gt:0',
                 // An amount is held below the cheapest chosen dish (after()), so
-                // a big currency like the pound has room.
-                $this->input('discount_type') === OfferDiscount::Percent->value ? 'max:90' : 'max:99999999',
+                // a big currency like the pound has room. A pair deal may make
+                // the second dish free (100).
+                match ($this->input('discount_type')) {
+                    OfferDiscount::Percent->value => 'max:90',
+                    OfferDiscount::Second->value => 'max:100',
+                    default => 'max:99999999',
+                },
             ],
             'dish_ids' => [
                 'nullable',
@@ -121,6 +127,8 @@ class StoreOfferRequest extends FormRequest
             'time_windows' => ['nullable', 'array', 'max:'.OfferSchedule::MAX_WINDOWS],
             'time_windows.*.from' => ['required', 'date_format:H:i'],
             'time_windows.*.to' => ['required', 'date_format:H:i'],
+            // On the menu all the time, its deal working only in its hours.
+            'shows_outside_hours' => ['nullable', 'boolean'],
 
             'is_active' => ['nullable', 'boolean'],
             'image_key' => $this->tempImageKeyRules(),
@@ -245,11 +253,11 @@ class StoreOfferRequest extends FormRequest
             }
 
             if ($this->input('discount_type') === OfferDiscount::Amount->value && ($cheapest = $this->cheapestDish()) !== null
-                && bccomp((string) $this->input('discount_value'), $this->inMain($cheapest), 2) >= 0) {
+                && bccomp((string) $this->input('discount_value'), $cheapest[1], 2) >= 0) {
                 $currency = (string) $this->user()?->restaurant?->currency;
                 $validator->errors()->add('discount_value', __(':dish costs :price: a discount must take off less than that.', [
-                    'dish' => $cheapest->getTranslation('name', MenuLanguages::mainForOwner($this->user()), true),
-                    'price' => Price::money((string) config("currencies.{$currency}.symbol", $currency), $this->inMain($cheapest)),
+                    'dish' => $cheapest[0]->getTranslation('name', MenuLanguages::mainForOwner($this->user()), true),
+                    'price' => Price::money((string) config("currencies.{$currency}.symbol", $currency), $cheapest[1]),
                 ]));
             }
 
@@ -276,23 +284,28 @@ class StoreOfferRequest extends FormRequest
     }
 
     /**
-     * The chosen dish with the lowest price of its own, in the main currency
-     * (an amount off is in it); dishes priced only by their choices are left out.
+     * The chosen dish that costs least before add-ons (its own price and
+     * cheapest variants, LiveOffers::referencePrice(), as the discount is
+     * judged), with that price in the main currency (an amount off is in
+     * it); a dish neither prices is left out.
+     *
+     * @return array{0: Dish, 1: string}|null
      */
-    private function cheapestDish(): ?Dish
+    private function cheapestDish(): ?array
     {
+        $restaurant = $this->user()?->restaurant;
+        $variantsOn = (bool) $restaurant?->showsVariants();
+
         return $this->chosenDishes()
-            ->filter(fn (Dish $dish): bool => $dish->price !== null)
-            ->sortBy(fn (Dish $dish): float => (float) $this->inMain($dish))
+            ->map(function (Dish $dish) use ($restaurant, $variantsOn): ?array {
+                $price = LiveOffers::referencePrice($dish, $variantsOn);
+                $rate = $restaurant?->rateOf($dish);
+
+                return $price === null ? null : [$dish, $rate === null ? $price : Price::toMain($price, $rate)];
+            })
+            ->filter()
+            ->sortBy(fn (array $priced): float => (float) $priced[1])
             ->first();
-    }
-
-    /** A dish's own price in the main currency: one priced in the second counts at the rate. */
-    private function inMain(Dish $dish): string
-    {
-        $rate = $this->user()?->restaurant?->rateOf($dish);
-
-        return $rate === null ? (string) $dish->price : Price::toMain((string) $dish->price, $rate);
     }
 
     /** The offer being edited (UpdateOfferRequest); none for a new one. */
@@ -330,6 +343,7 @@ class StoreOfferRequest extends FormRequest
                 ->where('restaurant_id', $this->user()?->restaurant?->id)
                 ->where(fn ($dishes) => $dishes->whereNull('offer_id')->when($this->offerId(), fn ($own, int $id) => $own->orWhere('offer_id', $id)))
                 ->whereIn('id', array_map('intval', $ids))
+                ->with('variants.options')
                 ->get(['id', 'price', 'currency', 'name', 'offer_id']);
     }
 

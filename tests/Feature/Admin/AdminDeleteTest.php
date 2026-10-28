@@ -157,11 +157,15 @@ class AdminDeleteTest extends TestCase
         $this->assertFileDoesNotExist($photo->getPath());
     }
 
-    public function test_a_deleted_category_leaves_its_dishes_on_the_menu(): void
+    public function test_a_deleted_category_keeps_its_dishes_without_one(): void
     {
         [, , $dish] = $this->fullMenu();
 
-        Livewire::test(ListCategories::class)->callAction(TestAction::make('delete')->table($dish->category));
+        // The menu lists dishes by category, so the warning says they leave it.
+        Livewire::test(ListCategories::class)
+            ->mountAction(TestAction::make('delete')->table($dish->category))
+            ->assertMountedActionModalSee('leave the menu until they are moved to another one')
+            ->callMountedAction();
 
         $this->assertModelExists($dish);
         $this->assertNull($dish->fresh()->category_id);

@@ -23,14 +23,14 @@ class RestaurantSocialLinksTable
             ->columns([
                 TextColumn::make('restaurant.name')
                     ->label('Restaurant')
-                    ->placeholder('N/A')
+                    ->placeholder('-')
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
                     // The restaurant's own page lists only its rows.
                     ->hidden(fn (mixed $livewire): bool => $livewire instanceof RelationManager),
                 TextColumn::make('platform')
-                    ->placeholder('N/A')
+                    ->placeholder('-')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'instagram' => 'pink',
@@ -46,12 +46,12 @@ class RestaurantSocialLinksTable
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('url')
-                    ->placeholder('N/A')
+                    ->placeholder('-')
                     ->limit(50)
                     ->copyable()
                     ->toggleable(),
                 TextColumn::make('created_at')
-                    ->placeholder('N/A')
+                    ->placeholder('-')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

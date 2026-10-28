@@ -38,7 +38,7 @@ class E2eController extends Controller
      * (false for a user mid-onboarding), has_password, name, description,
      * slug, main_locale, second_locale, is_active, switched_off, phone, google_maps_url,
      * opening_hours, categories [{name, description, icon, dishes: [{name, price,
-     * ingredients, is_available, variants: [{name, options: [{name, price}]}],
+     * ingredients, is_available, image (bool: a photo), variants: [{name, options: [{name, price}]}],
      * addons: [{name, price}], builds: [{name, shape, parts, category (a
      * scenario category's English name, its dishes the choices; dishes:
      * [English dish name] for only those of them), choices:
@@ -49,15 +49,18 @@ class E2eController extends Controller
      * an address | whatsapp), order_choices (bool: their line carries a
      * size and an add-on),
      * visits (count), qr_scans (count), settings {key: value} for the
-     * design, qr_settings {…}, logo (bool), writing_help_days [{days_ago,
+     * design, qr_settings {…}, logo (bool), cover (bool: a wide
+     * picture), writing_help_days [{days_ago,
      * uses, input_tokens, output_tokens, cost, credits}] (logged AI use, its
      * credits counting against the month's), overrides
      * [{feature, value}] (an admin's set grant: a limit, null unlimited, or a
      * flag 0 off / 1 on), price_cents (the restaurant's own price), offers
      * [{title, description, placements, action, action_url, show_again,
-     * delay_seconds, ad_seconds, discount_type, discount_value, dishes
+     * delay_seconds, ad_seconds, discount_type (none, percent, amount,
+     * second), discount_value, dishes
      * (English names of the scenario's dishes), starts_at, ends_at (UTC),
-     * repeat, weekdays, month_days, time_windows, is_active, image (bool: a
+     * repeat, weekdays, month_days, time_windows, shows_outside_hours,
+     * is_active, image (bool: a
      * wide picture), deal {name, price, category (a scenario category's
      * English name), ingredients?} (the offer's own dish, its one dish)}];
      * each offer comes back as {id, deal_id}.
@@ -118,6 +121,10 @@ class E2eController extends Controller
             $restaurant->addMediaFromString($this->png())->usingFileName('logo.png')->toMediaCollection('logo');
         }
 
+        if ($input['cover'] ?? false) {
+            $restaurant->addMediaFromString($this->photo())->usingFileName('cover.jpg')->withCustomProperties(['width' => 1200, 'height' => 800])->toMediaCollection('cover_image');
+        }
+
         $categories = [];
         // Built from a category that may come later: made once every one is.
         $builds = [];
@@ -142,6 +149,9 @@ class E2eController extends Controller
                     'is_available' => $dish['is_available'] ?? true,
                     'display_order' => $order,
                 ]);
+                if ($dish['image'] ?? false) {
+                    $created->addMediaFromString($this->photo())->usingFileName('dish.jpg')->toMediaCollection('image');
+                }
                 $this->dishOptions($created, $dish);
                 $builds[] = [$created, $dish['builds'] ?? []];
                 $dishes[] = $created->only(['id']);
@@ -318,7 +328,7 @@ class E2eController extends Controller
         return $deal;
     }
 
-    /** A wide picture with some depth to it, like a food photo, for an offer. */
+    /** A wide picture with some depth to it, like a food photo: an offer's, a cover, a dish's. */
     private function photo(): string
     {
         $image = imagecreatetruecolor(1200, 800);

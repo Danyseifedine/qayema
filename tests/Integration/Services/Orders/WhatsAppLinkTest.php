@@ -97,35 +97,42 @@ class WhatsAppLinkTest extends TestCase
     {
         $shop = $this->shop(['phone' => null]);
 
-        $this->assertNull(WhatsAppLink::forOrder($shop, $this->order($shop)));
+        $this->assertNull(WhatsAppLink::forOrder($shop, $this->order($shop), 'en'));
     }
 
     /** The message the link carries, decoded. */
-    private function text(Restaurant $shop, Order $order): string
+    private function text(Restaurant $shop, Order $order, string $locale = 'en'): string
     {
-        $url = (string) WhatsAppLink::forOrder($shop, $order);
+        $url = (string) WhatsAppLink::forOrder($shop, $order, $locale);
         $this->assertStringStartsWith('https://wa.me/96170123456?text=', $url);
 
         return rawurldecode(substr($url, strlen('https://wa.me/96170123456?text=')));
     }
 
-    public function test_the_message_is_laid_out_for_the_owner_without_the_reference(): void
+    public function test_the_message_is_laid_out_plainly_without_the_reference(): void
     {
         $shop = $this->shop();
         $order = $this->order($shop);
         $order->items->first()->update(['options' => [
-            'variants' => [['name' => 'Size', 'choice' => 'Large', 'price' => '2.00']],
+            'variants' => [['name' => 'Size', 'choice' => 'Large', 'price' => '2.00'], ['name' => 'Spice', 'choice' => 'Hot', 'price' => '0.00']],
             'addons' => [['name' => 'Extra cheese', 'price' => '1.00']],
         ]]);
-        $order->update(['note' => 'No coriander']);
+        $order->update(['note' => 'No coriander', 'fulfilment' => 'delivery', 'guest_name' => 'Rami', 'guest_phone' => '+96170123456', 'address' => 'Hamra street']);
 
         $this->assertSame(implode("\n", [
             '*New order · Olive*',
+            '*Delivery*',
             '',
-            '*2 × House Bowl*   $28',
-            '   Size: Large',
-            '   + Extra cheese',
-            '*1 × Daily Tart*   $11',
+            'Name: Rami',
+            'Phone: +96170123456',
+            'Address: Hamra street',
+            '',
+            '*2 House Bowl*   $28',
+            '• Large',
+            '• Hot',
+            '• Extra cheese',
+            '',
+            '*1 Daily Tart*   $11',
             '',
             '*Total: $39*',
             '',
@@ -133,15 +140,132 @@ class WhatsAppLinkTest extends TestCase
         ]), $this->text($shop, $order->fresh()->load('items')));
     }
 
-    public function test_it_is_written_in_the_menus_main_language(): void
+    public function test_it_is_written_in_the_language_the_guest_had_the_menu_in(): void
     {
-        $shop = $this->shop(['main_locale' => 'ar', 'name' => ['ar' => 'زيتون', 'en' => 'Olive']]);
+        $shop = $this->shop(['second_locale' => 'ar', 'name' => ['en' => 'Olive', 'ar' => 'زيتون']]);
+        $order = $this->order($shop);
+        // OrderPlacer named the lines in the guest's language.
+        $order->items->first()->update(['name' => 'وعاء البيت', 'options' => [
+            'variants' => [['name' => 'الحجم', 'choice' => 'كبير', 'price' => '2.00']],
+            'addons' => [['name' => 'جبنة إضافية', 'price' => '1.00']],
+        ]]);
+        $order->update(['note' => 'بدون بصل', 'fulfilment' => 'pickup', 'guest_name' => 'رامي']);
         app()->setLocale('fr');
 
-        $text = $this->text($shop, $this->order($shop));
+        $this->assertSame(implode("\n", [
+            '*طلب جديد · زيتون*',
+            '*استلام*',
+            '',
+            'الاسم: رامي',
+            '',
+            '*2 وعاء البيت*   $28',
+            '• كبير',
+            '• جبنة إضافية',
+            '',
+            '*1 Daily Tart*   $11',
+            '',
+            '*المجموع: $39*',
+            '',
+            'ملاحظة: بدون بصل',
+        ]), $this->text($shop, $order->fresh()->load('items'), 'ar'));
+        // The same order read in English is written in English.
+        $this->assertStringStartsWith("*New order · Olive*\n*Pickup*\n", $this->text($shop, $order, 'en'));
+    }
 
-        $this->assertStringStartsWith("*طلب جديد · زيتون*\n", $text);
-        $this->assertStringContainsString("\n*المجموع: \$39*", $text);
+    /**
+     * One line built from parts, as OrderPlacer keeps it.
+     *
+     * @param  list<string>  $choices
+     */
+    private function built(Restaurant $shop, array $choices, string $shape = 'split', ?string $size = null, array $options = []): string
+    {
+        $order = Order::factory()->create(['restaurant_id' => $shop->id, 'currency' => 'USD', 'total' => '14.00']);
+        $share = $shape === 'split' ? count($choices) : 1;
+        OrderItem::factory()->create([
+            'order_id' => $order->id,
+            'name' => 'Build your pizza',
+            'unit_price' => '14.00',
+            'quantity' => 1,
+            'line_total' => '14.00',
+            'options' => [...$options, 'builds' => [[
+                'name' => 'Your pizza',
+                'shape' => $shape,
+                'parts' => array_map(fn (string $choice): array => ['choice' => $choice, 'share' => $share], $choices),
+                'price' => '14.00',
+                ...($size === null ? [] : ['size' => $size]),
+            ]]],
+        ]);
+
+        $text = $this->text($shop, $order->load('items'), $shop->main_locale);
+        preg_match('/\n\n(\*1 .*?)\n\n\*/s', $text, $match);
+
+        return $match[1];
+    }
+
+    public function test_a_built_dish_is_named_by_what_was_built_its_size_first(): void
+    {
+        $shop = $this->shop();
+
+        $this->assertSame('*1 Large: Half Margherita, Half Pepperoni*   $14', $this->built($shop, ['Margherita', 'Pepperoni'], size: 'Large'));
+        $this->assertSame('*1 Half Margherita, Half Pepperoni*   $14', $this->built($shop, ['Margherita', 'Pepperoni']));
+    }
+
+    public function test_thirds_and_quarters_are_said_in_words_and_the_same_choice_added_up(): void
+    {
+        $shop = $this->shop();
+
+        $this->assertSame('*1 A third Margherita, A third Pepperoni, A third Hawaiian*   $14', $this->built($shop, ['Margherita', 'Pepperoni', 'Hawaiian']));
+        $this->assertSame('*1 Two thirds Margherita, A third Pepperoni*   $14', $this->built($shop, ['Margherita', 'Pepperoni', 'Margherita']));
+        $this->assertSame('*1 A quarter Margherita, A quarter Pepperoni, A quarter Hawaiian, A quarter Veggie*   $14', $this->built($shop, ['Margherita', 'Pepperoni', 'Hawaiian', 'Veggie']));
+        // Two quarters of one pizza are a half.
+        $this->assertSame('*1 Half Margherita, A quarter Pepperoni, A quarter Veggie*   $14', $this->built($shop, ['Margherita', 'Pepperoni', 'Margherita', 'Veggie']));
+        $this->assertSame('*1 Three quarters Margherita, A quarter Pepperoni*   $14', $this->built($shop, ['Margherita', 'Margherita', 'Pepperoni', 'Margherita']));
+        // One choice all over is just that pizza.
+        $this->assertSame('*1 Large: Margherita*   $14', $this->built($shop, ['Margherita', 'Margherita'], size: 'Large'));
+        // A share without a word keeps its number.
+        $this->assertSame('*1 2/5 Margherita, 1/5 Pepperoni, 2/5 Veggie*   $14', $this->built($shop, ['Margherita', 'Pepperoni', 'Margherita', 'Veggie', 'Veggie']));
+    }
+
+    public function test_scoops_are_each_named_and_the_dishes_choices_go_below(): void
+    {
+        $shop = $this->shop();
+
+        $this->assertSame(implode("\n", [
+            '*1 Vanilla, Vanilla, Chocolate*   $14',
+            '• Cone',
+            '• Sprinkles',
+        ]), $this->built($shop, ['Vanilla', 'Chocolate', 'Vanilla'], 'pieces', options: [
+            'variants' => [['name' => 'Served in', 'choice' => 'Cone', 'price' => '0.00']],
+            'addons' => [['name' => 'Sprinkles', 'price' => '0.50']],
+        ]));
+    }
+
+    public function test_a_built_dish_reads_naturally_in_arabic(): void
+    {
+        $shop = $this->shop(['main_locale' => 'ar', 'name' => ['ar' => 'زيتون']]);
+
+        $this->assertSame('*1 كبير: نصف مارغريتا، نصف بيبروني*   $14', $this->built($shop, ['مارغريتا', 'بيبروني'], size: 'كبير'));
+        $this->assertSame('*1 ثلثا مارغريتا، ثلث بيبروني*   $14', $this->built($shop, ['مارغريتا', 'بيبروني', 'مارغريتا']));
+        $this->assertSame('*1 ثلاثة أرباع مارغريتا، ربع بيبروني*   $14', $this->built($shop, ['مارغريتا', 'مارغريتا', 'بيبروني', 'مارغريتا']));
+    }
+
+    public function test_a_second_build_goes_below_in_the_same_words(): void
+    {
+        $shop = $this->shop();
+        $order = Order::factory()->create(['restaurant_id' => $shop->id, 'currency' => 'USD', 'total' => '14.00']);
+        $build = fn (string $size, array $choices): array => [
+            'name' => 'Your pizza', 'shape' => 'split', 'price' => '7.00', 'size' => $size,
+            'parts' => array_map(fn (string $choice): array => ['choice' => $choice, 'share' => count($choices)], $choices),
+        ];
+        OrderItem::factory()->create([
+            'order_id' => $order->id, 'name' => 'Two pizzas', 'unit_price' => '14.00', 'quantity' => 1, 'line_total' => '14.00',
+            'options' => ['builds' => [$build('Large', ['Margherita', 'Pepperoni']), $build('Small', ['Veggie'])]],
+        ]);
+
+        $this->assertStringContainsString(
+            "\n\n*1 Large: Half Margherita, Half Pepperoni*   \$14\n• Small: Veggie\n\n",
+            $this->text($shop, $order->load('items')),
+        );
     }
 
     public function test_the_table_comes_first_named_once(): void
@@ -170,7 +294,7 @@ class WhatsAppLinkTest extends TestCase
         $order = $this->order($shop);
         $order->update(['note' => 'No coriander']);
 
-        $url = WhatsAppLink::forOrder($shop, $order->fresh()->load('items'));
+        $url = WhatsAppLink::forOrder($shop, $order->fresh()->load('items'), 'en');
         $text = rawurldecode((string) parse_url((string) $url, PHP_URL_QUERY));
 
         $this->assertStringContainsString('No coriander', $text);
@@ -179,7 +303,7 @@ class WhatsAppLinkTest extends TestCase
     public function test_the_currency_symbol_follows_the_restaurant(): void
     {
         $shop = $this->shop(['currency' => 'EUR']);
-        $url = (string) WhatsAppLink::forOrder($shop, $this->order($shop));
+        $url = (string) WhatsAppLink::forOrder($shop, $this->order($shop), 'en');
         $text = rawurldecode($url);
 
         $this->assertStringContainsString('€39', $text);

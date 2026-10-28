@@ -86,7 +86,12 @@ class PublicOrderTrackingController extends Controller
                         ...(isset($build['size_key']) ? ['size' => $build['size_key']] : []),
                     ], (array) ($item->options['builds'] ?? [])),
                     'qty' => $item->quantity,
-                ])->values()->all(),
+                ])
+                // A line a pair deal split (its full dishes, then the cheaper
+                // ones) goes back as the one cart line it came from.
+                ->groupBy(fn (array $line): string => json_encode([$line['dish'], $line['options'], $line['addons'], $line['builds']]) ?: '')
+                ->map(fn ($same): array => [...$same->first(), 'qty' => $same->sum('qty')])
+                ->values()->all(),
             'details' => [
                 'fulfilment' => $order->fulfilment?->value,
                 // Kept on a change (OrderPlacer::change()); shown, never sent back.

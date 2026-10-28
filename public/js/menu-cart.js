@@ -10,6 +10,16 @@
  * add-ons, picked in the dish sheet, menu-dish.js), so the same burger can
  * be in the cart as a Small and as a Large.
  *
+ * Offers (menu-offers.js marks each dish while one is live; the server's
+ * OrderPlacer prices the same way, to the cent):
+ * - a discount (data-deal-type, data-deal-value) takes off the dish's own
+ *   price and its variants, never its add-ons or builds, and not at all on
+ *   a line it would make free;
+ * - "buy one, get the second X% off" (data-pair-offer, data-pair-value):
+ *   the offer's dishes are counted in the order they went into the cart (a
+ *   line's units together), and every second one has its own price and
+ *   variants X% off. The lines are sent in that order too.
+ *
  * The restaurant takes orders one way (config.mode):
  * - `whatsapp`: the order is stored and the guest is sent to WhatsApp with
  *   it written out, an optional note included;
@@ -382,8 +392,27 @@
         });
     }
 
+    /** The dish's own full price; an offer's discount is worked out per line. */
     function priceOf(element) {
         return parseFloat(element.dataset.price || '0') || 0;
+    }
+
+    /**
+     * OfferDiscount::apply(), in whole cents, half up, never below nothing
+     * (twin of discounted() in menu-offers.js). An amount off is in the main
+     * currency: a dish priced in the second one takes it off at the rate.
+     */
+    function discounted(cents, type, value, rate) {
+        if (type === 'percent' || type === 'second') {
+            return Math.max(0, Math.round((cents * (100 - value)) / 100));
+        }
+
+        return Math.max(0, cents - Math.round((value * 100) / (rate || 1)));
+    }
+
+    /** As App\Support\Price::toMain(), to the cent, for a dish priced in the second currency. */
+    function toMain(cents, rate) {
+        return rate ? Math.round(cents * rate) / 100 : cents / 100;
     }
 
     /** The dish on the menu now; an offer's deal dish while the offer is not live is not. */
@@ -394,13 +423,15 @@
     /**
      * The line's choices as the menu offers them now: one option of each
      * variant and add-ons of this dish, or null when that no longer holds
-     * (the owner changed the dish, or switched its choices off).
+     * (the owner changed the dish, or switched its choices off). `extra` is
+     * what they all add, `variants` the part of it an offer's discount
+     * takes off (the variants and what was built; add-ons are not).
      */
     function picked(line) {
         var data = choices[line.dish];
 
         if (!data) {
-            return line.options.length === 0 && line.addons.length === 0 && (line.builds || []).length === 0 ? { extra: 0, labels: [] } : null;
+            return line.options.length === 0 && line.addons.length === 0 && (line.builds || []).length === 0 ? { extra: 0, variants: 0, labels: [] } : null;
         }
 
         // Built from parts (menu-build.js): each build filled as it allows.
@@ -413,6 +444,7 @@
         }
 
         var extra = built.extra;
+        var variants = built.extra;
         var labels = built.labels.slice();
         var used = 0;
 
@@ -425,6 +457,7 @@
             }
             used++;
             extra += parseFloat(hits[0].price) || 0;
+            variants += parseFloat(hits[0].price) || 0;
             labels.push(hits[0].name);
         }
 
@@ -443,7 +476,7 @@
             labels.push('+ ' + addon.name);
         });
 
-        return { extra: extra, labels: labels };
+        return { extra: extra, variants: variants, labels: labels };
     }
 
     /**
@@ -471,38 +504,112 @@
         return gone;
     }
 
+    /**
+     * Each line's price by its key, in whole cents, as the server works it
+     * out: `unit` (its discount taken off), and for a pair offer how many
+     * of its units are the second of a pair (`paired`, each at `pairUnit`).
+     * The cart's keys are in the order the lines went in, which is the
+     * order the pairs are counted in.
+     */
+    function priced() {
+        var result = {};
+        var counts = {};
+
+        Object.keys(cart).forEach(function (key, order) {
+            var line = cart[key];
+            var dish = findDish(line.dish);
+            var choice = dish && picked(line);
+
+            if (!choice) {
+                return;
+            }
+
+            var rate = parseFloat(dish.dataset.rate || '') || null;
+            // The part an offer takes off (the dish's own price, its variants
+            // and what was built), then the rest (add-ons).
+            var base = Math.round((priceOf(dish) + choice.variants) * 100);
+            var rest = Math.round((choice.extra - choice.variants) * 100);
+            var unit = base + rest;
+            var type = dish.dataset.dealType;
+
+            if (type) {
+                var off = discounted(base, type, parseFloat(dish.dataset.dealValue) || 0, rate);
+                // Free is never a discount's doing: the line pays in full.
+                if (off > 0) {
+                    unit = off + rest;
+                }
+            }
+
+            var paired = 0;
+            var pairUnit = unit;
+            var percent = 0;
+            var offer = dish.dataset.pairOffer;
+
+            if (offer && !type) {
+                percent = parseFloat(dish.dataset.pairValue) || 0;
+                pairUnit = discounted(base, 'second', percent, rate) + rest;
+                for (var unitNumber = 0; unitNumber < line.qty; unitNumber++) {
+                    counts[offer] = (counts[offer] || 0) + 1;
+                    if (counts[offer] % 2 === 0) {
+                        paired++;
+                    }
+                }
+            }
+
+            var whole = line.qty - paired;
+            result[key] = {
+                order: order,
+                unit: unit,
+                // What the line would cost with no offer, shown struck out beside a cheaper total.
+                full: line.qty * (base + rest),
+                paired: paired,
+                pairUnit: pairUnit,
+                percent: percent,
+                total: whole * unit + paired * pairUnit,
+                // In the main currency at the rate, to the cent, as the
+                // server counts each of its lines (the pairs are a line of
+                // their own there).
+                main: toMain(whole * unit, rate) + toMain(paired * pairUnit, rate),
+                converted: rate !== null,
+            };
+        });
+
+        return result;
+    }
+
     /** The lines in the menu's order, a dish's lines in the order added. */
     function lines() {
         var result = [];
+        var prices = priced();
 
         dishes().forEach(function (dish) {
             Object.keys(cart).forEach(function (key) {
                 var line = cart[key];
-                if (line.dish !== dish.dataset.dish) {
+                var price = prices[key];
+                if (line.dish !== dish.dataset.dish || !price) {
                     return;
                 }
 
                 var choice = picked(line);
-                var unit = priceOf(dish) + choice.extra;
-                // A dish priced in the second currency counts in the main one
-                // at the rate, to the cent, as App\Support\Price::toMain.
-                var rate = parseFloat(dish.dataset.rate || '') || null;
-                var cents = Math.round(unit * line.qty * 100);
                 result.push({
                     key: key,
+                    order: price.order,
                     id: line.dish,
                     options: line.options,
                     addons: line.addons,
                     builds: line.builds || [],
                     name: dish.dataset.name,
-                    choices: choice.labels.join(', '),
+                    choices: choice.labels.join(config.listSeparator || ', '),
                     image: dish.dataset.image || '',
-                    unit: unit,
+                    unit: price.unit / 100,
                     quantity: line.qty,
-                    total: unit * line.qty,
+                    paired: price.paired,
+                    percent: price.percent,
+                    total: price.total / 100,
+                    full: price.full / 100,
                     symbol: dish.dataset.currency || '',
-                    main: rate ? Math.round(cents * rate) / 100 : cents / 100,
-                    converted: rate !== null,
+                    main: price.main,
+                    converted: price.converted,
                 });
             });
         });
@@ -559,6 +666,21 @@
     }
 
     // ---- Rendering -------------------------------------------------------
+
+    /** "5 items" in the plural form the menu's language gives that number. */
+    var itemForms = null;
+    function itemCount(count) {
+        if (!itemForms) {
+            // Each sample number names the form it takes ("two" for 2 in Arabic).
+            var rules = new Intl.PluralRules(config.locale);
+            itemForms = {};
+            Object.keys(strings.items).forEach(function (sample) {
+                itemForms[rules.select(Number(sample))] = strings.items[sample];
+            });
+        }
+        var form = itemForms[new Intl.PluralRules(config.locale).select(count)] || itemForms.other || strings.items['100'];
+        return form.replace(':count', String(count));
+    }
 
     function element(tag, className, text) {
         var node = document.createElement(tag);
@@ -679,15 +801,29 @@
         }
 
         var body = element('div', 'cart-line-body');
-        body.appendChild(element('div', 'cart-line-name', line.name));
+        // Isolated, so a name in the other script keeps its punctuation in place.
+        body.appendChild(element('div', 'cart-line-name')).appendChild(element('bdi', null, line.name));
         if (line.choices) {
             body.appendChild(element('div', 'cart-line-choices', line.choices));
         }
         body.appendChild(element('div', 'cart-line-each', money(line.unit, line.symbol) + ' ' + strings.each));
+        // The second of a pair on a "buy one, get the second" offer.
+        if (line.paired > 0) {
+            var pairNote = line.percent >= 100
+                ? (strings.pairFree || ':count free')
+                : (strings.pairOff || ':count at :percent% off').replace(':percent', String(line.percent));
+            body.appendChild(element('div', 'cart-line-pair', pairNote.replace(':count', String(line.paired))));
+        }
 
         var bottom = element('div', 'cart-line-foot');
         bottom.appendChild(stepper(line.key, line.quantity, { dish: line.id, options: line.options, addons: line.addons, builds: line.builds }));
-        bottom.appendChild(element('div', 'cart-line-total', money(line.total, line.symbol)));
+        var total = element('div', 'cart-line-total');
+        // An offer's saving at a glance: the price without it, struck out.
+        if (line.full > line.total) {
+            total.appendChild(element('s', 'cart-line-was', money(line.full, line.symbol)));
+        }
+        total.appendChild(document.createTextNode(money(line.total, line.symbol)));
+        bottom.appendChild(total);
         body.appendChild(bottom);
 
         row.appendChild(body);
@@ -1137,6 +1273,14 @@
             wrap.appendChild(element('p', 'cart-closed', strings.forTable.replace(':table', table.name)));
         }
 
+        // In the menu with no choice to make (only orders at the table), no
+        // pill names the table, so this line does (paintFulfilment()).
+        if (inMenu && allTypes().length === 1 && allTypes()[0] === 'dine_in') {
+            var forTable = element('p', 'cart-closed');
+            forTable.setAttribute('data-for-table', '');
+            wrap.appendChild(forTable);
+        }
+
         if (inMenu) {
             if (allTypes().length > 1) {
                 wrap.appendChild(typesField(id));
@@ -1186,6 +1330,10 @@
         });
         Array.prototype.forEach.call(document.querySelectorAll('[data-table-name]'), function (node) {
             node.textContent = tableName();
+        });
+        Array.prototype.forEach.call(document.querySelectorAll('[data-for-table]'), function (node) {
+            node.textContent = strings.forTable.replace(':table', tableName());
+            node.hidden = tableName() === '';
         });
         Array.prototype.forEach.call(document.querySelectorAll('[data-delivery-only]'), function (node) {
             node.hidden = details.fulfilment !== 'delivery';
@@ -1516,8 +1664,7 @@
 
         var sum = totals();
 
-        var noun = sum.count === 1 ? strings.item : strings.items;
-        parts.lines.appendChild(element('div', 'cart-items', sum.count + ' ' + noun));
+        parts.lines.appendChild(element('div', 'cart-items', itemCount(sum.count)));
 
         var list = element('div', 'cart-lines');
         current.forEach(function (line) {
@@ -1594,7 +1741,11 @@
 
     function payload(current) {
         var body = {
-            items: current.map(function (line) {
+            // In the order they went into the cart: a pair offer's second
+            // dish is counted in that order (OrderPlacer).
+            items: current.slice().sort(function (a, b) {
+                return a.order - b.order;
+            }).map(function (line) {
                 return { dish_id: Number(line.id), quantity: line.quantity, options: line.options, addons: line.addons, builds: line.builds };
             }),
             // The language the guest is reading, so the WhatsApp message
@@ -1656,6 +1807,46 @@
         parts.error.hidden = false;
     }
 
+    /** An error the guest is shown as it says; anything else (no network,
+     *  a script's own error) is shown as strings.failed. */
+    function shown(message) {
+        var error = new Error(message);
+        error.shown = true;
+        return error;
+    }
+
+    /** What went wrong, as the guest is told it. */
+    function failure(error) {
+        return error && error.shown ? error.message : strings.failed;
+    }
+
+    /** The answer with its JSON, or no body when it has none (a proxy's error page). */
+    function answer(response) {
+        return response.json().catch(function () {
+            return null;
+        }).then(function (body) {
+            return { ok: response.ok, status: response.status, body: body };
+        });
+    }
+
+    /**
+     * A refusal in the menu's language: the page's token and the rate limit
+     * answer before the server knows which language the guest reads, and a
+     * restaurant that stopped taking orders answers a bare 404.
+     */
+    function refusal(result) {
+        if (result.status === 419) {
+            return strings.expired;
+        }
+        if (result.status === 429) {
+            return strings.tooMany;
+        }
+        if (result.status === 404) {
+            return strings.refresh;
+        }
+        return (result.body && result.body.message) || strings.failed;
+    }
+
     function submit(parts) {
         var current = lines();
         if (current.length === 0 || sending || closedNow() || waitingFor() || (needsTable() && !editing)) {
@@ -1700,28 +1891,36 @@
                 credentials: 'same-origin',
                 body: JSON.stringify(payload(current)),
             })
-            .then(function (response) {
-                return response.json().then(function (body) {
-                    return { ok: response.ok, status: response.status, body: body };
-                });
-            })
+            .then(answer)
             .then(function (result) {
                 if (!result.ok) {
                     if (result.status === 409 && result.body && result.body.prices) {
-                        // Prices went up while the cart sat here: the dishes
-                        // take the server's prices (menu-offers.js keeps
+                        // Prices went up while the cart sat here (a price, or
+                        // an offer that ended): the dishes take the server's
+                        // own prices and its deals (menu-offers.js keeps
                         // them), the cart draws again, and nothing was sent.
-                        document.dispatchEvent(new CustomEvent('qayema:server-prices', { detail: result.body.prices }));
+                        document.dispatchEvent(new CustomEvent('qayema:server-prices', {
+                            detail: { prices: result.body.prices, deals: result.body.deals || {} },
+                        }));
                         if (!window.QAYEMA_OFFERS) {
                             // No offers on this menu: a price simply went up.
                             Object.keys(result.body.prices).forEach(function (id) {
                                 var dish = findDish(id);
                                 if (dish) {
+                                    var now = parseFloat(result.body.prices[id]) || 0;
                                     dish.dataset.price = String(result.body.prices[id]);
+                                    dish.dataset.fullPrice = String(result.body.prices[id]);
+                                    // The card's "from" price too: its own, its
+                                    // cheapest choices on top (data-base-extra, data-extra).
+                                    var shown = dish.querySelector('.price');
+                                    if (shown) {
+                                        shown.textContent = money(now + (parseFloat(dish.dataset.baseExtra) || 0) + (parseFloat(dish.dataset.extra) || 0), dish.dataset.currency);
+                                    }
                                 }
                             });
+                            render();
                         }
-                        throw new Error(result.body.message || strings.failed);
+                        throw shown(result.body.message || strings.failed);
                     }
                     var tableError = result.status === 422 && result.body && result.body.errors && result.body.errors.table;
                     if (tableError) {
@@ -1730,14 +1929,14 @@
                         forgetTable();
                         details.fulfilment = firstType();
                         paintFulfilment();
-                        throw new Error([].concat(tableError)[0]);
+                        throw shown([].concat(tableError)[0]);
                     }
                     var errors = result.status === 422 ? fieldErrors(result.body && result.body.errors) : {};
                     if (Object.keys(errors).length > 0) {
                         showErrors(errors);
-                        throw new Error(strings.check);
+                        throw shown(strings.check);
                     }
-                    throw new Error((result.body && result.body.message) || strings.failed);
+                    throw shown(refusal(result));
                 }
 
                 var data = result.body.data || {};
@@ -1768,12 +1967,17 @@
                     // the guest is told which, as on a change.
                     toast(strings.sent, withoutUnavailable(body, data), data.tracking_url);
                 } else if (data.whatsapp_url) {
+                    // The details asked went with it: the next order may
+                    // be someone else's, as in the menu.
+                    if (config.guestKey) {
+                        resetDetails();
+                    }
                     // WhatsApp is what reaches the owner.
                     window.location.href = data.whatsapp_url;
                 }
             })
-            .catch(function (failure) {
-                fail(parts, failure.message || strings.failed);
+            .catch(function (error) {
+                fail(parts, failure(error));
             })
             .finally(function () {
                 sending = false;
@@ -1939,16 +2143,20 @@
         window
             .fetch(config.orderUrl + '/' + order.token + '/cart', { headers: { Accept: 'application/json' }, cache: 'no-store' })
             .then(function (response) {
-                return response.ok ? response.json() : Promise.reject(new Error(strings.failed));
+                return response.ok ? response.json() : Promise.reject(shown(strings.failed));
             })
             .then(function (body) {
                 var data = body.data;
                 if (!data.editable) {
-                    throw new Error(strings.lockedBody);
+                    throw shown(strings.lockedBody);
                 }
 
+                // The order's lines, then the cart's in the order they went
+                // in: a pair offer goes on counting from the order.
                 var merged = {};
-                data.lines.concat(current.map(function (line) {
+                data.lines.concat(current.slice().sort(function (a, b) {
+                    return a.order - b.order;
+                }).map(function (line) {
                     return { dish: line.id, options: line.options, addons: line.addons, builds: line.builds, qty: line.quantity };
                 })).forEach(function (line) {
                     var key = keyOf(line.dish, line.options, line.addons, line.builds);
@@ -1983,14 +2191,10 @@
                     }),
                 });
             })
-            .then(function (response) {
-                return response.json().then(function (body) {
-                    return { ok: response.ok, body: body };
-                });
-            })
+            .then(answer)
             .then(function (result) {
                 if (!result.ok) {
-                    throw new Error((result.body && result.body.message) || strings.failed);
+                    throw shown(refusal(result));
                 }
                 cart = {};
                 orderToken = null;
@@ -1998,8 +2202,8 @@
                 announce(result.body.data);
                 toast(strings.added, withoutUnavailable(strings.addedBody, result.body.data), result.body.data.tracking_url);
             })
-            .catch(function (failure) {
-                fail(parts, failure.message || strings.failed);
+            .catch(function (error) {
+                fail(parts, failure(error));
             })
             .finally(function () {
                 sending = false;
@@ -2057,14 +2261,19 @@
                 };
                 orderToken = null;
 
+                // In the order's own order, so a pair offer pairs the same
+                // dishes again; the second of a pair, a line of its own on
+                // the order, joins its dish's line.
                 cart = {};
                 data.lines.forEach(function (line) {
-                    cart[keyOf(line.dish, line.options, line.addons, line.builds)] = {
+                    var key = keyOf(line.dish, line.options, line.addons, line.builds);
+                    var known = cart[key];
+                    cart[key] = {
                         dish: String(line.dish),
                         options: sorted(line.options),
                         addons: sorted(line.addons),
                         builds: builtOf(line.builds),
-                        qty: line.qty,
+                        qty: Math.min(99, (known ? known.qty : 0) + line.qty),
                     };
                 });
 

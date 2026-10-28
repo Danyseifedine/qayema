@@ -8,6 +8,7 @@ use App\Models\Dish;
 use App\Models\DishVariantOption;
 use App\Models\Restaurant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\Support\CreatesOwners;
 use Tests\TestCase;
 
@@ -104,6 +105,25 @@ class DishOptionsTest extends TestCase
         $this->assertSame($large->id, $variant->options->first()->id);
         $this->assertSame('', $variant->options[1]->getTranslation('name', 'ar', false));
         $this->assertSame(0, $dish->addons()->count());
+    }
+
+    public function test_saving_the_same_choices_again_deletes_nothing(): void
+    {
+        $saved = $this->store($this->form())->assertCreated()->json('data');
+        $writes = [];
+        DB::listen(function ($query) use (&$writes): void {
+            if (str_starts_with(strtolower($query->sql), 'delete')) {
+                $writes[] = $query->sql;
+            }
+        });
+
+        // The form sends back every row it was given, by id.
+        $this->update(Dish::query()->findOrFail($saved['id']), $this->form([
+            'variants' => [[...$saved['variants'][0], 'options' => $saved['variants'][0]['options']]],
+            'addons' => $saved['addons'],
+        ]))->assertOk();
+
+        $this->assertSame([], $writes, 'A delete ran though every row was kept.');
     }
 
     public function test_an_edit_that_leaves_the_lists_out_leaves_them_alone(): void

@@ -251,6 +251,36 @@ class OrdersTest extends TestCase
             ->assertJsonPath('meta.last_page', 2);
     }
 
+    public function test_the_second_page_its_totals_and_what_is_waiting_come_from_one_count(): void
+    {
+        $shop = $this->owner();
+        $this->orderFor($shop, OrderStatus::Placed);
+        foreach (range(1, 31) as $ignored) {
+            $this->orderFor($shop, OrderStatus::Done);
+        }
+        $this->actingAs($shop->user);
+
+        $this->getJson(route('api.orders.index', ['page' => 2]))
+            ->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonPath('meta.total', 32)
+            ->assertJsonPath('meta.current_page', 2)
+            ->assertJsonPath('meta.last_page', 2)
+            ->assertJsonPath('meta.path', route('api.orders.index'))
+            ->assertJsonPath('links.next', null)
+            ->assertJsonPath('meta.open', 1);
+        // Filtered: the total is the filter's, the waiting count still all of them.
+        $this->getJson(route('api.orders.index', ['status' => 'done']))
+            ->assertJsonPath('meta.total', 31)
+            ->assertJsonPath('meta.open', 1);
+        // Nothing yet: no list to read.
+        $this->actingAs($this->owner(['slug' => 'empty'])->user)->getJson(route('api.orders.index'))
+            ->assertOk()
+            ->assertJsonCount(0, 'data')
+            ->assertJsonPath('meta.total', 0)
+            ->assertJsonPath('meta.open', 0);
+    }
+
     /** An admin with a restaurant of their own still only manages its orders from the dashboard. */
     public function test_an_admin_owning_a_restaurant_cannot_reach_anothers_orders_through_the_dashboard(): void
     {

@@ -63,6 +63,7 @@ class InboxTest extends TestCase
         $message = ContactMessage::factory()->create();
 
         Livewire::test(ListContactMessages::class)
+            ->assertTableColumnStateSet('handled_at', 'Open', $message)
             ->assertActionHasLabel(TestAction::make('handle')->table($message), 'Mark handled')
             ->callAction(TestAction::make('handle')->table($message))
             ->assertNotified('Marked handled')
@@ -72,6 +73,7 @@ class InboxTest extends TestCase
 
         Livewire::test(ListContactMessages::class)
             ->set('activeTab', 'handled')
+            ->assertTableColumnStateSet('handled_at', $message->fresh()->handled_at->diffForHumans(), $message)
             ->assertActionHasLabel(TestAction::make('handle')->table($message), 'Reopen')
             ->callAction(TestAction::make('handle')->table($message))
             ->assertNotified('Back in the open messages');

@@ -107,6 +107,24 @@ class MenuDishOptions
     }
 
     /**
+     * The least a dish's builds add (each offered build at its cheapest
+     * size), the part of its "from" price they make: an offer's discount
+     * comes off it too (LiveOffers::referencePrice()).
+     *
+     * @param  Collection<int|string, Collection<int, Dish>>  $byCategory  the dishes builds pick from, by category
+     */
+    public static function buildsFloor(Dish $dish, Collection $byCategory, string $main): string
+    {
+        $floor = '0.00';
+
+        foreach (self::builds($dish, $byCategory, fn ($model): string => '', $main) as $build) {
+            $floor = bcadd($floor, $build['cheapest'], 2);
+        }
+
+        return $floor;
+    }
+
+    /**
      * A dish's builds guests are offered (BuildChoices::offered()), in the
      * guest's language: its sizes, when its choices are priced by size, and
      * each choice with its price, or its price at each size. `cheapest` is

@@ -3,9 +3,11 @@
 namespace Tests\Integration\Services\Ai;
 
 use App\Models\WritingHelpDay;
+use App\Services\Ai\WritingHelpCredits;
 use App\Services\Ai\WritingHelpLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Tests\Support\CreatesOwners;
 use Tests\TestCase;
 
@@ -135,6 +137,25 @@ class WritingHelpLogTest extends TestCase
             'uses' => 0, 'tokens' => 0, 'restaurants' => 0, 'cost' => 0.0, 'cost_today' => 0.0,
             'credits' => 0, 'translation_uses' => 0, 'translation_cost' => 0.0, 'description_uses' => 0, 'description_cost' => 0.0,
         ], $this->log()->overall());
+    }
+
+    public function test_every_read_compares_the_day_as_it_is_so_the_index_does_the_work(): void
+    {
+        $owner = $this->owner();
+        $sql = [];
+        DB::listen(function ($query) use (&$sql): void {
+            $sql[] = $query->sql;
+        });
+
+        $this->log()->of($owner);
+        $this->log()->overall();
+        $this->log()->totalsSince('2026-10-01');
+        $this->log()->byRestaurantSince('2026-10-01', 10);
+        app(WritingHelpCredits::class)->thisMonth($owner);
+
+        // whereDate() is date("day") on MySQL (strftime here), which no index serves.
+        $this->assertCount(5, $sql);
+        $this->assertSame([], array_values(array_filter($sql, fn (string $query): bool => preg_match('/strftime|date\(/i', $query) === 1)));
     }
 
     public function test_a_restaurant_deleted_takes_its_days_with_it(): void

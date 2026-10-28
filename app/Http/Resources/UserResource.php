@@ -88,7 +88,6 @@ class UserResource extends JsonResource
         $package = $restaurant->effectivePackage();
         $status = $restaurant->packageStatus();
         $active = $status === PackageStatus::Active;
-        $base = rtrim((string) config('app.url'), '/');
 
         return [
             // The live orders channel is named after it (routes/channels.php).
@@ -105,7 +104,7 @@ class UserResource extends JsonResource
             // null until the owner picks a template; the dashboard stays
             // locked to the Templates tab while this is null.
             'template_id' => $restaurant->template_id,
-            'public_url' => "{$base}/{$restaurant->slug}",
+            'public_url' => $restaurant->publicUrl(),
             // The package actually in force: an assignment that has not
             // started reports as the default, because that is what the
             // limits below came from; an ended one is kept (`lapsed` says
@@ -116,9 +115,7 @@ class UserResource extends JsonResource
                 'is_contact_only' => (bool) $package?->is_contact_only,
                 'ends_at' => $active ? $restaurant->package_ends_at?->toIso8601String() : null,
                 // Whole days left, rounded up: "ends today" is 0.
-                'days_left' => $active && $restaurant->package_ends_at !== null
-                    ? (int) max(0, ceil(now()->diffInSeconds($restaurant->package_ends_at) / 86400))
-                    : null,
+                'days_left' => $restaurant->packageDaysLeft(),
             ],
             // The assigned package once it ended ("your Pro ended on …"): the
             // menu stays online for the grace days, then is offline until it

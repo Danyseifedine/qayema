@@ -57,7 +57,13 @@ final class Ingredients
     /** @param  list<string>  $items */
     public static function join(array $items, string $locale): string
     {
-        return implode(self::SEPARATORS[$locale] ?? ', ', $items);
+        return implode(self::separator($locale), $items);
+    }
+
+    /** What a list is written with in the language ("، " in Arabic). */
+    public static function separator(string $locale): string
+    {
+        return self::SEPARATORS[$locale] ?? ', ';
     }
 
     /** The text as a clean list, or null when nothing in it is an ingredient. */

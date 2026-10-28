@@ -143,7 +143,7 @@ class FeatureTest extends TestCase
         app()->setLocale('ar');
 
         $this->assertSame('تصميم رمز QR', Feature::QrStudio->label());
-        $this->assertSame('لغة ثانية في القائمة إلى جانب الإنجليزية.', Feature::MultipleLanguages->hint());
+        $this->assertSame('لغة ثانية في القائمة إلى جانب لغتها الأساسية.', Feature::MultipleLanguages->hint());
     }
 
     public function test_options_are_slug_to_label_in_case_order(): void

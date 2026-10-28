@@ -514,6 +514,12 @@ class Restaurant extends Model implements HasMedia
         return Entitlements::for($this);
     }
 
+    /** The menu's public address on APP_URL, e.g. https://qayema.com/olive-house. */
+    public function publicUrl(): string
+    {
+        return rtrim((string) config('app.url'), '/').'/'.$this->slug;
+    }
+
     /** The restaurant's timezone: the app's when unset or not a real one. */
     public function localTimezone(): string
     {

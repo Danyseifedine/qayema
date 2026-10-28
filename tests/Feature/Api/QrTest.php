@@ -184,6 +184,17 @@ class QrTest extends TestCase
         $this->get(route('public.qr', $restaurant->slug))->assertNotFound();
     }
 
+    public function test_public_card_speaks_the_language_the_menu_opens_in(): void
+    {
+        $restaurant = Restaurant::factory()->create(['template_id' => null, 'main_locale' => 'ar', 'default_locale' => 'ar']);
+        $restaurant->update(['qr_settings' => [...$this->design(), 'cta' => '']]);
+
+        $this->get(route('public.qr', $restaurant->slug))
+            ->assertOk()
+            ->assertSee('<html lang="ar" dir="rtl">', false)
+            ->assertSee('امسح الرمز لرؤية القائمة');
+    }
+
     public function test_update_persists_and_round_trips(): void
     {
         $restaurant = Restaurant::factory()->create(['template_id' => null]);

@@ -197,6 +197,8 @@ class OfferController extends Controller
             'weekdays' => $request->validated('repeat') === 'weekly' ? array_values((array) $request->validated('weekdays')) : null,
             'month_days' => $request->validated('repeat') === 'monthly' ? array_map('intval', array_values((array) $request->validated('month_days'))) : null,
             'time_windows' => $windows === null ? null : array_map(fn (array $window): array => ['from' => $window['from'], 'to' => $window['to']], array_values($windows)),
+            // Shown outside its hours only when it has hours to be outside of.
+            'shows_outside_hours' => $request->boolean('shows_outside_hours') && ($request->validated('repeat') !== 'always' || $windows !== null),
         ]);
 
         if ($request->has('is_active')) {

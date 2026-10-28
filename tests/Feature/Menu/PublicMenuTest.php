@@ -82,8 +82,8 @@ class PublicMenuTest extends TestCase
         // categories too.
         $html = strstr($this->get(route('public.menu', $restaurant->slug))->assertOk()->getContent(), '<body');
 
-        $this->assertStringContainsString('<p>From noon onwards</p>', $html);
-        $this->assertLessThan(strpos($html, 'From noon onwards'), strpos($html, '<h2>Plates</h2>'));
+        $this->assertStringContainsString('<p><bdi>From noon onwards</bdi></p>', $html);
+        $this->assertLessThan(strpos($html, 'From noon onwards'), strpos($html, '<h2><bdi>Plates</bdi></h2>'));
     }
 
     public function test_a_category_without_a_description_renders_no_empty_line(): void
@@ -94,7 +94,7 @@ class PublicMenuTest extends TestCase
 
         $html = $this->get(route('public.menu', $restaurant->slug))->assertOk()->getContent();
 
-        $this->assertMatchesRegularExpression('#<h2>Plates</h2>\s*</div>#', $html);
+        $this->assertMatchesRegularExpression('#<h2><bdi>Plates</bdi></h2>\s*</div>#', $html);
     }
 
     public function test_the_phone_card_keeps_only_the_hours(): void

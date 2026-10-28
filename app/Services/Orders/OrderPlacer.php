@@ -9,10 +9,12 @@ use App\Enums\OrderStatus;
 use App\Models\Dish;
 use App\Models\DishAddon;
 use App\Models\DishVariant;
+use App\Models\Offer;
 use App\Models\Order;
 use App\Models\Restaurant;
 use App\Services\Menu\BuildChoices;
 use App\Services\Menu\BuildPrice;
+use App\Services\Menu\MenuDishOptions;
 use App\Services\Menu\MenuLanguages;
 use App\Services\Offers\LiveOffers;
 use App\Support\Price;
@@ -43,9 +45,14 @@ use Illuminate\Validation\ValidationException;
  *
  * A dish on a live offer with a discount (LiveOffers, judged on the server's
  * clock in the restaurant's timezone) is charged its discounted price; the
- * line keeps the offer and the price before it. Variants, add-ons and
- * builds keep their own prices. An offer's deal dish is sold, at its own
- * price, only while that offer is live (LiveOffers::liveAmong()).
+ * line keeps the offer and the price before it. The discount comes off the
+ * dish's own price with the variants picked (a Large); add-ons and builds
+ * keep their own prices. A pair deal ("the second at 50% off") takes its
+ * share off every second dish of the offer, counted in the order the cart
+ * sent them (the order the guest added them); those dishes become a line
+ * of their own. A straight discount on a dish wins over a pair deal. An
+ * offer's deal dish is sold, at its own price, only while that offer is
+ * live (LiveOffers::liveAmong()).
  */
 class OrderPlacer
 {
@@ -69,16 +76,14 @@ class OrderPlacer
 
         // Lines are named in the language the guest ordered in, when it is one
         // of this menu's; the menu's opening language otherwise. A WhatsApp
-        // message is for the owner, so its lines are named in the menu's main
-        // language, the one the owner wrote it in; what the guest is told
-        // stays in theirs.
+        // order too: its message is written in the guest's language
+        // (WhatsAppLink), so the staff read what the guest picked.
         $locale = in_array($locale, $restaurant->menuLanguages(), true) ? (string) $locale : MenuLanguages::default($restaurant);
-        $linesLocale = $details->channel === OrderChannel::WhatsApp ? MenuLanguages::main($restaurant) : $locale;
         $variantsOn = $restaurant->showsVariants();
         $addonsOn = $restaurant->showsAddons();
 
         try {
-            return $this->create($restaurant, $lines, $details, $locale, $linesLocale, $variantsOn, $addonsOn);
+            return $this->create($restaurant, $lines, $details, $locale, $variantsOn, $addonsOn);
         } catch (UniqueConstraintViolationException $exception) {
             // Two presses raced past the check above; the first one won.
             return $this->alreadyPlaced($restaurant, $details) ?? throw $exception;
@@ -134,8 +139,8 @@ class OrderPlacer
                 throw new OrderChanged;
             }
 
-            [$items, $total, $unavailable] = $this->priced($restaurant, $lines, $locale, $variantsOn, $addonsOn);
-            $this->ensureNotDearer($details, $items, $total);
+            [$items, $total, $unavailable, $quote] = $this->priced($restaurant, $lines, $locale, $variantsOn, $addonsOn);
+            $this->ensureNotDearer($details, $items, $total, $quote);
 
             $locked->items()->delete();
             $locked->addItems($items);
@@ -172,11 +177,11 @@ class OrderPlacer
     /**
      * @param  array<int, array{dish_id: int, quantity: int, options?: array<int, int>, addons?: array<int, int>}>  $lines
      */
-    private function create(Restaurant $restaurant, array $lines, OrderDetails $details, string $locale, string $linesLocale, bool $variantsOn, bool $addonsOn): Order
+    private function create(Restaurant $restaurant, array $lines, OrderDetails $details, string $locale, bool $variantsOn, bool $addonsOn): Order
     {
-        return DB::transaction(function () use ($restaurant, $lines, $details, $locale, $linesLocale, $variantsOn, $addonsOn): Order {
-            [$items, $total, $unavailable] = $this->priced($restaurant, $lines, $locale, $variantsOn, $addonsOn, linesLocale: $linesLocale);
-            $this->ensureNotDearer($details, $items, $total);
+        return DB::transaction(function () use ($restaurant, $lines, $details, $locale, $variantsOn, $addonsOn): Order {
+            [$items, $total, $unavailable, $quote] = $this->priced($restaurant, $lines, $locale, $variantsOn, $addonsOn);
+            $this->ensureNotDearer($details, $items, $total, $quote);
 
             $order = $restaurant->orders()->create([
                 'reference' => Order::newReference(),
@@ -201,14 +206,16 @@ class OrderPlacer
 
     /**
      * Refuses a cart that costs more than the guest's page showed, handing
-     * back each dish's own price now so the page can show it. One that costs
-     * less goes through: the guest pays less.
+     * back each dish's own price now and the deal the server gives it, so
+     * the page can show them. One that costs less goes through: the guest
+     * pays less.
      *
      * @param  array<int, array<string, mixed>>  $items
+     * @param  array{prices: array<int, string>, deals: array<int, array{offer: int, type: string, value: float}|null>}  $quote
      *
      * @throws PricesChanged
      */
-    private function ensureNotDearer(OrderDetails $details, array $items, string $total): void
+    private function ensureNotDearer(OrderDetails $details, array $items, string $total, array $quote): void
     {
         // A line turned into the main currency may round a cent apart on the
         // phone (floating point there): a cent each is not "dearer".
@@ -219,17 +226,7 @@ class OrderPlacer
             return;
         }
 
-        $prices = [];
-        foreach ($items as $item) {
-            $own = (string) $item['unit_price'];
-            $chosen = is_array($item['options']) ? [...$item['options']['variants'], ...$item['options']['addons'], ...($item['options']['builds'] ?? [])] : [];
-            foreach ($chosen as $choice) {
-                $own = bcsub($own, (string) $choice['price'], 2);
-            }
-            $prices[(int) $item['dish_id']] = $own;
-        }
-
-        throw new PricesChanged($prices);
+        throw new PricesChanged($quote['prices'], $quote['deals']);
     }
 
     /**
@@ -244,18 +241,20 @@ class OrderPlacer
      */
     public function price(Restaurant $restaurant, array $lines, string $locale, bool $evenUnavailable = false): array
     {
-        return $this->priced($restaurant, $lines, $locale, $restaurant->showsVariants(), $restaurant->showsAddons(), $evenUnavailable);
+        [$items, $total, $unavailable] = $this->priced($restaurant, $lines, $locale, $restaurant->showsVariants(), $restaurant->showsAddons(), $evenUnavailable);
+
+        return [$items, $total, $unavailable];
     }
 
     /**
      * The cart as order lines, every price from this restaurant's menu.
      *
      * @param  array<int, array{dish_id: int, quantity: int, options?: array<int, int>, addons?: array<int, int>}>  $lines
-     * @return array{0: array<int, array<string, mixed>>, 1: string, 2: list<string>} the lines, the total, and the dishes asked for that are no longer sold (by name)
+     * @return array{0: array<int, array<string, mixed>>, 1: string, 2: list<string>, 3: array{prices: array<int, string>, deals: array<int, array{offer: int, type: string, value: float}|null>}} the lines, the total, the dishes asked for that are no longer sold (by name), and each dish's own price and deal now (for PricesChanged)
      *
      * @throws ValidationException when nothing in the cart can be ordered, or a dish misses a choice
      */
-    private function priced(Restaurant $restaurant, array $lines, string $locale, bool $variantsOn, bool $addonsOn, bool $evenUnavailable = false, ?string $linesLocale = null): array
+    private function priced(Restaurant $restaurant, array $lines, string $locale, bool $variantsOn, bool $addonsOn, bool $evenUnavailable = false): array
     {
         // One query for the whole cart, scoped to this restaurant: a dish
         // id from somewhere else simply is not in the result. One marked
@@ -278,24 +277,30 @@ class OrderPlacer
         // The dishes a build's parts are picked from, every category's in one read.
         $byCategory = $buildsOn ? $this->buildDishes($restaurant, $dishes) : collect();
         // Names in the guest's language, else the menu's main one: what the
-        // guest is told ($say), and the lines too unless they are named for
-        // the owner ($name, a WhatsApp message).
+        // guest is told and what the lines keep.
         $read = MenuLanguages::reader($restaurant, $locale);
-        $say = fn (Model $model): string => $read($model, 'name');
-        $readLines = $linesLocale === null || $linesLocale === $locale ? $read : MenuLanguages::reader($restaurant, $linesLocale);
-        $name = fn (Model $model): string => $readLines($model, 'name');
-        $unavailable = $gone->map($say)->values()->all();
-        $deals = $this->offers->bestFor(
+        $name = fn (Model $model): string => $read($model, 'name');
+        $unavailable = $gone->map($name)->values()->all();
+        // Offers are compared on what each dish costs at least (its price,
+        // cheapest variants and cheapest builds), then applied to the
+        // variants and builds picked.
+        $main = MenuLanguages::main($restaurant);
+        [$deals, $pairs] = $this->offers->dealsFor(
             $restaurant,
             $dishes->keys()->all(),
-            $dishes->filter(fn (Dish $dish): bool => $dish->price !== null)->map(fn (Dish $dish): string => (string) $dish->price)->all(),
+            $dishes->map(fn (Dish $dish): ?string => LiveOffers::referencePrice(
+                $dish,
+                $variantsOn,
+                $buildsOn && $dish->builds->isNotEmpty() ? MenuDishOptions::buildsFloor($dish, $byCategory, $main) : '0.00',
+            ))->filter()->all(),
             $now,
             // An amount off is in the main currency: a dish in the second one takes it at the rate.
             $dishes->map(fn (Dish $dish): ?string => $restaurant->rateOf($dish))->filter()->all(),
         );
 
-        $items = [];
-        $total = '0.00';
+        // Each line as priced, with what a pair deal needs to make every
+        // second dish cheaper once all lines are in (paired()).
+        $pending = [];
 
         foreach ($this->merge($lines, $variantsOn, $addonsOn, $buildsOn) as $line) {
             $dish = $dishes->get($line['dish_id']);
@@ -304,8 +309,8 @@ class OrderPlacer
                 continue;
             }
 
-            $variants = $variantsOn ? $this->variantChoices($dish, $line['options'], $name, $say) : [];
-            $builds = $buildsOn ? $this->buildChoices($dish, $line['builds'], $byCategory, $name, $say, MenuLanguages::main($restaurant)) : [];
+            $variants = $variantsOn ? $this->variantChoices($dish, $line['options'], $name) : [];
+            $builds = $buildsOn ? $this->buildChoices($dish, $line['builds'], $byCategory, $name, $main) : [];
 
             // No price of its own: its variants or its builds price it (a
             // sandwich by size, a pizza by its halves), and without one to
@@ -319,17 +324,27 @@ class OrderPlacer
             // Priced in the second currency: the line keeps it, and the total
             // (in the main one) counts it at the rate.
             $rate = $restaurant->rateOf($dish);
-            $fullPrice = $dish->price === null ? '0.00' : (string) $dish->price;
-            $deal = $dish->price === null ? null : ($deals[$dish->id] ?? null);
-            $unitPrice = $deal === null ? $fullPrice : $deal->discounted($fullPrice, $rate);
-            foreach ([...$variants, ...$addons, ...$builds] as $choice) {
-                $unitPrice = bcadd($unitPrice, $choice['price'], 2);
-                $fullPrice = bcadd($fullPrice, $choice['price'], 2);
+            // The discount's part: the dish's own price, the variants picked
+            // and what was built (a pizza's halves); add-ons are added after
+            // it, never discounted.
+            $base = $dish->price === null ? '0.00' : (string) $dish->price;
+            foreach ([...$variants, ...$builds] as $choice) {
+                $base = bcadd($base, $choice['price'], 2);
             }
-            $lineTotal = bcmul($unitPrice, (string) $line['quantity'], 2);
-            $total = bcadd($total, $rate === null ? $lineTotal : Price::toMain($lineTotal, $rate), 2);
+            $extras = '0.00';
+            foreach ($addons as $choice) {
+                $extras = bcadd($extras, $choice['price'], 2);
+            }
+            $deal = $deals[$dish->id] ?? null;
+            // Taking the whole of this line's price, it does not apply: no
+            // dish is ever free on a straight discount.
+            if ($deal !== null && bccomp($deal->discounted($base, $rate), '0', 2) <= 0) {
+                $deal = null;
+            }
+            $fullPrice = bcadd($base, $extras, 2);
+            $unitPrice = $deal === null ? $fullPrice : bcadd($deal->discounted($base, $rate), $extras, 2);
 
-            $items[] = [
+            $item = [
                 'dish_id' => $dish->id,
                 // Copied, not looked up: the menu may change tomorrow.
                 'name' => $name($dish),
@@ -338,22 +353,117 @@ class OrderPlacer
                     : ['variants' => $variants, 'addons' => $addons, ...($builds === [] ? [] : ['builds' => $builds])],
                 'unit_price' => $unitPrice,
                 'quantity' => $line['quantity'],
-                'line_total' => $lineTotal,
+                'line_total' => '0.00',
                 'currency' => $rate === null ? null : $dish->currency,
                 // Bought on an offer: which, and what it cost without it.
                 'offer_id' => $deal?->id,
-                'offer_title' => $deal === null ? null : $readLines($deal, 'title'),
+                'offer_title' => $deal === null ? null : $read($deal, 'title'),
                 'full_price' => $deal === null ? null : $fullPrice,
+            ];
+
+            $pending[] = [
+                'item' => $item,
+                'rate' => $rate,
+                'base' => $base,
+                'extras' => $extras,
+                // A straight discount on the dish wins: it takes no pair deal,
+                // even on a line where that discount would take the whole price.
+                'pair' => isset($deals[$dish->id]) ? null : ($pairs[$dish->id] ?? null),
             ];
         }
 
-        if ($items === []) {
+        if ($pending === []) {
             throw ValidationException::withMessages([
                 'items' => __('Nothing in your order is available any more.'),
             ]);
         }
 
-        return [$items, $total, $unavailable];
+        $items = [];
+        $total = '0.00';
+
+        foreach ($this->paired($pending, $read) as $priced) {
+            [$item, $rate] = $priced;
+            $item['line_total'] = bcmul((string) $item['unit_price'], (string) $item['quantity'], 2);
+            $total = bcadd($total, $rate === null ? $item['line_total'] : Price::toMain($item['line_total'], $rate), 2);
+            $items[] = $item;
+        }
+
+        return [$items, $total, $unavailable, $this->quote($dishes, $deals, $pairs)];
+    }
+
+    /**
+     * Pair deals applied, in the order the lines came: for each such offer
+     * its dishes are counted one by one, and every second one (the 2nd,
+     * 4th...) takes the offer's share off its own price and variants. A line
+     * holding some of those becomes two: its dishes at the full price, then
+     * the cheaper ones as a line of their own carrying the offer. Twinned by
+     * the cart on the guest's phone (menu-cart.js).
+     *
+     * @param  array<int, array{item: array<string, mixed>, rate: string|null, base: string, extras: string, pair: Offer|null}>  $pending
+     * @param  Closure(Model, string): string  $read  a text in the guest's language
+     * @return list<array{0: array<string, mixed>, 1: string|null}> each line and its rate
+     */
+    private function paired(array $pending, Closure $read): array
+    {
+        $counted = [];
+        $lines = [];
+
+        foreach ($pending as $line) {
+            $item = $line['item'];
+            $pair = $line['pair'];
+
+            if ($pair === null) {
+                $lines[] = [$item, $line['rate']];
+
+                continue;
+            }
+
+            $before = $counted[$pair->id] ?? 0;
+            $quantity = (int) $item['quantity'];
+            $counted[$pair->id] = $before + $quantity;
+            // The even places among this line's dishes, counting on from the offer's last.
+            $seconds = intdiv($before + $quantity, 2) - intdiv($before, 2);
+
+            if ($quantity > $seconds) {
+                $lines[] = [[...$item, 'quantity' => $quantity - $seconds], $line['rate']];
+            }
+
+            if ($seconds > 0) {
+                $lines[] = [[
+                    ...$item,
+                    'quantity' => $seconds,
+                    'unit_price' => bcadd($pair->discounted($line['base'], $line['rate']), $line['extras'], 2),
+                    'offer_id' => $pair->id,
+                    'offer_title' => $read($pair, 'title'),
+                    'full_price' => $item['unit_price'],
+                ], $line['rate']];
+            }
+        }
+
+        return $lines;
+    }
+
+    /**
+     * Each dish's own price now (none: 0) and the deal the server gives it,
+     * for a page whose cart cost less than this one (PricesChanged).
+     *
+     * @param  Collection<int, Dish>  $dishes
+     * @param  array<int, Offer>  $deals
+     * @param  array<int, Offer>  $pairs
+     * @return array{prices: array<int, string>, deals: array<int, array{offer: int, type: string, value: float}|null>}
+     */
+    private function quote(Collection $dishes, array $deals, array $pairs): array
+    {
+        $prices = [];
+        $given = [];
+
+        foreach ($dishes as $dish) {
+            $prices[$dish->id] = $dish->price === null ? '0.00' : (string) $dish->price;
+            $offer = $deals[$dish->id] ?? $pairs[$dish->id] ?? null;
+            $given[$dish->id] = $offer === null ? null : ['offer' => $offer->id, 'type' => $offer->discount_type->value, 'value' => (float) $offer->discount_value];
+        }
+
+        return ['prices' => $prices, 'deals' => $given];
     }
 
     /**
@@ -379,23 +489,22 @@ class OrderPlacer
      * dish's order.
      *
      * @param  array<int, int>  $chosen
-     * @param  Closure(Model): string  $name  a name as the line keeps it
-     * @param  Closure(Model): string  $say  a name in the guest's language, for what they are told
+     * @param  Closure(Model): string  $name  a name in the guest's language, as the line keeps it and they are told
      * @return array<int, array{name: string, choice: string, price: string, option_id: int}>
      *
      * @throws ValidationException when a variant has no option picked, or more than one
      */
-    private function variantChoices(Dish $dish, array $chosen, Closure $name, Closure $say): array
+    private function variantChoices(Dish $dish, array $chosen, Closure $name): array
     {
         // As on the menu (MenuDishOptions): a variant with a single option
         // leaves nothing to pick, so it is not asked for.
         $variants = $dish->variants->filter(fn (DishVariant $variant): bool => $variant->options->count() >= 2);
 
-        return $variants->map(function (DishVariant $variant) use ($dish, $chosen, $name, $say): array {
+        return $variants->map(function (DishVariant $variant) use ($dish, $chosen, $name): array {
             $picked = $variant->options->whereIn('id', $chosen);
 
             if ($picked->count() !== 1) {
-                $replace = ['variant' => $say($variant), 'dish' => $say($dish)];
+                $replace = ['variant' => $name($variant), 'dish' => $name($dish)];
 
                 throw ValidationException::withMessages([
                     'items' => $picked->isEmpty()
@@ -465,14 +574,13 @@ class OrderPlacer
      *
      * @param  array<int, array{build: int, parts: array<int, string>, size?: string|null}>  $chosen
      * @param  Collection<int|string, Collection<int, Dish>>  $byCategory
-     * @param  Closure(Model): string  $name  a name as the line keeps it
-     * @param  Closure(Model): string  $say  a name in the guest's language, for what they are told
+     * @param  Closure(Model): string  $name  a name in the guest's language, as the line keeps it and they are told
      * @param  string  $main  the menu's main language, which names a size
      * @return list<array{name: string, shape: string, parts: list<array{choice: string, share: int}>, price: string, build_id: int, keys: list<string>, size?: string, size_key?: string}>
      *
      * @throws ValidationException when a build is not filled as it allows
      */
-    private function buildChoices(Dish $dish, array $chosen, Collection $byCategory, Closure $name, Closure $say, string $main): array
+    private function buildChoices(Dish $dish, array $chosen, Collection $byCategory, Closure $name, string $main): array
     {
         $picked = collect($chosen)->keyBy('build');
         $builds = [];
@@ -493,7 +601,7 @@ class OrderPlacer
 
             if (! in_array(count($keys), $build->partCounts(), true) || in_array(null, $parts, true)) {
                 throw ValidationException::withMessages([
-                    'items' => __('Choose every part of :build for :dish.', ['build' => $say($build), 'dish' => $say($dish)]),
+                    'items' => __('Choose every part of :build for :dish.', ['build' => $name($build), 'dish' => $name($dish)]),
                 ]);
             }
 
