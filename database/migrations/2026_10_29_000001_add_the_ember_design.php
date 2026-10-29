@@ -19,9 +19,9 @@ return new class extends Migration
      * @var array<int, array<string, mixed>>
      */
     private const SCHEMA = [
-        ['key' => 'primary_color', 'type' => 'color', 'default' => '#D4A85A',
+        ['key' => 'primary_color', 'type' => 'color', 'default' => '#E4CA55',
             'label' => ['en' => 'Gold', 'ar' => 'الذهبي'], 'contrast_with' => 'background_color'],
-        ['key' => 'background_color', 'type' => 'color', 'default' => '#0E0C0A',
+        ['key' => 'background_color', 'type' => 'color', 'default' => '#0F0F0F',
             'label' => ['en' => 'Background', 'ar' => 'الخلفية']],
         ['key' => 'text_color', 'type' => 'color', 'default' => '#F3EBDD',
             'label' => ['en' => 'Text', 'ar' => 'النص'], 'contrast_with' => 'background_color'],

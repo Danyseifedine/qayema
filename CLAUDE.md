@@ -756,22 +756,27 @@ menu uses. API: `GET/PUT /api/appearance` (`AppearanceController`), body
 `{settings?: {key: value}, fonts?: {script: family}}`, null = back to default.
 
 **Ember** (`ember`, "جمر", premium) is the second design: dark and warm, the
-cover full-bleed behind the round logo and the name, search (the magnifier
-turns the top bar into a search field held at the top with a close button;
-the cover, offers, builds and bottom bar step aside; the close button or
-Escape empties it, through `[data-search-close]` in menu-nav.js, which only
-a design with that button gets) and the language in a dark pill on the cover, the
+cover full-bleed behind the round logo and the name, search in a dark pill
+on the cover (the magnifier turns the top bar into a search field held at
+the top with a close button; the cover, offers, builds and bottom bar step
+aside; menu-nav.js puts `is-searching` on the body and makes the change a
+view transition where the browser has one, and the close button or Escape
+empties it and goes back to where the guest was, only for a design with
+`[data-search-close]`; the language sits in the pill on a wide screen), the
 phone, WhatsApp, QR (and the map on a wide screen) as round buttons under
-the hours, the categories as tiles of one size (an icon each, the chef's hat when
-none was picked; names in EB Garamond for Latin letters, through the theme
+the hours, the categories as tiles of one size (the icon on one line across the row;
+a category without one shows its name alone, centred; names in EB Garamond for Latin letters, through the theme
 partial's `tile_font`, one weight in the same Google Fonts request; the
-tiles' olive and pale gold are fixed, not the owner's colours), dark dish
+tiles' edge, icons and the picked one's glow follow the owner's main colour over a dark olive), dark dish
 cards of one height (the name a line, the ingredients up to two) with the
 photo fading in from the end side, and a floating bar at the foot of a
-phone (WhatsApp or the social links as the cover's button, Menu, Location
-when there is a map, Cart with its count when the menu takes orders) in
+phone, icons only (WhatsApp or the social links as the cover's button,
+Menu, Language when there is a second one, Location when there is a map,
+Cart with its count when the menu takes orders) in
 place of Classic's dock. Headings and dish names are the
-owner's own font, heavier. Its row comes from a migration
+owner's own font, heavier; until the owner picks one, Ember's Latin font is
+Playfair Display (`MenuFonts::DESIGN_DEFAULTS`, `defaultFor()`, also the
+default the Appearance page shows), other scripts keep the catalogue's. Its row comes from a migration
 (`2026_10_29_000001_add_the_ember_design`), so production and the e2e
 database get it; its settings are the gold, the background, the text and
 `show_name`. Its stylesheet restyles every shared part (cart, dish sheet,

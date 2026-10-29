@@ -82,7 +82,7 @@ class AppearanceController extends Controller
                 'script' => $script,
                 'languages' => $languages,
                 'value' => MenuFonts::chosen($restaurant, $script),
-                'default' => $catalogue[$script]['default'],
+                'default' => MenuFonts::defaultFor($restaurant, $script),
                 'sample' => $catalogue[$script]['sample'],
                 'options' => array_map(
                     fn (string $family, array $font): array => ['family' => $family, 'category' => $font['category']],

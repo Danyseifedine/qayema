@@ -59,7 +59,7 @@ class AddTheEmberDesignTest extends TestCase
 
         $this->assertSame(1, Template::query()->where('slug', 'ember')->count());
         $this->assertTrue($this->ember()->is_premium);
-        $this->assertSame('#0E0C0A', $this->ember()->defaultSettings()['background_color']);
+        $this->assertSame('#0F0F0F', $this->ember()->defaultSettings()['background_color']);
     }
 
     public function test_rolling_it_back_moves_its_menus_to_classic_and_forgets_their_colours(): void

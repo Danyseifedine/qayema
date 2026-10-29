@@ -85,9 +85,10 @@ class EmberDesignTest extends TestCase
         $this->assertStringContainsString('class="pill-button on-wide" data-pop-open="lang"', $html);
         $this->assertStringNotContainsString('dock-label', $html);
         $this->assertStringContainsString('href="#menu-categories"', $html);
-        // Headings are the owner's own font; only the tiles' names add a
-        // serif, at one weight, in the same request.
-        $this->assertStringContainsString('fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=EB+Garamond:wght@400&amp;display=swap', $html);
+        // Headings are the owner's own font, Playfair Display until they pick
+        // another; only the tiles' names add a serif, at one weight, in the
+        // same request.
+        $this->assertStringContainsString('fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&amp;family=EB+Garamond:wght@400&amp;display=swap', $html);
         $this->assertStringContainsString("--font-tiles: 'EB Garamond', var(--font);", $html);
         $this->assertStringContainsString('<body class="has-dock is-spaced">', $html);
     }
@@ -109,8 +110,8 @@ class EmberDesignTest extends TestCase
         $restaurant = $this->emberMenu();
 
         $html = $this->menu($restaurant);
-        $this->assertStringContainsString('--accent: #D4A85A;', $html);
-        $this->assertStringContainsString('--page: #0E0C0A;', $html);
+        $this->assertStringContainsString('--accent: #E4CA55;', $html);
+        $this->assertStringContainsString('--page: #0F0F0F;', $html);
         $this->assertStringContainsString('--text: #F3EBDD;', $html);
         $this->assertStringContainsString('color-scheme: dark;', $html);
         $this->assertStringContainsString('<span class="brand-name"><bdi>Olive &amp; Ember</bdi></span>', $html);

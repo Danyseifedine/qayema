@@ -55,12 +55,21 @@ class MenuFonts
     }
 
     /**
+     * A design's own default for a script, by its slug, used until the owner
+     * picks a font: Ember is drawn in Playfair Display. Each must be one of
+     * the script's choices.
+     */
+    private const DESIGN_DEFAULTS = [
+        'ember' => ['latin' => 'Playfair Display'],
+    ];
+
+    /**
      * The font the menu draws a script in: the owner's pick while their
-     * package includes Appearance, else the script's default.
+     * package includes Appearance, else the default.
      */
     public static function family(Restaurant $restaurant, string $script): string
     {
-        return $restaurant->hasAppearance() ? self::chosen($restaurant, $script) : self::default($script);
+        return $restaurant->hasAppearance() ? self::chosen($restaurant, $script) : self::defaultFor($restaurant, $script);
     }
 
     /** The owner's pick for a script, else its default, whatever the package. */
@@ -70,12 +79,14 @@ class MenuFonts
 
         return is_string($picked) && in_array($picked, self::choices($script), true)
             ? $picked
-            : self::default($script);
+            : self::defaultFor($restaurant, $script);
     }
 
-    private static function default(string $script): string
+    /** A script's default on the design the menu shows: the design's own, else the catalogue's. */
+    public static function defaultFor(Restaurant $restaurant, string $script): string
     {
-        return (string) (self::catalogue()[$script]['default'] ?? 'Inter');
+        return self::DESIGN_DEFAULTS[$restaurant->menuTemplate()?->slug][$script]
+            ?? (string) (self::catalogue()[$script]['default'] ?? 'Inter');
     }
 
     /**

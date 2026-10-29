@@ -42,8 +42,8 @@
 
     // The design's own defaults (the templates row's settings_schema) stand
     // in for a row an admin removed.
-    $accent = $settings['primary_color'] ?? '#D4A85A';
-    $background = $settings['background_color'] ?? '#0E0C0A';
+    $accent = $settings['primary_color'] ?? '#E4CA55';
+    $background = $settings['background_color'] ?? '#0F0F0F';
     $textColor = $settings['text_color'] ?? '#F3EBDD';
     $accentInk = Color::inkOn($accent);
 
@@ -242,8 +242,10 @@
                     </button>
                     @foreach ($visible as $category)
                         <button type="button" class="tab" data-tab="category-{{ $category->id }}" aria-current="false" @if ($dealsOnly($category)) hidden data-deal-off @endif>
-                            {{-- Every tile wears an icon, so all line up: the chef's hat for a category without one. --}}
-                            <span class="tab-icon">{!! CategoryIcons::svg($category->icon) ?? CategoryIcons::svg('chef-hat') !!}</span>
+                            {{-- A category without an icon shows its name alone, centred in the tile. --}}
+                            @if ($icon = CategoryIcons::svg($category->icon))
+                                <span class="tab-icon">{!! $icon !!}</span>
+                            @endif
                             <span class="tab-name"><bdi>{{ $text($category, 'name') }}</bdi></span>
                         </button>
                     @endforeach

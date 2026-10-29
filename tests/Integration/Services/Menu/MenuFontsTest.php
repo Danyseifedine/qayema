@@ -3,6 +3,7 @@
 namespace Tests\Integration\Services\Menu;
 
 use App\Enums\Feature;
+use App\Models\Template;
 use App\Services\Menu\MenuFonts;
 use Illuminate\Config\Repository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -127,6 +128,29 @@ class MenuFontsTest extends TestCase
         $this->assertSame('El Messiri', MenuFonts::chosen($restaurant, 'arabic'));
         $this->assertSame('Noto Sans SC', MenuFonts::chosen($restaurant, 'chinese'));
         $this->assertSame('Noto Sans Devanagari', MenuFonts::chosen($restaurant, 'devanagari'));
+    }
+
+    public function test_ember_draws_latin_in_playfair_display_until_the_owner_picks_another(): void
+    {
+        $ember = Template::query()->where('slug', 'ember')->firstOrFail();
+        $restaurant = $this->ownerOn('premium', ['template_id' => $ember->id, 'menu_fonts' => null]);
+
+        $this->assertSame('Playfair Display', MenuFonts::family($restaurant, 'latin'));
+        $this->assertSame('Playfair Display', MenuFonts::defaultFor($restaurant, 'latin'));
+        $this->assertSame('El Messiri', MenuFonts::family($restaurant, 'arabic'), 'Ember has no Arabic default of its own.');
+
+        $restaurant->update(['menu_fonts' => ['latin' => 'Lora']]);
+
+        $this->assertSame('Lora', MenuFonts::family($restaurant->fresh(), 'latin'), "The owner's pick still wins.");
+    }
+
+    public function test_a_menu_that_falls_back_from_ember_takes_the_catalogue_default(): void
+    {
+        $ember = Template::query()->where('slug', 'ember')->firstOrFail();
+        // Ember is premium: on the default package the menu is drawn in Classic.
+        $restaurant = $this->owner(['template_id' => $ember->id, 'menu_fonts' => null]);
+
+        $this->assertSame('Inter', MenuFonts::defaultFor($restaurant, 'latin'));
     }
 
     public function test_no_fonts_saved_at_all_reads_as_the_defaults(): void
