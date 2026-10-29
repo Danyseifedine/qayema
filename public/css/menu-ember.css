@@ -117,18 +117,13 @@ button, input, textarea { font: inherit; color: inherit; }
 
 .hero-top { display: flex; align-items: center; gap: 10px; }
 .brand { flex: 1; min-width: 0; display: flex; align-items: center; gap: 9px; color: inherit; text-decoration: none; }
-/* The logo round, with no ring around it, shown whole (a wide or
-   transparent logo is never cropped); without a logo, its first letter on
-   a round of the page's colour. */
-.brand-mark {
-    flex-shrink: 0;
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
-}
-img.brand-mark { object-fit: contain; }
-span.brand-mark { background: var(--page); }
-span.brand-mark { display: flex; align-items: center; justify-content: center; color: var(--accent); font-size: 20px; font-weight: 700; }
+/* The logo in its own shape, whole and never cropped: one height, as wide
+   as it is (a round mark stays round, a wordmark gets its width) up to
+   about half the bar, corners only softened. Without a logo, its first
+   letter on a round of the page's colour. */
+.brand-mark { flex-shrink: 0; height: 44px; }
+img.brand-mark { width: auto; max-width: min(160px, 45vw); border-radius: 8px; object-fit: contain; }
+span.brand-mark { display: flex; align-items: center; justify-content: center; width: 44px; border-radius: 50%; background: var(--page); color: var(--accent); font-size: 20px; font-weight: 700; }
 .brand-name { min-width: 0; font-size: 14.5px; font-weight: 700; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Search and the language, in one dark pill. */
@@ -930,7 +925,9 @@ body.is-searching .tabs { margin-top: 12px; }
     .wrap.with-cart { grid-template-columns: minmax(0, 1fr) 380px; }
 
     .hero { min-height: 440px; padding: 24px 48px 40px; }
-    .brand-mark { width: 54px; height: 54px; }
+    .brand-mark { height: 56px; }
+    img.brand-mark { max-width: 220px; }
+    span.brand-mark { width: 56px; }
     .brand-name { font-size: 18px; }
     .hero h1 { font-size: clamp(40px, 3.6vw, 52px); }
     .hero-text { font-size: 14px; }
