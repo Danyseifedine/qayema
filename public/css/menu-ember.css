@@ -66,45 +66,68 @@ button, input, textarea { font: inherit; color: inherit; }
 .hero-photo { position: absolute; z-index: -2; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 /* The default banner is a light grey: turned down to the room's warm dark. */
 .hero-photo-default { filter: brightness(.42) sepia(.7) saturate(1.3); }
-/* The page's own colour over the photo: a little at the top, under the
-   logo and the pill, none in the middle, and all of it at the foot, so the
-   cover runs into the page without an edge. */
+/* The page's own colour over the photo, as a glow behind the words: strong
+   at the start side where the name and the description sit, gone by the
+   far side, so the photo shows clear there and at the top; and all of it
+   at the foot, so the cover runs into the page without an edge. The same
+   on a dark page and a light one. */
 .hero-shade {
     position: absolute;
     z-index: -1;
     inset: 0;
     background:
         linear-gradient(to bottom,
-            color-mix(in srgb, var(--page) 62%, transparent) 0%,
-            color-mix(in srgb, var(--page) 10%, transparent) 26%,
-            color-mix(in srgb, var(--page) 55%, transparent) 56%,
-            color-mix(in srgb, var(--page) 92%, transparent) 84%,
+            color-mix(in srgb, var(--page) 34%, transparent) 0%,
+            transparent 24%,
+            transparent 58%,
+            color-mix(in srgb, var(--page) 62%, transparent) 86%,
             var(--page) 100%),
-        linear-gradient(to right, color-mix(in srgb, var(--page) 58%, transparent) 0%, transparent 72%);
+        linear-gradient(to right,
+            color-mix(in srgb, var(--page) 94%, transparent) 0%,
+            color-mix(in srgb, var(--page) 86%, transparent) 34%,
+            color-mix(in srgb, var(--page) 62%, transparent) 58%,
+            color-mix(in srgb, var(--page) 22%, transparent) 80%,
+            transparent 96%);
 }
 [dir="rtl"] .hero-shade {
     background:
         linear-gradient(to bottom,
-            color-mix(in srgb, var(--page) 62%, transparent) 0%,
-            color-mix(in srgb, var(--page) 10%, transparent) 26%,
-            color-mix(in srgb, var(--page) 55%, transparent) 56%,
-            color-mix(in srgb, var(--page) 92%, transparent) 84%,
+            color-mix(in srgb, var(--page) 34%, transparent) 0%,
+            transparent 24%,
+            transparent 58%,
+            color-mix(in srgb, var(--page) 62%, transparent) 86%,
             var(--page) 100%),
-        linear-gradient(to left, color-mix(in srgb, var(--page) 58%, transparent) 0%, transparent 72%);
+        linear-gradient(to left,
+            color-mix(in srgb, var(--page) 94%, transparent) 0%,
+            color-mix(in srgb, var(--page) 86%, transparent) 34%,
+            color-mix(in srgb, var(--page) 62%, transparent) 58%,
+            color-mix(in srgb, var(--page) 22%, transparent) 80%,
+            transparent 96%);
+}
+
+/* A light page: the description in the full text colour and a little
+   heavier, so the thin capitals read over the glow. */
+[data-tone="light"] .hero-text { color: var(--text); font-weight: 500; }
+[data-tone="light"] .category-head p { color: color-mix(in srgb, var(--text) 78%, var(--page)); font-weight: 500; }
+/* Cards and sheets only a breath off a light page, with a fine line. */
+:root[data-tone="light"] {
+    --bg: color-mix(in srgb, var(--text) 3%, var(--page));
+    --line: color-mix(in srgb, var(--text) 9%, var(--page));
 }
 
 .hero-top { display: flex; align-items: center; gap: 10px; }
 .brand { flex: 1; min-width: 0; display: flex; align-items: center; gap: 9px; color: inherit; text-decoration: none; }
-/* The logo in a plain round frame, shown whole inside it (a wide or
-   transparent logo is never cropped). */
+/* The logo round, with no ring around it, shown whole (a wide or
+   transparent logo is never cropped); without a logo, its first letter on
+   a round of the page's colour. */
 .brand-mark {
     flex-shrink: 0;
     width: 42px;
     height: 42px;
     border-radius: 50%;
-    background: var(--page);
 }
-img.brand-mark { padding: 4px; object-fit: contain; }
+img.brand-mark { object-fit: contain; }
+span.brand-mark { background: var(--page); }
 span.brand-mark { display: flex; align-items: center; justify-content: center; color: var(--accent); font-size: 20px; font-weight: 700; }
 .brand-name { min-width: 0; font-size: 14.5px; font-weight: 700; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
@@ -114,7 +137,7 @@ span.brand-mark { display: flex; align-items: center; justify-content: center; c
     display: flex;
     align-items: center;
     max-width: 100%;
-    padding: 4px;
+    padding: 2px;
     border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
     border-radius: 999px;
     background: color-mix(in srgb, var(--page) 70%, transparent);
@@ -123,9 +146,10 @@ span.brand-mark { display: flex; align-items: center; justify-content: center; c
 }
 /* A hairline between the pill's parts. */
 .hero-pill > * + * { position: relative; }
-.hero-pill > * + *::before { content: ""; position: absolute; inset-inline-start: -1px; top: 10px; bottom: 10px; width: 1px; background: color-mix(in srgb, var(--text) 20%, transparent); }
-.pill-button, .pill-search { position: relative; display: flex; align-items: center; justify-content: center; min-width: 38px; height: 38px; border: 0; border-radius: 999px; background: transparent; color: var(--text); cursor: pointer; }
-.pill-search { min-width: 0; padding-inline: 10px; gap: 0; }
+.hero-pill > * + *::before { content: ""; position: absolute; inset-inline-start: -1px; top: 8px; bottom: 8px; width: 1px; background: color-mix(in srgb, var(--text) 20%, transparent); }
+.pill-button, .pill-search { position: relative; display: flex; align-items: center; justify-content: center; min-width: 32px; height: 32px; border: 0; border-radius: 999px; background: transparent; color: var(--text); cursor: pointer; }
+.hero-pill .icon { width: 17px; height: 17px; }
+.pill-search { min-width: 0; padding-inline: 8px; gap: 0; }
 /* The box is closed until the magnifier is tapped (the label focuses it);
    then the bar becomes the search (see "Searching" below). 16px text, so
    an iPhone does not zoom the page in. The close button empties it. */
@@ -142,7 +166,8 @@ span.brand-mark { display: flex; align-items: center; justify-content: center; c
 
 .hero-body { margin-top: auto; padding-top: 28px; }
 .hero h1 { margin: 0; font-size: clamp(25px, 7.6vw, 32px); font-weight: 700; line-height: 1.12; letter-spacing: -0.015em; color: var(--text); text-shadow: 0 2px 18px color-mix(in srgb, var(--page) 70%, transparent); }
-.hero-text { max-width: 34em; margin: 8px 0 0; font-size: 13px; line-height: 1.55; color: color-mix(in srgb, var(--text) 86%, var(--page)); }
+/* The description wraps short of the edge, as a line under the name. */
+.hero-text { max-width: min(64%, 26em); margin: 8px 0 0; font-size: 13px; line-height: 1.55; color: color-mix(in srgb, var(--text) 86%, var(--page)); }
 .is-spaced .hero-text { font-size: 10.5px; line-height: 1.8; }
 
 .hero-facts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 14px; }
@@ -184,12 +209,13 @@ span.brand-mark { display: flex; align-items: center; justify-content: center; c
     width: clamp(80px, calc((100vw - 56px) / 4), 100px);
     height: 88px;
     padding: 17px 6px 0;
-    /* The owner's main colour for the edge, the icon and the picked one's
-       glow, over the design's own dark olive. */
-    border: 1px solid color-mix(in srgb, var(--accent) 12%, transparent);
+    /* Every colour from the owner's three: a tile a shade off the page
+       (light or dark), the name in the text colour, the edge, the icon and
+       the picked one's glow in the main colour. */
+    border: 1px solid color-mix(in srgb, var(--accent) 14%, transparent);
     border-radius: 14px;
-    background: #161612;
-    color: #d6d1c4;
+    background: color-mix(in srgb, var(--text) 6%, var(--page));
+    color: color-mix(in srgb, var(--text) 84%, var(--page));
     font-family: var(--font-tiles, var(--font));
     font-size: 13.5px;
     font-weight: 400;
@@ -198,32 +224,32 @@ span.brand-mark { display: flex; align-items: center; justify-content: center; c
     cursor: pointer;
     transition: background-color .2s ease, border-color .2s ease;
 }
-.tab-icon { display: inline-flex; flex-shrink: 0; color: color-mix(in srgb, var(--accent) 78%, #fff); opacity: .75; }
+.tab-icon { display: inline-flex; flex-shrink: 0; color: var(--accent); opacity: .8; }
 .tab-icon svg { display: block; width: 26px; height: 26px; stroke-width: 1.25; }
 .tab-name { max-width: 100%; overflow-wrap: break-word; hyphens: auto; }
 /* No icon: the name alone, in the middle of the tile. */
 .tab:not(:has(.tab-icon)) { justify-content: center; padding-top: 0; }
-/* The picked one, in the owner's main colour: a thin edge with a faint
-   bleed outside it, and a fill glowing at its rim (the colour over the
-   design's olive), darker toward the middle. */
+/* The picked one, in the owner's main colour over the page: a thin edge
+   with a faint bleed outside it, and a fill glowing at its rim, quieter
+   toward the middle (on a dark page the gold reads as warm olive). */
 .tab[aria-current="true"] {
     border-color: color-mix(in srgb, var(--accent) 78%, var(--page));
     background:
-        linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, .3) 100%),
+        linear-gradient(to bottom, transparent 50%, color-mix(in srgb, var(--page) 35%, transparent) 100%),
         radial-gradient(closest-side ellipse at center,
-            color-mix(in srgb, var(--accent) 6%, #1c2011) 0%,
-            color-mix(in srgb, var(--accent) 9%, #1f2512) 55%,
-            color-mix(in srgb, var(--accent) 22%, #2b3019) 85%,
-            color-mix(in srgb, var(--accent) 30%, #33391f) 100%);
+            color-mix(in srgb, var(--accent) 7%, var(--page)) 0%,
+            color-mix(in srgb, var(--accent) 10%, var(--page)) 55%,
+            color-mix(in srgb, var(--accent) 19%, var(--page)) 85%,
+            color-mix(in srgb, var(--accent) 27%, var(--page)) 100%);
     box-shadow:
-        inset 0 0 7px 1px color-mix(in srgb, var(--accent) 28%, rgba(56, 63, 34, .9)),
-        0 0 0 1px color-mix(in srgb, var(--accent) 35%, rgba(82, 78, 53, .7)),
-        0 0 4px 1px color-mix(in srgb, var(--accent) 22%, transparent);
+        inset 0 0 7px 1px color-mix(in srgb, var(--accent) 24%, transparent),
+        0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent),
+        0 0 4px 1px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 .tab[aria-current="true"] .tab-icon { opacity: 1; }
-.tab[aria-current="true"] .tab-name { color: #efe8da; }
+.tab[aria-current="true"] .tab-name { color: var(--text); }
 @media (hover: hover) {
-    .tab:not([aria-current="true"]):hover { background: #1d1d17; }
+    .tab:not([aria-current="true"]):hover { background: color-mix(in srgb, var(--text) 10%, var(--page)); }
 }
 
 /* ---- Dishes ---- */
@@ -348,7 +374,7 @@ span.brand-mark { display: flex; align-items: center; justify-content: center; c
 .place { width: 100%; border: 0; cursor: pointer; border-radius: 999px; background: var(--accent); color: var(--accent-ink); padding: 15px 20px; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 10px 26px -12px color-mix(in srgb, var(--accent) 85%, transparent); }
 .place.split { justify-content: space-between; }
 .place[disabled] { opacity: .6; cursor: progress; }
-.cart-error { margin: 10px 0 0; font-size: 13px; color: #ff8a80; }
+.cart-error { margin: 10px 0 0; font-size: 13px; color: color-mix(in srgb, #e5534b 80%, var(--text)); }
 .cart-empty { padding: 60px 0; text-align: center; color: var(--muted); }
 
 /* ---- Following an order: the tracking sheet (menu-order.js) ---- */
@@ -368,7 +394,7 @@ span.brand-mark { display: flex; align-items: center; justify-content: center; c
 .is-waiting .track-mark .icon { animation: track-pulse 1.4s ease-in-out infinite alternate; }
 .is-moving .track-mark { background: var(--accent); color: var(--accent-ink); }
 .is-done .track-mark { background: #2f9e57; color: #fff; }
-.is-cancelled .track-mark { background: color-mix(in srgb, #d9534f 18%, var(--bg)); color: #ff8a80; }
+.is-cancelled .track-mark { background: color-mix(in srgb, #d9534f 18%, var(--bg)); color: color-mix(in srgb, #e5534b 80%, var(--text)); }
 .track-title { margin: 12px 0 4px; font-size: 20px; font-weight: 700; }
 .track-body { margin: 0 auto; max-width: 320px; color: var(--muted); font-size: 13.5px; }
 .track-ref { margin: 8px 0 0; font-size: 12.5px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -446,8 +472,8 @@ textarea.cart-input { min-height: 64px; }
 .cart-country-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cart-country-dial { flex-shrink: 0; color: var(--muted); font-variant-numeric: tabular-nums; direction: ltr; }
 .cart-country-empty { margin: 0; padding: 4px 16px 14px; font-size: 13px; color: var(--muted); }
-.cart-field:has(.cart-field-error:not([hidden])) :is(.cart-input, .cart-phone) { border-color: #ff8a80; }
-.cart-field-error { margin: 6px 0 0; font-size: 12px; color: #ff8a80; }
+.cart-field:has(.cart-field-error:not([hidden])) :is(.cart-input, .cart-phone) { border-color: color-mix(in srgb, #e5534b 80%, var(--text)); }
+.cart-field-error { margin: 6px 0 0; font-size: 12px; color: color-mix(in srgb, #e5534b 80%, var(--text)); }
 /* "Use my current location": a soft gold row above the address box. */
 .cart-locate-button { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 42px; margin-bottom: 8px; padding: 8px 12px; border: 1px dashed var(--gold-line); border-radius: 12px; background: var(--gold-soft); color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; transition: background-color .15s ease; }
 .cart-locate-button:hover { background: color-mix(in srgb, var(--accent) 24%, var(--bg)); }
@@ -853,7 +879,7 @@ body.is-searching { --dock: 0px; }
 body.is-searching :is(.hero-photo, .hero-shade, .hero-body, .offers-banner, .builds, .dock, .brand, .pill-button) { display: none; }
 body.is-searching .hero { position: sticky; top: 0; z-index: 25; min-height: 0; padding-block: 10px; overflow: visible; background: var(--page); box-shadow: 0 10px 24px -14px rgba(0,0,0,.9); }
 body.is-searching .hero-pill { flex: 1; background: var(--bg); border-color: transparent; }
-body.is-searching .pill-search { flex: 1; justify-content: flex-start; color: var(--accent); }
+body.is-searching .pill-search { flex: 1; height: 40px; justify-content: flex-start; color: var(--accent); }
 body.is-searching .pill-search input { flex: 1; width: auto; padding-inline: 10px 4px; }
 body.is-searching .pill-close { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 38px; height: 38px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--text); cursor: pointer; }
 body.is-searching .tabs { margin-top: 12px; }

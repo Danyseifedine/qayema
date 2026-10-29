@@ -42,9 +42,11 @@
 
     // The design's own defaults (the templates row's settings_schema) stand
     // in for a row an admin removed.
-    $accent = $settings['primary_color'] ?? '#E4CA55';
     $background = $settings['background_color'] ?? '#0F0F0F';
     $textColor = $settings['text_color'] ?? '#F3EBDD';
+    // The owner's colour, deepened (on a light page) or lifted (on a dark
+    // one) only as far as it takes to stand out on their background.
+    $accent = Color::readableOn($settings['primary_color'] ?? '#E4CA55', $background);
     $accentInk = Color::inkOn($accent);
 
     $icons = MenuIcons::all();
@@ -81,7 +83,7 @@
     $dealsOnly = fn ($category): bool => $category->dishes->every(fn ($dish): bool => in_array($dish->id, $hidden_deals, true));
 @endphp
 <!DOCTYPE html>
-<html lang="{{ $locale }}" dir="{{ $isRtl ? 'rtl' : 'ltr' }}">
+<html lang="{{ $locale }}" dir="{{ $isRtl ? 'rtl' : 'ltr' }}"{!! Color::isDark($background) ? '' : ' data-tone="light"' !!}>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">

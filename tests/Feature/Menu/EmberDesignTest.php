@@ -8,6 +8,7 @@ use App\Models\DiningTable;
 use App\Models\Dish;
 use App\Models\Restaurant;
 use App\Models\Template;
+use App\Support\Color;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Tests\Support\CreatesOwners;
@@ -114,6 +115,7 @@ class EmberDesignTest extends TestCase
         $this->assertStringContainsString('--page: #0F0F0F;', $html);
         $this->assertStringContainsString('--text: #F3EBDD;', $html);
         $this->assertStringContainsString('color-scheme: dark;', $html);
+        $this->assertStringNotContainsString('data-tone="light"', $html);
         $this->assertStringContainsString('<span class="brand-name"><bdi>Olive &amp; Ember</bdi></span>', $html);
 
         $restaurant->saveDesignSettings($this->ember(), ['primary_color' => '#C0392B', 'background_color' => '#FAF7F2', 'text_color' => '#1A1A1A', 'show_name' => false]);
@@ -122,6 +124,13 @@ class EmberDesignTest extends TestCase
         $this->assertStringContainsString('--accent: #C0392B;', $html);
         $this->assertStringContainsString('--page: #FAF7F2;', $html);
         $this->assertStringContainsString('color-scheme: light;', $html);
+        // A light page lightens the cover's haze and the cards (menu-ember.css).
+        $this->assertStringContainsString('data-tone="light">', $html);
+
+        // A pale gold on a white page is deepened until it stands out.
+        $restaurant->saveDesignSettings($this->ember(), ['primary_color' => '#E4CA55', 'background_color' => '#FFFFFF', 'text_color' => '#1A1A1A']);
+        $this->assertStringContainsString('--accent: '.Color::readableOn('#E4CA55', '#FFFFFF').';', $this->menu($restaurant->fresh()));
+        $this->assertStringNotContainsString('--accent: #E4CA55;', $this->menu($restaurant->fresh()));
         $this->assertStringNotContainsString('class="brand-name"', $html);
         $this->assertStringContainsString('<a class="brand" href="#top" aria-label="Olive &amp; Ember">', $html);
     }

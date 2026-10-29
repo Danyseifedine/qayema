@@ -767,7 +767,7 @@ phone, WhatsApp, QR (and the map on a wide screen) as round buttons under
 the hours, the categories as tiles of one size (the icon on one line across the row;
 a category without one shows its name alone, centred; names in EB Garamond for Latin letters, through the theme
 partial's `tile_font`, one weight in the same Google Fonts request; the
-tiles' edge, icons and the picked one's glow follow the owner's main colour over a dark olive), dark dish
+tiles a shade off the page, their names in the text colour, their edge, icons and the picked one's glow in the main colour, so a light page works too), dark dish
 cards of one height (the name a line, the ingredients up to two) with the
 photo fading in from the end side, and a floating bar at the foot of a
 phone, icons only (WhatsApp or the social links as the cover's button,

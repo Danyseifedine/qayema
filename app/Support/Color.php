@@ -50,6 +50,57 @@ final class Color
         return (0.2126 * $r + 0.7152 * $g + 0.0722 * $b) / 255 > 0.62 ? '#111418' : '#FFFFFF';
     }
 
+    /** How bright a colour looks, 0 for black to 1 for white (WCAG relative luminance). */
+    public static function luminance(string $hex): float
+    {
+        $channel = function (int $value): float {
+            $value /= 255;
+
+            return $value <= 0.03928 ? $value / 12.92 : (($value + 0.055) / 1.055) ** 2.4;
+        };
+        [$r, $g, $b] = self::rgb($hex);
+
+        return 0.2126 * $channel($r) + 0.7152 * $channel($g) + 0.0722 * $channel($b);
+    }
+
+    /** How far apart two colours read, from 1 (the same) to 21 (black on white). */
+    public static function contrast(string $first, string $second): float
+    {
+        $lighter = max(self::luminance($first), self::luminance($second));
+        $darker = min(self::luminance($first), self::luminance($second));
+
+        return ($lighter + 0.05) / ($darker + 0.05);
+    }
+
+    /**
+     * The colour as the owner chose it when it stands out on the background,
+     * else moved just far enough toward black (on a light background) or
+     * white (on a dark one) that it does: a pale gold on a white page stays
+     * gold, only deeper. 3:1 is what icons and large text need.
+     */
+    public static function readableOn(string $hex, string $background, float $ratio = 3.0): string
+    {
+        if (self::contrast($hex, $background) >= $ratio) {
+            return $hex;
+        }
+
+        $toward = self::isDark($background) ? 255 : 0;
+        [$r, $g, $b] = self::rgb($hex);
+
+        for ($step = 1; $step <= 20; $step++) {
+            $mixed = sprintf('#%02X%02X%02X', ...array_map(
+                fn (int $channel): int => (int) round($channel + ($toward - $channel) * $step / 20),
+                [$r, $g, $b],
+            ));
+
+            if (self::contrast($mixed, $background) >= $ratio) {
+                return $mixed;
+            }
+        }
+
+        return $toward === 0 ? '#000000' : '#FFFFFF';
+    }
+
     /**
      * Whether a background reads as dark, so the browser's own parts drawn
      * on it (scrollbars, form controls) come in their dark variant.

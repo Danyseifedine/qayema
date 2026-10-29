@@ -189,4 +189,40 @@ class ColorTest extends TestCase
         $this->assertTrue(Color::isDark('#7F7F7F'));
         $this->assertFalse(Color::isDark('#808080'));
     }
+
+    public function test_contrast_runs_from_one_to_twenty_one(): void
+    {
+        $this->assertEqualsWithDelta(21.0, Color::contrast('#000000', '#FFFFFF'), 0.01);
+        $this->assertEqualsWithDelta(1.0, Color::contrast('#E4CA55', '#E4CA55'), 0.01);
+        $this->assertEqualsWithDelta(Color::contrast('#FFFFFF', '#000000'), Color::contrast('#000000', '#FFFFFF'), 0.0001);
+    }
+
+    public function test_a_colour_that_stands_out_is_kept_as_chosen(): void
+    {
+        $this->assertSame('#E4CA55', Color::readableOn('#E4CA55', '#0F0F0F'));
+        $this->assertSame('#C0392B', Color::readableOn('#C0392B', '#FAF7F2'));
+    }
+
+    public function test_a_pale_colour_on_a_light_page_is_deepened_just_enough(): void
+    {
+        $deeper = Color::readableOn('#E4CA55', '#FFFFFF');
+
+        $this->assertNotSame('#E4CA55', $deeper);
+        $this->assertGreaterThanOrEqual(3.0, Color::contrast($deeper, '#FFFFFF'));
+        // One step less would not have been enough: still gold, not black.
+        $this->assertLessThan(4.0, Color::contrast($deeper, '#FFFFFF'));
+    }
+
+    public function test_a_dark_colour_on_a_dark_page_is_lifted(): void
+    {
+        $lifted = Color::readableOn('#3A0000', '#0F0F0F');
+
+        $this->assertGreaterThanOrEqual(3.0, Color::contrast($lifted, '#0F0F0F'));
+    }
+
+    public function test_a_colour_that_can_never_stand_out_ends_at_black_or_white(): void
+    {
+        $this->assertSame('#000000', Color::readableOn('#FFFFFF', '#FFFFFF', 22.0));
+        $this->assertSame('#FFFFFF', Color::readableOn('#000000', '#000000', 22.0));
+    }
 }
