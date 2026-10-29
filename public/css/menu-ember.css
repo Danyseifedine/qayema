@@ -1,0 +1,973 @@
+/* Ember: a dark, warm menu with gold lines. The colours and the font come
+   from the :root block the page itself carries (the restaurant's own);
+   headings are the same font, heavier. The cart, the sheets and the offers
+   are shared parts (menu.partials), restyled here. */
+
+* { box-sizing: border-box; }
+
+/* The search and the category tiles hide dishes and sections with the
+   hidden attribute; `.dish { display: flex }` below must never win over it. */
+[hidden] { display: none !important; }
+
+html {
+    scroll-behavior: smooth;
+    /* The scrollbar's room is kept while a pop-up locks the page (below),
+       so nothing shifts sideways. */
+    scrollbar-gutter: stable;
+    background: var(--page);
+    scrollbar-color: color-mix(in srgb, var(--text) 26%, var(--page)) var(--page);
+}
+
+/* While a pop-up or a sheet is open (every one is a modal <dialog>; the
+   short ad and the toasts are not), the page behind does not scroll. */
+:root:has(dialog:modal), :root:has(dialog:modal) body { overflow: hidden; }
+
+body {
+    margin: 0;
+    background: var(--page);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+}
+
+button, input, textarea { font: inherit; color: inherit; }
+
+.icon { display: inline-flex; width: 16px; height: 16px; flex-shrink: 0; }
+.icon svg { display: block; width: 100%; height: 100%; }
+.icon-search { width: 18px; height: 18px; }
+.icon-back { width: 22px; height: 22px; }
+[dir="rtl"] .icon-back { transform: scaleX(-1); }
+
+/* What the owner writes can hold a word wider than a phone: it breaks
+   inside the word rather than pushing the page sideways. */
+.hero h1, .hero-text, .brand-name, .category-head h2, .category-head p, .dish-name,
+.ingredients, .dish-sheet-head h2, .cart-line-name, .cart-line-choices,
+.track-line-name, .tab-name { overflow-wrap: anywhere; }
+
+/* Small spaced capitals, only where the letters have capitals and keep
+   their shape apart (the page sets .is-spaced for Latin and Cyrillic). */
+.is-spaced .hero-text, .is-spaced .category-head p { text-transform: uppercase; letter-spacing: .16em; }
+
+/* ---- Shell ---- */
+.col-main { min-width: 0; }
+
+/* ---- The cover: the photo behind the logo, the name and the hours ---- */
+.hero {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    min-height: 340px;
+    padding: 12px 16px 20px;
+    overflow: hidden;
+}
+.hero-photo { position: absolute; z-index: -2; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* The default banner is a light grey: turned down to the room's warm dark. */
+.hero-photo-default { filter: brightness(.42) sepia(.7) saturate(1.3); }
+/* The page's own colour over the photo: a little at the top, under the
+   logo and the pill, none in the middle, and all of it at the foot, so the
+   cover runs into the page without an edge. */
+.hero-shade {
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    background:
+        linear-gradient(to bottom,
+            color-mix(in srgb, var(--page) 62%, transparent) 0%,
+            color-mix(in srgb, var(--page) 10%, transparent) 26%,
+            color-mix(in srgb, var(--page) 55%, transparent) 56%,
+            color-mix(in srgb, var(--page) 92%, transparent) 84%,
+            var(--page) 100%),
+        linear-gradient(to right, color-mix(in srgb, var(--page) 58%, transparent) 0%, transparent 72%);
+}
+[dir="rtl"] .hero-shade {
+    background:
+        linear-gradient(to bottom,
+            color-mix(in srgb, var(--page) 62%, transparent) 0%,
+            color-mix(in srgb, var(--page) 10%, transparent) 26%,
+            color-mix(in srgb, var(--page) 55%, transparent) 56%,
+            color-mix(in srgb, var(--page) 92%, transparent) 84%,
+            var(--page) 100%),
+        linear-gradient(to left, color-mix(in srgb, var(--page) 58%, transparent) 0%, transparent 72%);
+}
+
+.hero-top { display: flex; align-items: center; gap: 10px; }
+.brand { flex: 1; min-width: 0; display: flex; align-items: center; gap: 9px; color: inherit; text-decoration: none; }
+/* The logo in a plain round frame, shown whole inside it (a wide or
+   transparent logo is never cropped). */
+.brand-mark {
+    flex-shrink: 0;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--page);
+}
+img.brand-mark { padding: 4px; object-fit: contain; }
+span.brand-mark { display: flex; align-items: center; justify-content: center; color: var(--accent); font-size: 20px; font-weight: 700; }
+.brand-name { min-width: 0; font-size: 14.5px; font-weight: 700; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Search and the language, in one dark pill. */
+.hero-pill {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    max-width: 100%;
+    padding: 4px;
+    border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--page) 70%, transparent);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+}
+/* A hairline between the pill's parts. */
+.hero-pill > * + * { position: relative; }
+.hero-pill > * + *::before { content: ""; position: absolute; inset-inline-start: -1px; top: 10px; bottom: 10px; width: 1px; background: color-mix(in srgb, var(--text) 20%, transparent); }
+.pill-button, .pill-search { position: relative; display: flex; align-items: center; justify-content: center; min-width: 38px; height: 38px; border: 0; border-radius: 999px; background: transparent; color: var(--text); cursor: pointer; }
+.pill-search { min-width: 0; padding-inline: 10px; gap: 0; }
+/* The box is closed until the magnifier is tapped (the label focuses it);
+   then the bar becomes the search (see "Searching" below). 16px text, so
+   an iPhone does not zoom the page in. The close button empties it. */
+.pill-search input { width: 0; min-width: 0; padding: 0; border: 0; background: transparent; color: var(--text); font-size: 16px; outline: none; }
+.pill-search input::placeholder { color: var(--muted); }
+.pill-search input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+.pill-close { display: none; }
+.pill-button:active { transform: scale(.94); }
+.pill-button:focus-visible, .dockface:focus-visible, .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* The button a closed pop-up hands focus back to: its own edge turns gold,
+   never a second ring around it, so the three always look alike. */
+.round-button:focus { outline: none; }
+.round-button:focus-visible { border-color: var(--accent); }
+
+.hero-body { margin-top: auto; padding-top: 28px; }
+.hero h1 { margin: 0; font-size: clamp(25px, 7.6vw, 32px); font-weight: 700; line-height: 1.12; letter-spacing: -0.015em; color: var(--text); text-shadow: 0 2px 18px color-mix(in srgb, var(--page) 70%, transparent); }
+.hero-text { max-width: 34em; margin: 8px 0 0; font-size: 13px; line-height: 1.55; color: color-mix(in srgb, var(--text) 86%, var(--page)); }
+.is-spaced .hero-text { font-size: 10.5px; line-height: 1.8; }
+
+.hero-facts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 14px; }
+/* Open now, with a lit dot; closed, a dim one. menu-hours.js keeps it right. */
+.hours { display: inline-flex; align-items: center; min-height: 30px; padding: 5px 12px; border-radius: 999px; border: 1px solid color-mix(in srgb, #3fb950 50%, transparent); background: color-mix(in srgb, #3fb950 10%, color-mix(in srgb, var(--page) 60%, transparent)); }
+.hours:has(.fact-shut) { border-color: var(--line); background: color-mix(in srgb, var(--page) 60%, transparent); }
+.hours-label { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; }
+.hours-label::before { content: ""; flex-shrink: 0; width: 7px; height: 7px; border-radius: 50%; background: #3fb950; }
+.hours-label.fact-shut::before { background: #d9534f; }
+.hours-value { font-size: 13px; color: color-mix(in srgb, var(--text) 82%, var(--page)); font-variant-numeric: tabular-nums; }
+.hero-table { display: inline-flex; align-items: center; gap: 7px; min-height: 30px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--gold-line); color: var(--text); font-size: 13px; font-weight: 600; }
+.hero-table .icon { color: var(--accent); }
+
+.hero-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.round-button { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; border: 1px solid var(--gold-line); border-radius: 50%; background: color-mix(in srgb, var(--page) 55%, transparent); color: var(--accent); cursor: pointer; text-decoration: none; transition: background-color .15s ease; }
+.round-button .icon { width: 17px; height: 17px; }
+/* Only where there is a pointer: a phone keeps a tapped button "hovered". */
+@media (hover: hover) {
+    .round-button:hover { background: var(--gold-soft); }
+}
+/* The map is in the bar at the foot of a phone. */
+.round-button.on-wide, .pill-button.on-wide { display: none; }
+
+/* ---- The category tiles ---- */
+.tabs { margin-top: 16px; }
+.tabs-inner { display: flex; gap: 8px; padding: 4px 16px 8px; overflow-x: auto; overscroll-behavior-x: contain; scroll-padding-inline: 16px; scrollbar-width: none; }
+.tabs-inner::-webkit-scrollbar { display: none; }
+.tab {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    /* One size for every tile, whatever its name: four across a 390px
+       phone (a narrower one scrolls), the icon and the name under it (two
+       lines at most) centred together, with the same room above and below. */
+    width: clamp(80px, calc((100vw - 56px) / 4), 100px);
+    height: 88px;
+    padding: 0 6px;
+    /* Fixed colours, not the owner's: the tiles' olive and pale gold are
+       the design's own. */
+    border: 1px solid rgba(160, 148, 97, .12);
+    border-radius: 14px;
+    background: #161612;
+    color: #d6d1c4;
+    font-family: var(--font-tiles, var(--font));
+    font-size: 13.5px;
+    font-weight: 400;
+    line-height: 1.12;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color .2s ease, border-color .2s ease;
+}
+.tab-icon { display: inline-flex; flex-shrink: 0; color: #e6c484; opacity: .75; }
+.tab-icon svg { display: block; width: 26px; height: 26px; stroke-width: 1.25; }
+.tab-name { max-width: 100%; overflow-wrap: break-word; hyphens: auto; }
+/* The picked one: a thin muted gold edge with a faint bleed outside it,
+   and an olive fill glowing at its rim, darker toward the middle. */
+.tab[aria-current="true"] {
+    border-color: #a09461;
+    background:
+        linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, .3) 100%),
+        radial-gradient(closest-side ellipse at center, #1c2011 0%, #1f2512 55%, #2b3019 85%, #33391f 100%);
+    box-shadow: inset 0 0 7px 1px rgba(56, 63, 34, .9), 0 0 0 1px rgba(82, 78, 53, .7), 0 0 4px 1px rgba(82, 78, 53, .3);
+}
+.tab[aria-current="true"] .tab-icon { opacity: 1; }
+.tab[aria-current="true"] .tab-name { color: #efe8da; }
+@media (hover: hover) {
+    .tab:not([aria-current="true"]):hover { background: #1d1d17; }
+}
+
+/* ---- Dishes ---- */
+/* Room at the end so the last dish scrolls clear of the floating bar. */
+.sections { padding-bottom: calc(28px + var(--dock) + env(safe-area-inset-bottom)); }
+.category { scroll-margin-top: 12px; }
+.category-head { padding: 24px 16px 10px; }
+.category-head h2 { margin: 0; font-size: clamp(22px, 6.8vw, 28px); font-weight: 700; line-height: 1.15; letter-spacing: -0.015em; }
+.category-head p { margin: 5px 0 0; font-size: 13px; line-height: 1.55; color: var(--muted); }
+.is-spaced .category-head p { font-size: 10.5px; }
+.dishes { display: flex; flex-direction: column; gap: 10px; padding: 0 16px; }
+/* A dark card of one height, with or without ingredients: the name a
+   line, the ingredients up to two (room is kept for both), the photo on
+   the end side fading in from the card. The words stop before the photo
+   (measured on the card, cqi); the price row reaches onto its faded edge,
+   where the + sits. */
+.dish { position: relative; isolation: isolate; display: flex; height: 108px; overflow: hidden; background: var(--bg); border: 1px solid var(--line); border-radius: 14px; container-type: inline-size; }
+.dish-body { position: relative; z-index: 1; flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 9px 12px 8px; }
+.dish-body > .dish-name, .dish-body > .ingredients { margin-inline-end: calc(30cqi + 2px); }
+.dish-body > .dish-foot { margin-inline-end: calc(24cqi - 12px); }
+/* Its padding lies over the photo: a tap there reaches the photo (which opens it big). */
+.dish-body { pointer-events: none; }
+.dish-body > * { pointer-events: auto; }
+.dish-photo-slot { position: absolute; z-index: 0; inset-block: 0; inset-inline-end: 0; display: block; width: 32%; padding: 0; border: 0; background: none; }
+.dish-photo {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    -webkit-mask-image: linear-gradient(to right, transparent 0, rgba(0,0,0,.7) 22%, #000 46%);
+    mask-image: linear-gradient(to right, transparent 0, rgba(0,0,0,.7) 22%, #000 46%);
+}
+[dir="rtl"] .dish-photo {
+    -webkit-mask-image: linear-gradient(to left, transparent 0, rgba(0,0,0,.7) 22%, #000 46%);
+    mask-image: linear-gradient(to left, transparent 0, rgba(0,0,0,.7) 22%, #000 46%);
+}
+/* The plate picture of a dish without a photo is light grey: dimmed into the card. */
+.dish-photo-default { filter: invert(1) brightness(.5) sepia(.6); opacity: .55; }
+/* A photo that opens big (#pop-photo): the slot is the button. */
+.dish-photo-open { cursor: zoom-in; }
+.dish-name { display: block; font-size: 15px; font-weight: 700; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ingredients { margin-top: 1px; margin-bottom: 0; font-size: 12px; color: var(--muted); line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.dish-foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+/* The button keeps the end of the row, on the same line as the price
+   however long ("L.L 12,500,000" by a stepper). */
+.dish-foot > .dish-action, .dish-foot > .dish-more { margin-inline-start: auto; }
+/* An amount never splits from its sign. */
+.price { font-size: 15px; font-weight: 600; color: var(--accent); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* A dish with variants or add-ons: the card opens its sheet. */
+.dish.has-choices { cursor: pointer; transition: border-color .15s ease; }
+@media (hover: hover) {
+    .dish.has-choices:hover { border-color: var(--gold-line); }
+}
+
+/* ---- Add / quantity ---- */
+.add, .qty button, .dish-more { border: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform .12s ease; }
+.add:active, .qty button:active, .dish-more:active { transform: scale(.88); }
+/* The gold "+" (and the arrow of a dish with choices, in the same place). */
+.add, .dish-more { position: relative; flex-shrink: 0; width: 34px; height: 34px; padding: 0; border-radius: 50%; background: var(--accent); color: var(--accent-ink); box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--accent) 80%, transparent); }
+.add .icon, .dish-more .icon { width: 18px; height: 18px; }
+/* A finger's room (44px) around the smaller circle. */
+.add::before, .dish-more::before { content: ""; position: absolute; inset: -5px; border-radius: 50%; }
+[dir="rtl"] .dish-more .icon { transform: scaleX(-1); }
+/* How many of a dish with choices are in the cart, on its button. */
+.add-count { position: absolute; top: -6px; inset-inline-end: -6px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; border: 2px solid var(--bg); background: var(--text); color: var(--page); font-size: 10.5px; font-weight: 700; line-height: 16px; text-align: center; font-variant-numeric: tabular-nums; }
+.qty { display: inline-flex; flex-shrink: 0; align-items: center; background: var(--soft); border-radius: 999px; padding: 3px; }
+.qty button { width: 28px; height: 28px; border-radius: 50%; background: transparent; color: var(--text); }
+.qty button .icon { width: 18px; height: 18px; }
+.qty button.plus { background: var(--accent); color: var(--accent-ink); }
+.qty output { min-width: 26px; padding-inline-end: 6px; text-align: center; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* ---- Build your own: dark cards with a warm glow, above the tiles ---- */
+.builds { margin-top: 22px; }
+.builds-title { margin: 0 0 10px; padding: 0 16px; font-size: 19px; font-weight: 700; line-height: 1.2; }
+.builds-row { display: flex; gap: 12px; padding: 0 16px 4px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-padding-inline: 16px; scrollbar-width: none; }
+.builds-row::-webkit-scrollbar { display: none; }
+.dish.dish-build { flex: 0 0 auto; width: max-content; min-width: 156px; max-width: 220px; min-height: 120px; flex-direction: column; align-items: flex-start; padding: 16px; border: 0; border-radius: 18px; background: radial-gradient(120% 120% at 100% 0%, color-mix(in srgb, var(--accent) 22%, var(--bg)), var(--bg) 70%); scroll-snap-align: start; }
+[dir="rtl"] .dish.dish-build { background: radial-gradient(120% 120% at 0% 0%, color-mix(in srgb, var(--accent) 22%, var(--bg)), var(--bg) 70%); }
+.dish-build-mark { position: absolute; z-index: -1; inset-inline-end: -16px; top: -12px; width: 96px; height: 96px; color: var(--accent); opacity: .22; transform: rotate(-14deg); }
+.dish-build-mark svg { display: block; width: 100%; height: 100%; stroke-width: 1.3; }
+.dish-build .dish-name { margin: auto 0 10px; padding-top: 30px; font-size: 16px; }
+/* An offer on a build's dish: its badge above the name. */
+.dish-build .dish-badge { align-self: flex-start; margin-bottom: 8px; }
+/* Sized by its name, so not measured as a container. */
+.dish.dish-build { container-type: normal; height: auto; }
+.dish-build:has(.dish-badge) .dish-name { padding-top: 6px; }
+/* One line whatever the language: a longer word is cut short. */
+.dish-build-go { display: inline-flex; align-items: center; gap: 2px; max-width: 100%; padding-block: 8px; padding-inline: 14px 10px; border: 0; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font: inherit; font-size: 13px; font-weight: 700; white-space: nowrap; cursor: pointer; }
+.dish-build-go > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.dish-build-go .icon { width: 15px; height: 15px; }
+[dir="rtl"] .dish-build-go .icon { transform: scaleX(-1); }
+.dish-build-go:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+/* One alone: a banner across the row, its icon large at the end. */
+.dish.dish-build:only-child { flex: 1 1 auto; width: auto; max-width: none; min-height: 0; padding: 16px 18px; }
+.dish-build:only-child .dish-name { margin: 0 0 10px; padding-top: 0; padding-inline-end: 90px; font-size: 17px; }
+.dish-build:only-child .dish-build-mark { width: 130px; height: 130px; top: 50%; inset-inline-end: -8px; margin-top: -65px; }
+
+/* ---- Cart panel ---- */
+.cart-items { font-size: 11.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.cart-lines { background: var(--bg); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.cart-line { display: flex; gap: 12px; padding: 14px; align-items: flex-start; }
+.cart-line + .cart-line { border-top: 1px solid var(--line); }
+.cart-line-photo-slot { flex-shrink: 0; align-self: center; display: block; width: 68px; height: 56px; }
+.cart-line-photo { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
+.cart-line-body { flex: 1; min-width: 0; }
+.cart-line-name { font-size: 15px; font-weight: 700; line-height: 1.3; }
+.cart-line-choices { font-size: 12.5px; color: var(--text); opacity: .75; margin-top: 3px; line-height: 1.4; }
+.cart-line-each { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+/* The second of a pair on a "buy one, get the second" offer. */
+.cart-line-pair { display: inline-block; max-width: 100%; margin-top: 4px; padding: 1px 8px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-size: 11.5px; font-weight: 700; line-height: 1.5; overflow-wrap: anywhere; }
+.cart-line-foot { margin-top: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+/* The price before an offer and the price now each stay whole; short of
+   room, the old one sits above the new. */
+.cart-line-total { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: baseline; column-gap: 6px; white-space: nowrap; font-size: 15px; font-weight: 600; color: var(--accent); font-variant-numeric: tabular-nums; }
+.cart-line-was { font-size: 12.5px; font-weight: 500; color: var(--muted); }
+.cart-summary { margin-top: 16px; padding: 16px; background: var(--bg); border: 1px solid var(--line); border-radius: 16px; }
+.cart-total { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 16px; font-weight: 700; }
+.cart-total span:last-child { font-size: 16px; color: var(--accent); font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* The rate a total turned the second currency's dishes into the main one at. */
+.cart-rate { margin-top: 4px; font-size: 12px; color: var(--muted); text-align: end; font-variant-numeric: tabular-nums; }
+.place { width: 100%; border: 0; cursor: pointer; border-radius: 999px; background: var(--accent); color: var(--accent-ink); padding: 15px 20px; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 10px 26px -12px color-mix(in srgb, var(--accent) 85%, transparent); }
+.place.split { justify-content: space-between; }
+.place[disabled] { opacity: .6; cursor: progress; }
+.cart-error { margin: 10px 0 0; font-size: 13px; color: #ff8a80; }
+.cart-empty { padding: 60px 0; text-align: center; color: var(--muted); }
+
+/* ---- Following an order: the tracking sheet (menu-order.js) ---- */
+.track-sheet .dish-sheet-body { background: var(--bg); }
+.track-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 16px; padding-inline: 20px 14px; border-bottom: 1px solid var(--line); }
+.track-sheet-head h2 { margin: 0; font-size: 17px; font-weight: 700; }
+.track-sheet-close { flex-shrink: 0; width: 38px; height: 38px; border: 0; border-radius: 50%; background: var(--soft); color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.track-sheet-close .icon { width: 16px; height: 16px; }
+.track-sheet-scroll { padding: 0 0 env(safe-area-inset-bottom); }
+.track-card { padding: 18px 20px; }
+.track-card + .track-card { border-top: 1px solid var(--line); }
+.track-section { margin: 0 0 10px; font-size: 11.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+.track-status { text-align: center; padding: 26px 20px 20px; }
+.track-mark { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: 50%; }
+.track-mark .icon { width: 26px; height: 26px; }
+.is-waiting .track-mark { background: var(--gold-soft); color: var(--accent); box-shadow: inset 0 0 0 1px var(--gold-line); }
+.is-waiting .track-mark .icon { animation: track-pulse 1.4s ease-in-out infinite alternate; }
+.is-moving .track-mark { background: var(--accent); color: var(--accent-ink); }
+.is-done .track-mark { background: #2f9e57; color: #fff; }
+.is-cancelled .track-mark { background: color-mix(in srgb, #d9534f 18%, var(--bg)); color: #ff8a80; }
+.track-title { margin: 12px 0 4px; font-size: 20px; font-weight: 700; }
+.track-body { margin: 0 auto; max-width: 320px; color: var(--muted); font-size: 13.5px; }
+.track-ref { margin: 8px 0 0; font-size: 12.5px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+.track-changed { margin: 12px 0 0; font-size: 12.5px; font-weight: 600; color: var(--accent); }
+/* The steps, joined by a line that turns gold as the order moves on. */
+.track-steps { margin: 18px auto 0; padding: 16px 0 0; max-width: 300px; border-top: 1px solid var(--line); list-style: none; text-align: start; }
+.track-steps li { position: relative; display: flex; align-items: center; gap: 12px; height: 40px; color: var(--muted); }
+.track-steps li + li::before { content: ""; position: absolute; inset-inline-start: 11px; top: -8px; height: 16px; width: 2px; border-radius: 2px; background: var(--line); }
+.track-steps li.reached + li.reached::before { background: var(--accent); }
+.track-dot { position: relative; z-index: 1; flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--line); background: var(--bg); display: flex; align-items: center; justify-content: center; }
+.track-dot .icon { width: 13px; height: 13px; }
+.track-steps li.reached .track-dot { border-color: transparent; background: var(--accent); color: var(--accent-ink); }
+.track-steps li.current .track-dot { box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 24%, transparent); }
+.track-steps li.reached { color: var(--text); }
+.track-step-label { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; }
+.track-steps li:not(.reached) .track-step-label { font-weight: 500; }
+.track-step-time { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.track-lines { margin: 0; padding: 0; list-style: none; }
+.track-lines li { display: flex; align-items: baseline; gap: 8px; padding: 9px 0; font-size: 14px; }
+.track-lines li + li { border-top: 1px solid var(--line); }
+.track-qty { color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
+.track-line-name { flex: 1; min-width: 0; font-weight: 500; }
+.track-line-choices { display: block; font-size: 12.5px; font-weight: 400; color: var(--muted); }
+.track-line-total { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.track-line-offer { display: block; margin-top: 3px; font-size: 12px; font-weight: 600; color: var(--accent); }
+.track-line-offer s { margin-inline-start: 4px; font-weight: 500; color: var(--muted); white-space: nowrap; }
+.track-total { display: flex; justify-content: space-between; gap: 10px; margin: 8px 0 0; padding-top: 12px; border-top: 1px solid var(--line); font-size: 16px; font-weight: 700; }
+.track-total span:last-child { font-size: 16px; color: var(--accent); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.track-note { margin: 10px 0 0; padding: 10px 12px; border-radius: 12px; background: var(--soft); font-size: 13px; color: var(--muted); }
+.track-address { display: flex; align-items: flex-start; gap: 8px; margin: 0; font-size: 14px; }
+.track-address .icon { margin-top: 2px; color: var(--accent); }
+.track-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.track-actions:empty { display: none; }
+.track-button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 10px 14px; border: 1px solid var(--gold-line); border-radius: 999px; background: transparent; color: var(--text); font: inherit; font-size: 13.5px; font-weight: 600; text-decoration: none; cursor: pointer; }
+.track-button:hover { background: var(--gold-soft); }
+.track-edit { margin-top: 16px; width: 100%; }
+
+/* ---- Changing an order already placed ---- */
+.cart-editing { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; padding: 10px 14px; border: 1px dashed var(--gold-line); border-radius: 14px; background: var(--gold-soft); }
+.cart-editing-text { font-size: 13px; font-weight: 700; }
+.cart-editing.is-waiting { border-style: solid; border-color: var(--line); background: var(--soft); }
+.cart-editing.is-waiting .cart-editing-text { font-weight: 500; color: var(--muted); line-height: 1.45; }
+.cart-editing-stop { flex-shrink: 0; padding: 6px 2px; border: 0; background: transparent; color: var(--accent); font-size: 12.5px; font-weight: 600; text-decoration: underline; cursor: pointer; }
+
+/* ---- The guest's details: who to call, where to bring it, a note ---- */
+.cart-details { margin-top: 20px; display: flex; flex-direction: column; gap: 14px; }
+.cart-field { margin: 0; padding: 0; border: 0; min-width: 0; }
+.cart-label { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 7px; padding: 0; font-size: 12.5px; font-weight: 600; }
+.cart-optional { font-size: 11px; font-weight: 500; color: var(--muted); }
+/* One row of as many kinds as are open (two or three). */
+.cart-types .choice-pills { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+.cart-types .choice-pill { min-height: 42px; padding: 6px 10px; font-size: 13.5px; border-radius: 999px; }
+.cart-input, .cart-phone { border: 1px solid var(--line); border-radius: 12px; background: var(--page); transition: border-color .15s ease, box-shadow .15s ease; }
+.cart-input { display: block; width: 100%; min-height: 44px; padding: 10px 12px; color: var(--text); font-size: 14px; line-height: 1.4; resize: vertical; outline: none; }
+textarea.cart-input { min-height: 64px; }
+.cart-input:focus, .cart-phone:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.cart-input::placeholder, .cart-phone input::placeholder { color: var(--muted); opacity: .85; }
+.cart-phone { display: flex; align-items: stretch; height: 44px; padding: 0; gap: 0; overflow: hidden; color: var(--text); }
+.cart-phone input { flex: 1; min-width: 0; padding: 0 12px; border: 0; background: transparent; color: var(--text); font-size: 14px; outline: none; }
+/* The country code reads as part of the number: a thin divider, no box. */
+.cart-phone-field { position: relative; }
+.cart-country { flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; padding-block: 0; padding-inline: 12px 10px; border: 0; border-inline-end: 1px solid var(--line); background: transparent; color: var(--text); font-size: 14px; font-variant-numeric: tabular-nums; cursor: pointer; }
+.cart-country:hover { background: var(--soft); }
+.cart-country-chevron { width: 12px; height: 12px; color: var(--muted); transform: rotate(90deg); transition: transform .15s ease; }
+.cart-country[aria-expanded="true"] .cart-country-chevron { transform: rotate(-90deg); }
+.cart-country-panel { position: absolute; z-index: 20; inset-inline: 0; top: calc(100% + 6px); display: flex; flex-direction: column; max-height: 300px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); box-shadow: 0 18px 40px rgba(0,0,0,.5); overflow: hidden; animation: fade-in .15s ease; }
+.cart-country-search { flex-shrink: 0; margin: 8px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--page); color: var(--text); font-size: 14px; outline: none; }
+.cart-country-search:focus { border-color: var(--accent); }
+.cart-country-search::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+.cart-country-list { margin: 0; padding: 0 6px 6px; list-style: none; overflow-y: auto; overscroll-behavior: contain; }
+.cart-country-option { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 6px 10px; border-radius: 9px; font-size: 14px; cursor: pointer; }
+.cart-country-option.active { background: var(--gold-soft); }
+.cart-country-option[aria-selected="true"] { font-weight: 600; }
+.cart-country-flag { flex-shrink: 0; font-size: 17px; line-height: 1; }
+.cart-country-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cart-country-dial { flex-shrink: 0; color: var(--muted); font-variant-numeric: tabular-nums; direction: ltr; }
+.cart-country-empty { margin: 0; padding: 4px 16px 14px; font-size: 13px; color: var(--muted); }
+.cart-field:has(.cart-field-error:not([hidden])) :is(.cart-input, .cart-phone) { border-color: #ff8a80; }
+.cart-field-error { margin: 6px 0 0; font-size: 12px; color: #ff8a80; }
+/* "Use my current location": a soft gold row above the address box. */
+.cart-locate-button { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 42px; margin-bottom: 8px; padding: 8px 12px; border: 1px dashed var(--gold-line); border-radius: 12px; background: var(--gold-soft); color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; transition: background-color .15s ease; }
+.cart-locate-button:hover { background: color-mix(in srgb, var(--accent) 24%, var(--bg)); }
+.cart-locate-button .icon { width: 16px; height: 16px; color: var(--accent); }
+.cart-locate-button[disabled] { cursor: progress; }
+.cart-locate-button[disabled] .icon { animation: locate-pulse .8s ease-in-out infinite alternate; }
+.cart-locate-status { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+.cart-locate-status.added { padding-block: 8px; padding-inline: 12px 10px; border-radius: 12px; background: color-mix(in srgb, #2f9e57 16%, var(--bg)); color: var(--text); }
+.cart-locate-status .icon { flex-shrink: 0; width: 16px; height: 16px; color: #3fb950; }
+.cart-locate-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cart-locate-text strong { font-size: 13px; font-weight: 600; }
+.cart-locate-text span { color: var(--muted); }
+.cart-locate-remove { flex-shrink: 0; padding: 6px 4px; border: 0; background: transparent; color: var(--muted); font-size: 12.5px; font-weight: 600; text-decoration: underline; cursor: pointer; }
+.cart-trap { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.cart-closed { margin: 16px 0 0; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--soft); color: var(--muted); font-size: 13px; line-height: 1.5; }
+
+/* ---- The note that an order went, at the top of the screen ---- */
+.menu-toast { position: fixed; z-index: 100; top: calc(12px + env(safe-area-inset-top)); left: 50%; width: min(420px, calc(100% - 24px)); transform: translateX(-50%); display: flex; align-items: flex-start; gap: 12px; padding-block: 14px; padding-inline: 14px 10px; border: 0; border-radius: 16px; background: var(--bg); color: var(--text); box-shadow: 0 16px 40px rgba(0,0,0,.55); animation: toast-in .3s cubic-bezier(.2,.9,.3,1.2); }
+.menu-toast.leaving { animation: toast-out .25s ease forwards; }
+.menu-toast-mark { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; background: #2f9e57; color: #fff; display: flex; align-items: center; justify-content: center; }
+.menu-toast-mark .icon { width: 16px; height: 16px; }
+/* An offer shown outside its hours, saying when it runs: a word, not a success. */
+.menu-toast-info { cursor: pointer; }
+.menu-toast-info .menu-toast-mark { background: var(--accent); color: var(--accent-ink); }
+.menu-toast-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding-top: 4px; font-size: 13px; line-height: 1.45; color: var(--muted); }
+.menu-toast-text strong { font-size: 14.5px; color: var(--text); }
+.menu-toast-link { align-self: flex-start; margin-top: 4px; font-size: 13px; font-weight: 700; color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.menu-toast-close { flex-shrink: 0; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.menu-toast-close .icon { width: 16px; height: 16px; }
+
+/* While the order is fetched for its sheet: the button spins. */
+.order-bar-link.is-loading .order-bar-cta { position: relative; color: transparent; }
+.is-loading .order-bar-cta::after, .menu-toast-link.is-loading::after { content: ""; position: absolute; top: 50%; left: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; }
+.order-bar-link.is-loading .order-bar-cta::after { border-color: var(--accent-ink); border-right-color: transparent; }
+.menu-toast-link.is-loading { position: relative; padding-inline-end: 22px; }
+.menu-toast-link.is-loading::after { left: auto; right: 0; }
+[dir="rtl"] .menu-toast-link.is-loading::after { right: auto; left: 0; }
+
+/* ---- Back to the order just placed, across the top of the page ---- */
+.order-bar { position: relative; display: flex; align-items: center; margin: 0; border-bottom: 1px solid var(--gold-line); background: var(--gold-soft); }
+.order-bar-link { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding-block: 10px; padding-inline: 16px 8px; color: var(--text); text-decoration: none; }
+.order-bar-mark { flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--gold-line); color: var(--accent); display: flex; align-items: center; justify-content: center; }
+.order-bar-mark .icon { width: 17px; height: 17px; }
+.order-bar-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+/* The order number on one line; the status may take two. */
+.order-bar-text strong { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.order-bar-status { display: flex; align-items: flex-start; gap: 6px; font-size: 12.5px; line-height: 1.35; color: var(--muted); }
+.order-bar-status > span:last-child { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.order-bar-dot { flex-shrink: 0; width: 8px; height: 8px; margin-top: 5px; border-radius: 50%; background: var(--accent); }
+.order-bar-status[data-tone="waiting"] .order-bar-dot { animation: track-pulse 1.2s ease-in-out infinite alternate; }
+.order-bar-status[data-tone="done"] .order-bar-dot { background: #3fb950; }
+.order-bar-status[data-tone="cancelled"] .order-bar-dot { background: #d9534f; }
+.order-bar-cta { flex-shrink: 0; padding: 7px 14px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-size: 13px; font-weight: 700; }
+.order-bar-close { flex-shrink: 0; width: 34px; height: 34px; margin-inline-end: 8px; border: 0; border-radius: 50%; background: transparent; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.order-bar-close:hover { background: var(--soft); }
+.order-bar-close .icon { width: 15px; height: 15px; }
+/* A small phone: the cart mark goes, so the words get the room. */
+@media (max-width: 380px) {
+    .order-bar-mark { display: none; }
+    .order-bar-link { gap: 10px; padding-inline-start: 14px; }
+    .order-bar-cta { padding: 7px 12px; }
+    .order-bar-close { width: 32px; height: 32px; margin-inline-end: 4px; }
+}
+
+/* ---- Cart sheet: its own screen on a phone ---- */
+dialog.sheet { border: 0; padding: 0; margin: 0; width: 100%; max-width: 100%; height: 100%; max-height: 100%; background: var(--page); color: var(--text); }
+dialog.sheet::backdrop { background: rgba(0,0,0,.6); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+dialog.sheet[open] { animation: sheet-in .32s cubic-bezier(.2,.9,.3,1); }
+dialog.sheet[open]::backdrop { animation: fade-in .32s ease; }
+/* The cart script holds the dialog open through this before closing it. */
+dialog.sheet.closing { animation: sheet-out .22s cubic-bezier(.4,0,1,1) forwards; }
+dialog.sheet.closing::backdrop { animation: fade-in .22s ease reverse forwards; }
+.sheet-body { display: flex; flex-direction: column; height: 100%; }
+.sheet-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--page); border-bottom: 1px solid var(--line); }
+.sheet-head h2 { margin: 0 auto; font-size: 16px; font-weight: 700; }
+.sheet-close { width: 40px; height: 40px; flex-shrink: 0; border: 0; border-radius: 999px; background: var(--bg); color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.sheet-scroll { flex: 1; overflow-y: auto; padding: 18px 16px 32px; }
+.sheet-foot { padding: 14px 14px calc(14px + env(safe-area-inset-bottom)); background: var(--bg); border-top: 1px solid var(--line); }
+.sheet-foot:empty { display: none; }
+
+/* ---- Dish sheet: a dish's variants and add-ons (menu-dish.js) ---- */
+/* Rises from the bottom on a phone; a centred card on a wider screen. */
+dialog.dish-sheet { border: 0; padding: 0; margin: auto auto 0; width: 100%; max-width: 100%; max-height: 92dvh; border-radius: 24px 24px 0 0; background: var(--bg); color: var(--text); overflow: hidden; box-shadow: 0 -10px 50px rgba(0,0,0,.6); }
+dialog.dish-sheet::backdrop { background: rgba(0,0,0,.6); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+dialog.dish-sheet[open] { animation: sheet-in .32s cubic-bezier(.2,.9,.3,1); }
+dialog.dish-sheet[open]::backdrop { animation: fade-in .32s ease; }
+dialog.dish-sheet.closing { animation: sheet-out .22s cubic-bezier(.4,0,1,1) forwards; }
+dialog.dish-sheet.closing::backdrop { animation: fade-in .22s ease reverse forwards; }
+.dish-sheet-body { position: relative; display: flex; flex-direction: column; max-height: 92dvh; }
+.dish-sheet-close { position: absolute; top: 12px; inset-inline-end: 12px; z-index: 2; width: 38px; height: 38px; border: 0; border-radius: 999px; background: color-mix(in srgb, var(--page) 75%, transparent); color: var(--text); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.dish-sheet-close .icon { width: 18px; height: 18px; }
+.dish-sheet-close:focus-visible { outline: none; color: var(--accent); }
+.dish-sheet-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 12px; }
+.dish-sheet-photo { display: block; width: 100%; height: auto; max-height: 60vh; object-fit: contain; }
+.dish-sheet-head { padding: 20px 20px 6px; }
+/* Without a photo, the title sits clear of the close button. */
+.dish-sheet-photo[hidden] + .dish-sheet-head { padding-top: 26px; padding-inline-end: 62px; }
+.dish-sheet-head h2 { margin: 0; font-size: 21px; font-weight: 700; line-height: 1.25; }
+/* Focused only so the sheet opens on it (a screen reader reads it first). */
+.dish-sheet-head h2:focus { outline: none; }
+.dish-sheet-prices { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin-top: 6px; }
+.dish-sheet-price { font-size: 16px; font-weight: 600; color: var(--accent); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dish-sheet-prices .price-was { font-size: 13.5px; }
+.dish-sheet-prices .dish-badge { align-self: center; }
+.dish-sheet-ingredients { margin: 8px 0 0; font-size: 13.5px; color: var(--muted); line-height: 1.55; }
+
+.choice-group { --tag-inset: 10px; min-width: 0; margin: 0; padding: 18px 20px 4px; border: 0; }
+.choice-group + .choice-group { margin-top: 8px; border-top: 1px solid var(--line); }
+/* A legend will not lay out as flex in place; floated, it will. */
+.choice-legend { float: left; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0; margin-bottom: 12px; }
+.choice-title { font-size: 15.5px; font-weight: 700; }
+.choice-tag { flex-shrink: 0; padding: 3px var(--tag-inset); border-radius: 999px; border: 1px solid var(--gold-line); color: var(--accent); font-size: 11px; font-weight: 600; }
+.choice-pills, .choice-rows { clear: both; }
+/* Equal tiles in an even grid; the extra price sits under the name. */
+.choice-pills { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
+.choice-pill { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 56px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 14px; background: var(--page); font-size: 14px; font-weight: 500; line-height: 1.25; text-align: center; overflow-wrap: break-word; hyphens: auto; cursor: pointer; transition: border-color .15s ease, background-color .15s ease, transform .12s ease; }
+.choice-pill:active { transform: scale(.97); }
+.choice-pill:has(input:checked) { border-color: var(--accent); background: radial-gradient(120% 100% at 50% 0%, color-mix(in srgb, var(--accent) 26%, var(--bg)), color-mix(in srgb, var(--accent) 10%, var(--bg))); font-weight: 600; box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent); }
+.choice-pill input, .choice-row input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.choice-pill:has(input:focus-visible), .choice-row:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.choice-price { font-size: 12.5px; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+.choice-pill:has(input:checked) .choice-price { color: var(--accent); }
+/* "+$1.50" and "$12.50" keep their signs in front in a right-to-left menu. */
+.choice-price, .build-pick-price, .cart-line-was, .track-line-offer s { unicode-bidi: plaintext; }
+.choice-rows { display: flex; flex-direction: column; }
+/* "Build your own": the pizza cut as the guest picked, with a picker per part. */
+.build-group .choice-pills { margin-bottom: 14px; }
+.build-body { clear: both; display: flex; flex-direction: column; align-items: center; gap: 16px; padding-bottom: 12px; }
+.build-pie { flex-shrink: 0; width: 112px; height: 112px; }
+.build-pie circle { fill: var(--gold-soft); stroke: var(--accent); stroke-width: 2; }
+.build-pie line { stroke: var(--accent); stroke-width: 2; }
+.build-pie text { fill: var(--text); font-size: 15px; font-weight: 700; text-anchor: middle; dominant-baseline: central; }
+.build-parts { align-self: stretch; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.build-part { display: flex; align-items: center; gap: 10px; }
+/* A part's choice: a button opening a list of every choice under it
+   (menu-dish.js partPicker), never the browser's own dropdown. */
+.build-pick { position: relative; flex: 1; min-width: 0; }
+.build-pick-button { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; padding-block: 0; padding-inline: 12px 10px; border: 1px solid var(--line); border-radius: 14px; background: var(--page); color: var(--text); font: inherit; font-size: 14px; text-align: start; cursor: pointer; transition: border-color .15s ease; }
+.build-pick-button:hover, .build-pick-button[aria-expanded="true"] { border-color: var(--accent); }
+.build-pick-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.build-pick-number { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: var(--gold-soft); color: var(--accent); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.build-pick-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.build-pick-price { flex-shrink: 0; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.build-pick-chevron, .build-pick-check { flex-shrink: 0; display: inline-flex; width: 16px; height: 16px; }
+.build-pick-chevron svg, .build-pick-check svg { width: 100%; height: 100%; }
+.build-pick-chevron { color: var(--muted); transform: rotate(90deg); transition: transform .15s ease; }
+.build-pick-button[aria-expanded="true"] .build-pick-chevron { transform: rotate(-90deg); }
+.build-pick-list { position: absolute; z-index: 5; inset-inline: 0; top: calc(100% + 6px); max-height: 240px; margin: 0; padding: 6px; overflow-y: auto; list-style: none; background: var(--bg); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 18px 40px -10px rgba(0,0,0,.6); }
+.build-pick-option { display: flex; align-items: center; gap: 8px; padding: 10px; border-radius: 10px; font-size: 14px; cursor: pointer; outline: none; }
+.build-pick-option:hover, .build-pick-option:focus-visible { background: var(--soft); }
+.build-pick-option[aria-selected="true"] { background: var(--gold-soft); }
+.build-pick-option[aria-selected="true"] .build-pick-name { font-weight: 600; }
+.build-pick-check { visibility: hidden; }
+.build-pick-option[aria-selected="true"] .build-pick-check { visibility: visible; color: var(--accent); }
+.choice-row { position: relative; display: flex; align-items: center; gap: 12px; min-height: 50px; padding: 6px 0; border-radius: 8px; cursor: pointer; }
+.choice-row + .choice-row { border-top: 1px solid var(--line); }
+.choice-row .choice-name { flex: 1; min-width: 0; font-size: 14.5px; }
+/* Inset like the text inside "Optional" above, so the price and that word end on one line. */
+.choice-row .choice-price { padding-inline-end: var(--tag-inset); }
+.choice-check { flex-shrink: 0; width: 24px; height: 24px; border: 1.5px solid color-mix(in srgb, var(--text) 30%, var(--bg)); border-radius: 8px; color: transparent; display: flex; align-items: center; justify-content: center; transition: background-color .15s ease, border-color .15s ease; }
+.choice-check .icon { width: 14px; height: 14px; }
+.choice-row:has(input:checked) .choice-check { border-color: var(--accent); background: var(--accent); color: var(--accent-ink); }
+.choice-row:has(input:checked) .choice-price { color: var(--accent); }
+
+.dish-sheet-foot { display: flex; align-items: center; gap: 12px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: var(--bg); }
+.dish-sheet-foot:empty { display: none; }
+.dish-sheet-qty { flex-shrink: 0; height: 50px; padding: 4px; }
+.dish-sheet-qty button { width: 40px; height: 40px; }
+.dish-sheet-qty button[disabled] { opacity: .35; cursor: default; }
+.dish-sheet-qty output { min-width: 30px; padding: 0; font-size: 15px; }
+.choice-pill .choice-price { font-size: 12px; }
+/* The same height as the stepper beside it. */
+.dish-sheet-add { flex: 1; height: 50px; padding-block: 0; }
+
+@media (min-width: 640px) {
+    dialog.dish-sheet { margin: auto; width: calc(100% - 48px); max-width: 480px; max-height: min(88dvh, 780px); border-radius: 24px; box-shadow: 0 30px 70px rgba(0,0,0,.65); }
+    .dish-sheet-body { max-height: min(88dvh, 780px); }
+    dialog.dish-sheet[open] { animation: dish-in .24s cubic-bezier(.2,.9,.3,1); }
+    dialog.dish-sheet.closing { animation: dish-out .18s ease forwards; }
+}
+
+/* ---- The floating bar at the foot of a phone ---- */
+.dock {
+    position: fixed;
+    inset-inline: 0;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    z-index: 30;
+    padding: 0 16px;
+    pointer-events: none;
+}
+body.has-dock { --dock: 84px; }
+.dock-inner {
+    pointer-events: auto;
+    display: flex;
+    justify-content: space-around;
+    gap: 2px;
+    max-width: 440px;
+    margin: 0 auto;
+    padding: 7px 10px;
+    border: 1px solid color-mix(in srgb, var(--text) 16%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--page) 80%, transparent);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
+    backdrop-filter: blur(16px) saturate(1.2);
+    box-shadow: 0 14px 36px -8px rgba(0,0,0,.7), inset 0 1px 0 color-mix(in srgb, var(--text) 8%, transparent);
+}
+/* The map's item is a wrapper menu-nav.js lights while its pop-up is up. */
+.dockitem { display: contents; }
+.dockface {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 4px;
+    border: 0;
+    border-radius: 999px;
+    background: none;
+    color: var(--text);
+    text-decoration: none;
+    cursor: pointer;
+    transition: color .2s ease, transform .12s ease;
+}
+.dockface:active { transform: scale(.94); }
+.dockface .icon { position: relative; width: 24px; height: 24px; overflow: visible; }
+/* A small phone: a little less room around the icons. */
+@media (max-width: 359px) {
+    .dock { padding: 0 12px; }
+    .dock-inner { padding-inline: 6px; }
+}
+/* The menu is where the guest is; a pop-up's item is lit while it is up. */
+.dockface.is-current, .dockitem.is-on > .dockface { color: var(--accent); }
+/* The count shows once something is in the cart (menu-cart.js puts the
+   button on), its digits in the middle of the circle whatever the number. */
+.dock-count { position: absolute; top: -7px; inset-inline-end: -11px; display: none; align-items: center; justify-content: center; box-sizing: content-box; min-width: 12px; height: 16px; padding: 0 3px; border-radius: 999px; border: 2px solid var(--page); background: var(--accent); color: var(--accent-ink); font-size: 10.5px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.dock-cart.on .dock-count { display: flex; }
+
+/* ---- Pop-ups: the language, the map, WhatsApp, the QR, a photo ---- */
+dialog.pop { border: 0; padding: 0; background: transparent; max-width: 340px; width: calc(100% - 32px); margin: auto; }
+dialog.pop::backdrop { background: rgba(0,0,0,.65); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+dialog.pop[open] { animation: pop-in .2s cubic-bezier(.2,.9,.3,1); }
+dialog.pop[open]::backdrop { animation: fade-in .2s ease; }
+.pop-body { background: var(--bg); color: var(--text); border-radius: 22px; padding: 24px; text-align: center; box-shadow: 0 24px 60px rgba(0,0,0,.6); }
+.pop-body h2 { margin: 0 0 6px; font-size: 17px; font-weight: 700; }
+.pop-icon { display: flex; align-items: center; justify-content: center; width: 50px; height: 50px; margin: 0 auto 12px; border-radius: 999px; background: var(--gold-soft); color: var(--accent); }
+.pop-icon svg { width: 24px; height: 24px; }
+.pop-icon.is-whatsapp-ink { color: #25D366; background: color-mix(in srgb, #25D366 14%, var(--bg)); }
+.pop-map { display: block; width: 100%; height: 180px; margin-bottom: 16px; border: 0; border-radius: 14px; background: var(--soft); }
+.pop-note { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.5; word-break: break-word; }
+.pop-go { display: block; margin-top: 16px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); padding: 13px; font-size: 14px; font-weight: 700; text-decoration: none; }
+.pop-go.is-whatsapp-go { background: #25D366; color: #06210f; }
+.pop-done { width: 100%; margin-top: 8px; border: 0; cursor: pointer; border-radius: 999px; background: transparent; color: var(--muted); padding: 12px; font-size: 14px; font-weight: 600; }
+.pop-list { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
+.pop-item { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; font-size: 14px; color: inherit; text-decoration: none; }
+.pop-item .icon { width: 20px; height: 20px; }
+/* Under WhatsApp, a rule and a small label mark where the links start. */
+.pop-subhead { margin: 20px 0 0; padding-top: 16px; border-top: 1px solid var(--line); font-size: 11.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+.pop-subhead + .pop-list { margin-top: 10px; }
+/* Each network in its own colour; the black-and-white marks keep the text colour. */
+.pop-item.is-instagram .icon { color: #E1306C; }
+.pop-item.is-facebook .icon { color: #4A90F7; }
+.pop-item.is-youtube .icon { color: #FF3B3B; }
+.pop-item.is-telegram .icon { color: #229ED9; }
+.pop-item.is-pinterest .icon { color: #E60023; }
+.pop-item.is-tripadvisor .icon { color: #00AF87; }
+.pop-item[aria-current="true"] { border-color: var(--accent); background: var(--gold-soft); font-weight: 600; }
+
+/* A dish's full photo, as large as the screen allows, in its own shape. */
+dialog.photo-pop { width: auto; max-width: min(960px, calc(100% - 32px)); }
+/* Sized by the photo's shape (--ratio, set by menu-nav.js), so the small
+   photo shown first takes the place the full one will. */
+.photo-pop-img { display: block; width: min(960px, calc(100vw - 32px), calc(85dvh * var(--ratio, 1))); max-width: 100%; max-height: 85dvh; height: auto; border-radius: 18px; cursor: zoom-out; }
+.photo-pop .dish-sheet-close { top: 10px; inset-inline-end: 10px; }
+
+/* The code on a light card of its own: its colours are the owner's QR design. */
+.qr-code { display: flex; justify-content: center; align-items: center; min-height: 220px; margin-top: 14px; padding: 12px; border-radius: 16px; background: #fff; }
+.qr-code svg { width: 196px; height: 196px; }
+.qr-code + .pop-note { margin-top: 12px; font-size: 12px; }
+
+/* ---- Motion ---- */
+@keyframes sheet-in { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes sheet-out { from { transform: none; } to { transform: translateY(100%); } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pop-in { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes dish-in { from { transform: translateY(12px) scale(.97); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes dish-out { from { transform: none; opacity: 1; } to { transform: translateY(8px) scale(.98); opacity: 0; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes track-pulse { from { opacity: 1; } to { opacity: .35; } }
+@keyframes locate-pulse { from { opacity: 1; } to { opacity: .35; } }
+@keyframes toast-in { from { transform: translate(-50%, -24px); opacity: 0; } to { transform: translateX(-50%); opacity: 1; } }
+
+/* ---- Offers (menu-offers.js decides which are live) ---- */
+.offer-photo { position: relative; display: block; width: 100%; height: 100%; object-fit: cover; }
+/* The small version blurred under the picture: what shows while it loads,
+   and around a picture shown whole (.offer-fit-whole). */
+.offer-photo-blur { position: absolute; top: -10%; left: -10%; width: 120%; height: 120%; object-fit: cover; filter: blur(20px) saturate(1.15); }
+.offer-fit-whole .offer-photo { object-fit: contain; }
+.offer-body { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.dish-badge { display: inline-block; padding: 2px 9px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-size: 11px; font-weight: 700; line-height: 1.45; font-variant-numeric: tabular-nums; }
+.offer-title { margin: 0; font-size: 16px; font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
+.offer-text { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.45; overflow-wrap: anywhere; }
+.offer-go { margin-top: 6px; padding: 8px 14px; border: 0; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-size: 13px; font-weight: 700; text-decoration: none; cursor: pointer; }
+
+/* A card (the banner, the pop-up, the ad), in its shape: the picture fills
+   it, darkened at the foot where the words sit; without one, a dark card
+   with a warm glow in the far corner. No outline: its fill parts it from
+   the page. */
+.offer-shape-rectangle { --ratio: 2; }
+.offer-shape-square { --ratio: 1; }
+.offer-shape-tall { --ratio: .75; }
+.offer { position: relative; display: flex; overflow: hidden; aspect-ratio: var(--ratio); border-radius: 18px; background: radial-gradient(90% 120% at 100% 0%, color-mix(in srgb, var(--accent) 30%, var(--bg)), var(--bg) 65%); color: var(--text); }
+[dir="rtl"] .offer { background: radial-gradient(90% 120% at 0% 0%, color-mix(in srgb, var(--accent) 30%, var(--bg)), var(--bg) 65%); }
+/* Clipped by a path too: the blurred copy is drawn on a layer of its own. */
+.offer-photo-slot { position: absolute; inset: 0; display: block; overflow: hidden; clip-path: inset(0); }
+.offer.offer-has-photo { color: #fff; }
+.offer.offer-has-photo:not(.offer-picture-only) .offer-photo-slot::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.08) 0%, rgba(0,0,0,.4) 45%, rgba(0,0,0,.88) 100%); }
+.offer .offer-body { position: relative; justify-content: flex-end; gap: 3px; padding: 16px; }
+.offer .offer-title { font-size: 16.5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.offer .offer-text { color: inherit; opacity: .85; font-size: 12.5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.offer-shape-rectangle .offer-text { -webkit-line-clamp: 1; }
+.offer .offer-go { padding: 7px 13px; font-size: 12.5px; }
+.offer-mark { position: absolute; top: 9%; inset-inline-end: 5%; height: 50%; aspect-ratio: 1; color: var(--accent); opacity: .35; transform: rotate(-10deg); pointer-events: none; }
+.offer-mark svg { display: block; width: 100%; height: 100%; stroke-width: 1.1; }
+/* A square or tall card has room above its words: the mark in the middle. */
+.offer-shape-square .offer-mark, .offer-shape-tall .offer-mark { top: 12%; inset-inline: 0; height: 42%; margin-inline: auto; }
+.offer-ad .offer-mark { inset-inline-end: 16%; }
+
+/* A picture alone (its words drawn into it): the picture is the whole card
+   and the card is the tap. */
+.offer-picture-only { background: var(--soft); }
+.offer-cover { position: absolute; inset: 0; padding: 0; border: 0; border-radius: inherit; background: none; cursor: pointer; }
+.offer-cover:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+
+/* The banner carousel under the cover: one card at a time, a dot per card. */
+.offers-banner { margin-top: 6px; }
+.offers-track { display: flex; align-items: flex-start; gap: 12px; padding: 0 16px; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-padding-inline: 16px; scrollbar-width: none; transition: height .35s ease; }
+.offers-track::-webkit-scrollbar { display: none; }
+.offer-banner { flex: 0 0 100%; scroll-snap-align: start; scroll-snap-stop: always; }
+.offers-dots { display: flex; align-items: center; justify-content: center; gap: 2px; height: 26px; }
+/* A dot is small, its button big enough to tap. */
+.offers-dot { position: relative; width: 14px; height: 26px; padding: 0; border: 0; background: none; cursor: pointer; transition: width .25s ease; }
+.offers-dot::before { content: ""; position: absolute; inset-inline: 4px; top: 10px; height: 6px; border-radius: 999px; background: color-mix(in srgb, var(--text) 24%, transparent); transition: background-color .25s ease; }
+.offers-dot[aria-current="true"] { width: 26px; }
+.offers-dot[aria-current="true"]::before { background: var(--accent); }
+.offers-count { font-size: 12px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* The pop-up: the card in its shape over the menu, never taller than the screen. */
+dialog.offer-pop { --ratio: 1; max-width: none; width: min(calc(100% - 32px), 380px, calc(80dvh * var(--ratio))); }
+dialog.offer-pop:has(.offer-shape-tall) { --ratio: .75; }
+.offer-popup { border-radius: 22px; box-shadow: 0 24px 60px rgba(0,0,0,.6); }
+.offer-popup .offer-body { padding: 20px; }
+.offer-popup .offer-title { font-size: 20px; -webkit-line-clamp: 3; }
+.offer-popup .offer-text { font-size: 13.5px; -webkit-line-clamp: 3; }
+
+/* The ad: a rectangle above the bar that cannot be skipped: its seconds
+   count down in a small ring, then a small X takes their place. */
+.offer-ad-wrap { position: fixed; z-index: 40; inset-inline: 12px; bottom: calc(12px + var(--dock, 0px) + env(safe-area-inset-bottom)); max-width: 440px; margin-inline: auto; animation: ad-in .35s cubic-bezier(.2,.9,.3,1.1); }
+.offer-ad-wrap.leaving { animation: ad-out .25s ease forwards; }
+.offer-ad-wrap .offer { box-shadow: 0 16px 40px rgba(0,0,0,.6); }
+.offer-ad-timer, .offer-ad-close { position: absolute; top: 10px; inset-inline-end: 10px; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.offer-ad-timer { background: rgba(0,0,0,.6); color: #fff; }
+.offer-ad-count { position: relative; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+.offer-ad-close { padding: 0; border: 0; background: var(--text); color: var(--page); box-shadow: 0 2px 8px rgba(0,0,0,.4); cursor: pointer; animation: fade-in .2s ease; }
+.offer-ad-close::before { content: ""; position: absolute; inset: -8px; }
+.offer-ad-close .icon { width: 14px; height: 14px; }
+.offer-ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.offer-ring circle { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 100.53; animation: offer-ring var(--offer-seconds, 6s) linear forwards; }
+
+/* A dish on a live discount: its offer price, the old one struck through,
+   and the badge after them, never over the photo. */
+.price-group { flex: 1 1 0; display: flex; align-items: center; flex-wrap: wrap; gap: 0 6px; min-width: 0; overflow: hidden; }
+.price-was { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.price-group .dish-badge { align-self: center; }
+/* A pair deal is words: never wider than its place. */
+.dish-badge-pair { max-width: 100%; border-radius: 10px; overflow-wrap: anywhere; background: var(--gold-soft); color: var(--text); }
+/* On a card, the old price and the badge sit small under the price, on
+   one line, so a card on an offer keeps its height. */
+.dish-foot .price-group .price { flex-basis: 100%; line-height: 1.15; }
+.dish-foot .price-was { font-size: 11.5px; line-height: 1.3; }
+.dish-foot .dish-badge { max-width: 100%; padding: 0 6px; font-size: 10px; line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* An offer's deal dish while the offer is not live, and a category with
+   nothing else (its tile too); menu-offers.js shows them in time. */
+.dish[data-deal-off], .category[data-deal-off], .tab[data-deal-off] { display: none !important; }
+
+@keyframes offer-ring { to { stroke-dashoffset: 100.53; } }
+@keyframes ad-in { from { transform: translateY(24px); opacity: 0; } }
+@keyframes ad-out { to { transform: translateY(24px); opacity: 0; } }
+@keyframes toast-out { to { transform: translate(-50%, -16px); opacity: 0; } }
+@keyframes count-pop { 0%, 100% { transform: scale(1); } 45% { transform: scale(1.32); } }
+
+.dish-action > .enter { animation: pop-in .22s cubic-bezier(.2,.9,.3,1); }
+.pop { animation: count-pop .34s ease; }
+
+/* ---- Searching (`is-searching` on the body, set by menu-nav.js while the
+   box is focused or holds a word): the top bar is the search, held at the
+   top of the screen, a field across the width with a close button; the
+   cover, the offers, the builds and the floating bar step aside, so what
+   it finds lists straight under it. The close button or Escape empties it
+   and brings the menu back where the guest was. ---- */
+body.is-searching { --dock: 0px; }
+body.is-searching :is(.hero-photo, .hero-shade, .hero-body, .offers-banner, .builds, .dock, .brand, .pill-button) { display: none; }
+body.is-searching .hero { position: sticky; top: 0; z-index: 25; min-height: 0; padding-block: 10px; overflow: visible; background: var(--page); box-shadow: 0 10px 24px -14px rgba(0,0,0,.9); }
+body.is-searching .hero-pill { flex: 1; background: var(--bg); border-color: transparent; }
+body.is-searching .pill-search { flex: 1; justify-content: flex-start; color: var(--accent); }
+body.is-searching .pill-search input { flex: 1; width: auto; padding-inline: 10px 4px; }
+body.is-searching .pill-close { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 38px; height: 38px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--text); cursor: pointer; }
+body.is-searching .tabs { margin-top: 12px; }
+/* The change is a view transition (menu-nav.js): the pill grows into the
+   field (or shrinks back), the cover and the rest fade away as the results
+   fade in, rising a little; the other way round on closing. */
+.hero-pill { view-transition-name: ember-search; }
+::view-transition-group(ember-search) { animation-duration: .28s; animation-timing-function: cubic-bezier(.2, .8, .2, 1); }
+::view-transition-old(ember-search), ::view-transition-new(ember-search) { height: 100%; animation-duration: .28s; }
+::view-transition-old(root) { animation: ember-fade-out .2s ease both; }
+::view-transition-new(root) { animation: ember-rise-in .28s cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes ember-fade-out { to { opacity: 0; } }
+@keyframes ember-rise-in { from { opacity: 0; transform: translateY(10px); } }
+.pill-close .icon { width: 18px; height: 18px; }
+.pill-close:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* Behind a pop-up, the page is a little blurred; not for those who ask for less. */
+@media (prefers-reduced-transparency: reduce) {
+    dialog::backdrop { -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after, *::backdrop {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+    }
+}
+
+/* ---- Chrome ---- */
+.empty { padding: 60px 16px; text-align: center; color: var(--muted); font-size: 15px; }
+.menu-credit { margin: 40px 0 0; text-align: center; font-size: 12px; color: var(--muted); }
+.menu-credit a { color: var(--accent); font-weight: 600; text-decoration: none; }
+.no-results { display: none; padding: 48px 24px; text-align: center; color: var(--muted); font-size: 14px; }
+
+/* ---- Wide: the cover across the menu column, the cart its own column ----
+
+   The page itself scrolls, as on a phone; the tiles and the cart stay put
+   by being sticky. */
+@media (min-width: 1024px) {
+    body.has-dock { --dock: 0px; }
+    .dock, dialog.sheet { display: none !important; }
+    .round-button.on-wide { display: inline-flex; }
+    .pill-button.on-wide { display: flex; }
+
+    .wrap { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; min-height: 100dvh; }
+    .wrap.with-cart { grid-template-columns: minmax(0, 1fr) 380px; }
+
+    .hero { min-height: 440px; padding: 24px 48px 40px; }
+    .brand-mark { width: 54px; height: 54px; }
+    .brand-name { font-size: 18px; }
+    .hero h1 { font-size: clamp(40px, 3.6vw, 52px); }
+    .hero-text { font-size: 14px; }
+    .is-spaced .hero-text { font-size: 12px; }
+    /* Room for the box at all times. */
+    .pill-search input { width: 220px; padding-inline: 8px 4px; }
+    .order-bar-link { padding-inline-start: 48px; }
+    .order-bar-close { margin-inline-end: 40px; }
+
+    .offers-banner { margin-top: 8px; }
+    .offers-track { padding: 0 48px; scroll-padding-inline: 48px; }
+
+    .builds { margin-top: 28px; }
+    .builds-title { padding: 0 48px; font-size: 22px; }
+    .builds-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; padding: 0 48px 4px; overflow: visible; }
+    .dish.dish-build { width: auto; max-width: none; }
+    .dish.dish-build:only-child { grid-column: 1 / -1; }
+
+    /* The tiles stay under the top of the window while the dishes scroll. */
+    .tabs { position: sticky; top: 0; z-index: 10; margin-top: 24px; padding: 12px 0; background: color-mix(in srgb, var(--page) 88%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
+    .tabs-inner { padding: 4px 48px 6px; scroll-padding-inline: 48px; }
+    .tab { width: 104px; height: 94px; }
+    .category { scroll-margin-top: 120px; }
+    .category-head { padding: 40px 48px 16px; }
+    .category-head h2 { font-size: 32px; }
+    .sections { padding-bottom: 72px; }
+    /* Two cards a row when each still has room for a long price and its
+       stepper; one beside the cart at 1024px. */
+    .dishes { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 400px), 1fr)); gap: 16px; padding: 0 48px; }
+    .dish { height: 116px; }
+    .dish-name { font-size: 16px; }
+
+    /* Stuck to the window's height, scrolling on its own only when the
+       cart is longer than that. */
+    .col-aside { position: sticky; top: 0; height: 100dvh; overflow-y: auto; padding: 32px 28px; background: var(--bg); border-inline-start: 1px solid var(--line); }
+    .col-aside > h2 { margin: 0 0 20px; padding-bottom: 16px; border-bottom: 1px solid var(--gold-line); font-size: 22px; font-weight: 700; }
+    .col-aside .cart-lines { border: 0; border-radius: 0; background: transparent; }
+    .col-aside .cart-line { padding: 14px 0; border-top: 0; border-bottom: 1px solid var(--line); }
+    .col-aside .cart-line-photo-slot { width: 60px; height: 50px; }
+    .col-aside .cart-summary { background: transparent; border: 0; padding: 0; }
+    .col-aside .place { margin-top: 16px; }
+    .col-aside .cart-input, .col-aside .cart-phone, .col-aside .choice-pill { background: var(--page); }
+
+    /* A wide screen's banner: as wide as the column and a strip in height,
+       its picture sharp on the far side over its blurred copy, the words on
+       the near side. */
+    .offer-banner { --strip: clamp(220px, 19vw, 280px); flex-basis: 100%; aspect-ratio: auto; height: var(--strip); }
+    .offer-banner .offer-photo-slot { display: flex; justify-content: flex-end; }
+    .offer-banner:not(.offer-picture-only) .offer-photo {
+        width: min(calc(var(--strip) * var(--ratio)), 62%);
+        flex-shrink: 0;
+        -webkit-mask-image: linear-gradient(to right, transparent 0, #000 22%);
+        mask-image: linear-gradient(to right, transparent 0, #000 22%);
+    }
+    [dir="rtl"] .offer-banner:not(.offer-picture-only) .offer-photo {
+        -webkit-mask-image: linear-gradient(to left, transparent 0, #000 22%);
+        mask-image: linear-gradient(to left, transparent 0, #000 22%);
+    }
+    .offer-banner.offer-fit-whole:not(.offer-picture-only) .offer-photo { width: min(calc(var(--strip) * var(--picture, var(--ratio))), 62%); }
+    .offer-banner.offer-picture-only .offer-photo-slot { justify-content: center; }
+    .offer-banner.offer-picture-only .offer-photo { width: auto; max-width: 100%; aspect-ratio: var(--ratio); object-fit: contain; }
+    .offer-banner.offer-has-photo:not(.offer-picture-only) .offer-photo-slot::after {
+        background: linear-gradient(to right, rgba(0,0,0,.85) 0%, rgba(0,0,0,.6) 32%, rgba(0,0,0,.1) 62%, transparent 100%);
+    }
+    [dir="rtl"] .offer-banner.offer-has-photo:not(.offer-picture-only) .offer-photo-slot::after {
+        background: linear-gradient(to left, rgba(0,0,0,.85) 0%, rgba(0,0,0,.6) 32%, rgba(0,0,0,.1) 62%, transparent 100%);
+    }
+    .offer-banner .offer-body { justify-content: center; max-width: min(46%, 440px); padding: 28px 34px; gap: 6px; }
+    .offer-banner .offer-title { font-size: 26px; line-height: 1.15; -webkit-line-clamp: 2; }
+    .offer-banner .offer-text { font-size: 14.5px; -webkit-line-clamp: 3; }
+    .offer-banner .offer-go { margin-top: 10px; padding: 9px 16px; font-size: 14px; }
+    .offer-banner:not(.offer-has-photo) .offer-body { max-width: min(62%, 600px); }
+    .offer-banner .offer-mark { top: 50%; inset-inline-end: 7%; height: 84%; transform: translateY(-50%) rotate(-10deg); }
+    /* The ad in the menu's bottom corner, clear of the dishes' middle. */
+    .offer-ad-wrap { inset-inline: 32px auto; bottom: 24px; width: 380px; margin-inline: 0; }
+}
+@media (max-width: 1023px) { .col-aside { display: none; } }

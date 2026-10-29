@@ -551,4 +551,82 @@
             }, 1500);
         });
     });
+
+    // A design whose search has a close button of its own (Ember): the box
+    // taken (focused, or holding a word) puts `is-searching` on the body,
+    // which the design draws as its search; the button, or Escape in the box,
+    // empties it, shows the whole menu again, leaves the box and goes back to
+    // where the guest was on the page. The change is a view transition where
+    // the browser has them (the design animates it), a plain switch where it
+    // has not or the guest asks for less motion. A design without the button
+    // keeps the browser's own ways.
+    var closers = Array.prototype.slice.call(document.querySelectorAll('[data-search-close]'));
+    var searching = false;
+    var scrolledTo = 0;
+
+    function setSearching(on) {
+        if (on === searching) {
+            return;
+        }
+
+        searching = on;
+        if (on) {
+            scrolledTo = window.scrollY;
+        }
+
+        var change = function () {
+            document.body.classList.toggle('is-searching', on);
+            if (!on) {
+                window.scrollTo(0, scrolledTo);
+            }
+        };
+        var calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        if (document.startViewTransition && !calm) {
+            document.startViewTransition(change);
+        } else {
+            change();
+        }
+    }
+
+    function closeSearch() {
+        term = '';
+        folded = '';
+        inputs.forEach(function (input) {
+            input.value = '';
+            input.blur();
+        });
+        apply();
+        setSearching(false);
+    }
+
+    closers.forEach(function (closer) {
+        // Pressing it would take the focus from the box first, and the bar
+        // would change under the finger before the tap lands.
+        closer.addEventListener('pointerdown', function (event) {
+            event.preventDefault();
+        });
+        closer.addEventListener('click', closeSearch);
+    });
+
+    if (closers.length > 0) {
+        inputs.forEach(function (input) {
+            input.addEventListener('focus', function () {
+                setSearching(true);
+            });
+            // Left empty, the box gives the menu back; with a word in it the
+            // results stay.
+            input.addEventListener('blur', function () {
+                if (input.value === '') {
+                    setSearching(false);
+                }
+            });
+            input.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    closeSearch();
+                }
+            });
+        });
+    }
 })();

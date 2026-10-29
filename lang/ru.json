@@ -192,5 +192,7 @@
     "A third :name": "Треть :name",
     "Two thirds :name": "Две трети :name",
     "A quarter :name": "Четверть :name",
-    "Three quarters :name": "Три четверти :name"
+    "Three quarters :name": "Три четверти :name",
+    "Menu": "Меню",
+    "Cart": "Корзина"
 }

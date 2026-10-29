@@ -35,6 +35,7 @@ class TemplateEdgeTest extends TestCase
 
         $slugs = array_column($this->actingAs($owner->user)->getJson(route('api.templates.index'))->json('data'), 'slug');
 
-        $this->assertSame(['a', 'b'], $slugs);
+        // Ember (from its migration) has sort order 2.
+        $this->assertSame(['a', 'b', 'ember'], $slugs);
     }
 }

@@ -8,13 +8,13 @@ use PHPUnit\Framework\TestCase;
 
 class MenuIconsTest extends TestCase
 {
-    private const CLASSIC = __DIR__.'/../../../resources/views/menu/templates/classic.blade.php';
+    private const TEMPLATES = __DIR__.'/../../../resources/views/menu/templates';
 
     public function test_it_offers_exactly_the_known_icons(): void
     {
         $this->assertSame([
             'clock', 'pin', 'table', 'phone', 'search', 'cart', 'back', 'plus', 'close', 'check', 'chevron', 'minus', 'language',
-            'qr', 'whatsapp', 'top', 'heart', 'instagram', 'facebook', 'x', 'tiktok',
+            'qr', 'whatsapp', 'top', 'menu', 'heart', 'instagram', 'facebook', 'x', 'tiktok',
             'youtube', 'snapchat', 'threads', 'telegram', 'pinterest', 'tripadvisor',
         ], array_keys(MenuIcons::all()));
     }
@@ -69,23 +69,28 @@ class MenuIconsTest extends TestCase
         }
     }
 
-    /** A key the classic template asks for that is missing would be a PHP warning on a live menu. */
-    public function test_every_icon_the_classic_template_names_exists(): void
+    /** A key a menu design asks for that is missing would be a PHP warning on a live menu. */
+    public function test_every_icon_a_menu_design_names_exists(): void
     {
-        $view = file_get_contents(self::CLASSIC);
+        $views = glob(self::TEMPLATES.'/*.blade.php') ?: [];
 
-        $this->assertIsString($view);
+        $this->assertContains('classic.blade.php', array_map('basename', $views));
+        $this->assertContains('ember.blade.php', array_map('basename', $views));
 
-        preg_match_all("/\\\$icons\\['([a-z]+)'\\]/", $view, $direct);
-        preg_match_all("/'icon' => '([a-z]+)'/", $view, $facts);
+        foreach ($views as $path) {
+            $view = (string) file_get_contents($path);
+            $design = basename($path, '.blade.php');
 
-        $named = array_unique([...$direct[1], ...$facts[1]]);
+            preg_match_all("/\\\$icons\\['([a-z]+)'\\]/", $view, $direct);
+            preg_match_all("/'icon' => '([a-z]+)'/", $view, $facts);
 
-        $this->assertNotEmpty($named);
-        $this->assertContains('clock', $named);
+            $named = array_unique([...$direct[1], ...$facts[1]]);
 
-        foreach ($named as $name) {
-            $this->assertArrayHasKey($name, MenuIcons::all(), "The classic template asks for a missing [{$name}] icon.");
+            $this->assertNotEmpty($named, $design);
+
+            foreach ($named as $name) {
+                $this->assertArrayHasKey($name, MenuIcons::all(), "The {$design} design asks for a missing [{$name}] icon.");
+            }
         }
     }
 }

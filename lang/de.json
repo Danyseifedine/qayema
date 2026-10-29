@@ -192,5 +192,7 @@
     "A third :name": "Ein Drittel :name",
     "Two thirds :name": "Zwei Drittel :name",
     "A quarter :name": "Ein Viertel :name",
-    "Three quarters :name": "Drei Viertel :name"
+    "Three quarters :name": "Drei Viertel :name",
+    "Menu": "Speisekarte",
+    "Cart": "Warenkorb"
 }

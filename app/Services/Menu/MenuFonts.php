@@ -125,17 +125,27 @@ class MenuFonts
 
     /**
      * The Google Fonts stylesheet for these families, asking only for the
-     * weights each one has.
+     * weights each one has, plus any face a design draws a few words in
+     * (`$extra`, family => its one weight), in the same request. A face the
+     * menu already uses keeps all its weights.
      *
      * @param  array<int, string>  $families
+     * @param  array<string, int>  $extra
      */
-    public static function href(array $families): string
+    public static function href(array $families, array $extra = []): string
     {
-        $query = implode('&', array_map(function (string $family): string {
-            $weights = self::weights($family);
+        $asked = array_map(fn (string $family): array => [$family, self::weights($family)], $families);
 
-            return 'family='.str_replace(' ', '+', $family).':wght@'.implode(';', $weights);
-        }, $families));
+        foreach ($extra as $family => $weight) {
+            if (! in_array($family, $families, true)) {
+                $asked[] = [$family, [$weight]];
+            }
+        }
+
+        $query = implode('&', array_map(
+            fn (array $face): string => 'family='.str_replace(' ', '+', $face[0]).':wght@'.implode(';', $face[1]),
+            $asked,
+        ));
 
         return "https://fonts.googleapis.com/css2?{$query}&display=swap";
     }

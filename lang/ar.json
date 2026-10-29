@@ -301,5 +301,7 @@
     "A third :name": "ثلث :name",
     "Two thirds :name": "ثلثا :name",
     "A quarter :name": "ربع :name",
-    "Three quarters :name": "ثلاثة أرباع :name"
+    "Three quarters :name": "ثلاثة أرباع :name",
+    "Menu": "القائمة",
+    "Cart": "السلة"
 }

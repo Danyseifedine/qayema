@@ -50,9 +50,10 @@ class TemplateTest extends TestCase
             'meta' => ['current'],
         ]);
 
-        // Only active templates are offered, and nothing is selected yet.
+        // Only active templates are offered (Ember, from its migration, last
+        // by its sort order), and nothing is selected yet.
         $ids = array_column($response->json('data'), 'id');
-        $this->assertSame([$active->id], $ids);
+        $this->assertSame([$active->id, Template::query()->where('slug', 'ember')->value('id')], $ids);
         $response->assertJsonPath('meta.current', null);
     }
 

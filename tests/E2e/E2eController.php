@@ -34,9 +34,9 @@ class E2eController extends Controller
      * Build an owner and everything they need.
      *
      * Body (all optional): package (free|pro|premium|custom), package_starts_at,
-     * package_ends_at, template (classic|midnight|null), onboarded, restaurant
+     * package_ends_at, template (classic|midnight|ember|null), onboarded, restaurant
      * (false for a user mid-onboarding), has_password, name, description,
-     * slug, main_locale, second_locale, is_active, switched_off, phone, google_maps_url,
+     * slug, main_locale, second_locale, is_active, switched_off, phone (null for none), google_maps_url,
      * opening_hours, categories [{name, description, icon, dishes: [{name, price,
      * ingredients, is_available, image (bool: a photo), variants: [{name, options: [{name, price}]}],
      * addons: [{name, price}], builds: [{name, shape, parts, category (a
@@ -96,7 +96,8 @@ class E2eController extends Controller
             'template_id' => $template?->id,
             'is_active' => $input['is_active'] ?? true,
             'country_code' => 'LB',
-            'phone' => $input['phone'] ?? '+96170123456',
+            // null: no phone at all (no WhatsApp to reach).
+            'phone' => array_key_exists('phone', $input) ? $input['phone'] : '+96170123456',
             'currency' => $input['currency'] ?? 'USD',
             'second_currency' => $input['second_currency'] ?? null,
             'exchange_rate' => $input['exchange_rate'] ?? null,

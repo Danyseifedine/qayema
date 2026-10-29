@@ -192,5 +192,7 @@
     "A third :name": "Üçte bir :name",
     "Two thirds :name": "Üçte iki :name",
     "A quarter :name": "Çeyrek :name",
-    "Three quarters :name": "Dörtte üç :name"
+    "Three quarters :name": "Dörtte üç :name",
+    "Menu": "Menü",
+    "Cart": "Sepet"
 }
