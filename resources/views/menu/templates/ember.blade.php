@@ -57,9 +57,6 @@
     // the letters have capitals and keep their shape apart: spacing Arabic
     // or Devanagari letters would break them from each other.
     $spaced = in_array(MenuFonts::scriptOf($locale), ['latin', 'cyrillic'], true);
-    // The category tiles' names are a refined serif in Latin letters (one
-    // weight, in the fonts' own request); other scripts keep the owner's font.
-    $tileFont = MenuFonts::scriptOf($locale) === 'latin' ? ['family' => 'EB Garamond', 'weight' => 400] : null;
 
     // Asked once: the cover and the cart below both need it. Null without hours.
     $open = null;
@@ -103,7 +100,7 @@
         <link rel="preconnect" href="{{ $mediaOrigin }}">
     @endif
 
-    @include('menu.partials.theme', ['tile_font' => $tileFont])
+    @include('menu.partials.theme')
 
     <style>
         :root {

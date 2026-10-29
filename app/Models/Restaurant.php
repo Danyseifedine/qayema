@@ -476,6 +476,31 @@ class Restaurant extends Model implements HasMedia
     }
 
     /**
+     * Carry how the menu looks into another design: every setting the two
+     * share (the colours, the name beside the logo) takes the value the owner
+     * sees now, so switching designs changes the layout, never the look. A
+     * setting only the new design has keeps its own; a value it would not
+     * take (a removed choice) is left out.
+     */
+    public function carryDesignSettingsTo(Template $target): void
+    {
+        $current = $this->menuTemplate();
+
+        if ($current === null || $current->is($target)) {
+            return;
+        }
+
+        $seen = $current->resolveSettings($this->chosenDesignSettings($current));
+        $shared = array_intersect_key($seen, $target->defaultSettings());
+        $taken = $target->resolveSettings($shared);
+        $carried = array_filter($shared, fn (mixed $value, string $key): bool => $taken[$key] === $value, ARRAY_FILTER_USE_BOTH);
+
+        if ($carried !== []) {
+            $this->saveDesignSettings($target, $carried);
+        }
+    }
+
+    /**
      * Save some of a design's colours. Only that design's entry changes; a
      * null value drops the owner's choice, so the design default applies.
      *

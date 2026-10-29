@@ -194,7 +194,7 @@ class AppearanceTest extends TestCase
             ->assertJsonPath('data.settings.1.value', '#ABCDEF');
     }
 
-    public function test_each_design_remembers_its_own_colours(): void
+    public function test_switching_designs_keeps_the_look(): void
     {
         $classic = $this->design();
         $midnight = $this->design();
@@ -202,14 +202,30 @@ class AppearanceTest extends TestCase
 
         $this->as($owner)->putJson(route('api.appearance.update'), ['settings' => ['primary_color' => '#C0392B']])->assertOk();
 
-        // A new design starts from its own defaults…
+        // The new design opens with the colours the menu had…
         $this->as($owner)->postJson(route('api.templates.select'), ['template_id' => $midnight->id])->assertOk();
-        $this->as($owner)->getJson(route('api.appearance.show'))->assertJsonPath('data.settings.0.value', Template::DEFAULT_PRIMARY_COLOR);
+        $this->as($owner)->getJson(route('api.appearance.show'))->assertJsonPath('data.settings.0.value', '#C0392B');
         $this->as($owner)->putJson(route('api.appearance.update'), ['settings' => ['primary_color' => '#1F6FEB']])->assertOk();
 
-        // …and coming back brings the first one's colours back.
+        // …and going back takes the latest look along too.
         $this->as($owner)->postJson(route('api.templates.select'), ['template_id' => $classic->id])->assertOk();
-        $this->as($owner)->getJson(route('api.appearance.show'))->assertJsonPath('data.settings.0.value', '#C0392B');
+        $this->as($owner)->getJson(route('api.appearance.show'))->assertJsonPath('data.settings.0.value', '#1F6FEB');
+    }
+
+    public function test_a_setting_only_the_new_design_has_keeps_its_own(): void
+    {
+        $classic = Template::factory()->withSettings(Template::CLASSIC_SCHEMA)->create();
+        $other = Template::factory()->withSettings([
+            ['key' => 'primary_color', 'type' => 'color', 'default' => '#111111'],
+            ['key' => 'density', 'type' => 'select', 'default' => 'cosy', 'options' => ['cosy', 'compact']],
+        ])->create();
+        $owner = $this->ownerOnDesign($classic);
+        $owner->saveDesignSettings($other, ['density' => 'compact']);
+
+        $this->as($owner)->putJson(route('api.appearance.update'), ['settings' => ['primary_color' => '#C0392B']])->assertOk();
+        $this->as($owner)->postJson(route('api.templates.select'), ['template_id' => $other->id])->assertOk();
+
+        $this->assertSame(['density' => 'compact', 'primary_color' => '#C0392B'], $owner->fresh()->chosenDesignSettings($other));
     }
 
     public function test_one_font_picker_per_writing_system(): void

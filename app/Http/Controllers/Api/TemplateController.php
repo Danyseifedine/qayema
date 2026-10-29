@@ -40,6 +40,8 @@ class TemplateController extends Controller
 
         abort_unless($restaurant->mayUseTemplate($template), 403, __('This design is not on your package.'));
 
+        // The new design opens looking as the menu does now (Restaurant::carryDesignSettingsTo()).
+        $restaurant->carryDesignSettingsTo($template);
         $restaurant->update(['template_id' => $template->id]);
 
         return $this->collection($restaurant);

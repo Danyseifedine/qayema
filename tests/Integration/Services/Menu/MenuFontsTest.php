@@ -244,20 +244,6 @@ class MenuFontsTest extends TestCase
         );
     }
 
-    /** A design's face for a few words comes in the same request, at its one weight only. */
-    public function test_a_designs_extra_face_is_asked_for_at_its_one_weight(): void
-    {
-        $this->assertSame(
-            'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@500&display=swap',
-            MenuFonts::href(['Inter'], ['Lora' => 500]),
-        );
-        // Already the menu's own font: all its weights, asked once.
-        $this->assertSame(
-            'https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap',
-            MenuFonts::href(['Lora'], ['Lora' => 500]),
-        );
-    }
-
     public function test_a_family_with_spaces_is_joined_with_plus_signs(): void
     {
         $this->assertSame(

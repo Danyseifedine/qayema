@@ -9,18 +9,13 @@
 
     So a new design uses `var(--primary-color)` and `var(--font)` and needs no
     PHP. Expects $restaurant, $template, $settings and $locale.
-
-    A design may draw a few words in a Google face of its own ($tile_font,
-    ['family' => ..., 'weight' => ...]): it comes in the same request at
-    that one weight and is `--font-tiles`, the owner's fonts after it.
 --}}
 @use('App\Models\Template')
 @use('App\Services\Menu\MenuFonts')
 @use('App\Support\Color')
 @php
     $menuFonts = MenuFonts::stack($restaurant, $locale);
-    $tile_font ??= null;
-    $fontsHref = MenuFonts::href($menuFonts, $tile_font === null ? [] : [$tile_font['family'] => $tile_font['weight']]);
+    $fontsHref = MenuFonts::href($menuFonts);
     // Only a real hex under a well-formed key reaches the stylesheet: Blade
     // escaping stops HTML, not a `;}` that would break out of the rule.
     $colorVariables = [];
@@ -47,8 +42,5 @@
         {{-- Quotes cannot go through {{ }}: it escapes them to &#039; and the
              declaration is dropped. The families come from config/fonts.php. --}}
         --font: {!! MenuFonts::css($menuFonts) !!}, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-@if ($tile_font !== null)
-        --font-tiles: {!! MenuFonts::css([$tile_font['family']]) !!}, var(--font);
-@endif
     }
 </style>

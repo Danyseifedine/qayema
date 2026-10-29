@@ -86,11 +86,11 @@ class EmberDesignTest extends TestCase
         $this->assertStringContainsString('class="pill-button on-wide" data-pop-open="lang"', $html);
         $this->assertStringNotContainsString('dock-label', $html);
         $this->assertStringContainsString('href="#menu-categories"', $html);
-        // Headings are the owner's own font, Playfair Display until they pick
-        // another; only the tiles' names add a serif, at one weight, in the
-        // same request.
-        $this->assertStringContainsString('fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&amp;family=EB+Garamond:wght@400&amp;display=swap', $html);
-        $this->assertStringContainsString("--font-tiles: 'EB Garamond', var(--font);", $html);
+        // Everything, the category tiles too, is the owner's own font,
+        // Playfair Display until they pick another; no face of the design's own.
+        $this->assertStringContainsString('fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&amp;display=swap', $html);
+        $this->assertStringNotContainsString('EB+Garamond', $html);
+        $this->assertStringNotContainsString('--font-tiles', $html);
         $this->assertStringContainsString('<body class="has-dock is-spaced">', $html);
     }
 

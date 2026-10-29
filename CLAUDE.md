@@ -735,11 +735,14 @@ colour) falls back to the default, and on/off is always a real boolean.
 Classic's rows: three colours and `show_name` (the name beside the logo in the
 top bar). An empty schema = a fixed design.
 
-**Each design remembers its colours.** `restaurants.template_settings` is
+**Each design stores its colours, and a switch keeps the look.** `restaurants.template_settings` is
 `{template_id: {key: value}}` holding only what the owner changed
 (`Restaurant::designSettings()` resolves it over the design's defaults;
 `saveDesignSettings()` writes one entry, by key, never `array_merge`, which
-renumbers the integer keys). Switching design resets nothing. `resolveSettings()` drops a stored colour
+renumbers the integer keys). Switching design keeps the look: the new
+design takes the values the owner sees now for every setting the two
+share (`Restaurant::carryDesignSettingsTo()`, from `TemplateController::select`),
+a setting only it has keeps its own; the fonts are the restaurant's anyway. `resolveSettings()` drops a stored colour
 that isn't hex, so a view can print one straight into CSS.
 
 **Fonts belong to the restaurant**, one per writing system the menu uses:
@@ -765,9 +768,8 @@ empties it and goes back to where the guest was, only for a design with
 `[data-search-close]`; the language sits in the pill on a wide screen), the
 phone, WhatsApp, QR (and the map on a wide screen) as round buttons under
 the hours, the categories as tiles of one size (the icon on one line across the row;
-a category without one shows its name alone, centred; names in EB Garamond for Latin letters, through the theme
-partial's `tile_font`, one weight in the same Google Fonts request; the
-tiles a shade off the page, their names in the text colour, their edge, icons and the picked one's glow in the main colour, so a light page works too), dark dish
+a category without one shows its name alone, centred; the names in the
+owner's font, a little bold; the tiles a shade off the page with no edge, their names in the text colour, their edge, icons and the picked one's glow in the main colour, so a light page works too), dark dish
 cards of one height (the name a line, the ingredients up to two) with the
 photo fading in from the end side, and a floating bar at the foot of a
 phone, icons only (WhatsApp or the social links as the cover's button,

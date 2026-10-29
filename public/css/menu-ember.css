@@ -210,15 +210,15 @@ span.brand-mark { display: flex; align-items: center; justify-content: center; c
     height: 88px;
     padding: 17px 6px 0;
     /* Every colour from the owner's three: a tile a shade off the page
-       (light or dark), the name in the text colour, the edge, the icon and
-       the picked one's glow in the main colour. */
-    border: 1px solid color-mix(in srgb, var(--accent) 14%, transparent);
+       (light or dark) with no edge, the name in the text colour and the
+       owner's font, the icon and the picked one's edge and glow in the main
+       colour. */
+    border: 1px solid transparent;
     border-radius: 14px;
     background: color-mix(in srgb, var(--text) 6%, var(--page));
     color: color-mix(in srgb, var(--text) 84%, var(--page));
-    font-family: var(--font-tiles, var(--font));
     font-size: 13.5px;
-    font-weight: 400;
+    font-weight: 600;
     line-height: 1.12;
     text-align: center;
     cursor: pointer;
