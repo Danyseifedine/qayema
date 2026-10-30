@@ -16,6 +16,7 @@ use App\Services\Orders\OrderEditor;
 use App\Services\Orders\OrderMovedOn;
 use App\Services\Orders\OrderNews;
 use App\Services\Orders\OrderPulse;
+use App\Services\Pos\PosOrders;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -102,6 +103,10 @@ class OrderController extends Controller
         // Also the 403 for an owner without a restaurant (OrderPolicy).
         $this->authorize('manage', $order);
 
+        if ($order->isHandledByPos()) {
+            return $this->refused(__('This order is handled in your POS. Its steps show here as your POS takes them.'), 'handled_in_pos');
+        }
+
         $seen = $request->validated('guest_updates');
 
         try {
@@ -131,6 +136,10 @@ class OrderController extends Controller
         $this->authorize('manage', $order);
         $order->setRelation('restaurant', $restaurant);
 
+        if ($order->isHandledByPos()) {
+            return $this->refused(__('This order is handled in your POS. Change it there.'), 'handled_in_pos');
+        }
+
         try {
             $edited = $editor->edit($order, $request->kept(), $request->validated('add'), $request->validated('guest_updates'));
         } catch (OrderClosed) {
@@ -150,6 +159,26 @@ class OrderController extends Controller
      * it, and so does it from the analytics. The guest following it is told
      * (their page lets go of an order that is gone).
      */
+    /**
+     * Try again: an order the POS refused or never answered is sent once
+     * more, while the menu still sends its orders there.
+     */
+    public function sendToPos(Request $request, Order $order, PosOrders $posOrders): JsonResponse|OrderResource
+    {
+        $restaurant = $this->restaurant($request);
+        $this->authorize('manage', $order);
+        $order->setRelation('restaurant', $restaurant);
+
+        if ($order->pos_status !== Order::POS_FAILED || $order->status->isClosed() || ! $posOrders->sends($restaurant, $order)) {
+            return $this->refused(__('This order cannot be sent to your POS now.'), 'not_sendable');
+        }
+
+        $posOrders->queue($order);
+        OrderNews::fromGuest($order);
+
+        return new OrderResource($order->load('items'));
+    }
+
     public function destroy(Request $request, Order $order): JsonResponse
     {
         $restaurant = $this->restaurant($request);

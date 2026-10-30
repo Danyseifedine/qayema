@@ -194,5 +194,13 @@
     "A quarter :name": "Çeyrek :name",
     "Three quarters :name": "Dörtte üç :name",
     "Menu": "Menü",
-    "Cart": "Sepet"
+    "Cart": "Sepet",
+    "Pick at least :min from :group for :dish.": ":dish için :group içinden en az :min seçin.",
+    "Pick no more than :max from :group for :dish.": ":dish için :group içinden en fazla :max seçin.",
+    "Pick up to :max": "En fazla :max seçin",
+    "Pick at least :min": "En az :min seçin",
+    "Pick :min to :max": ":min ile :max arası seçin",
+    "Pick exactly :count": "Tam :count seçin",
+    "Included": "Dahil",
+    "Pick at least :min from :group.": ":group içinden en az :min seçin."
 }

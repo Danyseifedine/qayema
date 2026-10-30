@@ -18,7 +18,7 @@ class DishResourceTest extends TestCase
 {
     use CreatesOwners, RefreshDatabase;
 
-    private const KEYS = ['id', 'name', 'ingredients', 'price', 'currency', 'is_available', 'category_id', 'icon', 'image_url', 'offer', 'variants', 'addons', 'builds'];
+    private const KEYS = ['id', 'name', 'ingredients', 'price', 'currency', 'is_available', 'category_id', 'icon', 'image_url', 'from_pos', 'pos_removed', 'offer', 'variants', 'addons', 'addon_groups', 'builds'];
 
     /** @return array<string, mixed> */
     private function resolve(Dish $dish, ?User $user): array
@@ -53,9 +53,12 @@ class DishResourceTest extends TestCase
             'category_id' => $category->id,
             'icon' => null,
             'image_url' => null,
+            'from_pos' => false,
+            'pos_removed' => false,
             'offer' => null,
             'variants' => [],
             'addons' => [],
+            'addon_groups' => [],
             'builds' => [],
         ], $this->resolve($dish, $restaurant->user));
     }

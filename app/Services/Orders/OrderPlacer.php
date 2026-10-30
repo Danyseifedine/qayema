@@ -131,7 +131,8 @@ class OrderPlacer
                 return new OrderChange($locked->load('items'), []);
             }
 
-            if (! $locked->status->isOpenToGuest()) {
+            // Sent to the restaurant's POS, which has its own copy now.
+            if (! $locked->status->isOpenToGuest() || $locked->isHandledByPos()) {
                 throw new OrderLocked;
             }
 
@@ -268,6 +269,10 @@ class OrderPlacer
             ->with(array_keys(array_filter(['variants.options' => $variantsOn, 'addons' => $addonsOn, 'builds.choices' => $buildsOn])))
             ->get()
             ->keyBy('id');
+
+        if ($addonsOn) {
+            MenuDishOptions::loadAddonGroups($found);
+        }
         // An offer's deal dish is sold only while its offer is live, on the
         // server's clock as a discount is; otherwise it is gone like a dish
         // sold out. The owner adding to an order may still add it.
@@ -526,20 +531,48 @@ class OrderPlacer
     }
 
     /**
-     * The dish's add-ons the guest picked, in the dish's order.
+     * The dish's add-ons the guest picked, in the dish's order, one in a
+     * group with the group's name. Each group must get at
+     * least its fewest and at most its most (MenuDishOptions::limits()).
      *
      * @param  array<int, int>  $chosen
      * @param  Closure(Model): string  $name  a name as the line keeps it
-     * @return array<int, array{name: string, price: string, addon_id: int}>
+     * @return array<int, array{name: string, price: string, addon_id: int, group?: string}>
+     *
+     * @throws ValidationException when a group gets too few or too many
      */
     private function addonChoices(Dish $dish, array $chosen, Closure $name): array
     {
-        return $dish->addons
-            ->whereIn('id', $chosen)
+        $picked = $dish->addons->whereIn('id', $chosen);
+        $groups = $dish->addonGroups->keyBy('id');
+
+        foreach ($groups as $group) {
+            $count = $dish->addons->where('dish_addon_group_id', $group->id)->count();
+
+            if ($count === 0) {
+                continue;
+            }
+
+            [$min, $max] = MenuDishOptions::limits($group, $count);
+            $took = $picked->where('dish_addon_group_id', $group->id)->count();
+            $replace = ['group' => $name($group), 'dish' => $name($dish), 'min' => $min, 'max' => $max];
+
+            if ($took < $min) {
+                throw ValidationException::withMessages(['items' => __('Pick at least :min from :group for :dish.', $replace)]);
+            }
+
+            if ($max !== null && $took > $max) {
+                throw ValidationException::withMessages(['items' => __('Pick no more than :max from :group for :dish.', $replace)]);
+            }
+        }
+
+        return $picked
             ->map(fn (DishAddon $addon): array => [
                 'name' => $name($addon),
                 'price' => (string) $addon->price,
                 'addon_id' => $addon->id,
+                // The group's name, kept only for an add-on that has one.
+                ...($addon->dish_addon_group_id !== null && $groups->has($addon->dish_addon_group_id) ? ['group' => $name($groups[$addon->dish_addon_group_id])] : []),
             ])
             ->values()
             ->all();

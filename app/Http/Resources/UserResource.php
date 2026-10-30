@@ -141,6 +141,10 @@ class UserResource extends JsonResource
             ],
             // Home's checklist counts them, without downloading the menu.
             'dishes_without_photo' => (int) $restaurant->getAttribute('dishes_without_photo_count'),
+            // Connect to POS: while true the POS owns the categories and
+            // dishes (no adding or deleting, its fields read-only), and
+            // Offers and Build your own are off.
+            'pos_connected' => $restaurant->isConnectedToPos(),
             // Optional features the owner switched off (Features page).
             'switched_off' => $restaurant->switchedOff(),
             // How guests send their orders, when ordering is on: the only way

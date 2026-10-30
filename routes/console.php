@@ -26,6 +26,14 @@ Schedule::command('menus:purge-pending')->everyMinute()->withoutOverlapping(2);
 // copies are cleared (ForgetEndedMenus).
 Schedule::command('menus:forget-ended')->hourly();
 
+// Menus connected to a POS pull its catalog again (SyncPosMenus): a missed
+// "the catalog changed" ping is made good within the hour.
+Schedule::command('pos:sync')->hourly();
+
+// A POS that has not answered its menu for an hour is told to the owner and
+// the admins, once per outage (WatchPosConnections).
+Schedule::command('pos:watch')->everyFifteenMinutes();
+
 // Each night, the finished days added up into menu_days, then the raw visits
 // and events past 6 months deleted (never when adding up failed).
 Schedule::command('stats:rollup')->dailyAt('03:10');

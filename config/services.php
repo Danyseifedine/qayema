@@ -26,6 +26,13 @@ return [
         'api_token' => env('CLOUDFLARE_API_TOKEN'),
     ],
 
+    // Connect to POS (App\Services\Pos). Production only calls a POS on a
+    // public https address; local development may point at one on this
+    // machine or the local network.
+    'pos' => [
+        'allow_private' => (bool) env('POS_ALLOW_PRIVATE_ADDRESSES', false),
+    ],
+
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),

@@ -465,10 +465,20 @@
             return null;
         }
 
-        var addons = data.addons.filter(function (addon) {
+        // The dish's own add-ons, then each group's, which must keep to the
+        // group's fewest and most (a POS may have changed them since).
+        var all = data.addons.slice();
+        var withinGroups = (data.addon_groups || []).every(function (group) {
+            all = all.concat(group.addons);
+            var took = group.addons.filter(function (addon) {
+                return line.addons.indexOf(addon.id) !== -1;
+            }).length;
+            return took >= group.min && (group.max === null || took <= group.max);
+        });
+        var addons = all.filter(function (addon) {
             return line.addons.indexOf(addon.id) !== -1;
         });
-        if (addons.length !== line.addons.length) {
+        if (!withinGroups || addons.length !== line.addons.length) {
             return null;
         }
         addons.forEach(function (addon) {

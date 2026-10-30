@@ -4,6 +4,7 @@ use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Tests\E2e\E2eController;
+use Tests\E2e\FakePosController;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,4 +31,17 @@ Route::prefix('__e2e')
 
             return response()->file(Storage::disk('e2e')->path($path));
         })->where('path', '.*');
+    });
+
+// A POS for the Connect to POS tests (FakePosController): the owner types
+// http://127.0.0.1:8001/e2e/fake-pos as their POS address.
+Route::prefix('e2e/fake-pos')
+    ->withoutMiddleware(ValidateCsrfToken::class)
+    ->group(function (): void {
+        Route::get('/api/v1/menu/connection', [FakePosController::class, 'connection']);
+        Route::post('/api/v1/menu/connection', [FakePosController::class, 'link']);
+        Route::delete('/api/v1/menu/connection', [FakePosController::class, 'unlink']);
+        Route::get('/api/v1/menu/catalog', [FakePosController::class, 'catalog']);
+        Route::post('/api/v1/menu/orders', [FakePosController::class, 'order']);
+        Route::get('/photo.png', [FakePosController::class, 'photo']);
     });

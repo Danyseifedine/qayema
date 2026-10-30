@@ -62,6 +62,27 @@ class Order extends Model
         'change_token',
     ];
 
+    /** Sent to a POS or not, set by SendOrderToPos alone (strict models). */
+    protected $attributes = [
+        'pos_reference' => null,
+        'pos_status' => null,
+        'pos_number' => null,
+        'pos_error' => null,
+        'cancel_reason' => null,
+    ];
+
+    /** Sending it to the POS has started or worked: the POS handles it from here. */
+    public function isHandledByPos(): bool
+    {
+        return in_array($this->pos_status, [self::POS_SENDING, self::POS_SENT], true);
+    }
+
+    public const POS_SENDING = 'sending';
+
+    public const POS_SENT = 'sent';
+
+    public const POS_FAILED = 'failed';
+
     protected function casts(): array
     {
         return [

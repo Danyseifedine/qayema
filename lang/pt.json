@@ -194,5 +194,13 @@
     "A quarter :name": "Um quarto :name",
     "Three quarters :name": "Três quartos :name",
     "Menu": "Cardápio",
-    "Cart": "Carrinho"
+    "Cart": "Carrinho",
+    "Pick at least :min from :group for :dish.": "Escolha pelo menos :min de :group para :dish.",
+    "Pick no more than :max from :group for :dish.": "Escolha no máximo :max de :group para :dish.",
+    "Pick up to :max": "Escolha até :max",
+    "Pick at least :min": "Escolha pelo menos :min",
+    "Pick :min to :max": "Escolha de :min a :max",
+    "Pick exactly :count": "Escolha exatamente :count",
+    "Included": "Incluído",
+    "Pick at least :min from :group.": "Escolha pelo menos :min de :group."
 }

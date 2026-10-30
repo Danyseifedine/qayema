@@ -60,11 +60,11 @@ class FeatureTest extends TestCase
             'dish_limit', 'category_limit', 'social_link_limit', 'writing_help_credits', 'multiple_languages', 'variants', 'addons',
             'appearance', 'premium_designs', 'qr_studio', 'ordering', 'menu_ordering', 'dine_in', 'analytics', 'advanced_analytics', 'offers',
             'offer_banner_limit', 'offer_popup_limit', 'offer_ad_limit',
-            'dine_in_whatsapp', 'order_tracking', 'offer_schedules', 'offer_discounts', 'build_your_own', 'build_limit',
+            'dine_in_whatsapp', 'order_tracking', 'offer_schedules', 'offer_discounts', 'build_your_own', 'build_limit', 'pos_connection',
         ], array_map(fn (Feature $feature): string => $feature->value, Feature::cases()));
     }
 
-    public function test_the_eight_limits_and_the_seventeen_flags(): void
+    public function test_the_eight_limits_and_the_eighteen_flags(): void
     {
         $this->assertSame([
             Feature::DishLimit, Feature::CategoryLimit, Feature::SocialLinkLimit, Feature::WritingHelpCredits,
@@ -74,6 +74,7 @@ class FeatureTest extends TestCase
             Feature::MultipleLanguages, Feature::Variants, Feature::Addons, Feature::Appearance, Feature::PremiumDesigns, Feature::QrStudio,
             Feature::Ordering, Feature::MenuOrdering, Feature::DineIn, Feature::Analytics, Feature::AdvancedAnalytics, Feature::Offers,
             Feature::DineInWhatsApp, Feature::OrderTracking, Feature::OfferSchedules, Feature::OfferDiscounts, Feature::BuildYourOwn,
+            Feature::PosConnection,
         ], Feature::flags());
     }
 
@@ -83,7 +84,7 @@ class FeatureTest extends TestCase
             [
                 Feature::WritingHelpCredits, Feature::OfferBannerLimit, Feature::OfferPopupLimit, Feature::OfferAdLimit,
                 Feature::DineInWhatsApp, Feature::OrderTracking, Feature::OfferSchedules, Feature::OfferDiscounts, Feature::BuildYourOwn,
-                Feature::BuildLimit,
+                Feature::BuildLimit, Feature::PosConnection,
             ],
             array_values(array_filter(Feature::cases(), fn (Feature $feature): bool => ! $feature->isOnPricing())),
         );
@@ -176,6 +177,7 @@ class FeatureTest extends TestCase
             'offer_discounts' => 'Offer discounts',
             'build_your_own' => 'Build your own',
             'build_limit' => 'Dishes guests build',
+            'pos_connection' => 'Connect to POS',
         ], Feature::options());
     }
 }

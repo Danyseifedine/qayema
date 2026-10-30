@@ -50,7 +50,7 @@ class OfferController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $this->authorize('viewAny', Offer::class);
-        $restaurant = $this->offersRestaurant($request);
+        $restaurant = $this->offersRestaurant($request, writing: false);
         $offers = $this->listOf($restaurant);
 
         return OfferResource::collection($offers)->additional([
@@ -152,12 +152,20 @@ class OfferController extends Controller
         return Restaurant::query()->whereKey($restaurant->id)->lockForUpdate()->firstOrFail();
     }
 
-    /** The owner's restaurant, refused (403) while its package has no offers. */
-    private function offersRestaurant(Request $request): Restaurant
+    /**
+     * The owner's restaurant, refused (403) while its package has no offers.
+     * A change is refused too while the menu is connected to a POS, which
+     * keeps offers off (the saved ones can still be read).
+     */
+    private function offersRestaurant(Request $request, bool $writing = true): Restaurant
     {
         $restaurant = $this->restaurant($request);
 
         abort_unless($restaurant->entitlements()->can(Feature::Offers), 403, __('Offers are not on your package.'));
+
+        if ($writing && $restaurant->isConnectedToPos()) {
+            throw ValidationException::withMessages(['pos' => __('Offers are off while your menu is connected to a POS.')]);
+        }
 
         return $restaurant;
     }

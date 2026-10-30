@@ -7,6 +7,7 @@ use App\Filament\Admin\Resources\Dishes\Pages\ListDishes;
 use App\Filament\Admin\Resources\Restaurants\Pages\EditRestaurant;
 use App\Filament\Admin\Resources\Restaurants\RelationManagers\OrdersRelationManager;
 use App\Models\Dish;
+use App\Models\DishAddonGroup;
 use App\Models\Order;
 use App\Models\OrderItem;
 use Filament\Forms\Components\Repeater;
@@ -71,6 +72,23 @@ class DishChoicesAdminTest extends TestCase
             ->assertHasNoFormErrors();
 
         $this->assertSame(['en' => 'Extra cheese', 'ar' => 'جبنة'], $addon->fresh()->getTranslations('name'));
+    }
+
+    public function test_a_save_leaves_add_ons_in_a_group_alone(): void
+    {
+        $dish = Dish::factory()->withAddons(['Cheese' => 1])->create(['restaurant_id' => $this->owner()->id]);
+        $group = DishAddonGroup::factory()->create(['dish_id' => $dish->id, 'name' => ['en' => 'Sauces'], 'max_select' => 2]);
+        $grouped = $group->addons()->create(['dish_id' => $dish->id, 'name' => ['en' => 'Garlic'], 'price' => 0.5]);
+        $undo = Repeater::fake();
+
+        Livewire::test(EditDish::class, ['record' => $dish->id])
+            ->fillForm(['addons' => []])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $undo();
+
+        $this->assertSame([$grouped->id], $dish->addons()->pluck('id')->all());
     }
 
     public function test_a_variant_needs_two_options(): void

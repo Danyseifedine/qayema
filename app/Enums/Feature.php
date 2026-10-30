@@ -68,6 +68,13 @@ enum Feature: string
     case BuildLimit = 'build_limit';
 
     /**
+     * Connect to POS: the menu's categories and dishes come from a POS
+     * branch (App\Models\PosConnection). On no package: an admin switches it
+     * on for a restaurant.
+     */
+    case PosConnection = 'pos_connection';
+
+    /**
      * Every case is listed, with no default arm: a new case without a kind
      * fails loudly instead of quietly becoming a limit.
      */
@@ -79,7 +86,7 @@ enum Feature: string
             self::MultipleLanguages, self::Variants, self::Addons, self::Appearance, self::PremiumDesigns,
             self::QrStudio, self::Ordering, self::MenuOrdering, self::DineIn, self::Analytics, self::AdvancedAnalytics,
             self::Offers, self::DineInWhatsApp, self::OrderTracking, self::OfferSchedules, self::OfferDiscounts,
-            self::BuildYourOwn => FeatureKind::Flag,
+            self::BuildYourOwn, self::PosConnection => FeatureKind::Flag,
         };
     }
 
@@ -99,7 +106,7 @@ enum Feature: string
         return ! in_array($this, [
             self::WritingHelpCredits, self::OfferBannerLimit, self::OfferPopupLimit, self::OfferAdLimit,
             self::DineInWhatsApp, self::OrderTracking, self::OfferSchedules, self::OfferDiscounts, self::BuildYourOwn,
-            self::BuildLimit,
+            self::BuildLimit, self::PosConnection,
         ], true);
     }
 
@@ -136,7 +143,7 @@ enum Feature: string
             self::MultipleLanguages, self::Variants, self::Addons, self::Appearance, self::PremiumDesigns,
             self::QrStudio, self::Ordering, self::MenuOrdering, self::DineIn, self::Analytics, self::AdvancedAnalytics,
             self::Offers, self::DineInWhatsApp, self::OrderTracking, self::OfferSchedules, self::OfferDiscounts,
-            self::BuildYourOwn => 0,
+            self::BuildYourOwn, self::PosConnection => 0,
         };
     }
 

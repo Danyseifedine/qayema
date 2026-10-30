@@ -23,6 +23,8 @@ use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\OrderingSettingsController;
 use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\PackageRequestController;
+use App\Http\Controllers\Api\PosConnectionController;
+use App\Http\Controllers\Api\PosWebhookController;
 use App\Http\Controllers\Api\QrController;
 use App\Http\Controllers\Api\RestaurantController;
 use App\Http\Controllers\Api\RestaurantSlugController;
@@ -56,6 +58,12 @@ Route::middleware('throttle:client-errors')->group(function () {
     Route::post('/client-errors', [ClientErrorController::class, 'store'])->name('api.client-errors');
     Route::post('/csp-report', [ClientErrorController::class, 'csp'])->name('api.csp-report');
 });
+
+// What a connected POS tells the menu (Connect to POS): signed with the
+// link's secret, so public and outside CSRF (bootstrap/app.php).
+Route::post('/pos/webhook', PosWebhookController::class)
+    ->middleware('throttle:pos-webhooks')
+    ->name('api.pos.webhook');
 
 // The owner phone app's sign-in: a token for this API (the lockout after five
 // wrong passwords is OwnerLoginRequest's). Signing out is `/logout` below.
@@ -186,6 +194,10 @@ Route::middleware(['auth:sanctum', 'throttle:api', TellAdminsAboutMenuEdits::cla
     Route::put('/orders/{order}/items', [OrderController::class, 'items'])
         ->middleware('throttle:mutations')
         ->name('api.orders.items');
+    // An order the POS refused or never answered, sent again (Connect to POS).
+    Route::post('/orders/{order}/send-to-pos', [OrderController::class, 'sendToPos'])
+        ->middleware('throttle:mutations')
+        ->name('api.orders.send-to-pos');
     Route::delete('/orders/{order}', [OrderController::class, 'destroy'])
         ->middleware('throttle:mutations')
         ->name('api.orders.destroy');
@@ -220,6 +232,13 @@ Route::middleware(['auth:sanctum', 'throttle:api', TellAdminsAboutMenuEdits::cla
     Route::post('/social-links', [SocialLinkController::class, 'store'])->name('api.social-links.store');
     Route::patch('/social-links/{socialLink}', [SocialLinkController::class, 'update'])->name('api.social-links.update');
     Route::delete('/social-links/{socialLink}', [SocialLinkController::class, 'destroy'])->name('api.social-links.destroy');
+
+    // Connect to POS (Features page): only where an admin switched it on.
+    Route::get('/pos-connection', [PosConnectionController::class, 'show'])->name('api.pos-connection.show');
+    Route::post('/pos-connection', [PosConnectionController::class, 'store'])->middleware('throttle:mutations')->name('api.pos-connection.store');
+    Route::delete('/pos-connection', [PosConnectionController::class, 'destroy'])->middleware('throttle:mutations')->name('api.pos-connection.destroy');
+    Route::post('/pos-connection/sync', [PosConnectionController::class, 'sync'])->middleware('throttle:mutations')->name('api.pos-connection.sync');
+    Route::patch('/pos-connection', [PosConnectionController::class, 'update'])->middleware('throttle:mutations')->name('api.pos-connection.update');
 
     // Offers on the menu (Premium): OfferController refuses without the flag.
     Route::get('/offers', [OfferController::class, 'index'])->name('api.offers.index');

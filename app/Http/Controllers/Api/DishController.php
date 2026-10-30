@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\Feature;
+use App\Http\Controllers\Concerns\GuardsPosMenu;
 use App\Http\Controllers\Concerns\ResolvesRestaurant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ReorderDishesRequest;
@@ -29,10 +30,10 @@ use Illuminate\Support\Facades\DB;
  */
 class DishController extends Controller
 {
-    use ResolvesRestaurant;
+    use GuardsPosMenu, ResolvesRestaurant;
 
     /** What DishResource reads, loaded up front so a list is not one query per dish. */
-    private const WITH = ['media', 'variants.options', 'addons', 'builds.choices', 'offer'];
+    private const WITH = ['media', 'variants.options', 'addons', 'addonGroups', 'builds.choices', 'offer'];
 
     public function __construct(
         private readonly MediaService $media,
@@ -67,6 +68,7 @@ class DishController extends Controller
     {
         $this->authorize('create', Dish::class);
         $restaurant = $this->restaurant($request);
+        $this->refuseWhilePosConnected($restaurant);
 
         $dish = DB::transaction(function () use ($request, $restaurant): Dish {
             $locked = Restaurant::query()->whereKey($restaurant->id)->lockForUpdate()->firstOrFail();
@@ -111,6 +113,16 @@ class DishController extends Controller
     {
         $this->authorize('update', $dish);
 
+        // Connected to a POS: everything but the icon is the POS's.
+        if ($dish->restaurant->isConnectedToPos()) {
+            if ($request->has('icon')) {
+                $dish->icon = $request->validated('icon');
+                $dish->save();
+            }
+
+            return new DishResource($dish->load(self::WITH));
+        }
+
         // Only the menu's current languages are written; hidden ones stay.
         $languages = $dish->restaurant->menuLanguages();
         MenuLanguages::fill($dish, 'name', MenuLanguages::input($request, 'name', $languages), $languages);
@@ -149,6 +161,7 @@ class DishController extends Controller
     public function destroy(Dish $dish): JsonResponse
     {
         $this->authorize('delete', $dish);
+        $this->refuseWhilePosConnected($dish->restaurant);
 
         $dish->delete();
 
@@ -186,6 +199,7 @@ class DishController extends Controller
     public function updateAvailability(UpdateDishAvailabilityRequest $request, Dish $dish): DishResource
     {
         $this->authorize('update', $dish);
+        $this->refuseWhilePosConnected($dish->restaurant);
 
         $dish->update(['is_available' => $request->boolean('is_available')]);
 

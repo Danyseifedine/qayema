@@ -28,11 +28,17 @@ class Category extends Model
         'display_order',
     ];
 
+    protected $attributes = [
+        'pos_id' => null,
+        'pos_removed_at' => null,
+    ];
+
     protected function casts(): array
     {
         return [
             'restaurant_id' => 'integer',
             'display_order' => 'integer',
+            'pos_removed_at' => 'datetime',
         ];
     }
 

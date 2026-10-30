@@ -39,7 +39,8 @@ class E2eController extends Controller
      * slug, main_locale, second_locale, is_active, switched_off, phone (null for none), google_maps_url,
      * opening_hours, categories [{name, description, icon, dishes: [{name, price,
      * ingredients, is_available, image (bool: a photo), variants: [{name, options: [{name, price}]}],
-     * addons: [{name, price}], builds: [{name, shape, parts, category (a
+     * addons: [{name, price}], addon_groups: [{name, min, max, addons: [{name, price}]}],
+     * builds: [{name, shape, parts, category (a
      * scenario category's English name, its dishes the choices; dishes:
      * [English dish name] for only those of them), choices:
      * [{name, price, part_prices}] (else its own list), part_prices:
@@ -409,6 +410,15 @@ class E2eController extends Controller
 
         foreach (array_values($input['addons'] ?? []) as $position => $addon) {
             $dish->addons()->create(['name' => $addon['name'], 'price' => $addon['price'] ?? 0, 'display_order' => $position]);
+        }
+
+        // Add-ons in a group, as a POS makes them: after the dish's own.
+        foreach (array_values($input['addon_groups'] ?? []) as $position => $row) {
+            $group = $dish->addonGroups()->create(['name' => $row['name'], 'min_select' => $row['min'] ?? 0, 'max_select' => $row['max'] ?? null, 'display_order' => $position]);
+
+            foreach (array_values($row['addons'] ?? []) as $place => $addon) {
+                $group->addons()->create(['dish_id' => $dish->id, 'name' => $addon['name'], 'price' => $addon['price'] ?? 0, 'display_order' => 100 + $place]);
+            }
         }
     }
 }

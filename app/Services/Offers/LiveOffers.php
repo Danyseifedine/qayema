@@ -2,7 +2,6 @@
 
 namespace App\Services\Offers;
 
-use App\Enums\Feature;
 use App\Enums\OfferDiscount;
 use App\Models\Dish;
 use App\Models\DishVariant;
@@ -32,7 +31,7 @@ class LiveOffers
      */
     public function forMenu(Restaurant $restaurant, ?int $previewing = null): Collection
     {
-        if (! $restaurant->entitlements()->can(Feature::Offers)) {
+        if (! $restaurant->showsOffers()) {
             return new Collection;
         }
 
@@ -58,7 +57,7 @@ class LiveOffers
      */
     public function liveAmong(Restaurant $restaurant, array $offerIds, CarbonImmutable $at): array
     {
-        if ($offerIds === [] || ! $restaurant->entitlements()->can(Feature::Offers)) {
+        if ($offerIds === [] || ! $restaurant->showsOffers()) {
             return [];
         }
 
@@ -86,7 +85,7 @@ class LiveOffers
     {
         $rules = OfferRules::for($restaurant);
 
-        if ($dishIds === [] || ! $restaurant->entitlements()->can(Feature::Offers) || ! $rules->allowsDiscounts()) {
+        if ($dishIds === [] || ! $restaurant->showsOffers() || ! $rules->allowsDiscounts()) {
             return [[], []];
         }
 

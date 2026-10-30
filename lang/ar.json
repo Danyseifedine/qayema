@@ -303,5 +303,13 @@
     "A quarter :name": "ربع :name",
     "Three quarters :name": "ثلاثة أرباع :name",
     "Menu": "القائمة",
-    "Cart": "السلة"
+    "Cart": "السلة",
+    "Pick at least :min from :group for :dish.": "اختر :min على الأقل من :group لطبق :dish.",
+    "Pick no more than :max from :group for :dish.": "اختر :max كحد أقصى من :group لطبق :dish.",
+    "Pick up to :max": "اختر حتى :max",
+    "Pick at least :min": "اختر :min على الأقل",
+    "Pick :min to :max": "اختر من :min إلى :max",
+    "Pick exactly :count": "اختر :count بالضبط",
+    "Included": "مشمول",
+    "Pick at least :min from :group.": "اختر :min على الأقل من :group."
 }

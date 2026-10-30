@@ -60,6 +60,8 @@ class OrderResourceTest extends TestCase
             'guest_updated_at' => null,
             'guest_updates' => 0,
             'owner_updated_at' => null,
+            'pos' => null,
+            'cancel_reason' => null,
             'items' => [[
                 'id' => $line->id,
                 'name' => 'Shawarma',
@@ -79,7 +81,7 @@ class OrderResourceTest extends TestCase
         OrderItem::factory()->for($order)->create();
 
         $this->assertSame(
-            ['id', 'reference', 'status', 'currency', 'total', 'exchange_rate', 'note', 'fulfilment', 'table', 'name', 'phone', 'address', 'map_url', 'placed_at', 'accepted_at', 'guest_updated_at', 'guest_updates', 'owner_updated_at'],
+            ['id', 'reference', 'status', 'currency', 'total', 'exchange_rate', 'note', 'fulfilment', 'table', 'name', 'phone', 'address', 'map_url', 'placed_at', 'accepted_at', 'guest_updated_at', 'guest_updates', 'owner_updated_at', 'pos', 'cancel_reason'],
             array_keys($this->resolve($order->fresh())),
         );
     }

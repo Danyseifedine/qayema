@@ -36,6 +36,9 @@ class AdminAlerts
     /** A test from /admin: opens nothing when tapped. */
     public const TEST = 'test';
 
+    /** A restaurant's POS has not answered its menu for an hour (Connect to POS). */
+    public const POS_UNREACHABLE = 'pos_unreachable';
+
     /** An owner editing for an afternoon is one notification an hour, not one per dish. */
     public const MENU_EDITING_QUIET_MINUTES = 60;
 
@@ -74,6 +77,16 @@ class AdminAlerts
             'phones' => $count,
             'reached' => $count === 0 ? 0 : $this->sender->send($phones, new PushMessage($title, $body, ['type' => self::TEST])),
         ];
+    }
+
+    /** A restaurant's POS stopped answering its menu an hour ago or more. */
+    public function posUnreachable(Restaurant $restaurant): void
+    {
+        $this->later(new PushMessage(
+            title: $this->nameOf($restaurant).': POS not answering',
+            body: 'Its menu has not reached its POS for over an hour. Dishes and orders are not updating.',
+            data: ['type' => self::POS_UNREACHABLE, 'restaurant_id' => (string) $restaurant->id],
+        ));
     }
 
     /** An owner has just named their restaurant in onboarding. */

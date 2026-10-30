@@ -38,7 +38,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
 
         // The dashboard's error reports and the browser's CSP reports come
         // without a CSRF token (routes/api.php); they only write to the log.
-        $middleware->validateCsrfTokens(except: ['api/client-errors', 'api/csp-report']);
+        $middleware->validateCsrfTokens(except: ['api/client-errors', 'api/csp-report', 'api/pos/webhook']);
 
         // SecurityHeaders is prepended so it wraps every response. BlockAbusiveIps
         // is appended so it runs *after* the session starts; that's what lets its

@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -299,6 +300,12 @@ class Restaurant extends Model implements HasMedia
         return $this->hasMany(DiningTable::class)->orderBy('sort_order')->orderBy('id');
     }
 
+    /** @return HasOne<PosConnection, $this> */
+    public function posConnection(): HasOne
+    {
+        return $this->hasOne(PosConnection::class);
+    }
+
     /** @return HasMany<FeatureGrant, $this> */
     public function featureGrants(): HasMany
     {
@@ -406,11 +413,41 @@ class Restaurant extends Model implements HasMedia
 
     /**
      * Dishes show their "build your own" (half and half pizzas): only where
-     * an admin switched it on for this restaurant, since no package has it.
+     * an admin switched it on for this restaurant, since no package has it,
+     * and not while the menu is connected to a POS.
      */
     public function showsBuilds(): bool
     {
-        return $this->entitlements()->can(Feature::BuildYourOwn);
+        return $this->entitlements()->can(Feature::BuildYourOwn) && ! $this->isConnectedToPos();
+    }
+
+    /**
+     * Offers reach the menu and its prices: in the package, and off while
+     * the menu is connected to a POS (saved offers wait for the disconnect).
+     */
+    public function showsOffers(): bool
+    {
+        return $this->entitlements()->can(Feature::Offers) && ! $this->isConnectedToPos();
+    }
+
+    /**
+     * The menu's categories and dishes come from a POS branch: linked, and
+     * Connect to POS still on (an admin switches it on; switched off, the
+     * link sleeps and the owner edits the menu again). While true, Offers
+     * and Build your own are off and the POS owns what it sends.
+     */
+    public function isConnectedToPos(): bool
+    {
+        if (! $this->entitlements()->can(Feature::PosConnection)) {
+            return false;
+        }
+
+        // Read once and kept: the menu and its prices ask many times a page.
+        if (! $this->relationLoaded('posConnection')) {
+            $this->setRelation('posConnection', $this->posConnection()->first());
+        }
+
+        return $this->posConnection !== null;
     }
 
     /** The owner's colours, fonts and other design choices reach the menu. */

@@ -194,5 +194,13 @@
     "A quarter :name": "एक चौथाई :name",
     "Three quarters :name": "तीन चौथाई :name",
     "Menu": "मेन्यू",
-    "Cart": "कार्ट"
+    "Cart": "कार्ट",
+    "Pick at least :min from :group for :dish.": ":dish के लिए :group में से कम से कम :min चुनें।",
+    "Pick no more than :max from :group for :dish.": ":dish के लिए :group में से अधिकतम :max चुनें।",
+    "Pick up to :max": "अधिकतम :max चुनें",
+    "Pick at least :min": "कम से कम :min चुनें",
+    "Pick :min to :max": ":min से :max चुनें",
+    "Pick exactly :count": "ठीक :count चुनें",
+    "Included": "शामिल",
+    "Pick at least :min from :group.": ":group में से कम से कम :min चुनें।"
 }

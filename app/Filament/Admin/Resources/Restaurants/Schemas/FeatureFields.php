@@ -26,7 +26,7 @@ final class FeatureFields
         'Menu' => [
             Feature::DishLimit, Feature::CategoryLimit, Feature::SocialLinkLimit,
             Feature::WritingHelpCredits, Feature::MultipleLanguages, Feature::Variants, Feature::Addons, Feature::BuildYourOwn,
-            Feature::BuildLimit,
+            Feature::BuildLimit, Feature::PosConnection,
         ],
         'Look and QR' => [Feature::Appearance, Feature::PremiumDesigns, Feature::QrStudio],
         'Orders' => [Feature::Ordering, Feature::MenuOrdering, Feature::OrderTracking, Feature::DineIn, Feature::DineInWhatsApp],

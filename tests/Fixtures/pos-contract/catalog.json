@@ -1,0 +1,42 @@
+{
+    "success": true,
+    "message": null,
+    "data": {
+        "currency": "USD",
+        "locales": ["en", "ar"],
+        "categories": [
+            {
+                "id": "12",
+                "parent_id": null,
+                "name": {"en": "Mezze", "ar": "مقبلات"},
+                "description": {"en": "Small plates", "ar": null}
+            }
+        ],
+        "products": [
+            {
+                "id": "301",
+                "category_id": "12",
+                "name": {"en": "Hummus", "ar": "حمص"},
+                "description": {"en": "Our house hummus", "ar": null},
+                "ingredients": {"en": ["Chickpeas", "Tahini", "Lemon"], "ar": ["حمص حب", "طحينة", "ليمون"]},
+                "price": "5.50",
+                "currency": "USD",
+                "image": {"url": "https://pos.example/storage/7/hummus.jpg", "version": "7-1730200000"},
+                "available": true,
+                "modifier_groups": [
+                    {
+                        "id": "4",
+                        "name": {"en": "Size", "ar": "الحجم"},
+                        "selection": "single",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": [
+                            {"id": "9", "name": {"en": "Large", "ar": "كبير"}, "price_delta": "2.00"}
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

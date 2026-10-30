@@ -24,6 +24,7 @@ use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 
 class DishForm
 {
@@ -110,8 +111,9 @@ class DishForm
                                 ]),
                             Repeater::make('addons')
                                 ->label('Add-ons')
-                                ->helperText('For example Extra cheese. Guests pick any number.')
-                                ->relationship()
+                                ->helperText('For example Extra cheese. Guests pick any number. Add-ons in a group (sent by a POS) are not listed here and stay as they are.')
+                                // Grouped add-ons belong to their group (a POS's), never edited or deleted here.
+                                ->relationship(modifyQueryUsing: fn (Builder $query) => $query->whereNull('dish_addon_group_id'))
                                 ->orderColumn('display_order')
                                 ->maxItems(config('menu.dish_options.addons'))
                                 ->addActionLabel('Add add-on')

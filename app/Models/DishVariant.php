@@ -25,6 +25,10 @@ class DishVariant extends Model
         'display_order',
     ];
 
+    protected $attributes = [
+        'pos_id' => null,
+    ];
+
     protected function casts(): array
     {
         return [

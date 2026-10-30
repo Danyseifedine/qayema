@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\Feature;
+use App\Http\Controllers\Concerns\GuardsPosMenu;
 use App\Http\Controllers\Concerns\ResolvesRestaurant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ReorderCategoriesRequest;
@@ -24,7 +25,7 @@ use Illuminate\Support\Facades\DB;
  */
 class CategoryController extends Controller
 {
-    use ResolvesRestaurant;
+    use GuardsPosMenu, ResolvesRestaurant;
 
     public function index(Request $request): AnonymousResourceCollection
     {
@@ -49,6 +50,7 @@ class CategoryController extends Controller
     {
         $this->authorize('create', Category::class);
         $restaurant = $this->restaurant($request);
+        $this->refuseWhilePosConnected($restaurant);
 
         // Re-check the plan limit and insert under a row lock so two concurrent
         // creates can't both slip past the cap (time-of-check/time-of-use).
@@ -84,6 +86,17 @@ class CategoryController extends Controller
     {
         $this->authorize('update', $category);
 
+        // Connected to a POS: its name and description are the POS's; only
+        // the icon is the owner's.
+        if ($category->restaurant->isConnectedToPos()) {
+            if ($request->has('icon')) {
+                $category->icon = $request->validated('icon');
+                $category->save();
+            }
+
+            return new CategoryResource($category->loadCount('dishes'));
+        }
+
         // Only the menu's current languages are written. Text in a language
         // the owner has switched away from stays, hidden, for if they switch
         // back.
@@ -103,6 +116,7 @@ class CategoryController extends Controller
     public function destroy(Category $category): JsonResponse
     {
         $this->authorize('delete', $category);
+        $this->refuseWhilePosConnected($category->restaurant);
 
         $category->delete();
 

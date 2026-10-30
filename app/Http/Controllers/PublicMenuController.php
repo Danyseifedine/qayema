@@ -298,6 +298,8 @@ class PublicMenuController extends Controller
      * The dishes guests can order, read in one go with what they show (in
      * the dishes' order): those filed under a category, and while the
      * restaurant has Build your own, the dishes guests build in no category.
+     * Connected to a POS, only what the POS sent: the owner's own dishes
+     * wait, hidden, for the disconnect.
      *
      * @return Collection<int, Dish>
      */
@@ -307,6 +309,7 @@ class PublicMenuController extends Controller
 
         return $restaurant->dishes()
             ->where('is_available', true)
+            ->when($restaurant->isConnectedToPos(), fn ($query) => $query->whereNotNull('pos_id'))
             ->where(fn ($query) => $query->whereNotNull('category_id')->when($builds, fn ($query) => $query->orWhereHas('builds')))
             ->orderBy('id')
             ->with(['media', ...MenuDishOptions::relations($restaurant)])
@@ -329,6 +332,13 @@ class PublicMenuController extends Controller
             ? $dishes->filter(fn (Dish $dish): bool => $dish->builds->isNotEmpty())->values()
             : new Collection;
         $filed = $dishes->diff($built)->groupBy('category_id');
+
+        // Connected to a POS: its categories only, and not the ones it removed.
+        if ($restaurant->isConnectedToPos()) {
+            $restaurant->setRelation('categories', $restaurant->categories
+                ->filter(fn (Category $category): bool => $category->pos_id !== null && $category->pos_removed_at === null)
+                ->values());
+        }
 
         $restaurant->categories->each(fn (Category $category) => $category->setRelation(
             'dishes',

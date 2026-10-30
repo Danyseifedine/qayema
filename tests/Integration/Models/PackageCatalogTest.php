@@ -34,7 +34,7 @@ class PackageCatalogTest extends TestCase
             'offers' => 0,
             // Read from the defaults, used only if offers are granted.
             'offer_banner_limit' => 3, 'offer_popup_limit' => 1, 'offer_ad_limit' => 1,
-            'dine_in_whatsapp' => 0, 'order_tracking' => 0, 'offer_schedules' => 0, 'offer_discounts' => 0, 'build_your_own' => 0, 'build_limit' => 3,
+            'dine_in_whatsapp' => 0, 'order_tracking' => 0, 'offer_schedules' => 0, 'offer_discounts' => 0, 'build_your_own' => 0, 'build_limit' => 3, 'pos_connection' => 0,
         ], $this->shipped('free'));
         $this->assertTrue(Package::findBySlug('free')->is_default);
     }
@@ -47,7 +47,7 @@ class PackageCatalogTest extends TestCase
             'qr_studio' => 0, 'ordering' => 0, 'menu_ordering' => 0, 'dine_in' => 0, 'analytics' => 1, 'advanced_analytics' => 0,
             'offers' => 0,
             'offer_banner_limit' => 3, 'offer_popup_limit' => 1, 'offer_ad_limit' => 1,
-            'dine_in_whatsapp' => 0, 'order_tracking' => 0, 'offer_schedules' => 0, 'offer_discounts' => 0, 'build_your_own' => 0, 'build_limit' => 3,
+            'dine_in_whatsapp' => 0, 'order_tracking' => 0, 'offer_schedules' => 0, 'offer_discounts' => 0, 'build_your_own' => 0, 'build_limit' => 3, 'pos_connection' => 0,
         ], $this->shipped('pro'));
         $this->assertFalse(Package::findBySlug('pro')->is_featured);
     }
@@ -64,7 +64,7 @@ class PackageCatalogTest extends TestCase
             // What offers and table ordering brought, now switches of their own.
             'dine_in_whatsapp' => 1, 'order_tracking' => 1, 'offer_schedules' => 1, 'offer_discounts' => 1,
             // On no package: an admin switches it on for a restaurant.
-            'build_your_own' => 0, 'build_limit' => 3,
+            'build_your_own' => 0, 'build_limit' => 3, 'pos_connection' => 0,
         ], $this->shipped('premium'));
         // Its dishes and categories read "Unlimited", with 1,000 as fair use.
         $this->assertSame(['dish_limit', 'category_limit'], Package::findBySlug('premium')->fair_use);
@@ -83,7 +83,7 @@ class PackageCatalogTest extends TestCase
         $this->assertSame(15000, $shipped['writing_help_credits']);
         foreach (Feature::flags() as $flag) {
             // On no package: an admin switches it on for a restaurant.
-            $this->assertSame($flag === Feature::BuildYourOwn ? 0 : 1, $shipped[$flag->value], "custom lacks {$flag->value}");
+            $this->assertSame(in_array($flag, [Feature::BuildYourOwn, Feature::PosConnection], true) ? 0 : 1, $shipped[$flag->value], "custom lacks {$flag->value}");
         }
         $this->assertTrue(Package::findBySlug('custom')->is_contact_only);
     }

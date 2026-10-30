@@ -1,0 +1,13 @@
+{
+    "reference": "qy_8f3c2a9b7e",
+    "placed_at": "2026-10-29T18:02:11Z",
+    "fulfilment": "delivery",
+    "table": null,
+    "currency": "USD",
+    "guest": {"name": "Rami", "phone": "+96170123456", "address": "Hamra street", "location": "33.89,35.47"},
+    "note": "No onions",
+    "lines": [
+        {"product_id": 301, "quantity": 2, "unit_price": "7.50", "option_ids": [9], "name": "Hummus"}
+    ],
+    "total": "15.00"
+}

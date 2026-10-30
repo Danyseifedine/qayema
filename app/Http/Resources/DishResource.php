@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Enums\Feature;
 use App\Models\DishAddon;
+use App\Models\DishAddonGroup;
 use App\Models\DishBuild;
 use App\Models\DishBuildChoice;
 use App\Models\DishVariant;
@@ -44,6 +45,9 @@ class DishResource extends JsonResource
             // A build's dish's icon (CategoryIcons); null for none.
             'icon' => $this->icon,
             'image_url' => MediaUrl::of($this->resource, 'image'),
+            // Connect to POS: made by the POS, and since removed there (hidden).
+            'from_pos' => $this->resource->getAttribute('pos_id') !== null,
+            'pos_removed' => $this->resource->getAttribute('pos_removed_at') !== null,
             // An offer's deal dish: the offer that made it, and where it
             // stands (as OfferResource says), since guests meet the dish
             // only while that offer is live.
@@ -59,10 +63,15 @@ class DishResource extends JsonResource
                     'price' => (string) $option->price,
                 ])->all(),
             ])->all(),
-            'addons' => $this->addons->map(fn (DishAddon $addon): array => [
-                'id' => $addon->id,
-                'name' => MenuLanguages::map($addon, 'name', $languages),
-                'price' => (string) $addon->price,
+            // The ones the dish form edits: with no group.
+            'addons' => $this->addons->whereNull('dish_addon_group_id')->map(fn (DishAddon $addon): array => $this->addonOf($addon, $languages))->values()->all(),
+            // Groups come from a POS and are shown, not edited.
+            'addon_groups' => ! $this->relationLoaded('addonGroups') ? [] : $this->addonGroups->map(fn (DishAddonGroup $group): array => [
+                'id' => $group->id,
+                'name' => MenuLanguages::map($group, 'name', $languages),
+                'min_select' => $group->min_select,
+                'max_select' => $group->max_select,
+                'addons' => $this->addons->where('dish_addon_group_id', $group->id)->map(fn (DishAddon $addon): array => $this->addonOf($addon, $languages))->values()->all(),
             ])->all(),
             // As saved: a category's builds list only the dishes given part
             // prices; the dashboard has the dishes to show the rest.
@@ -83,6 +92,15 @@ class DishResource extends JsonResource
                 ])->all(),
             ])->all(),
         ];
+    }
+
+    /**
+     * @param  array<int, string>  $languages
+     * @return array{id: int, name: array<string, string|null>, price: string}
+     */
+    private function addonOf(DishAddon $addon, array $languages): array
+    {
+        return ['id' => $addon->id, 'name' => MenuLanguages::map($addon, 'name', $languages), 'price' => (string) $addon->price];
     }
 
     /**

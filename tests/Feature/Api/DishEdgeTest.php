@@ -194,10 +194,13 @@ class DishEdgeTest extends TestCase
                 'category_id' => $category->id,
                 'icon' => null,
                 'image_url' => null,
+                'from_pos' => false,
+                'pos_removed' => false,
                 // No offer made it.
                 'offer' => null,
                 'variants' => [],
                 'addons' => [],
+                'addon_groups' => [],
                 'builds' => [],
             ]);
     }

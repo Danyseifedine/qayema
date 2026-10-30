@@ -4,6 +4,7 @@ namespace App\Services\Menu;
 
 use App\Models\Dish;
 use App\Models\DishAddon;
+use App\Models\DishAddonGroup;
 use App\Models\DishVariant;
 use App\Models\DishVariantOption;
 use App\Models\Restaurant;
@@ -19,7 +20,9 @@ use Illuminate\Support\Collection;
  * sandwich by size: Small $7, Large $12) or its builds (a pizza by its
  * halves), so it needs one; add-ons alone need a price to add to. A build
  * shows with two choices or more (BuildChoices), each with its part prices,
- * which the sheet prices as BuildPrice does.
+ * which the sheet prices as BuildPrice does. Add-ons in a group (from a POS)
+ * come under `addon_groups` with the group's fewest and most; `addons` holds
+ * the ones with no group.
  */
 class MenuDishOptions
 {
@@ -38,6 +41,7 @@ class MenuDishOptions
      * @return array<int, array{
      *     variants: array<int, array{id: int, name: string, options: array<int, array{id: int, name: string, price: string}>}>,
      *     addons: array<int, array{id: int, name: string, price: string}>,
+     *     addon_groups: array<int, array{id: int, name: string, min: int, max: int|null, addons: array<int, array{id: int, name: string, price: string}>}>,
      *     builds: array<int, array{id: int, name: string, shape: string, parts: list<int>, sizes: list<array{key: string, name: string}>, choices: list<array{key: string, name: string, price: string|null, part_prices: array<array-key, mixed>, sizes: array<string, string>}>}>,
      *     lowest: string,
      *     priced: bool,
@@ -55,15 +59,20 @@ class MenuDishOptions
         $name = fn ($model): string => $read($model, 'name');
         $choices = [];
 
+        if ($showsAddons) {
+            self::loadAddonGroups($dishes);
+        }
+
         foreach ($dishes as $dish) {
             // A variant with a single option leaves nothing to pick.
             $variants = $showsVariants
                 ? $dish->variants->filter(fn (DishVariant $variant): bool => $variant->options->count() >= 2)->values()
                 : collect();
-            $addons = $showsAddons ? $dish->addons : collect();
+            $addons = $showsAddons ? $dish->addons->whereNull('dish_addon_group_id')->values() : collect();
+            $groups = $showsAddons ? self::addonGroups($dish, $name) : [];
             $builds = $showsBuilds ? self::builds($dish, $byCategory, $name, MenuLanguages::main($restaurant)) : [];
 
-            if ($variants->isEmpty() && $builds === [] && ($addons->isEmpty() || $dish->price === null)) {
+            if ($variants->isEmpty() && $builds === [] && (($addons->isEmpty() && $groups === []) || $dish->price === null)) {
                 continue;
             }
 
@@ -90,11 +99,8 @@ class MenuDishOptions
                         'price' => (string) $option->price,
                     ])->all(),
                 ])->all(),
-                'addons' => $addons->map(fn (DishAddon $addon): array => [
-                    'id' => $addon->id,
-                    'name' => $name($addon),
-                    'price' => (string) $addon->price,
-                ])->values()->all(),
+                'addons' => $addons->map(fn (DishAddon $addon): array => self::addon($addon, $name))->values()->all(),
+                'addon_groups' => $groups,
                 'builds' => array_map(fn (array $build): array => array_diff_key($build, ['cheapest' => true]), $builds),
                 'lowest' => $lowest,
                 // Its builds price a dish with no price of its own; its
@@ -104,6 +110,78 @@ class MenuDishOptions
         }
 
         return $choices;
+    }
+
+    /**
+     * Sets each dish's add-on groups from its loaded add-ons: one query when
+     * some add-on has a group (a POS menu), none otherwise.
+     *
+     * @param  Collection<int, Dish>|\Illuminate\Database\Eloquent\Collection<int, Dish>  $dishes  loaded with `addons`
+     */
+    public static function loadAddonGroups(Collection $dishes): void
+    {
+        $ids = $dishes->flatMap(fn (Dish $dish) => $dish->addons->pluck('dish_addon_group_id'))->filter()->unique()->values()->all();
+        $groups = $ids === [] ? collect() : DishAddonGroup::query()->whereIn('id', $ids)->orderBy('display_order')->orderBy('id')->get()->groupBy('dish_id');
+
+        foreach ($dishes as $dish) {
+            $dish->setRelation('addonGroups', new \Illuminate\Database\Eloquent\Collection($groups->get($dish->id, collect())->all()));
+        }
+    }
+
+    /**
+     * A dish's add-on groups that have an add-on, each with its add-ons and
+     * its limits in the guest's language. The fewest is never more than it
+     * has, so a dish stays orderable.
+     *
+     * @param  \Closure(\Illuminate\Database\Eloquent\Model): string  $name
+     * @return array<int, array{id: int, name: string, min: int, max: int|null, addons: array<int, array{id: int, name: string, price: string}>}>
+     */
+    public static function addonGroups(Dish $dish, \Closure $name): array
+    {
+        $groups = [];
+
+        foreach ($dish->addonGroups as $group) {
+            $addons = $dish->addons->where('dish_addon_group_id', $group->id)->values();
+
+            if ($addons->isEmpty()) {
+                continue;
+            }
+
+            [$min, $max] = self::limits($group, $addons->count());
+
+            $groups[] = [
+                'id' => $group->id,
+                'name' => $name($group),
+                'min' => $min,
+                'max' => $max,
+                'addons' => $addons->map(fn (DishAddon $addon): array => self::addon($addon, $name))->all(),
+            ];
+        }
+
+        return $groups;
+    }
+
+    /**
+     * A group's fewest and most as a guest meets them: never more than the
+     * add-ons it has, and no most at all when it would not limit anything.
+     *
+     * @return array{0: int, 1: int|null}
+     */
+    public static function limits(DishAddonGroup $group, int $count): array
+    {
+        $min = min(max(0, (int) $group->min_select), $count);
+        $max = $group->max_select === null || $group->max_select >= $count ? null : max($group->max_select, $min, 1);
+
+        return [$min, $max];
+    }
+
+    /**
+     * @param  \Closure(\Illuminate\Database\Eloquent\Model): string  $name
+     * @return array{id: int, name: string, price: string}
+     */
+    private static function addon(DishAddon $addon, \Closure $name): array
+    {
+        return ['id' => $addon->id, 'name' => $name($addon), 'price' => (string) $addon->price];
     }
 
     /**

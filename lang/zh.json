@@ -194,5 +194,13 @@
     "A quarter :name": "四分之一 :name",
     "Three quarters :name": "四分之三 :name",
     "Menu": "菜单",
-    "Cart": "购物车"
+    "Cart": "购物车",
+    "Pick at least :min from :group for :dish.": "请为:dish从:group中至少选择:min项。",
+    "Pick no more than :max from :group for :dish.": "请为:dish从:group中最多选择:max项。",
+    "Pick up to :max": "最多选:max项",
+    "Pick at least :min": "至少选:min项",
+    "Pick :min to :max": "选:min到:max项",
+    "Pick exactly :count": "请选:count项",
+    "Included": "已包含",
+    "Pick at least :min from :group.": "请从:group中至少选择:min项。"
 }

@@ -1,6 +1,8 @@
 /**
  * The dish sheet: a dish's variants, add-ons and "build your own" (half and
- * half pizzas, three scoops), picked before it goes in the cart. A build is
+ * half pizzas, three scoops), picked before it goes in the cart. Add-ons in a
+ * group (from a POS) keep to its fewest and most: past the most the other
+ * boxes are off, and short of the fewest the dish is not added. A build is
  * priced by menu-build.js, the server's rule.
  *
  * The choices come from the page (#dish-options, built by
@@ -116,13 +118,54 @@
             }
         }
 
-        state.data.addons.forEach(function (addon) {
+        allAddons(state.data).forEach(function (addon) {
             if (state.addons[addon.id]) {
                 total += parseFloat(addon.price) || 0;
                 full += parseFloat(addon.price) || 0;
             }
         });
         return { unit: total, full: full };
+    }
+
+    /** Every add-on of a dish: the ones with no group, then each group's. */
+    function allAddons(data) {
+        var all = data.addons.slice();
+        (data.addon_groups || []).forEach(function (group) {
+            all = all.concat(group.addons);
+        });
+        return all;
+    }
+
+    /** How many of a group's add-ons are picked. */
+    function pickedIn(group) {
+        return group.addons.filter(function (addon) {
+            return !!state.addons[addon.id];
+        }).length;
+    }
+
+    /**
+     * Every add-on of the group must be picked (a required choice with a
+     * single option, as a POS may send): they come ticked and stay ticked.
+     */
+    function includedAll(group) {
+        return group.min > 0 && group.min >= group.addons.length;
+    }
+
+    /** What a group asks for, in words: "Pick up to 2", "Pick at least 1". */
+    function ruleOf(group) {
+        if (includedAll(group)) {
+            return strings.included;
+        }
+        if (group.max !== null && group.min === group.max) {
+            return strings.exactly.replace(':count', group.max);
+        }
+        if (group.max !== null && group.min > 0) {
+            return strings.between.replace(':min', group.min).replace(':max', group.max);
+        }
+        if (group.max !== null) {
+            return strings.upTo.replace(':max', group.max);
+        }
+        return group.min > 0 ? strings.atLeast.replace(':min', group.min) : strings.optional;
     }
 
     /** A build's choices at the size picked (all of them for a build with no sizes). */
@@ -195,21 +238,43 @@
         return set;
     }
 
-    function addonGroup(addons) {
+    /**
+     * A list of add-ons to tick: the dish's own (any number), or a group's,
+     * which says its rule and, once its most is picked, turns the rest off.
+     */
+    function addonGroup(addons, group) {
         var set = element('fieldset', 'choice-group');
-        set.appendChild(legend(strings.addons, strings.optional));
+        set.appendChild(legend(group ? group.name : strings.addons, group ? ruleOf(group) : strings.optional));
+        if (group) {
+            set.dataset.addonGroup = String(group.id);
+            var note = element('p', 'choice-missing');
+            note.setAttribute('role', 'alert');
+            note.hidden = true;
+            set.appendChild(note);
+            state.groupSets[group.id] = { set: set, note: note, inputs: [] };
+        }
 
+        var included = !!group && includedAll(group);
         var rows = element('div', 'choice-rows');
         addons.forEach(function (addon) {
             var label = element('label', 'choice-row');
             var input = document.createElement('input');
             input.type = 'checkbox';
             input.value = String(addon.id);
+            if (included) {
+                state.addons[addon.id] = true;
+            }
             input.checked = !!state.addons[addon.id];
             input.addEventListener('change', function () {
                 state.addons[addon.id] = input.checked;
+                if (group) {
+                    limitGroup(group);
+                }
                 refresh();
             });
+            if (group) {
+                state.groupSets[group.id].inputs.push(input);
+            }
 
             var box = element('span', 'choice-check');
             box.appendChild(icon(icons.check));
@@ -222,7 +287,48 @@
         });
 
         set.appendChild(rows);
+        if (group) {
+            limitGroup(group);
+        }
         return set;
+    }
+
+    /**
+     * Keeps a group within its most (the unticked boxes are off once it is
+     * reached) and clears its "pick at least" note once the fewest is met.
+     */
+    function limitGroup(group) {
+        var drawn = state.groupSets[group.id];
+        var full = group.max !== null && pickedIn(group) >= group.max;
+        var included = includedAll(group);
+        drawn.inputs.forEach(function (input) {
+            // An included add-on stays ticked; it is not "off", only fixed.
+            input.disabled = included || (full && !input.checked);
+            input.closest('.choice-row').classList.toggle('is-off', input.disabled && !included);
+        });
+        if (pickedIn(group) >= group.min) {
+            drawn.note.hidden = true;
+            drawn.set.classList.remove('is-short');
+        }
+    }
+
+    /**
+     * The first group short of its fewest, told so on the sheet, or null
+     * when every group has enough.
+     */
+    function shortGroup() {
+        var short = (state.data.addon_groups || []).filter(function (group) {
+            return pickedIn(group) < group.min;
+        })[0];
+        if (!short) {
+            return null;
+        }
+        var drawn = state.groupSets[short.id];
+        drawn.note.textContent = strings.missing.replace(':min', short.min).replace(':group', short.name);
+        drawn.note.hidden = false;
+        drawn.set.classList.add('is-short');
+        drawn.set.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        return short;
     }
 
     /**
@@ -598,6 +704,8 @@
             // The first option of each variant is the one most guests want.
             picked: {},
             addons: {},
+            // Each add-on group's fieldset, note and boxes, by group id.
+            groupSets: {},
             // Each build starts on its fewest parts, every part its first choice.
             builds: {},
             quantity: 1,
@@ -656,8 +764,11 @@
             groups.appendChild(variantGroup(variant, index === 0 && !data.priced));
         });
         if (data.addons.length > 0) {
-            groups.appendChild(addonGroup(data.addons));
+            groups.appendChild(addonGroup(data.addons, null));
         }
+        (data.addon_groups || []).forEach(function (group) {
+            groups.appendChild(addonGroup(group.addons, group));
+        });
 
         // The card's offer badge ("-20%", "Buy 2, 2nd 50% off") after the price.
         var shownBadge = wasTag.parentNode.querySelector('.dish-badge');
@@ -678,12 +789,16 @@
     }
 
     function addToCart() {
+        if (shortGroup()) {
+            return;
+        }
+
         var options = [];
         Object.keys(state.picked).forEach(function (variant) {
             options.push(state.picked[variant]);
         });
         var addons = [];
-        state.data.addons.forEach(function (addon) {
+        allAddons(state.data).forEach(function (addon) {
             if (state.addons[addon.id]) {
                 addons.push(addon.id);
             }

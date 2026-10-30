@@ -13,6 +13,7 @@ use App\Services\Orders\OrderNews;
 use App\Services\Orders\OrderPlacer;
 use App\Services\Orders\PricesChanged;
 use App\Services\Orders\WhatsAppLink;
+use App\Services\Pos\PosOrders;
 use Illuminate\Http\JsonResponse;
 
 /**
@@ -31,7 +32,7 @@ use Illuminate\Http\JsonResponse;
  */
 class PublicOrderController extends Controller
 {
-    public function store(PlaceOrderRequest $request, Restaurant $restaurant, OrderPlacer $placer): JsonResponse
+    public function store(PlaceOrderRequest $request, Restaurant $restaurant, OrderPlacer $placer, PosOrders $posOrders): JsonResponse
     {
         // Same gate as the menu itself, plus the package flag. A 404 rather
         // than a 403: a restaurant that does not take orders should not even
@@ -65,6 +66,12 @@ class PublicOrderController extends Controller
         } catch (PricesChanged $changed) {
             return $this->pricesChanged($changed);
         }
+
+        // Sent on to the restaurant's POS when it takes its orders there.
+        if ($posOrders->sends($restaurant, $order)) {
+            $posOrders->queue($order);
+        }
+
         OrderNews::fromGuest($order);
 
         return response()->json([

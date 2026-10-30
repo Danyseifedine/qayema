@@ -45,6 +45,16 @@ class OrderResource extends JsonResource
             'guest_updates' => (int) $this->guest_updates,
             // When the restaurant last changed what it holds.
             'owner_updated_at' => $this->owner_updated_at?->toIso8601String(),
+            // Sent to the restaurant's POS (Connect to POS): sending, sent
+            // (the POS handles it, with its number) or failed (why); null
+            // for an order that was never sent.
+            'pos' => $this->pos_status === null ? null : [
+                'status' => $this->pos_status,
+                'number' => $this->pos_number,
+                'error' => $this->pos_error,
+            ],
+            // Why the POS called it off, when it said.
+            'cancel_reason' => $this->cancel_reason,
             'items' => $this->whenLoaded('items', fn () => $this->items->map(fn ($item): array => [
                 'id' => $item->id,
                 'name' => $item->name,

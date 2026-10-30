@@ -189,6 +189,7 @@ class PackageGatesTest extends TestCase
                 'offer_discounts' => true,
                 // On no package: an admin switches it on for a restaurant.
                 'build_your_own' => false,
+                'pos_connection' => false,
             ]);
     }
 

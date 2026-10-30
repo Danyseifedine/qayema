@@ -26,7 +26,7 @@ class UserResourceTest extends TestCase
 
     private const RESTAURANT_KEYS = [
         'id', 'languages', 'main_locale', 'second_locale', 'default_locale', 'template_id', 'public_url',
-        'package', 'lapsed', 'upcoming', 'limits', 'dishes_without_photo', 'switched_off', 'ordering', 'plan', 'turned_off', 'writing_help',
+        'package', 'lapsed', 'upcoming', 'limits', 'dishes_without_photo', 'pos_connected', 'switched_off', 'ordering', 'plan', 'turned_off', 'writing_help',
     ];
 
     protected function setUp(): void
@@ -248,9 +248,11 @@ class UserResourceTest extends TestCase
         $this->assertNull($data['limits']['dishes']['limit']);
         $this->assertNull($data['limits']['categories']['limit']);
         $this->assertNull($data['limits']['social_links']['limit']);
-        // Every flag but build your own, which an admin switches on per restaurant.
-        $this->assertNotContains(false, array_diff_key($data['plan'], ['build_your_own' => true]));
+        // Every flag but build your own and connect to POS, which an admin
+        // switches on per restaurant.
+        $this->assertNotContains(false, array_diff_key($data['plan'], ['build_your_own' => true, 'pos_connection' => true]));
         $this->assertFalse($data['plan']['build_your_own']);
+        $this->assertFalse($data['plan']['pos_connection']);
         $this->assertTrue(Package::findBySlug('custom')->is($restaurant->effectivePackage()));
     }
 

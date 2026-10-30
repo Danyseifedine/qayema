@@ -47,6 +47,9 @@ class Dish extends Model implements HasMedia
         'currency' => null,
         'offer_id' => null,
         'icon' => null,
+        'pos_id' => null,
+        'pos_removed_at' => null,
+        'pos_image_version' => null,
     ];
 
     protected function casts(): array
@@ -58,6 +61,7 @@ class Dish extends Model implements HasMedia
             'price' => 'decimal:2',
             'is_available' => 'boolean',
             'display_order' => 'integer',
+            'pos_removed_at' => 'datetime',
         ];
     }
 
@@ -100,6 +104,12 @@ class Dish extends Model implements HasMedia
     public function addons(): HasMany
     {
         return $this->hasMany(DishAddon::class)->orderBy('display_order')->orderBy('id');
+    }
+
+    /** @return HasMany<DishAddonGroup, $this> */
+    public function addonGroups(): HasMany
+    {
+        return $this->hasMany(DishAddonGroup::class)->orderBy('display_order')->orderBy('id');
     }
 
     /** @return HasMany<DishBuild, $this> */

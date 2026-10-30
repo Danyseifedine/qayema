@@ -296,6 +296,12 @@ class AppServiceProvider extends ServiceProvider
         // A dashboard reports at most five errors a page load (reportError);
         // more than this is a loop or a stranger, and is dropped, never banned.
         $this->defineRateLimiter('client-errors', fn (): Limit => Limit::perMinute(10), autoBan: false);
+        // A POS calls for every restaurant linked to it from one address, so
+        // the ceiling is per link and generous per address, never a ban.
+        $this->defineRateLimiter('pos-webhooks', fn (Request $request): array => [
+            Limit::perMinute(600)->by('pos|'.$request->ip()),
+            Limit::perMinute(60)->by('pos|'.$request->ip().'|'.substr((string) $request->header('X-Pos-Connection'), 0, 36)),
+        ], autoBan: false);
 
         // Dashboard SPA endpoints. The SPA polls /api/user on every boot, so the
         // ceiling is generous; a 429 here is self-inflicted (one session), so it

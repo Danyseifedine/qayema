@@ -43,7 +43,9 @@ class DishOptionsSync
         }
 
         if ($addons !== null) {
-            $saved = $dish->addons()->get();
+            // Only add-ons with no group: a group's add-ons come from a POS
+            // and are never touched (or deleted) by the dish form.
+            $saved = $dish->addons()->whereNull('dish_addon_group_id')->get();
             $kept = [];
 
             foreach ($this->inOrder($addons) as $index => $input) {
@@ -56,7 +58,7 @@ class DishOptionsSync
             $this->deleteLeftOut($dish->addons(), $saved, $kept);
         }
 
-        $dish->unsetRelation('variants')->unsetRelation('addons');
+        $dish->unsetRelation('variants')->unsetRelation('addons')->unsetRelation('addonGroups');
     }
 
     /**

@@ -194,5 +194,13 @@
     "A quarter :name": "Четверть :name",
     "Three quarters :name": "Три четверти :name",
     "Menu": "Меню",
-    "Cart": "Корзина"
+    "Cart": "Корзина",
+    "Pick at least :min from :group for :dish.": "Выберите не менее :min из «:group» для :dish.",
+    "Pick no more than :max from :group for :dish.": "Выберите не более :max из «:group» для :dish.",
+    "Pick up to :max": "Выберите до :max",
+    "Pick at least :min": "Выберите не менее :min",
+    "Pick :min to :max": "Выберите от :min до :max",
+    "Pick exactly :count": "Выберите ровно :count",
+    "Included": "Включено",
+    "Pick at least :min from :group.": "Выберите не менее :min из «:group»."
 }

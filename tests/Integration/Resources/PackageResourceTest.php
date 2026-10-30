@@ -67,6 +67,7 @@ class PackageResourceTest extends TestCase
                 'offer_discounts' => false,
                 'build_your_own' => false,
                 'build_limit' => 3,
+                'pos_connection' => false,
             ],
         ], $this->resolve($package));
     }
@@ -83,8 +84,9 @@ class PackageResourceTest extends TestCase
         $this->assertNull($data['features']['category_limit']);
         $this->assertNull($data['features']['social_link_limit']);
         foreach (Feature::flags() as $flag) {
-            // Build your own is on no package: an admin switches it on for a restaurant.
-            $this->assertSame($flag !== Feature::BuildYourOwn, $data['features'][$flag->value], $flag->value);
+            // Build your own and connect to POS are on no package: an admin
+            // switches them on for a restaurant.
+            $this->assertSame(! in_array($flag, [Feature::BuildYourOwn, Feature::PosConnection], true), $data['features'][$flag->value], $flag->value);
         }
     }
 
